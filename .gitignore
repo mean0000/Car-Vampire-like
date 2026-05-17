@@ -6,6 +6,7 @@
 [Bb]uilds/
 [Ll]ogs/
 [Uu]ser[Ss]ettings/
+[Mm]em[Pp]rofiler/
 
 # Unity3D generated meta files
 *.pidb.meta
@@ -20,13 +21,54 @@ sysinfo.txt
 *.aab
 *.unitypackage
 *.app
+*.exe
+*.x86
+*.x86_64
+*.bc
 
-# Crashlytics generated file
+# Crashlytics
 crashlytics-build.properties
+crashlytics/
+Assets/StreamingAssets/aa.meta
+Assets/StreamingAssets/aa/
 
-# Packed Addressables
-/[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
+# Visual Studio / Rider
+.vs/
+.idea/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
 
-# Temporary auto-generated Android Assets
-/[Aa]ssets/[Ss]treamingAssets/aa.meta
-/[Aa]ssets/[Ss]treamingAssets/aa/
+# OS generated
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# JetBrains Rider
+.idea/
+
+# Addressables
+Assets/AddressableAssetsData/*/*.bin*
+
+# TextMeshPro
+Assets/TextMesh Pro/
+
+# Cache
+__pycache__/
+*.pyc
