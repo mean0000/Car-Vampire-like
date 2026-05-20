@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZombieCrush — 2026-05-20 기획 세션</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d0d0d;
+      color: #d4d4d4;
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      padding: 40px 24px;
+    }
+
+    /* ── Header ── */
+    header {
+      border-left: 4px solid #b91c1c;
+      padding-left: 16px;
+      margin-bottom: 40px;
+    }
+    header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #f5f5f5;
+      letter-spacing: 0.04em;
+    }
+    header p {
+      color: #6b7280;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    /* ── Grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .grid.full { grid-template-columns: 1fr; }
+    .grid.two  { grid-template-columns: 1fr 1fr; }
+
+    /* ── Card ── */
+    .card {
+      background: #161616;
+      border: 1px solid #262626;
+      border-radius: 6px;
+      padding: 20px;
+    }
+    .card.highlight { border-color: #b91c1c; }
+    .card.amber     { border-color: #d97706; }
+    .card.green     { border-color: #16a34a; }
+    .card.blue      { border-color: #2563eb; }
+
+    .card-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .card.highlight .card-label { color: #b91c1c; }
+    .card.amber     .card-label { color: #d97706; }
+    .card.green     .card-label { color: #16a34a; }
+    .card.blue      .card-label { color: #2563eb; }
+    .card           .card-label { color: #6b7280; }
+
+    .card h2 {
+      font-size: 15px;
+      color: #f5f5f5;
+      margin-bottom: 10px;
+    }
+
+    /* ── Core Mechanic ── */
+    .mechanic-box {
+      background: #1a0a0a;
+      border: 1px solid #b91c1c;
+      border-radius: 6px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .mechanic-box .card-label { color: #b91c1c; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; }
+    .mechanic-box h2 { font-size: 18px; color: #f5f5f5; margin-bottom: 16px; }
+
+    .speed-flow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .speed-node {
+      background: #b91c1c;
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 8px 14px;
+      border-radius: 4px;
+    }
+    .speed-arrow {
+      color: #6b7280;
+      font-size: 18px;
+    }
+    .speed-note {
+      background: #1f1f1f;
+      border-left: 3px solid #6b7280;
+      padding: 8px 12px;
+      border-radius: 0 4px 4px 0;
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .rhythm-flow {
+      display: flex;
+      gap: 0;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .rhythm-step {
+      flex: 1;
+      text-align: center;
+      padding: 10px 6px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .rhythm-step:nth-child(1) { background: #1c2a1c; color: #4ade80; }
+    .rhythm-step:nth-child(2) { background: #2a1c1c; color: #f87171; }
+    .rhythm-step:nth-child(3) { background: #2a221c; color: #fb923c; }
+    .rhythm-step:nth-child(4) { background: #1c1c2a; color: #60a5fa; }
+
+    /* ── Tags ── */
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .tag {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-weight: 600;
+    }
+    .tag.red    { background: #2a0a0a; color: #f87171; }
+    .tag.gray   { background: #1f1f1f; color: #9ca3af; }
+    .tag.green  { background: #0a1f0a; color: #4ade80; }
+    .tag.amber  { background: #1f1500; color: #fbbf24; }
+    .tag.blue   { background: #0a0f2a; color: #60a5fa; }
+
+    /* ── List ── */
+    ul.clean { list-style: none; padding: 0; }
+    ul.clean li {
+      padding: 6px 0;
+      border-bottom: 1px solid #1f1f1f;
+      font-size: 13px;
+      color: #d4d4d4;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    ul.clean li:last-child { border-bottom: none; }
+    ul.clean li .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #b91c1c;
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+    ul.clean li .dot.amber  { background: #d97706; }
+    ul.clean li .dot.green  { background: #16a34a; }
+    ul.clean li .dot.gray   { background: #4b5563; }
+
+    /* ── Conflict box ── */
+    .resolved {
+      background: #0a1a0a;
+      border: 1px solid #16a34a;
+      border-radius: 4px;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: #86efac;
+      margin-top: 10px;
+    }
+    .resolved::before { content: "✓ 해소됨  "; font-weight: 700; }
+
+    /* ── Pending ── */
+    .pending-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #1f1f1f;
+      font-size: 13px;
+    }
+    .pending-item:last-child { border-bottom: none; }
+    .pending-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .pending-dot.high   { background: #b91c1c; box-shadow: 0 0 6px #b91c1c88; }
+    .pending-dot.medium { background: #d97706; }
+    .pending-dot.low    { background: #4b5563; }
+
+    /* ── Reference ── */
+    .ref-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 0;
+      border-bottom: 1px solid #1f1f1f;
+      font-size: 13px;
+    }
+    .ref-item:last-child { border-bottom: none; }
+    .ref-note { font-size: 11px; color: #6b7280; }
+
+    /* ── Section divider ── */
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #4b5563;
+      margin: 32px 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #1f1f1f;
+    }
+
+    @media (max-width: 680px) {
+      .grid.two { grid-template-columns: 1fr; }
+      .rhythm-flow { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>ZombieCrush &nbsp;/&nbsp; 기획 세션</h1>
+  <p>2026-05-20 &nbsp;·&nbsp; 아트 방향 · 핵심 메카닉 · 맵 · 차량 조작감</p>
+</header>
+
+<!-- ── 핵심 메카닉 ── -->
+<div class="mechanic-box">
+  <div class="card-label">오늘의 핵심 발견</div>
+  <h2>속도 = 공격력 = 생존력</h2>
+
+  <div class="speed-flow">
+    <div class="speed-node">가속</div>
+    <div class="speed-arrow">→</div>
+    <div class="speed-node">무리 돌진</div>
+    <div class="speed-arrow">→</div>
+    <div class="speed-node">시체에 속도 감소</div>
+    <div class="speed-arrow">→</div>
+    <div class="speed-node">피해량 저하</div>
+    <div class="speed-arrow">→</div>
+    <div class="speed-node">탈출 후 재가속</div>
+  </div>
+
+  <div class="speed-note" style="margin-bottom:16px;">
+    무리가 두꺼울수록 속도가 더 빨리 깎인다 → 어느 각도로, 어느 두께의 무리를 뚫을지 판단이 생긴다
+  </div>
+
+  <div class="rhythm-flow">
+    <div class="rhythm-step">빈 공간<br>가속</div>
+    <div class="rhythm-step">무리<br>돌진</div>
+    <div class="rhythm-step">속도 한계 전<br>탈출</div>
+    <div class="rhythm-step">라인 재설정<br>반복</div>
+  </div>
+
+  <div style="font-size:12px; color:#6b7280;">
+    HP 게이지 없이도 직진 반복이 자연스럽게 막힘 &nbsp;·&nbsp; 엔진 업그레이드 의미 직결 (가속력 / 관통 속도 유지율 / 최고속도)
+  </div>
+</div>
+
+<!-- ── 아트 · 분위기 ── -->
+<div class="section-title">아트 &amp; 분위기</div>
+<div class="grid">
+
+  <div class="card highlight">
+    <div class="card-label">세계관 톤</div>
+    <h2>희망 없는 세계</h2>
+    <ul class="clean">
+      <li><span class="dot"></span>전체 배경: 채도 낮고 탁한 톤</li>
+      <li><span class="dot"></span>Color Adjustments — Saturation↓ Contrast↑ Cold filter</li>
+      <li><span class="dot"></span>조명/Ambient를 먼저 차갑게, 그 위에 Post-processing</li>
+      <li><span class="dot"></span>Synty 기본 팔레트는 밝음 → Albedo 직접 조정 필요</li>
+    </ul>
+  </div>
+
+  <div class="card highlight">
+    <div class="card-label">임팩트 연출</div>
+    <h2>대비 효과로 쾌감 증폭</h2>
+    <ul class="clean">
+      <li><span class="dot"></span>어두운 배경 × 강렬한 임팩트 = 대비로 더 강하게 튐</li>
+      <li><span class="dot"></span>시체 Ragdoll 날아감 (파편 X → 로우폴리에 적합)</li>
+      <li><span class="dot"></span>바닥 피 데칼 — 로드킬 흔적으로 남음</li>
+      <li><span class="dot"></span>충돌 히트스탑 + 카메라 쉐이크</li>
+      <li><span class="dot"></span>폭발 파티클은 임팩트 순간에만 채도 높게</li>
+    </ul>
+    <div class="tags">
+      <span class="tag red">고어 필수</span>
+      <span class="tag gray">파편 대신 Ragdoll</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">음향 방향 (방향 확정)</div>
+    <h2>사운드가 임팩트를 완성한다</h2>
+    <ul class="clean">
+      <li><span class="dot amber"></span>로드킬 타격감 — 묵직한 크런치/스플랫</li>
+      <li><span class="dot amber"></span>배경 앰비언스 — 바람, 정적, 무너진 세계 소리</li>
+      <li><span class="dot gray"></span>세부 비율 미확정</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-label">레퍼런스</div>
+    <h2>검증된 선례</h2>
+    <div class="ref-item">
+      <span>20 Minutes Till Dawn (2023)</span>
+      <span class="ref-note">흑백 배경 + 빨간 피 대비</span>
+    </div>
+    <div class="ref-item">
+      <span>Death Must Die (2023)</span>
+      <span class="ref-note">다크 톤 + 뱀서 쾌감 공존</span>
+    </div>
+    <div class="ref-item">
+      <span>Project Zomboid</span>
+      <span class="ref-note">희망 없는 세계 · 좀비 AI 참고</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── 맵 · 차량 ── -->
+<div class="section-title">맵 &amp; 차량</div>
+<div class="grid two">
+
+  <div class="card blue">
+    <div class="card-label">맵 구조</div>
+    <h2>열린 평야 + 도심 폐허 산재</h2>
+    <ul class="clean">
+      <li><span class="dot" style="background:#2563eb"></span>기본: 장애물 없는 넓은 공간 (이동 자유)</li>
+      <li><span class="dot" style="background:#2563eb"></span>폐허 요소: 무너진 건물 잔해, 뒤집힌 차, 부서진 벽</li>
+      <li><span class="dot" style="background:#2563eb"></span>장애물은 미로가 아닌 주행 라인에 변화를 주는 수준</li>
+      <li><span class="dot gray"></span>도시 아포칼립스 분위기는 살리되 이동 막지 않음</li>
+    </ul>
+  </div>
+
+  <div class="card blue">
+    <div class="card-label">차량 조작감</div>
+    <h2>묵직한 돌진 + 슬라이딩 선회</h2>
+    <ul class="clean">
+      <li><span class="dot" style="background:#2563eb"></span>돌진 시: 묵직한 충격감 (히트스탑 포함)</li>
+      <li><span class="dot" style="background:#2563eb"></span>선회 시: 자연스러운 슬라이딩으로 다음 라인 연결</li>
+      <li><span class="dot" style="background:#2563eb"></span>즉각 반응 X, 탱크급 관성 X — 그 사이</li>
+      <li><span class="dot gray"></span>Rigidbody + 방향 보정 혼합 검토 필요</li>
+    </ul>
+  </div>
+
+</div>
+
+<!-- ── 적 설계 ── -->
+<div class="section-title">적 설계</div>
+<div class="grid">
+
+  <div class="card green">
+    <div class="card-label">일반 좀비</div>
+    <h2>무리가 무기다</h2>
+    <ul class="clean">
+      <li><span class="dot green"></span>개체는 느리고 단순 — 혼자면 위협 없음</li>
+      <li><span class="dot green"></span>엔진 소리에 반응해 몰려옴 (PZ 참고)</li>
+      <li><span class="dot green"></span>무리가 자연스럽게 형성 → 박고 싶은 라인 생성</li>
+      <li><span class="dot green"></span>충돌 피해 없음 — 그냥 쓸림</li>
+    </ul>
+  </div>
+
+  <div class="card amber">
+    <div class="card-label">엘리트 좀비</div>
+    <h2>라인을 강제로 바꾸는 존재</h2>
+    <ul class="clean">
+      <li><span class="dot amber"></span>길막형: 정면 돌파 시 차량 피해 발생</li>
+      <li><span class="dot amber"></span>무거운 적: 측면 공략 유도</li>
+      <li><span class="dot amber"></span>충돌 판정 책임: 좀비(OnTriggerEnter → 차량 속도 읽기)</li>
+    </ul>
+    <div class="resolved">일반 좀비는 HP 소모 없음 → 핵앤슬래시 쾌감 유지</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">직진 방지 구조</div>
+    <h2>3가지 자연스러운 제약</h2>
+    <ul class="clean">
+      <li><span class="dot"></span>XP orb — 죽인 자리에 남음, 루프백 유도</li>
+      <li><span class="dot"></span>엘리트 좀비 — 특정 라인 막음</li>
+      <li><span class="dot"></span>속도 감소 구조 — 두꺼운 무리에 갇히면 위험</li>
+    </ul>
+  </div>
+
+</div>
+
+<!-- ── 무드보드 ── -->
+<div class="section-title">무드보드 레퍼런스</div>
+<div class="grid two">
+  <div class="card" style="padding:0; overflow:hidden;">
+    <img src="images/moodboard_environment.png" style="width:100%; display:block;" alt="환경 분위기 레퍼런스">
+    <div style="padding:10px 14px; font-size:11px; color:#6b7280;">세계관 톤 · 탑다운 시점 · 도심 폐허</div>
+  </div>
+  <div class="card" style="padding:0; overflow:hidden;">
+    <img src="images/moodboard_horde.png" style="width:100%; display:block;" alt="좀비 무리 레퍼런스">
+    <div style="padding:10px 14px; font-size:11px; color:#6b7280;">좀비 무리 밀도 · 탑다운 시점</div>
+  </div>
+</div>
+
+<!-- ── 미결 사항 ── -->
+<div class="section-title">미결 사항</div>
+<div class="card">
+  <div class="pending-item">
+    <div class="pending-dot high"></div>
+    <div><strong>음향 세부 방향</strong> — 타격감 위주 vs 앰비언스 비율 미확정</div>
+  </div>
+  <div class="pending-item">
+    <div class="pending-dot high"></div>
+    <div><strong>Synty 팩 톤 테스트</strong> — Post-processing으로 "희망 없는 세계" 구현 가능 여부 실제 검증 필요</div>
+  </div>
+  <div class="pending-item">
+    <div class="pending-dot medium"></div>
+    <div><strong>감정적 훅</strong> — "왜 계속 하는가". 차량 비주얼 성장(무기·파츠 장착) 방향 검토 중</div>
+  </div>
+  <div class="pending-item">
+    <div class="pending-dot medium"></div>
+    <div><strong>적 AI 세부 구현</strong> — 소리 반응 범위, 무리 형성 방식 수치화 필요</div>
+  </div>
+  <div class="pending-item">
+    <div class="pending-dot low"></div>
+    <div><strong>속도 감소 수치</strong> — 좀비 1마리당 감속량, 최저 속도 임계값</div>
+  </div>
+</div>
+
+<div style="margin-top:40px; font-size:11px; color:#374151; text-align:right;">
+  ZombieCrush &nbsp;·&nbsp; 2026-05-20 세션 &nbsp;·&nbsp; 다음 단계: Phase 1 프로토타입 (충돌 판정 검증)
+</div>
+
+</body>
+</html>
