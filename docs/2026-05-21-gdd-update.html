@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZombieCrush GDD v0.2 — 2026-05-21</title>
+<style>
+  :root {
+    --bg: #1a1614;
+    --bg-side: #14110f;
+    --bg-code: #0d0b0a;
+    --text: #e8dcc8;
+    --text-dim: #a89884;
+    --accent: #d49050;
+    --accent-soft: #8a6238;
+    --border: #2a241f;
+    --table-row: #1f1a16;
+    --quote: #c4a070;
+    --ok: #7fb069;
+    --warn: #d49050;
+    --crit: #c66666;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", "Noto Sans KR", system-ui, sans-serif;
+    line-height: 1.65;
+    font-size: 15px;
+  }
+  .layout { display: flex; min-height: 100vh; }
+  nav.sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    background: var(--bg-side);
+    border-right: 1px solid var(--border);
+    padding: 24px 20px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  nav.sidebar h1 {
+    font-size: 16px;
+    margin: 0 0 4px;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+  }
+  nav.sidebar .subtitle {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 14px;
+  }
+  nav.sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  nav.sidebar li {
+    margin: 2px 0;
+  }
+  nav.sidebar a {
+    color: var(--text-dim);
+    text-decoration: none;
+    display: block;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+  }
+  nav.sidebar a:hover {
+    color: var(--text);
+    background: rgba(212, 144, 80, 0.08);
+  }
+  nav.sidebar a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: rgba(212, 144, 80, 0.06);
+  }
+  main {
+    flex: 1;
+    padding: 40px 56px 80px;
+    max-width: 960px;
+  }
+  h1.doc-title {
+    color: var(--accent);
+    font-size: 28px;
+    margin: 0 0 4px;
+    letter-spacing: 0.5px;
+  }
+  .doc-meta {
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+  .doc-status {
+    display: inline-block;
+    background: var(--accent-soft);
+    color: var(--text);
+    padding: 3px 10px;
+    border-radius: 3px;
+    font-size: 12px;
+    margin-bottom: 40px;
+  }
+  section {
+    margin: 56px 0;
+    padding-top: 20px;
+  }
+  h2 {
+    color: var(--accent);
+    font-size: 22px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    margin-top: 0;
+  }
+  h3 {
+    color: var(--text);
+    font-size: 17px;
+    margin-top: 28px;
+    margin-bottom: 12px;
+  }
+  h4 {
+    color: var(--quote);
+    font-size: 15px;
+    margin-top: 20px;
+    margin-bottom: 8px;
+  }
+  p { margin: 12px 0; }
+  ul, ol { padding-left: 22px; }
+  li { margin: 4px 0; }
+  strong { color: var(--accent); font-weight: 600; }
+  em { color: var(--quote); font-style: normal; }
+  code {
+    background: var(--bg-code);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: "Consolas", "Monaco", monospace;
+    font-size: 13px;
+    color: var(--quote);
+  }
+  pre {
+    background: var(--bg-code);
+    padding: 16px;
+    border-radius: 4px;
+    border-left: 3px solid var(--accent);
+    overflow-x: auto;
+    font-family: "Consolas", "Monaco", monospace;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  pre code { background: none; padding: 0; color: var(--text); }
+  blockquote {
+    border-left: 3px solid var(--accent);
+    padding: 12px 18px;
+    margin: 16px 0;
+    background: rgba(212, 144, 80, 0.05);
+    color: var(--quote);
+    font-style: italic;
+  }
+  blockquote strong { color: var(--accent); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th, td {
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    background: var(--bg-side);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  tr:nth-child(even) td { background: var(--table-row); }
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 40px 0;
+  }
+  .callout {
+    background: var(--bg-side);
+    border-left: 3px solid var(--accent);
+    padding: 14px 18px;
+    margin: 16px 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .ok { color: var(--ok); }
+  .warn { color: var(--warn); }
+  .crit { color: var(--crit); }
+  @media (max-width: 900px) {
+    .layout { flex-direction: column; }
+    nav.sidebar {
+      width: 100%;
+      height: auto;
+      position: static;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+    }
+    main { padding: 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="sidebar">
+  <h1>ZombieCrush</h1>
+  <div class="subtitle">GDD v0.2 · 2026-05-21</div>
+  <ul>
+    <li><a href="#sec-0">0. 이 문서의 목적</a></li>
+    <li><a href="#sec-1">1. 게임 정체성</a></li>
+    <li><a href="#sec-2">2. 코어 루프</a></li>
+    <li><a href="#sec-3">3. 죽음 모델</a></li>
+    <li><a href="#sec-4">4. BGM 시스템</a></li>
+    <li><a href="#sec-5">5. 돌파 모드</a></li>
+    <li><a href="#sec-6">6. 멀리 가는 본능 3채널</a></li>
+    <li><a href="#sec-7">7. 환경 떠먹임</a></li>
+    <li><a href="#sec-8">8. 자원 구조</a></li>
+    <li><a href="#sec-9">9. 집 시스템</a></li>
+    <li><a href="#sec-10">10. 차량 = 무기 통합</a></li>
+    <li><a href="#sec-11">11. 차량 라인업 6대</a></li>
+    <li><a href="#sec-12">12. 잠금 해제 방식</a></li>
+    <li><a href="#sec-13">13. UX 표현 원칙</a></li>
+    <li><a href="#sec-14">14. 마케팅 후크</a></li>
+    <li><a href="#sec-15">15. MVP 스코프</a></li>
+    <li><a href="#sec-16">16. 개발 단계</a></li>
+    <li><a href="#sec-17">17. 변경 이력</a></li>
+    <li><a href="#sec-18">18. 남은 결정</a></li>
+  </ul>
+</nav>
+
+<main>
+  <h1 class="doc-title">ZombieCrush — GDD 업데이트</h1>
+  <div class="doc-meta">작성일: 2026-05-21 · 기준 문서: 2026-05-19 GDD 기초</div>
+  <div class="doc-status">Phase 0.2 — 정체성 확정</div>
+
+<section id="sec-0">
+  <h2>0. 이 문서의 목적</h2>
+  <p>2026-05-19 GDD 기초 작성 이후, 다음 문제를 인식하고 디자인을 진화시켰다:</p>
+  <ol>
+    <li>"재미는 캐주얼한데 비주얼은 아포칼립스"라는 톤-메카닉 괴리</li>
+    <li>메타 루프의 부재 → 행동 동기 약함</li>
+    <li>시스템 동기가 약함 → 집 주위만 배회할 위험</li>
+    <li>무기고/별도 무기 시스템 → "차량 = 무기" 컨셉과 충돌</li>
+  </ol>
+  <p>본 문서는 2026-05-19 §2/§3.3/§5.1/§5.4/§8/§9 일부를 <strong>갱신/대체</strong>하며, 새로운 챕터(메타 루프, BGM, 돌파 모드, 환경 떠먹임, 자원 구조, 차량 라인업)를 추가한다.</p>
+  <p>비주얼 방향, 적 설계 원칙, 기술 구현 원칙은 그대로 유효.</p>
+</section>
+
+<section id="sec-1">
+  <h2>1. 게임 정체성 (최종 확정)</h2>
+  <blockquote><strong>"자동차 액션 로그라이트 + 뱀서 코어 전투"</strong><br>
+  가장 가까운 비교: <strong>Deep Rock Galactic: Survivor + Cult of the Lamb 톤</strong></blockquote>
+
+  <h3>핵심 컨셉 (한 줄)</h3>
+  <blockquote><em>"당신의 차고를 키우며, 박치기·드리프트·포탑 빌드로 좀비 도시를 더 깊이 뚫어라."</em></blockquote>
+
+  <h3>시장 포지셔닝</h3>
+  <ul>
+    <li>첫인상 진입: <strong>"자동차 뱀서라이크"</strong> (뱀서 코어 팬 유입)</li>
+    <li>차별화 축: <strong>메타 진척 + 귀환 돌파 클라이맥스</strong></li>
+    <li>톤 차별화: <strong>"세상은 끝났다. 그래도 커피는 마신다."</strong></li>
+    <li>가격대: $10~15 (Brotato와 Hades 사이)</li>
+    <li>Driveloop:Survivors는 순수 뱀서식, ZombieCrush는 메타 진척 + 톤</li>
+  </ul>
+
+  <h3>뱀서 DNA 보호 룰</h3>
+  <pre>1. 출격 진입 = 클릭 1~2회, 5초 이내
+2. 출격 안에서의 빌드업이 진정한 메인
+3. 메타 강화는 출격 시작점만 살짝 올림 (스탯 +5% 같은)
+4. 출격 전 사전 결정 최소화 — 차량 선택 + 모듈 1~2개 정도
+5. 죽음 후 결과 → "다음 출격" 큰 버튼 → 또 출격
+6. 허브에서 보내는 시간 &lt; 출격 시간 (체감)</pre>
+</section>
+
+<section id="sec-2">
+  <h2>2. 코어 루프 갱신</h2>
+  <h3>기존 (2026-05-19)</h3>
+  <pre>적 무리 확인 → 주행 라인 선택 → 돌파 → XP 획득 → 반복</pre>
+
+  <h3>갱신 (2026-05-21)</h3>
+  <pre>[집] 차고에서 차량/모듈 선택 → 출격
+   ↓
+출격 (최대 15분) — 좀비 쓸어버리며 인게임 빌드업
+   ↓
+멀리 갈수록 보상↑, 특별 픽업 등장
+   ↓
+귀환 신호 인지 (BGM/시각 변화)
+   ↓
+귀환 돌파 — 강해진 적 무리를 속도로 뚫고 집으로
+   ↓
+[집] 결과 → 스크랩으로 강화, 집 부품으로 잠금 해제
+   ↓
+"다음 출격" 버튼 → 재출격</pre>
+
+  <ul>
+    <li>출격 한 판: <strong>최대 15분</strong> (확정)</li>
+    <li>한 판은 그 자체로 완결 (뱀서 DNA)</li>
+    <li>메타는 가볍게, 출격이 메인</li>
+  </ul>
+</section>
+
+<section id="sec-3">
+  <h2>3. 죽음 모델 (확정)</h2>
+  <p>B(뱀서표준) 기반, 패널티 약하게.</p>
+  <ul>
+    <li>출격 중 사망 시 패널티 약함 (구체 비율은 프로토타입 튜닝)</li>
+    <li>귀환 성공 = 100% 보존 + 가벼운 보너스</li>
+    <li>죽음 원인이 "운전 미숙"이 아니라 <strong>"내가 욕심내서 더 머물렀다"</strong>로 인지되도록 충돌 피해 모델 설계</li>
+  </ul>
+</section>
+
+<section id="sec-4">
+  <h2>4. BGM 시스템 (통합 신호 채널)</h2>
+  <p>게임 내 모든 페이스 신호의 <strong>메인 채널은 BGM</strong>. UI 알림창은 띄우지 않는다 (톤 유지).</p>
+
+  <h3>트리거 가중치</h3>
+  <table>
+    <tr><th>변수</th><th>가중치</th><th>의미</th></tr>
+    <tr><td>차량 손상도</td><td>50%</td><td>"내 차가 망가지고 있다" 직접 체감</td></tr>
+    <tr><td>시간 진행도</td><td>30%</td><td>후반 강도 자동 증가 백업</td></tr>
+    <tr><td>거리/귀환 진행도</td><td>20%</td><td>"지금이 클라이맥스 구간" 진행감</td></tr>
+  </table>
+  <p>설계 원칙: 클라이맥스가 <strong>"죽을 것 같음"</strong>이 아니라 <strong>"집까지 뚫고 감"</strong>으로 읽혀야 함.</p>
+
+  <h3>음악 단계</h3>
+  <ol>
+    <li><strong>평온</strong> — 출격 초반, 빌드업</li>
+    <li><strong>음산</strong> — 위협 누적, 점진적 변화 (부드러운 전환)</li>
+    <li><strong>강렬</strong> — 집 근처 도달 시 컷 전환, 마지막 돌파 클라이맥스</li>
+  </ol>
+  <p>3단계는 안전 신호가 아닌 <strong>마지막 돌파의 위험 + 카타르시스</strong>. 실패하면 그 음악을 들으며 죽음 — 영화적 종결.</p>
+</section>
+
+<section id="sec-5">
+  <h2>5. 돌파 모드 (Climax Sequence)</h2>
+  <h3>형태: 연속 + 강화형</h3>
+  <p>씬 전환 없이 게임플레이가 그대로 이어지되, <strong>집 근처 30초~1분 구간</strong>에서 동시 발동:</p>
+  <ul>
+    <li>음악 컷 전환 (음산 → 강렬)</li>
+    <li>좀비 밀집도 증가</li>
+    <li>카메라 살짝 줌아웃 (속도감 강조)</li>
+    <li>화면 채도 변화</li>
+  </ul>
+  <p>조작은 평소와 동일 — 별도 학습 비용 없음.</p>
+
+  <h3>시그니처 위치</h3>
+  <ul>
+    <li>표준 뱀서: 후반 = 버티거나 죽거나</li>
+    <li>ZombieCrush: 후반 = <strong>강해진 적을 쓸어버리며 귀환</strong></li>
+    <li>자동차만의 클라이맥스 (Risk of Rain 2 텔레포터·Hades 보스와 다른 결)</li>
+  </ul>
+
+  <div class="callout">
+    <strong class="warn">향후 리스크 (Task #5)</strong><br>
+    반복 피로 방지를 위해 도로 구조/적 조합/차량 빌드별 변주 필요. 별도 세션 주제.
+  </div>
+</section>
+
+<section id="sec-6">
+  <h2>6. 멀리 가게 만드는 본능 — 3채널 (탑다운 친화)</h2>
+  <p>탑다운 시점은 "지평선 너머 베이컨"이 약함. 따라서 시각이 아닌 <strong>다른 감각 채널</strong>로 본능을 자극한다.</p>
+
+  <h3>채널 1. 미니맵 모호 마커</h3>
+  <ul>
+    <li>점/얼룩 같은 모호한 표시 — "여기 뭔가 있다"</li>
+    <li>명시적 아이콘 (느낌표, GOAL) <strong>절대 X</strong></li>
+    <li>색상으로 강도 암시</li>
+    <li>도달 시 사라짐, 다음 출격에서 새 위치</li>
+  </ul>
+
+  <h3>채널 2. 좀비 Herd (메인)</h3>
+  <ul>
+    <li>좀비가 무작위가 아니라 <strong>특정 방향에서 흘러나옴</strong></li>
+    <li>"저쪽에 뭔가 있어 좀비가 모인다" 직관</li>
+    <li>역추적 본능 → 멀리 가는 동선 자연 형성</li>
+    <li>영상적으로도 멋짐</li>
+  </ul>
+
+  <h3>채널 3. 사운드 큐 (보조)</h3>
+  <ul>
+    <li>멀리서 단편적으로 들리는 폭발음·총성</li>
+    <li>방향성 오디오로 위치 인지</li>
+    <li>직접 설명 X → "가봐야 알겠다" 미스터리</li>
+  </ul>
+
+  <h3>보조: 속도 기반 카메라 줌아웃</h3>
+  <p>이미 결정됨 (2026-05-19 §4.3) — 빨리 갈수록 더 멀리 보임. 자연 보상.</p>
+</section>
+
+<section id="sec-7">
+  <h2>7. 환경 떠먹임 (서사 채널)</h2>
+
+  <h3>톤 레퍼런스: Hades식 따뜻한 어두움 (확정)</h3>
+  <ul>
+    <li>아포칼립스지만 높지 않은 유머</li>
+    <li>주인공의 담담함, 다치면 웃으며 다시 나감</li>
+    <li>"그냥, 살아있으니까. 어제도 나갔으니까."</li>
+  </ul>
+
+  <h3>"왜 나가야 하는가" — 최종 답</h3>
+  <blockquote><em>"그냥, 살아있으니까."</em></blockquote>
+  <p>미션 X, 거대 목표 X, 일상감 O. 이 일상감이 아포칼립스 톤과 묘하게 어울림 — "세상은 끝났는데, 나는 또 커피 마시고 차에 시동 건다."</p>
+
+  <h3>채널 4가지</h3>
+  <table>
+    <tr><th>채널</th><th>예시</th></tr>
+    <tr><td><strong>도로 표지판</strong></td><td>"WELCOME TO ROCKVILLE pop. ~~12,000~~ 3" / "Best Pancakes! (CLOSED)"</td></tr>
+    <tr><td><strong>차량 메모</strong> (글로브박스 픽업)</td><td>"오늘도 무사히 - M" / "스페어 키 글로브박스. 미안."</td></tr>
+    <tr><td><strong>집 디테일</strong></td><td>벽 사진, X 표시 달력. 출격 횟수 따라 소품 점진 추가</td></tr>
+    <tr><td><strong>비상 방송 라디오</strong></td><td>끊긴 정부/구조대 송출, 가끔 잡힘 — <strong>주 목표 전달 X</strong>, 분위기·옛 안내문만</td></tr>
+  </table>
+
+  <h3>텍스트 작성 디렉션</h3>
+  <ul>
+    <li>담담 (NOT 비장)</li>
+    <li>가끔 유머 (NOT 농담)</li>
+    <li>작은 일상 디테일 (NOT 거대 서사)</li>
+    <li>모호한 슬픔이 새어 나옴 (NOT 명시적 설명)</li>
+  </ul>
+
+  <h3>비상 방송 정당화</h3>
+  <p>"대부분 끊겼고 가끔만 잡힌다"는 설정이 Hades식 톤·"그냥 살아있으니까" 모놀로그와 맞물림. 주 목표 전달이 아니라 분위기·집 방향 암시·옛 안내문 같은 <strong>보조 신호</strong>로만 사용.</p>
+
+  <h3>룰</h3>
+  <ul>
+    <li>UI 알림창 X</li>
+    <li>강제 컷신·튜토리얼 X</li>
+    <li>모든 떠먹임은 <strong>다 안 봐도 게임 진행 영향 없음</strong> → "애기는 그냥 부수기 / 천재 해커는 다 찾아 읽기" 둘 다 충족</li>
+  </ul>
+
+  <h3>보조 시각 신호</h3>
+  <ul><li>화면 채도 변화 (BGM 보조, 음소거 플레이어 대응)</li></ul>
+</section>
+
+<section id="sec-8">
+  <h2>8. 자원 구조 (이중 화폐)</h2>
+
+  <h3>스크랩 (일상 화폐)</h3>
+  <ul>
+    <li>출처: 좀비 처치, 일반 픽업 (어디서나, 단 멀리 갈수록 양/등급↑)</li>
+    <li>사용처: 차고 안 차량 영구 강화, 모듈 강화, 정비소 사용료</li>
+  </ul>
+
+  <h3>집 부품 (특별 픽업)</h3>
+  <ul>
+    <li>출처: <strong>멀리서만</strong> 드롭 (가까운 곳 거의 X)</li>
+    <li>사용처: 차고/정비소 시설 잠금 해제, 새 차량 잠금 해제, 새 모듈 청사진 잠금 해제</li>
+  </ul>
+
+  <h3>거리 보상 곡선 (비대칭)</h3>
+  <table>
+    <tr><th>거리</th><th>시간당 효율</th></tr>
+    <tr><td>집 근처</td><td>매우 낮음 (가능은 하지만 답답)</td></tr>
+    <tr><td>중간</td><td>보통</td></tr>
+    <tr><td>먼 곳</td><td><strong>압도적으로 좋음</strong></td></tr>
+    <tr><td>너무 먼 곳</td><td>좋지만 손상도/시간 한계로 자연 회수</td></tr>
+  </table>
+  <p>가까운 곳도 농사 가능하나 비효율 → 본능적 효율 추구가 자연스럽게 멀리 가게 만듦. <strong>강요 X, 욕망 O.</strong></p>
+
+  <h3>픽업 신선도 (재스폰 룰)</h3>
+  <ul>
+    <li>한 번 정리한 좀비 구역은 일정 시간 재스폰 X</li>
+    <li>이미 정리한 곳은 빛 안 남</li>
+    <li>"이 동네는 다 털었다" → 자연 영역 확장</li>
+    <li>출격 종료 시 리셋</li>
+  </ul>
+
+  <h3>Steam 카피 정의</h3>
+  <blockquote><em>"좀비로 뒤덮인 먼 도로를 뚫고 더 값진 스크랩과 잊힌 생존 흔적을 싣고 돌아오는 것."</em></blockquote>
+</section>
+
+<section id="sec-9">
+  <h2>9. 집 시스템 (메타 허브)</h2>
+
+  <h3>구조: 뱀서 표준 메뉴 화면 + 톤 포장</h3>
+  <ul>
+    <li>3D 공간 X, NPC X</li>
+    <li><strong>일러스트 배경 + 시설 UI 슬롯</strong></li>
+    <li>1인 개발 비용 통제</li>
+  </ul>
+
+  <h3>핵심 통찰</h3>
+  <p>우리 "집"은 본질적으로 뱀서류의 <strong>메인 메뉴/캐릭터 선택 화면</strong>과 같다. VS의 "Coffin" 메뉴, Brotato 캐릭터 선택, Halls of Torment 메뉴와 같은 자리. 단, <strong>톤(아포칼립스 생존)</strong>을 입혀 차별화.</p>
+
+  <h3>Tier 1 시설 (MVP)</h3>
+  <table>
+    <tr><th>시설</th><th>역할</th></tr>
+    <tr><td><strong>정비소</strong></td><td>출격 전 차량 수리 (손상도 시작점), 모듈 정비</td></tr>
+    <tr><td><strong>차고</strong></td><td>차량 선택 + 모듈 장착 + 영구 강화 + 새 차량/모듈 잠금 해제 + 외형</td></tr>
+  </table>
+  <p><strong>무기고는 별도 시설로 두지 않음</strong> — 차량 = 무기 컨셉을 시스템 레벨에서 통일하기 위해 차고에 흡수.</p>
+
+  <h3>Tier 2 시설 (출시 후 업데이트 / DLC1)</h3>
+  <p>무전기 / 연료 저장고 / 방어 시설 등</p>
+
+  <h3>Tier 3 시설 (DLC2 / 1.0)</h3>
+  <p>차량 커스터마이징 베이 / 연구소 / 새 지역 접근 등</p>
+
+  <h3>진척감 시각화</h3>
+  <ul>
+    <li>잠긴 슬롯이 처음부터 보임 — "갖고 싶다" 욕망</li>
+    <li>채워질수록 차고 일러스트가 풍성해짐</li>
+    <li>플레이 시간에 비례한 시각적 보상</li>
+  </ul>
+</section>
+
+<section id="sec-10">
+  <h2>10. 차량 = 무기 통합 컨셉</h2>
+  <p>기존 GDD §5.4의 4가지 성향이 차고 안의 <strong>빌드 트리</strong>가 됨.</p>
+
+  <table>
+    <tr><th>성향 (기존 §5.4)</th><th>빌드 정체성</th></tr>
+    <tr><td>안정형</td><td>핸들링·방어</td></tr>
+    <tr><td><strong>돌진형</strong></td><td><strong>박치기 위주</strong></td></tr>
+    <tr><td><strong>드리프트형</strong></td><td><strong>드리프트 위주</strong></td></tr>
+    <tr><td><strong>자동전투형</strong></td><td><strong>포탑·자동 공격</strong></td></tr>
+  </table>
+
+  <h3>두 레이어 빌드</h3>
+  <table>
+    <tr><th>레이어</th><th>결정 시점</th><th>깊이</th></tr>
+    <tr><td><strong>메타 빌드</strong></td><td>차고 (출격 전)</td><td>차량 선택 + 모듈 슬롯 (얕음, 뱀서 진입 보호)</td></tr>
+    <tr><td><strong>인게임 빌드</strong></td><td>출격 중 피트스톱</td><td>무기·파츠 픽업으로 형성 (깊음, 메인)</td></tr>
+  </table>
+  <p>두 레이어의 곱셈으로 빌드 다양성이 깊어지되, 메인은 인게임 — <strong>뱀서 결 유지</strong>.</p>
+</section>
+
+<section id="sec-11">
+  <h2>11. 차량 라인업 (6대)</h2>
+  <table>
+    <tr><th>#</th><th>이름</th><th>성향</th><th>시그니처</th><th>톤 디테일</th></tr>
+    <tr><td>1</td><td><strong>The Daily</strong></td><td>균형형 (시작)</td><td>없음, 평범</td><td>아이 카시트, 쇼핑 리스트 메모</td></tr>
+    <tr><td>2</td><td><strong>Old Bull</strong></td><td>돌진형</td><td>정면 충돌 피해↑, 무게↑</td><td>농장 트럭, 짐칸 녹슨 도구</td></tr>
+    <tr><td>3</td><td><strong>Ghost</strong></td><td>드리프트형</td><td>드리프트 반경↓, 가속↑</td><td>라디오에 친구 이름, 사이드미러 깨짐</td></tr>
+    <tr><td>4</td><td><strong>Boulder</strong></td><td>안정형</td><td>체력↑, 흡수 범위↑</td><td>군용 페인트, 안에 인식표 한 개</td></tr>
+    <tr><td>5</td><td><strong>Patrol</strong></td><td>자동전투형</td><td>포탑 슬롯, 사이렌 도발</td><td>무전기 잡음 (비상 방송 시너지)</td></tr>
+    <tr><td>6</td><td><strong>Sweet Tooth</strong></td><td>특수/하이브리드</td><td>음악으로 좀비 유인 후 박치기</td><td>아이스크림 트럭, 음악이 가끔 자동</td></tr>
+  </table>
+
+  <h3>잠금 해제 곡선</h3>
+  <table>
+    <tr><th>차량</th><th>잠금 해제 조건</th></tr>
+    <tr><td>The Daily</td><td>시작 시 보유</td></tr>
+    <tr><td>Old Bull</td><td>집 부품 5</td></tr>
+    <tr><td>Ghost</td><td>집 부품 10</td></tr>
+    <tr><td>Boulder</td><td>집 부품 15</td></tr>
+    <tr><td>Patrol</td><td>집 부품 25 (+ 포탑 시스템 잠금 해제)</td></tr>
+    <tr><td>Sweet Tooth</td><td>집 부품 40 + 숨겨진 발견 조건 <span class="crit">(미정 — Stab 지적)</span></td></tr>
+  </table>
+
+  <h3>디자인 룰</h3>
+  <ul>
+    <li>"한때 평범한 일상의 도구였다"</li>
+    <li>차주의 흔적이 한 줄씩 남음 (메모/디테일)</li>
+    <li>명시적 설명 X — 환경 떠먹임 채널로만</li>
+    <li>이름은 짧고 친근하거나 씁쓸함</li>
+  </ul>
+</section>
+
+<section id="sec-12">
+  <h2>12. 잠금 해제 방식</h2>
+
+  <h3>메인: 자원 구매형 (Brotato/VS 스타일)</h3>
+  <ul>
+    <li>집 부품 모아 차고에서 차량/모듈 잠금 해제</li>
+    <li>명확한 진행도, 미션 없음</li>
+    <li>처음부터 슬롯 보임 (욕망 시각화)</li>
+  </ul>
+
+  <h3>보조: 숨겨진 발견 (VS 스타일)</h3>
+  <ul>
+    <li>일부 차량/모듈은 "???"로 슬롯만 보임</li>
+    <li>특정 거리 도달·특정 픽업 발견 시 잠금 해제 조건 가시화</li>
+    <li>"오늘 저쪽까지 갔더니 이런 청사진 떨어지네" — 발견의 재미</li>
+  </ul>
+
+  <h3>피하는 패턴</h3>
+  <ul>
+    <li>명시적 챌린지 ("박치기로 1000마리 처치") — 미션 냄새, 톤 위반</li>
+    <li>도감/통계는 가능, 잠금 해제 조건으로는 사용 X</li>
+  </ul>
+</section>
+
+<section id="sec-13">
+  <h2>13. UX 표현 원칙</h2>
+  <ul>
+    <li><strong>UI 알림창 없음</strong> — 톤 우선</li>
+    <li><strong>월드 내 자연스러운 힌트</strong>: 라디오 멘트, 도로 표지판, 미니맵 집 방향 강조, 화면 채도</li>
+    <li><strong>튜토리얼 비용을 톤으로 흡수</strong> — 세계관 안에 디제틱하게 배치</li>
+  </ul>
+</section>
+
+<section id="sec-14">
+  <h2>14. 마케팅 후크</h2>
+
+  <h3>3초 셀링 포인트 (트레일러/썸네일)</h3>
+  <ol>
+    <li><strong>"박살난 차가 음악 전환과 함께 좀비 무리를 뚫고 집으로 귀환하는 순간"</strong> — 비주얼 후크</li>
+    <li><strong>"세상은 끝났다. 그래도 커피는 마신다."</strong> — 톤 후크</li>
+    <li><strong>"당신만의 차고를 만들어 갈수록 더 깊이 들어갈 수 있다"</strong> — 진척감 후크</li>
+  </ol>
+
+  <h3>Steam 페이지 한 줄</h3>
+  <blockquote><em>"좀비로 뒤덮인 먼 도로를 뚫고 더 값진 스크랩과 잊힌 생존 흔적을 싣고 돌아오는 자동차 액션 로그라이트."</em></blockquote>
+</section>
+
+<section id="sec-15">
+  <h2>15. MVP 스코프 (재정의)</h2>
+  <p>기존(2026-05-19 §8)에서 메타 진행은 제외였으나, 정체성 결정으로 <strong>MVP에 포함</strong>.</p>
+
+  <div class="callout">
+    <strong class="warn">Stab 검토 결과:</strong> 현재 MVP는 실질적으로 얼리 액세스 스코프 수준. α/β/γ 단계로 분리 필요 (다음 세션 주제).
+  </div>
+
+  <h3>포함</h3>
+  <ul>
+    <li>차량 이동 (관성·가속·감속), 충돌 공격 판정</li>
+    <li>자동 기본 무기 1종 (출격 중 픽업 확장)</li>
+    <li>적 2~3종 (Herd 스폰 패턴 포함)</li>
+    <li>레벨업 선택 UI (피트스톱)</li>
+    <li>모듈/파츠 6~8종, 무기 슬롯 시스템</li>
+    <li>XP 수집 + 거리 보상 곡선</li>
+    <li><strong>집 (메뉴 화면 + 일러스트 배경)</strong></li>
+    <li><strong>Tier 1 시설: 정비소 + 차고</strong></li>
+    <li><strong>차량 3대로 시작</strong> (Daily / Old Bull / Ghost — 빌드 다양성 검증용)</li>
+    <li><strong>BGM 3단계 시스템 + 거리/손상도/시간 가중치</strong></li>
+    <li><strong>귀환 돌파 모드</strong> (집 근처 트리거 + 컷 전환)</li>
+    <li><strong>환경 떠먹임</strong>: 도로 표지판, 차량 메모, 집 디테일 일부</li>
+    <li><strong>자원 이중 구조 (스크랩 + 집 부품)</strong></li>
+    <li><strong>미니맵 모호 마커</strong></li>
+    <li><strong>좀비 Herd 방향성 스폰</strong></li>
+  </ul>
+
+  <h3>제외 (이후 단계)</h3>
+  <ul>
+    <li>Tier 2/3 시설 (무전기, 연료, 방어시설, 연구소 등)</li>
+    <li>보스</li>
+    <li>수동 특수 스킬</li>
+    <li>맵 다양성 (지역 확장)</li>
+    <li>차량 4~6번 (Boulder/Patrol/Sweet Tooth — DLC 후보)</li>
+    <li>돌파 변주 시스템 (Task #5)</li>
+    <li>비상 방송 라디오 풀 (출시 시점 최소 풀, 이후 확장)</li>
+  </ul>
+</section>
+
+<section id="sec-16">
+  <h2>16. 개발 단계 갱신</h2>
+  <table>
+    <tr><th>단계</th><th>추가 성공 기준</th></tr>
+    <tr><td>Phase 1 (충돌 판정 프로토)</td><td>+ 충돌 피해 모델이 "내 운전 미숙"보다 "내 욕심"으로 인지되는가</td></tr>
+    <tr><td>Phase 2 (맵·적 행동)</td><td>+ BGM 단계 전환만으로 플레이어가 귀환 시점을 자발 결정하는가 + 좀비 Herd로 멀리 가는 본능이 작동하는가</td></tr>
+    <tr><td>Phase 3 (성장 루프)</td><td>+ 귀환 돌파가 "이 게임의 클라이맥스"로 체감되는가 + 차고 진척감이 다음 출격 동기로 작동하는가</td></tr>
+    <tr><td>Early Access</td><td>차량 3대 + 모듈 8종 + Tier 1 시설 2개 + 환경 떠먹임 풀 충분</td></tr>
+    <tr><td>1.0</td><td>차량 6대 + Tier 2 시설 + DLC 기반</td></tr>
+  </table>
+</section>
+
+<section id="sec-17">
+  <h2>17. 변경 이력 (2026-05-19 대비)</h2>
+  <table>
+    <tr><th>항목</th><th>2026-05-19</th><th>2026-05-21</th></tr>
+    <tr><td>정체성</td><td>뱀서라이크</td><td><strong>자동차 액션 로그라이트 + 뱀서 코어</strong></td></tr>
+    <tr><td>핵심 컨셉</td><td>주행 라인 설계로 적 쓸어버리기</td><td>+ 생존, 집 귀환, 진척감</td></tr>
+    <tr><td>코어 루프</td><td>출격 단판 완결</td><td>출격-귀환-업그레이드 메타 루프</td></tr>
+    <tr><td>메타 진행</td><td>MVP 제외, 1.0 단계</td><td>MVP에 단순 허브로 포함</td></tr>
+    <tr><td>죽음 모델</td><td>미정</td><td>B(뱀서표준) + 약한 패널티</td></tr>
+    <tr><td>BGM 시스템</td><td>미정</td><td>손상도50/시간30/거리20, 3단계</td></tr>
+    <tr><td>돌파 모드</td><td>미정</td><td>연속+강화형, 시그니처 모먼트</td></tr>
+    <tr><td>자원 구조</td><td>미정</td><td>스크랩(일상) + 집 부품(특별) 이중</td></tr>
+    <tr><td>멀리 가는 동기</td><td>미정</td><td>미니맵 마커 + 좀비 Herd + 사운드 큐</td></tr>
+    <tr><td>환경 떠먹임</td><td>없음</td><td>4채널 (표지판/메모/집 디테일/비상 방송)</td></tr>
+    <tr><td>톤</td><td>미정</td><td>Hades식 따뜻한 어두움</td></tr>
+    <tr><td>무기 시스템</td><td>별도 무기 시스템 가정</td><td>차량=무기 통합, 차고에 흡수</td></tr>
+    <tr><td>차량 라인업</td><td>미정</td><td>6대 (Daily/Old Bull/Ghost/Boulder/Patrol/Sweet Tooth)</td></tr>
+    <tr><td>잠금 해제</td><td>미정</td><td>자원 구매 + 숨겨진 발견</td></tr>
+    <tr><td>출격 길이</td><td>미정</td><td><strong>15분</strong> (확정)</td></tr>
+    <tr><td>마케팅 후크</td><td>미정</td><td>귀환 돌파 + 톤 카피 + 진척감</td></tr>
+  </table>
+</section>
+
+<section id="sec-18">
+  <h2>18. 남은 결정 (다음 세션 주제)</h2>
+  <ol>
+    <li><strong>MVP α/β/γ 분리</strong> — Stab 비판 반영, 검증 순서별 단계 분리 <span class="crit">(최우선)</span></li>
+    <li><strong>죽음 패널티 강도 구체화</strong> — 영구 자원 회수율, 안전 그라인드 허점 봉쇄</li>
+    <li><strong>귀환 돌파 사망 패널티 별도 설계</strong> — 일반 사망과 클라이맥스 사망의 구분</li>
+    <li><strong>초반 5분 임팩트 곡선 설계</strong> — Codex 비판 반영</li>
+    <li><strong>귀환 돌파 변주 디자인</strong> — 반복 피로 방지 (Task #5)</li>
+    <li><strong>두 레이어 빌드 충돌 룰</strong> — 차량 성향이 인게임 픽업 풀에 가중치 부여?</li>
+    <li><strong>위협도 진행 곡선 디테일</strong> — 시간/거리별 적 강도</li>
+    <li><strong>인게임 무기/모듈 풀 구체화</strong> — MVP 8~10종 선정</li>
+    <li><strong>비상 방송 멘트 풀</strong> — 50~100줄 작성</li>
+    <li><strong>Sweet Tooth 숨겨진 발견 조건</strong> — Stab 지적 [CRITICAL]</li>
+    <li><strong>접근성 보강</strong> — 음소거/색맹 플레이어 대응 (다중 시각 신호)</li>
+  </ol>
+</section>
+
+</main>
+</div>
+
+<script>
+  // 사이드바 active 표시
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('nav.sidebar a');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        navLinks.forEach(link => {
+          link.classList.toggle('active', link.getAttribute('href') === '#' + id);
+        });
+      }
+    });
+  }, { rootMargin: '-100px 0px -60% 0px' });
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
