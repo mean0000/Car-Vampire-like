@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZombieCrush — MVP α/β/γ 분리 (2026-05-21)</title>
+<style>
+  :root {
+    --bg: #1a1614;
+    --bg-side: #14110f;
+    --bg-code: #0d0b0a;
+    --text: #e8dcc8;
+    --text-dim: #a89884;
+    --accent: #d49050;
+    --accent-soft: #8a6238;
+    --border: #2a241f;
+    --table-row: #1f1a16;
+    --quote: #c4a070;
+    --ok: #7fb069;
+    --warn: #d49050;
+    --crit: #c66666;
+    --alpha: #c66666;
+    --beta: #d49050;
+    --gamma: #7fb069;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", "Noto Sans KR", system-ui, sans-serif;
+    line-height: 1.65;
+    font-size: 15px;
+  }
+  .layout { display: flex; min-height: 100vh; }
+  nav.sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    background: var(--bg-side);
+    border-right: 1px solid var(--border);
+    padding: 24px 20px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  nav.sidebar h1 {
+    font-size: 16px;
+    margin: 0 0 4px;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+  }
+  nav.sidebar .subtitle {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 14px;
+  }
+  nav.sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  nav.sidebar li { margin: 2px 0; }
+  nav.sidebar a {
+    color: var(--text-dim);
+    text-decoration: none;
+    display: block;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+  }
+  nav.sidebar a:hover {
+    color: var(--text);
+    background: rgba(212, 144, 80, 0.08);
+  }
+  nav.sidebar a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: rgba(212, 144, 80, 0.06);
+  }
+  nav.sidebar a.alpha-link { border-left-color: var(--alpha); }
+  nav.sidebar a.beta-link { border-left-color: var(--beta); }
+  nav.sidebar a.gamma-link { border-left-color: var(--gamma); }
+  main {
+    flex: 1;
+    padding: 40px 56px 80px;
+    max-width: 1040px;
+  }
+  h1.doc-title {
+    color: var(--accent);
+    font-size: 28px;
+    margin: 0 0 4px;
+    letter-spacing: 0.5px;
+  }
+  .doc-meta { color: var(--text-dim); font-size: 13px; margin-bottom: 8px; }
+  .doc-status {
+    display: inline-block;
+    background: var(--accent-soft);
+    color: var(--text);
+    padding: 3px 10px;
+    border-radius: 3px;
+    font-size: 12px;
+    margin-bottom: 40px;
+  }
+  section { margin: 56px 0; padding-top: 20px; }
+  h2 {
+    color: var(--accent);
+    font-size: 22px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    margin-top: 0;
+  }
+  h2.alpha-h { color: var(--alpha); border-bottom-color: var(--alpha); }
+  h2.beta-h  { color: var(--beta);  border-bottom-color: var(--beta); }
+  h2.gamma-h { color: var(--gamma); border-bottom-color: var(--gamma); }
+  h3 { color: var(--text); font-size: 17px; margin-top: 28px; margin-bottom: 12px; }
+  h4 { color: var(--quote); font-size: 15px; margin-top: 20px; margin-bottom: 8px; }
+  p { margin: 12px 0; }
+  ul, ol { padding-left: 22px; }
+  li { margin: 4px 0; }
+  strong { color: var(--accent); font-weight: 600; }
+  em { color: var(--quote); font-style: normal; }
+  code {
+    background: var(--bg-code);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: "Consolas", "Monaco", monospace;
+    font-size: 13px;
+    color: var(--quote);
+  }
+  pre {
+    background: var(--bg-code);
+    padding: 16px;
+    border-radius: 4px;
+    border-left: 3px solid var(--accent);
+    overflow-x: auto;
+    font-family: "Consolas", "Monaco", monospace;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  pre code { background: none; padding: 0; color: var(--text); }
+  blockquote {
+    border-left: 3px solid var(--accent);
+    padding: 12px 18px;
+    margin: 16px 0;
+    background: rgba(212, 144, 80, 0.05);
+    color: var(--quote);
+    font-style: italic;
+  }
+  blockquote strong { color: var(--accent); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th, td {
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th { background: var(--bg-side); color: var(--accent); font-weight: 600; }
+  tr:nth-child(even) td { background: var(--table-row); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .callout {
+    background: var(--bg-side);
+    border-left: 3px solid var(--accent);
+    padding: 14px 18px;
+    margin: 16px 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .callout.alpha-c { border-left-color: var(--alpha); }
+  .callout.beta-c  { border-left-color: var(--beta); }
+  .callout.gamma-c { border-left-color: var(--gamma); }
+  .callout.fail    { border-left-color: var(--crit); }
+  .callout-title { font-weight: 600; margin-bottom: 6px; font-size: 13px; letter-spacing: 0.5px; }
+  .ok   { color: var(--ok); }
+  .warn { color: var(--warn); }
+  .crit { color: var(--crit); }
+
+  /* α/β/γ Tier Cards */
+  .tier-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin: 28px 0;
+  }
+  .tier-card {
+    background: var(--bg-side);
+    border-top: 4px solid var(--accent);
+    padding: 18px 16px;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    min-height: 240px;
+  }
+  .tier-card.alpha { border-top-color: var(--alpha); }
+  .tier-card.beta  { border-top-color: var(--beta); }
+  .tier-card.gamma { border-top-color: var(--gamma); }
+  .tier-label {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+  .tier-name {
+    font-size: 20px;
+    margin: 4px 0 14px;
+    font-weight: 600;
+  }
+  .tier-card.alpha .tier-name { color: var(--alpha); }
+  .tier-card.beta  .tier-name { color: var(--beta); }
+  .tier-card.gamma .tier-name { color: var(--gamma); }
+  .tier-hypothesis {
+    font-size: 13px;
+    color: var(--quote);
+    font-style: italic;
+    margin-bottom: 14px;
+    flex-grow: 0;
+  }
+  .tier-section-title {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    margin-top: 12px;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+  .tier-gate { font-size: 12.5px; color: var(--text); line-height: 1.55; }
+  .tier-scope { font-size: 12.5px; color: var(--text); line-height: 1.55; }
+
+  /* MVP 매핑 표 칸 색 */
+  .yes { color: var(--ok); font-weight: 600; }
+  .no  { color: var(--text-dim); }
+  .partial { color: var(--beta); font-weight: 600; }
+
+  /* 지표 카드 (게이트 조건) */
+  .metric-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 12px 0;
+  }
+  .metric-card {
+    background: var(--bg-side);
+    padding: 12px 14px;
+    border-radius: 4px;
+    border-left: 2px solid var(--accent);
+  }
+  .metric-card .metric-name { font-size: 12px; color: var(--text-dim); }
+  .metric-card .metric-value { font-size: 14px; color: var(--text); margin-top: 4px; }
+  .metric-card.alpha-m { border-left-color: var(--alpha); }
+  .metric-card.beta-m  { border-left-color: var(--beta); }
+  .metric-card.gamma-m { border-left-color: var(--gamma); }
+
+  @media (max-width: 900px) {
+    .layout { flex-direction: column; }
+    nav.sidebar {
+      width: 100%;
+      height: auto;
+      position: static;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+    }
+    main { padding: 24px; }
+    .tier-cards { grid-template-columns: 1fr; }
+    .metric-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="sidebar">
+  <h1>ZombieCrush</h1>
+  <div class="subtitle">MVP α/β/γ 분리 · 2026-05-21</div>
+  <ul>
+    <li><a href="#sec-0">0. 이 문서의 목적</a></li>
+    <li><a href="#sec-1">1. 분리 원칙</a></li>
+    <li><a href="#sec-2">2. 단계 요약</a></li>
+    <li><a href="#sec-3" class="alpha-link">3. α — 충돌 검증</a></li>
+    <li><a href="#sec-4" class="beta-link">4. β — 귀환 본능 검증</a></li>
+    <li><a href="#sec-5" class="gamma-link">5. γ — 풀 코어 루프</a></li>
+    <li><a href="#sec-6">6. §15 MVP 매핑</a></li>
+    <li><a href="#sec-7">7. 단계 전환 운영 룰</a></li>
+    <li><a href="#sec-8">8. 미해결 결정</a></li>
+    <li><a href="#sec-9">9. 변경 이력</a></li>
+  </ul>
+</nav>
+
+<main>
+  <h1 class="doc-title">ZombieCrush — MVP α/β/γ 분리</h1>
+  <div class="doc-meta">작성일: 2026-05-21 · 갱신 대상: 2026-05-21 GDD §15 · 트리거: Stab + Codex 합의 비판 ("MVP 스코프 과대")</div>
+  <div class="doc-status">Phase 0.2 — MVP 게이트 분리 확정</div>
+
+<section id="sec-0">
+  <h2>0. 이 문서의 목적</h2>
+  <p>GDD v0.2 §15에서 정의된 MVP는 사실상 <strong>Early Access 직전 단계</strong>에 가깝다. 1인 개발 + 가설 미검증 상태에서 그걸 한 번에 만드는 건 위험하다.</p>
+  <p>이 문서는 MVP를 <strong>검증할 가설 1개 = 1단계</strong> 원칙으로 α/β/γ 3구간으로 쪼개고, 각 단계마다 plug를 뽑을 <strong>명확한 게이트 조건</strong>을 명시한다.</p>
+  <p>가설이 단계별로 통과하면 다음 단계로 진입하고, 가설이 깨지면 다음 단계 비용을 쓰기 전에 코어 디자인을 재검토한다.</p>
+</section>
+
+<section id="sec-1">
+  <h2>1. 분리 원칙</h2>
+
+  <h3>축: 검증 가설 1개 = 1단계</h3>
+  <table>
+    <tr><th>원칙</th><th>의미</th></tr>
+    <tr><td><strong>가설 단위 분리</strong></td><td>한 단계는 하나의 핵심 가설만 검증. 변수 섞이면 실패 원인 추적 불가.</td></tr>
+    <tr><td><strong>게이트 조건 사전 정의</strong></td><td>단계 종료 = 사전 합의된 측정 조건 충족. "감으로 OK" 금지.</td></tr>
+    <tr><td><strong>이전 단계 = 다음 단계 토대</strong></td><td>β는 α를, γ는 β를 그대로 확장. 단계마다 폐기·재작성 X.</td></tr>
+    <tr><td><strong>plug-pull 시그널 명시</strong></td><td>가설 실패 시 무엇을 보면 알 수 있는지 사전 합의.</td></tr>
+  </table>
+
+  <h3>분리 축 후보 비교 (결정 근거)</h3>
+  <table>
+    <tr><th>축</th><th>채택</th><th>사유</th></tr>
+    <tr><td>검증 가설</td><td class="yes">✅</td><td>Stab/Codex 비판의 직접 해법. 게이트가 분명.</td></tr>
+    <tr><td>위험도 / 기술 난이도</td><td class="crit">❌</td><td>단계 간 가설 분리가 안 되어 검증 효과 약함.</td></tr>
+    <tr><td>1인 개발 부담 (작업량)</td><td class="crit">❌</td><td>만드는 입장에선 편하지만 <em>재미 검증</em>이 안 됨.</td></tr>
+  </table>
+</section>
+
+<section id="sec-2">
+  <h2>2. 단계 요약</h2>
+
+  <div class="tier-cards">
+    <div class="tier-card alpha">
+      <div class="tier-label">Alpha · 충돌 검증</div>
+      <div class="tier-name">α</div>
+      <div class="tier-hypothesis">"차로 좀비 갈아엎는 게 그 자체로 재미있나"</div>
+      <div class="tier-section-title">스코프</div>
+      <div class="tier-scope">차량 1대(Daily), 무기 1, 적 1~2종, 무한 평지, 5~10분 단판</div>
+      <div class="tier-section-title">게이트</div>
+      <div class="tier-gate">자발 재시작률 <strong>≥70%</strong> (죽은 직후 30초 안)</div>
+    </div>
+    <div class="tier-card beta">
+      <div class="tier-label">Beta · 귀환 본능 검증</div>
+      <div class="tier-name">β</div>
+      <div class="tier-hypothesis">"BGM·Herd·거리 보상만으로 알아서 멀리·알아서 귀환?"</div>
+      <div class="tier-section-title">스코프</div>
+      <div class="tier-scope">α + Herd + 미니맵 마커 + BGM 3단계 + 귀환 돌파 + 결과→재출격 버튼 (차량 1대 유지)</div>
+      <div class="tier-section-title">게이트</div>
+      <div class="tier-gate">UI 알림 0개로 자발 귀환 <strong>≥70%</strong></div>
+    </div>
+    <div class="tier-card gamma">
+      <div class="tier-label">Gamma · 풀 코어 루프</div>
+      <div class="tier-name">γ</div>
+      <div class="tier-hypothesis">"차고 진척감이 5~10시간 다음 출격 동기로?"</div>
+      <div class="tier-section-title">스코프</div>
+      <div class="tier-scope">β + 부서진 도심 + 잠금 해제 + 차량 3대 + 모듈 6~8 + Tier 1 시설 2개 + 환경 떠먹임 4채널</div>
+      <div class="tier-section-title">게이트</div>
+      <div class="tier-gate">잠금 해제 동기 <strong>≥50%</strong> (5~10시간 후)</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="callout-title warn">읽는 룰</div>
+    α 통과 전 β 작업 금지. β 통과 전 γ 작업 금지. 각 단계 게이트는 사전 합의된 정량 기준으로만 통과 인정.
+  </div>
+</section>
+
+<hr>
+
+<section id="sec-3">
+  <h2 class="alpha-h">3. α — 충돌 검증</h2>
+
+  <h3>3.1 검증 가설</h3>
+  <blockquote><strong>"차로 좀비를 갈아엎는 행위 자체가 30초 안에 '한 번 더'를 끌어내는가."</strong></blockquote>
+  <p>뱀서식 카타르시스의 코어. 메타·BGM·돌파 다 빼고, <em>손맛 하나만</em> 검증. 이게 안 되면 그 위에 어떤 메타를 얹어도 무너진다.</p>
+
+  <h3>3.2 스코프</h3>
+  <table>
+    <tr><th>포함</th><th>제외</th></tr>
+    <tr><td>차량 1대 (Daily)</td><td>차량 선택</td></tr>
+    <tr><td>자동 기본 무기 1종 (출격 중 픽업 없음)</td><td>모듈, 픽업, 레벨업</td></tr>
+    <tr><td>적 1~2종 (걷는 좀비 + Herd 없는 단순 분포)</td><td>좀비 Herd, 미니맵 마커</td></tr>
+    <tr><td>무한 평지 (텍스처 1종)</td><td>부서진 도심, 환경 떠먹임</td></tr>
+    <tr><td>5~10분 단판 (시간 종료 = 자연사)</td><td>거리 보상 곡선, 자원 시스템</td></tr>
+    <tr><td>죽음 → 즉시 "한 번 더" 버튼</td><td>집, 결과 화면, 메타</td></tr>
+    <tr><td>충돌 피해 모델 (욕심으로 죽도록)</td><td>BGM, 돌파, 사운드 큐</td></tr>
+  </table>
+
+  <h3>3.3 게이트 조건 (정량)</h3>
+  <div class="metric-grid">
+    <div class="metric-card alpha-m">
+      <div class="metric-name">자발 재시작률</div>
+      <div class="metric-value">테스터 5~10명 중 <strong>≥70%</strong>가 죽은 직후 30초 안에 재시작</div>
+    </div>
+    <div class="metric-card alpha-m">
+      <div class="metric-name">평균 단판 길이</div>
+      <div class="metric-value"><strong>3~7분</strong>으로 자연 수렴 (너무 짧으면 코어 약함 / 너무 길면 페이스 문제)</div>
+    </div>
+    <div class="metric-card alpha-m">
+      <div class="metric-name">첫 반응 키워드</div>
+      <div class="metric-value">"재밌다 / 시원하다 / 한 판 더" &gt; "지루하다 / 짜증나 / 별로"</div>
+    </div>
+  </div>
+
+  <h3>3.4 가설 실패 시 plug-pull 시그널</h3>
+  <div class="callout fail">
+    <ul>
+      <li>테스터들이 "그냥 무쌍 게임 같다 (지루함)" → 충돌 피드백·카메라·사운드 코어 재설계 필요</li>
+      <li>평균 단판 길이가 1~2분에 수렴 → 죽음이 너무 빠름 = 학습 곡선 문제</li>
+      <li>"한 번 더" 본능 &lt; 50% → <strong class="crit">자동차 뱀서라이크 컨셉 자체 재검토</strong>. β 진입 금지.</li>
+    </ul>
+  </div>
+
+  <h3>3.5 Codex 비판 흡수</h3>
+  <blockquote>Codex: "15분 중간값 애매 — 초반 5분 임팩트 보강 필요"</blockquote>
+  <p>→ α 자체가 "초반 5분 임팩트"의 직접 검증. <strong>α 통과 = 초반 임팩트 확보 증명.</strong></p>
+</section>
+
+<hr>
+
+<section id="sec-4">
+  <h2 class="beta-h">4. β — 귀환 본능 검증</h2>
+
+  <h3>4.1 검증 가설</h3>
+  <blockquote><strong>"BGM 컷 전환 + 좀비 Herd + 거리 보상 곡선만으로,<br>UI 알림 0개 상태에서 플레이어가 자발적으로 멀리 가고 자발적으로 돌아오는가."</strong></blockquote>
+  <p>GDD 디자인 원칙 4번("강요 X, 욕망 O")과 원칙 1번("압박 없는 떠먹임")의 직접 검증. 이게 안 되면 명시 마커·미션 UI를 추가해야 하는데, 그건 <strong>톤 정체성 포기</strong>를 의미.</p>
+
+  <h3>4.2 스코프</h3>
+  <p>α 위에 다음만 얹는다. <strong>차량은 1대 유지</strong> (메타 변수 분리).</p>
+  <table>
+    <tr><th>추가 포함</th><th>여전히 제외</th></tr>
+    <tr><td>거리 보상 곡선 (비대칭 보상)</td><td>차량 2~3대, 모듈, 잠금 해제</td></tr>
+    <tr><td>좀비 Herd 방향성 스폰</td><td>집 부품, 자원 이중 구조</td></tr>
+    <tr><td>미니맵 모호 마커</td><td>Tier 1 시설 (정비소·차고)</td></tr>
+    <tr><td>BGM 3단계 (손상도50/시간30/거리20)</td><td>환경 떠먹임 (표지판·메모·라디오)</td></tr>
+    <tr><td>귀환 돌파 (집 근처 30초~1분 컷 전환)</td><td>부서진 도심 (여전히 무한 평지)</td></tr>
+    <tr><td>"집" = 결과 화면 + "다시 출격" 버튼 1개</td><td>영구 강화, 외형, 시설 UI</td></tr>
+    <tr><td>스크랩 (그 판 안에서만 의미, 종료 시 리셋)</td><td></td></tr>
+  </table>
+
+  <h3>4.3 게이트 조건 (정량)</h3>
+  <div class="metric-grid">
+    <div class="metric-card beta-m">
+      <div class="metric-name">자발 귀환률</div>
+      <div class="metric-value">UI 알림 0개로 <strong>≥70%</strong>가 BGM 강렬 단계 진입 후 90초 내 집 방향으로 전환</div>
+    </div>
+    <div class="metric-card beta-m">
+      <div class="metric-name">거리 분포</div>
+      <div class="metric-value">출격당 도달 거리 정규 분포 (집 근처 농사 &lt;20%, 무한 전진 사망 &lt;20%)</div>
+    </div>
+    <div class="metric-card beta-m">
+      <div class="metric-name">본능 작동</div>
+      <div class="metric-value">첫 출격에서 튜토리얼 없이 <strong>≥60%</strong>가 좀비 Herd 역방향으로 전진</div>
+    </div>
+    <div class="metric-card beta-m">
+      <div class="metric-name">안전 그라인드 회피</div>
+      <div class="metric-value">집 근처 5분 농사 vs 멀리 5분 농사의 보상 격차가 <strong>≥3배</strong>로 체감</div>
+    </div>
+  </div>
+
+  <h3>4.4 가설 실패 시 plug-pull 시그널</h3>
+  <div class="callout fail">
+    <ul>
+      <li>자발 귀환률 &lt; 50% → BGM 신호 부족, <strong class="warn">명시 마커·텍스트 알림 추가 검토</strong> (톤 정체성 양보 결정)</li>
+      <li>집 근처 농사 모드가 다수 → 거리 보상 곡선 기울기 부족, 패널티 추가 검토</li>
+      <li>"BGM이 바뀐 줄도 몰랐다" 다수 → 사운드 디자인 재작업</li>
+      <li>"어디로 가야 할지 모르겠다" 다수 → Herd 단독으로 약함, 채널 보강 필요</li>
+    </ul>
+  </div>
+
+  <h3>4.5 Stab 비판 흡수</h3>
+  <blockquote>Stab: "안전 그라인드 허점" — 집 근처에서만 안전하게 농사하면?</blockquote>
+  <p>→ β의 "안전 그라인드 회피" 게이트가 직접 검증. 거리 보상 곡선이 작동하면 안전 그라인드는 <em>비효율의 시각적 증거</em>가 되어야 한다.</p>
+</section>
+
+<hr>
+
+<section id="sec-5">
+  <h2 class="gamma-h">5. γ — 풀 코어 루프 (Early Access 직전)</h2>
+
+  <h3>5.1 검증 가설</h3>
+  <blockquote><strong>"차고 진척감(잠금 해제 + 영구 강화)이 5~10시간 플레이 후에도<br>다음 출격 동기로 작동하는가."</strong></blockquote>
+  <p>메타 + 인게임 빌드의 <em>곱셈</em>이 작동하는지. 동시에 부서진 도심·환경 떠먹임의 톤 검증. γ가 곧 EA 직전 단계 = <strong>시장 검증 진입 게이트</strong>.</p>
+
+  <h3>5.2 스코프</h3>
+  <p>β 위에 다음을 얹는다. 이 시점부터 <strong>부서진 도심</strong> 진입.</p>
+  <table>
+    <tr><th>추가 포함</th><th>EA 후로 미룸 (γ에 미포함)</th></tr>
+    <tr><td><strong>부서진 도심 1구역</strong> (지역 다양성은 미정)</td><td>Tier 2/3 시설 (무전기, 연료, 방어, 연구소)</td></tr>
+    <tr><td>차량 3대 (Daily / Old Bull / Ghost)</td><td>차량 4~6대 (Boulder / Patrol / Sweet Tooth)</td></tr>
+    <tr><td>집 부품 (특별 픽업) + 잠금 해제 곡선</td><td>보스</td></tr>
+    <tr><td>자원 이중 구조 (스크랩 + 집 부품)</td><td>수동 특수 스킬</td></tr>
+    <tr><td>모듈 6~8종 + 무기 슬롯 시스템</td><td>돌파 변주 시스템 (반복 피로 방지)</td></tr>
+    <tr><td>Tier 1 시설 2개 (정비소 + 차고) 완성</td><td>비상 방송 라디오 풀 확장 (최소 풀만)</td></tr>
+    <tr><td>환경 떠먹임 4채널 최소 풀<br>(표지판 20+, 차량 메모 6+, 집 디테일 3티어, 라디오 멘트 10+)</td><td></td></tr>
+    <tr><td>픽업 신선도 (재스폰 룰)</td><td></td></tr>
+    <tr><td>사망 패널티 모델 (다음 세션 결정)</td><td></td></tr>
+  </table>
+
+  <h3>5.3 게이트 조건 (정량)</h3>
+  <div class="metric-grid">
+    <div class="metric-card gamma-m">
+      <div class="metric-name">장기 동기 유지</div>
+      <div class="metric-value">5~10시간 플레이 후 <strong>≥50%</strong>가 "다음 차량/모듈 잠금 해제"를 자발 재출격 동기로 응답</div>
+    </div>
+    <div class="metric-card gamma-m">
+      <div class="metric-name">차량 다양성</div>
+      <div class="metric-value">3대 모두 <strong>≥30%</strong> 출격 비율 (편중 시 빌드 다양성 미작동)</div>
+    </div>
+    <div class="metric-card gamma-m">
+      <div class="metric-name">잠금 해제 곡선</div>
+      <div class="metric-value">첫 차량 잠금 해제까지 <strong>90~120분</strong></div>
+    </div>
+    <div class="metric-card gamma-m">
+      <div class="metric-name">환경 떠먹임 발견율</div>
+      <div class="metric-value">"애기" 모드 진행 막힘 없음 + "천재 해커" 모드가 <strong>≥50%</strong> 떠먹임 발견</div>
+    </div>
+    <div class="metric-card gamma-m">
+      <div class="metric-name">톤 일관성</div>
+      <div class="metric-value">"Hades식 따뜻한 어두움"이 외부 리뷰어 키워드에 나타남</div>
+    </div>
+  </div>
+
+  <h3>5.4 가설 실패 시 plug-pull 시그널</h3>
+  <div class="callout fail">
+    <ul>
+      <li>"잠긴 슬롯이 보여도 갖고 싶지 않다" → 잠금 해제 곡선·차량 정체성 차별화 부족</li>
+      <li>3대 중 1대만 압도적으로 선택됨 → 차량 빌드 균형 재설계</li>
+      <li>"환경 텍스트는 안 본다 / 봐도 영향 모르겠다" → 떠먹임 채널 비율 재조정 (그러나 <em>명시 미션은 여전히 X</em>)</li>
+      <li>EA 시점 wishlist 컨버전이 비교작 평균의 50% 미만 → 마케팅 후크·트레일러 재작업 (게임 자체보다 표현 문제일 수 있음)</li>
+    </ul>
+  </div>
+</section>
+
+<hr>
+
+<section id="sec-6">
+  <h2>6. GDD §15 → α/β/γ 매핑</h2>
+  <p>기존 §15 MVP 항목을 단계별로 명시 배치:</p>
+  <table>
+    <tr><th>§15 항목</th><th>α</th><th>β</th><th>γ</th></tr>
+    <tr><td>차량 이동 (관성·가속·감속), 충돌 공격 판정</td><td class="yes">✅</td><td class="yes">✅</td><td class="yes">✅</td></tr>
+    <tr><td>자동 기본 무기 1종</td><td class="yes">✅</td><td class="yes">✅</td><td class="yes">✅</td></tr>
+    <tr><td>적 2~3종</td><td class="yes">✅ (1~2종)</td><td class="yes">✅ (Herd 포함)</td><td class="yes">✅</td></tr>
+    <tr><td>레벨업 선택 UI (피트스톱)</td><td class="no">❌</td><td class="yes">✅</td><td class="yes">✅</td></tr>
+    <tr><td>모듈/파츠 6~8종, 무기 슬롯 시스템</td><td class="no">❌</td><td class="no">❌</td><td class="yes">✅</td></tr>
+    <tr><td>XP 수집 + 거리 보상 곡선</td><td class="no">❌</td><td class="partial">△ (거리만)</td><td class="yes">✅ (XP+거리)</td></tr>
+    <tr><td>집 (메뉴 화면 + 일러스트 배경)</td><td class="no">❌</td><td class="partial">△ (재출격 버튼만)</td><td class="yes">✅</td></tr>
+    <tr><td>Tier 1 시설: 정비소 + 차고</td><td class="no">❌</td><td class="no">❌</td><td class="yes">✅</td></tr>
+    <tr><td>차량 3대 (Daily / Old Bull / Ghost)</td><td class="no">❌ (1대)</td><td class="no">❌ (1대)</td><td class="yes">✅ (3대)</td></tr>
+    <tr><td>BGM 3단계 시스템 + 가중치</td><td class="no">❌</td><td class="yes">✅</td><td class="yes">✅</td></tr>
+    <tr><td>귀환 돌파 모드</td><td class="no">❌</td><td class="yes">✅</td><td class="yes">✅</td></tr>
+    <tr><td>환경 떠먹임 (4채널)</td><td class="no">❌</td><td class="no">❌</td><td class="yes">✅</td></tr>
+    <tr><td>자원 이중 구조 (스크랩 + 집 부품)</td><td class="no">❌</td><td class="partial">△ (스크랩만, 판내 리셋)</td><td class="yes">✅</td></tr>
+    <tr><td>미니맵 모호 마커</td><td class="no">❌</td><td class="yes">✅</td><td class="yes">✅</td></tr>
+    <tr><td>좀비 Herd 방향성 스폰</td><td class="no">❌</td><td class="yes">✅</td><td class="yes">✅</td></tr>
+    <tr><td>부서진 도심</td><td class="no">❌</td><td class="no">❌</td><td class="yes">✅</td></tr>
+  </table>
+</section>
+
+<section id="sec-7">
+  <h2>7. 단계 전환 운영 룰</h2>
+  <table>
+    <tr><th>룰</th><th>의미</th></tr>
+    <tr><td><strong>단계 게이트는 사전 합의된 정량 기준만 통과 인정</strong></td><td>"감으로 OK" 금지. 측정 안 되면 통과 불가.</td></tr>
+    <tr><td><strong>게이트 통과 전 다음 단계 작업 금지</strong></td><td>β 작업 중 γ 자산 만들기 시작하면 분리 의미 없음.</td></tr>
+    <tr><td><strong>가설 실패 = 단계 재실행 또는 전체 재검토</strong></td><td>다음 단계로 도주 금지. 잘못된 토대 위에 쌓지 않는다.</td></tr>
+    <tr><td><strong>각 단계 끝에 기록</strong></td><td>무엇이 통과했고 무엇이 <em>예상과 달랐는지</em>. γ까지 가는 동안 가설 진화 추적.</td></tr>
+  </table>
+</section>
+
+<section id="sec-8">
+  <h2>8. 분리 후에도 미해결인 결정</h2>
+  <p>이 분리는 <strong>스코프 게이트</strong>일 뿐, GDD §18의 미해결 결정은 여전히 남아 있다:</p>
+  <ol>
+    <li><strong>사망 패널티 강도 구체화</strong> — β/γ 진입 전 결정 필요 (β: 1판 안에서 의미 / γ: 영구 자원 회수율)</li>
+    <li><strong>귀환 돌파 변주 디자인</strong> — β 게이트 통과 후 결정 (Task #5)</li>
+    <li><strong>위협도 진행 곡선 디테일</strong> — α 게이트 통과 후 β 진입 전 결정</li>
+    <li><strong>인게임 무기/모듈 풀 구체화 (8~10종)</strong> — γ 진입 전 결정</li>
+    <li><strong>첫 출격 자연스러운 학습 흐름</strong> — β 게이트의 핵심 변수</li>
+    <li><strong>비상 방송 멘트 풀 50~100줄</strong> — γ 진입 전 작성</li>
+  </ol>
+  <p>추가로 Stab 비판에서 흡수:</p>
+  <ol start="7">
+    <li><strong>Sweet Tooth 잠금 조건 빈 칸</strong> — MVP 외 (γ 후), 출시 패치 또는 EA→1.0 결정</li>
+    <li><strong>귀환 돌파 사망 패널티</strong> — β/γ에서 일반 사망과 동일하게 갈지 별도 패널티 둘지</li>
+  </ol>
+</section>
+
+<section id="sec-9">
+  <h2>9. 변경 이력</h2>
+  <table>
+    <tr><th>항목</th><th>2026-05-21 GDD v0.2</th><th>2026-05-21 MVP 분리</th></tr>
+    <tr><td>MVP 단계 구조</td><td>단일 MVP (EA 직전 수준)</td><td>α / β / γ 3단계 게이트</td></tr>
+    <tr><td>게이트 조건</td><td>"충돌 피해 모델이 욕심으로 인지" 등 정성적</td><td>정량 기준 (자발 재시작률, 자발 귀환률, 동기 유지율)</td></tr>
+    <tr><td>Codex "초반 5분 임팩트"</td><td>미해결</td><td>α 게이트가 직접 검증</td></tr>
+    <tr><td>Stab "안전 그라인드 허점"</td><td>미해결</td><td>β 게이트가 직접 검증</td></tr>
+    <tr><td>Stab "MVP 과대"</td><td>미해결</td><td>α/β/γ 분리로 해결</td></tr>
+    <tr><td>부서진 도심 진입 시점</td><td>명시 없음</td><td>γ부터</td></tr>
+    <tr><td>α/β의 차량 수</td><td>(해당 없음)</td><td>1대 유지 (β 변수 분리)</td></tr>
+  </table>
+</section>
+
+</main>
+</div>
+
+<script>
+  // 사이드바 active 표시
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('nav.sidebar a');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        navLinks.forEach(link => {
+          link.classList.toggle('active', link.getAttribute('href') === '#' + id);
+        });
+      }
+    });
+  }, { rootMargin: '-100px 0px -60% 0px' });
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
