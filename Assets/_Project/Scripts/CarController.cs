@@ -99,4 +99,6 @@ public class CarController : MonoBehaviour
     }
 
     public float CurrentSpeed => _rb.linearVelocity.magnitude;
+    public float MaxSpeed => maxSpeed;
+    public float LateralSpeed => Vector3.Dot(_rb.linearVelocity, transform.right);
 }
