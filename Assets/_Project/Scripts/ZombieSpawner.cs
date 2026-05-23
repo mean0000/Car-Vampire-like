@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class ZombieSpawner : MonoBehaviour
@@ -28,6 +29,7 @@ public class ZombieSpawner : MonoBehaviour
     float _hordeTimer;
     float _frontCheckTimer;
     CarController _car;
+    List<ZombieController> _activeZombies = new List<ZombieController>();
 
     void Start()
     {
@@ -45,20 +47,21 @@ public class ZombieSpawner : MonoBehaviour
         if (carTransform == null) return;
 
         // 거리 초과 좀비 삭제 + 전체/전방 활성 수 카운트 (루프 1회)
-        ZombieController[] zombies = FindObjectsByType<ZombieController>(FindObjectsSortMode.None);
-        int activeCount = 0;
         int frontCount = 0;
         Vector3 carFwd = GetCarForward();
 
-        foreach (var z in zombies)
+        for (int i = _activeZombies.Count - 1; i >= 0; i--)
         {
+            if (_activeZombies[i] == null) { _activeZombies.RemoveAt(i); continue; }
+
+            ZombieController z = _activeZombies[i];
             float dist = Vector3.Distance(z.transform.position, carTransform.position);
             if (dist > despawnDistance)
             {
                 Destroy(z.gameObject);
+                _activeZombies.RemoveAt(i);
                 continue;
             }
-            activeCount++;
 
             // 전방 범위 내 좀비 카운트
             if (dist <= frontCheckDistance)
@@ -70,6 +73,8 @@ public class ZombieSpawner : MonoBehaviour
                     frontCount++;
             }
         }
+
+        int activeCount = _activeZombies.Count;
 
         // 개별 스폰 (속도에 비례해 간격 단축)
         float speedRatio = (_car != null && _car.MaxSpeed > 0f)
@@ -83,12 +88,14 @@ public class ZombieSpawner : MonoBehaviour
             SpawnSingle();
         }
 
+        bool hordeSpawnedThisFrame = false;
+
         // 주기적 군중 스폰
         _hordeTimer += Time.deltaTime;
         if (_hordeTimer >= hordeInterval)
         {
             _hordeTimer = 0f;
-            SpawnHorde(activeCount);
+            hordeSpawnedThisFrame = SpawnHorde(_activeZombies.Count);
         }
 
         // 전방 밀도 부족 시 군중 소환
@@ -96,8 +103,8 @@ public class ZombieSpawner : MonoBehaviour
         if (_frontCheckTimer >= frontCheckInterval)
         {
             _frontCheckTimer = 0f;
-            if (frontCount < frontHordeThreshold)
-                SpawnHorde(activeCount);
+            if (frontCount < frontHordeThreshold && !hordeSpawnedThisFrame)
+                SpawnHorde(_activeZombies.Count);
         }
     }
 
@@ -114,17 +121,19 @@ public class ZombieSpawner : MonoBehaviour
 
         GameObject obj = Instantiate(zombiePrefab, center, Quaternion.identity);
         ZombieController zombie = obj.GetComponent<ZombieController>();
-        if (zombie != null) zombie.Init(carTransform);
+        if (zombie != null) { zombie.Init(carTransform); _activeZombies.Add(zombie); }
     }
 
-    void SpawnHorde(int currentActive)
+    bool SpawnHorde(int currentActive)
     {
-        if (zombiePrefab == null || carTransform == null) return;
+        if (zombiePrefab == null || carTransform == null) return false;
 
         Vector3 center = GetFrontEdgePosition(); // 군중은 항상 전방에 소환
-        if (center == Vector3.zero) return;
+        if (center == Vector3.zero) return false;
 
         int spawnCount = Mathf.Min(hordeSize, maxZombies - currentActive);
+        if (spawnCount <= 0) return false;
+
         for (int i = 0; i < spawnCount; i++)
         {
             Vector2 offset = Random.insideUnitCircle * hordeSpread;
@@ -133,8 +142,9 @@ public class ZombieSpawner : MonoBehaviour
 
             GameObject obj = Instantiate(zombiePrefab, pos, Quaternion.identity);
             ZombieController zombie = obj.GetComponent<ZombieController>();
-            if (zombie != null) zombie.Init(carTransform);
+            if (zombie != null) { zombie.Init(carTransform); _activeZombies.Add(zombie); }
         }
+        return true;
     }
 
     Vector3 FindSpawnCenter()
