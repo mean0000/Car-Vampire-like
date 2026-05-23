@@ -135,8 +135,10 @@ public class CameraController : MonoBehaviour
     {
         float height = heightOffset + heightBonus * speedRatio;
 
-        // lookahead: 차의 전방 방향으로 _lookaheadDist만큼 오프셋
-        Vector3 forward = car.transform.forward;
+        // lookahead: 스핀 중엔 카메라 yaw 방향 고정, 아니면 차 전방 추종
+        Vector3 forward = car.IsSpinning
+            ? new Vector3(Mathf.Sin(_yaw * Mathf.Deg2Rad), 0f, Mathf.Cos(_yaw * Mathf.Deg2Rad))
+            : car.transform.forward;
         forward.y = 0f;
         Vector3 lookaheadOffset = forward.sqrMagnitude > 0.001f
             ? forward.normalized * _lookaheadDist
@@ -150,14 +152,16 @@ public class CameraController : MonoBehaviour
 
         _logicalPosition = new Vector3(_camPos.x, car.transform.position.y + height, _camPos.z);
 
-        // 차 전방 방향 → 목표 Y 각도 (수평 성분 기준, zero vector 방어)
-        Vector3 fwdFlat = car.transform.forward;
-        fwdFlat.y = 0f;
-        float targetYaw = fwdFlat.sqrMagnitude > 0.001f
-            ? Mathf.Atan2(fwdFlat.x, fwdFlat.z) * Mathf.Rad2Deg
-            : _yaw;
-        // LerpAngle: 360→0 경계 꺾임 방지, 지수 감쇠
-        _yaw = Mathf.LerpAngle(_yaw, targetYaw, 1f - Mathf.Exp(-yawSpeed * dt));
+        // 차 전방 방향 → 목표 Y 각도 (스핀 중엔 고정)
+        if (!car.IsSpinning)
+        {
+            Vector3 fwdFlat = car.transform.forward;
+            fwdFlat.y = 0f;
+            float targetYaw = fwdFlat.sqrMagnitude > 0.001f
+                ? Mathf.Atan2(fwdFlat.x, fwdFlat.z) * Mathf.Rad2Deg
+                : _yaw;
+            _yaw = Mathf.LerpAngle(_yaw, targetYaw, 1f - Mathf.Exp(-yawSpeed * dt));
+        }
 
         // pitch(브레이킹 쏠림) + yaw(차 방향 추종) + roll(방향 기울기)
         transform.rotation = Quaternion.Euler(

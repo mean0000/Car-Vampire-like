@@ -74,6 +74,15 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - 요청하지 않은 성능 최적화(object pooling, coroutine 전환 등) 추가 금지.
 - 기존 씬/프리팹 구조는 건드리지 말 것 — 코드만 수정.
 
+## Agent Workflow (코드 작업 시 필수)
+
+Unity C# 코드를 새로 작성하거나 수정할 때마다 반드시 아래 순서를 따른다:
+
+1. **구현**: `Gameplay` 에이전트가 담당
+2. **점검**: 구현 완료 후 `Stab` + `Codex` 에이전트를 **병렬**로 실행해 리뷰
+
+예외 없음. Gameplay가 완료되면 자동으로 Stab+Codex 리뷰를 병렬 실행할 것.
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
