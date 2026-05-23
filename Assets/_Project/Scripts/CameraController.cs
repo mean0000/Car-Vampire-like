@@ -13,33 +13,33 @@ public class CameraController : MonoBehaviour
 
     [Header("Follow")]
     [SerializeField] private float followSpeed      = 5f;    // 클수록 카메라가 빨리 따라붙음
-    [SerializeField] private float yawSpeed         = 5f;    // 클수록 빠르게 차 방향 따라감
 
     [Header("Lookahead")]
     [SerializeField, Min(0f)] private float lookaheadBias = 0f;   // 정지 시 최소 오프셋 (0 = 차 중앙)
-    [SerializeField, Min(0f)] private float lookaheadMax  = 0.5f;
+    [SerializeField, Min(0f)] private float lookaheadMax  = 3.0f;
     [SerializeField] private float lookaheadAttackSpeed  = 8f;   // 속도 증가 시 빠르게 빌드업
     [SerializeField] private float lookaheadReleaseSpeed = 4f;   // 감속/정지 시 천천히 복귀 → 브레이킹 쏠림
+    [SerializeField, Min(0f)] private float lateralLookaheadMax = 3f; // 좌우 이동 시 카메라 횡방향 오프셋
 
     [Header("Screen Anchor")]
     [SerializeField, Range(0.1f, 0.9f)] private float carViewportY = 0.42f;
     // 0.5 = 화면 정중앙, 0.42 = 중앙보다 약간 아래 (앞이 더 잘 보임)
 
     [Header("FOV & Height")]
-    [SerializeField] private float fovBase      = 55f;
-    [SerializeField] private float fovMax       = 80f;
-    [SerializeField] private float fovSpeed     = 3f;
-    [SerializeField] private float heightOffset = 20f;
-    [SerializeField] private float heightBonus  = 3f;
+    [SerializeField] private float fovBase      = 50f;
+    [SerializeField] private float fovMax       = 92f;
+    [SerializeField] private float fovSpeed     = 8f;
+    [SerializeField] private float heightOffset = 18f;
+    [SerializeField] private float heightBonus  = 8f;
     [SerializeField] private float pitchAngle   = 80f;       // X축 회전 (권장 75~85)
 
     [Header("Tilt")]
     [SerializeField] private float pitchSensitivity = 0.03f; // °per m/s²
     [SerializeField] private float maxPitchOffset   = 4f;    // °
-    [SerializeField] private float rollSensitivity  = 0.25f; // °per m/s
-    [SerializeField] private float maxRollOffset    = 3f;    // °
     [SerializeField] private float tiltSpeed        = 6f;
     [SerializeField] private float accelFilterSpeed = 4f;    // 가속도 저역통과 필터 속도
+    [SerializeField] private float maxDirPitchOffset = 3f;  // 진행 방향 전후 틸트 최대각
+    [SerializeField] private float maxDirRollOffset  = 3f;  // 진행 방향 좌우 틸트 최대각
 
     [Header("Shake")]
     [SerializeField] private float shakeDamping = 5f;
@@ -53,15 +53,17 @@ public class CameraController : MonoBehaviour
 
     // Lookahead 상태 (스칼라: 차 전방 방향 기준 거리)
     private float _lookaheadDist;
+    private float _lateralDist;
 
     // Yaw 상태
-    private float _yaw;                   // 현재 카메라 Y 회전값
+    private float _yaw;                   // 현재 카메라 Y 회전값 (0f 고정)
 
     // FOV & Tilt 상태
     private float _prevSpeed;
     private float _accel;               // 저역통과 필터링된 가속도
     private float _pitchOffset;
-    private float _rollOffset;
+    private float _dirPitchOffset;
+    private float _dirRollOffset;
 
     // Shake 상태
     private float   _shakeIntensity;
@@ -87,7 +89,7 @@ public class CameraController : MonoBehaviour
         _lookaheadDist = 0f;  // 첫 프레임 lookahead 점프 방지
         _logicalPosition = _camPos + Vector3.up * heightOffset;
         transform.position = _logicalPosition;
-        _yaw = Mathf.Atan2(car.transform.forward.x, car.transform.forward.z) * Mathf.Rad2Deg;
+        _yaw = 0f;
         transform.rotation = Quaternion.Euler(pitchAngle, _yaw, 0f);
         _cam.fieldOfView = fovBase;
     }
@@ -97,26 +99,33 @@ public class CameraController : MonoBehaviour
         if (car == null) return;
 
         float dt = Time.deltaTime;
+        float currentSpeed = car.CurrentSpeed;
         float speedRatio = car.MaxSpeed > 0f
-            ? Mathf.Clamp01(car.CurrentSpeed / car.MaxSpeed)
+            ? Mathf.Clamp01(currentSpeed / car.MaxSpeed)
             : 0f;
 
-        // 가속도 계산 + 저역통과 필터 (deltaTime == 0 방어)
-        float rawAccel = dt > 0f ? (car.CurrentSpeed - _prevSpeed) / dt : 0f;
-        _accel = Mathf.Lerp(_accel, rawAccel, 1f - Mathf.Exp(-accelFilterSpeed * dt));
-        _prevSpeed = car.CurrentSpeed;
+        // LateUpdate 당 1회 캐싱 (반복 프로퍼티 호출 절감)
+        Vector3 carPos      = car.transform.position;
+        Vector3 carForward  = car.transform.forward;
+        Vector3 carRight    = car.transform.right;
+        Vector3 carFlatVel  = car.FlatVelocity;
 
-        UpdateLookahead(speedRatio, dt);
-        UpdateTilt(dt);
+        // 가속도 계산 + 저역통과 필터 (deltaTime == 0 방어)
+        float rawAccel = dt > 0f ? (currentSpeed - _prevSpeed) / dt : 0f;
+        _accel = Mathf.Lerp(_accel, rawAccel, 1f - Mathf.Exp(-accelFilterSpeed * dt));
+        _prevSpeed = currentSpeed;
+
+        UpdateLookahead(speedRatio, dt, carRight, carFlatVel);
+        UpdateTilt(dt, carForward, carRight, carFlatVel);
         UpdateFOV(speedRatio, dt);
         ApplyShake(dt);      // shake offset 먼저 계산
-        UpdateFollow(speedRatio, dt); // 그 다음 현재 프레임 shake 적용
+        UpdateFollow(speedRatio, dt, carForward, carRight, carPos); // 그 다음 현재 프레임 shake 적용
     }
 
     // ── 1. Lookahead (비대칭 지수 감쇠) ──────────────────────────────
     // 속도가 오를 때는 빠르게 앞을 보고, 멈출 때는 천천히 복귀
     // → 브레이킹 쏠림 체감
-    private void UpdateLookahead(float speedRatio, float dt)
+    private void UpdateLookahead(float speedRatio, float dt, Vector3 carRight, Vector3 carFlatVel)
     {
         float lookaheadTarget = lookaheadBias + lookaheadMax * speedRatio;
 
@@ -127,52 +136,56 @@ public class CameraController : MonoBehaviour
 
         _lookaheadDist = Mathf.Lerp(_lookaheadDist, lookaheadTarget,
             1f - Mathf.Exp(-speed * dt));
+
+        // 횡방향 lookahead: 차 우측 속도 성분 기반
+        Vector3 flatCarRight = carRight;
+        flatCarRight.y = 0f;
+        float lateralSpeed = flatCarRight.sqrMagnitude > 0.001f
+            ? Vector3.Dot(carFlatVel, flatCarRight.normalized)
+            : 0f;
+        float lateralSpeedRatio = car.MaxSpeed > 0f
+            ? Mathf.Clamp(lateralSpeed / car.MaxSpeed, -1f, 1f)
+            : 0f;
+        float lateralTarget = lateralLookaheadMax * lateralSpeedRatio;
+        float lateralSpeed2 = Mathf.Abs(lateralTarget) > Mathf.Abs(_lateralDist)
+            ? lookaheadAttackSpeed
+            : lookaheadReleaseSpeed;
+        _lateralDist = Mathf.Lerp(_lateralDist, lateralTarget,
+            1f - Mathf.Exp(-lateralSpeed2 * dt));
     }
 
     // ── 2. Follow (지수 감쇠 위치 추적) ───────────────────────────────
     // 차를 즉시 따라가지 않아 빠르게 달릴 때 차가 "앞으로 나가는 느낌"이 남
-    private void UpdateFollow(float speedRatio, float dt)
+    private void UpdateFollow(float speedRatio, float dt, Vector3 carForward, Vector3 carRight, Vector3 carPos)
     {
         float height = heightOffset + heightBonus * speedRatio;
 
-        // lookahead: 스핀 중엔 카메라 yaw 방향 고정, 아니면 차 전방 추종
-        Vector3 forward = car.IsSpinning
-            ? new Vector3(Mathf.Sin(_yaw * Mathf.Deg2Rad), 0f, Mathf.Cos(_yaw * Mathf.Deg2Rad))
-            : car.transform.forward;
+        // lookahead: 전방 + 횡방향 합산
+        Vector3 forward = carForward;
         forward.y = 0f;
-        Vector3 lookaheadOffset = forward.sqrMagnitude > 0.001f
-            ? forward.normalized * _lookaheadDist
-            : Vector3.zero;
+        Vector3 right = carRight;
+        right.y = 0f;
+        Vector3 lookaheadOffset = (forward.sqrMagnitude > 0.001f ? forward.normalized * _lookaheadDist : Vector3.zero)
+                                + (right.sqrMagnitude   > 0.001f ? right.normalized   * _lateralDist   : Vector3.zero);
 
-        Vector3 targetPos = car.transform.position + lookaheadOffset;
+        Vector3 targetPos = carPos + lookaheadOffset;
 
         // XZ만 지수 감쇠로 추적 (Y는 height로 고정)
         _camPos = Vector3.Lerp(_camPos, targetPos,
             1f - Mathf.Exp(-followSpeed * dt));
 
-        _logicalPosition = new Vector3(_camPos.x, car.transform.position.y + height, _camPos.z);
+        _logicalPosition = new Vector3(_camPos.x, carPos.y + height, _camPos.z);
 
-        // 차 전방 방향 → 목표 Y 각도 (스핀 중엔 고정)
-        if (!car.IsSpinning)
-        {
-            Vector3 fwdFlat = car.transform.forward;
-            fwdFlat.y = 0f;
-            float targetYaw = fwdFlat.sqrMagnitude > 0.001f
-                ? Mathf.Atan2(fwdFlat.x, fwdFlat.z) * Mathf.Rad2Deg
-                : _yaw;
-            _yaw = Mathf.LerpAngle(_yaw, targetYaw, 1f - Mathf.Exp(-yawSpeed * dt));
-        }
-
-        // pitch(브레이킹 쏠림) + yaw(차 방향 추종) + roll(방향 기울기)
+        // pitch(브레이킹 쏠림) + yaw(0f 고정) + roll(방향 기울기)
         transform.rotation = Quaternion.Euler(
-            pitchAngle + _pitchOffset,
+            pitchAngle + _pitchOffset - _dirPitchOffset,
             _yaw,
-            _rollOffset);
+            -_dirRollOffset);
 
         // ── 화면 앵커: 차가 carViewportY 위치에 오도록 카메라 XZ 보정 ──
         // rotation이 먼저 설정된 후 WorldToViewportPoint를 호출해야 정확함
         transform.position = _logicalPosition; // 임시 설정 (shake 없이)
-        Vector3 vp = _cam.WorldToViewportPoint(car.transform.position);
+        Vector3 vp = _cam.WorldToViewportPoint(carPos);
         if (vp.z > 0.1f)
         {
             float vpErr  = carViewportY - vp.y;
@@ -185,8 +198,6 @@ public class CameraController : MonoBehaviour
                 {
                     Vector3 correction = backDir.normalized * (vpErr * scale / sinP);
                     _logicalPosition += correction;
-                    // _camPos도 보정: 다음 프레임 지수 감쇠가 보정된 위치에서 시작하도록
-                    _camPos += new Vector3(correction.x, 0f, correction.z);
                 }
             }
         }
@@ -197,19 +208,28 @@ public class CameraController : MonoBehaviour
     // ── 3. 동적 틸트 ──────────────────────────────────────────────────
     // Pitch: 저역통과 필터링된 가속도 기반 (braking = 앞으로 쏠림)
     // Roll: LateralSpeed 기반 방향 기울기
-    private void UpdateTilt(float dt)
+    private void UpdateTilt(float dt, Vector3 carForward, Vector3 carRight, Vector3 carFlatVel)
     {
         float targetPitch = Mathf.Clamp(_accel * pitchSensitivity,
             -maxPitchOffset, maxPitchOffset);
         _pitchOffset = Mathf.Lerp(_pitchOffset, targetPitch,
             1f - Mathf.Exp(-tiltSpeed * dt));
 
-        float lateralSpeed = car.LateralSpeed;
-        if (float.IsNaN(lateralSpeed)) lateralSpeed = 0f;
-        float targetRoll = Mathf.Clamp(-lateralSpeed * rollSensitivity,
-            -maxRollOffset, maxRollOffset);
-        _rollOffset = Mathf.Lerp(_rollOffset, targetRoll,
-            1f - Mathf.Exp(-tiltSpeed * dt));
+        // 진행 방향 틸트: 차량 로컬 forward/right 기준으로 투영 (고정 카메라에서도 방향 무관하게 올바름)
+        Vector3 flatVel = carFlatVel;
+        float speed = flatVel.magnitude;
+        float speedRef = Mathf.Max(car.MaxSpeed, speed > 0.001f ? speed : 0f);
+        if (speedRef < 0.001f) speedRef = 1f;
+        Vector3 carFwd    = carForward; carFwd.y = 0f; carFwd.Normalize();
+        Vector3 carRight2 = carRight;   carRight2.y = 0f; carRight2.Normalize();
+        float forwardComp = Vector3.Dot(flatVel, carFwd)    / speedRef;   // 차 전방 성분 → pitch
+        float rightComp   = Vector3.Dot(flatVel, carRight2) / speedRef;  // 차 우측 성분 → roll
+
+        float targetDirPitch = Mathf.Clamp(forwardComp * maxDirPitchOffset, -maxDirPitchOffset, maxDirPitchOffset);
+        float targetDirRoll  = Mathf.Clamp(rightComp  * maxDirRollOffset,  -maxDirRollOffset,  maxDirRollOffset);
+
+        _dirPitchOffset = Mathf.Lerp(_dirPitchOffset, targetDirPitch, 1f - Mathf.Exp(-tiltSpeed * dt));
+        _dirRollOffset  = Mathf.Lerp(_dirRollOffset,  targetDirRoll,  1f - Mathf.Exp(-tiltSpeed * dt));
     }
 
     // ── 4. FOV 동적 변화 ──────────────────────────────────────────────

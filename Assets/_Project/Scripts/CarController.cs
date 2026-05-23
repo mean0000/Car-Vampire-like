@@ -4,13 +4,30 @@ using UnityEngine;
 [RequireComponent(typeof(Collider))]
 public class CarController : MonoBehaviour
 {
+    [Header("Feedback")]
+    [SerializeField] private CameraController camController;
+    [SerializeField] private float hitShakeBase = 0.2f;    // 충돌 기본 흔들림
+    [SerializeField] private float hitShakeMax  = 0.8f;    // 충돌 최대 흔들림 (최고속 시)
+    [SerializeField] private float boostShake   = 0.6f;    // 부스터 발동 흔들림
+    [SerializeField] private float minSpeedAfterHit = 3f;  // 좀비 충돌 후 최저 속도
+    [SerializeField] private float hitStopScale    = 0.4f; // 히트스탑 timeScale (0=완전정지, 1=없음)
+    [SerializeField] private float hitStopDuration = 0.04f;// 히트스탑 지속 시간 (초)
+
+    [Header("Boost")]
+    [SerializeField] private float maxBoostFuel = 100f;
+    [SerializeField] private float boostFuelPerHit = 20f;   // 좀비 1마리 충돌당 충전
+    [SerializeField] private float boostDrainRate = 30f;    // 초당 연료 소모
+    [SerializeField] private float boostImpulseSpeed = 50f; // 부스터 활성화 순간 도달 속도 (m/s)
+    [SerializeField] private float boostForce = 15f;        // 순간 이후 boostMaxSpeed까지 점진 가속력
+    [SerializeField] private float boostMaxSpeed = 35f;     // 부스터 중 속도 상한
+
     [Header("Engine")]
     [SerializeField] private float maxSpeed = 22f;
     [SerializeField] private float engineForce = 30f;       // ForceMode.Acceleration 기준 (m/s²)
     [SerializeField] private float deceleration = 8f;        // 입력 없을 때 명시적 감속 (m/s²)
 
     [Header("Steering")]
-    [SerializeField] private float turnSpeed = 160f;        // deg/s
+    [SerializeField] private float turnSpeed = 200f;        // deg/s
 
     [Header("Grip")]
     // 저속 = 강한 그립(안정), 고속 = 약한 그립(슬라이딩 허용)
@@ -19,7 +36,7 @@ public class CarController : MonoBehaviour
     [SerializeField] private float gripRate = 8f;           // velocity → 전방 정렬 속도
 
     [Header("Drift")]
-    [SerializeField][Range(0f, 1f)] private float driftGripMultiplier = 0.15f; // Shift 시 그립 배율
+    [SerializeField][Range(0f, 1f)] private float driftGripMultiplier = 0.06f; // Shift 시 그립 배율
 
     [Header("Spinout")]
     [SerializeField] private float spinoutThreshold = 0.7f;    // |lateral|/speed 비율 임계값 (드리프트 중 초과 시 발동)
@@ -32,12 +49,17 @@ public class CarController : MonoBehaviour
     [SerializeField] private float groundCheckDist = 0.3f;  // 피벗 기준 하향 레이 길이 (콜라이더 크기에 맞게 조정)
     [SerializeField] private LayerMask groundLayer = 1;     // Default layer (Inspector에서 조정)
 
+    private float _boostFuel = 0f;
+    private bool _isBoosting = false;
+    private bool _wasBoostingLastFrame = false;
+
+    private bool _boostImpulseActive = false; // 임펄스 프레임 클램프 면제
+
     private bool _isSpinning = false;
     private float _spinAngle = 0f;      // 현재까지 회전한 누적 각도
     private float _targetAngle = 180f;  // 목표 각도 (기본 180°, 입력 시 360°)
     private float _spinDegPerSec;       // Fix H-2-new: 스핀 각속도 (mid-spin 업그레이드 시 재계산)
     private float _spinSign = 1f;  // 스핀 방향 (+1 = 우, -1 = 좌)
-    private float _spinCooldown = 0f;
     private float _spinElapsed = 0f;   // Fix H-4: 무한 스핀 잠금 방지용 경과 시간
 
     // 키 입력 감지 (Update에서 GetKeyDown 캡처, FixedUpdate에서 소비 후 클리어)
@@ -51,6 +73,7 @@ public class CarController : MonoBehaviour
 
     private Rigidbody _rb;
     private Collider _col;
+    private Vector3 _cachedVel; // FixedUpdate 당 linearVelocity 캐시 (프로퍼티 GC 절감)
 
     private void Awake()
     {
@@ -73,17 +96,22 @@ public class CarController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.S)) _sDown = true;
         if (Input.GetKeyDown(KeyCode.A)) _aDown = true;
         if (Input.GetKeyDown(KeyCode.D)) _dDown = true;
+        if (Input.GetKeyDown(KeyCode.F)) _boostFuel = maxBoostFuel; // 테스트용 연료 충전
     }
 
     private void FixedUpdate()
     {
         // Shift는 레벨-트리거이므로 FixedUpdate에서 직접 폴링
-        bool shiftKey = Input.GetKey(KeyCode.LeftShift);
-        _shiftKey = shiftKey;
+        _shiftKey = Input.GetKey(KeyCode.LeftShift);
+
+        _cachedVel = _rb.linearVelocity;
 
         if (_isSpinning)
         {
+            _isBoosting = false; // 스핀 중엔 부스터 비활성 (stale true 방지)
+            _boostImpulseActive = false;
             HandleSpinout();
+            _wasBoostingLastFrame = false; // 스핀 중에도 동기화 — 스핀 종료 후 첫 프레임 impulse 여부를 예측 가능하게 유지
             return;
         }
 
@@ -97,7 +125,9 @@ public class CarController : MonoBehaviour
         float forwardSpeed = Vector3.Dot(flatVel, transform.forward);
 
         bool grounded = IsGrounded();
-        Vector3 preGripFlat = Vector3.zero; // 그립 적용 전 속도 (스핀아웃 트리거용)
+
+        // 부스터 상태 결정 (클램프보다 먼저 평가 → 이 프레임 상한 즉시 적용 / grounded 포함으로 IsBoostActive = "실제 활성")
+        _isBoosting = Input.GetKey(KeyCode.Space) && _boostFuel > 0f && !_isSpinning && grounded;
 
         if (grounded)
         {
@@ -129,9 +159,10 @@ public class CarController : MonoBehaviour
             // 최고속 클램프 (Y 보존) — 현재 velocity 재참조
             Vector3 curVel = _rb.linearVelocity;
             Vector3 curFlat = new Vector3(curVel.x, 0f, curVel.z);
-            if (curFlat.magnitude > maxSpeed)
+            float activeMaxSpeed = _isBoosting ? boostMaxSpeed : maxSpeed;
+            if (!_boostImpulseActive && curFlat.magnitude > activeMaxSpeed)
             {
-                Vector3 clamped = curFlat.normalized * maxSpeed;
+                Vector3 clamped = curFlat.normalized * activeMaxSpeed;
                 _rb.linearVelocity = new Vector3(clamped.x, curVel.y, clamped.z);
             }
 
@@ -141,9 +172,6 @@ public class CarController : MonoBehaviour
             speedRatio = Mathf.Clamp01(speed / maxSpeed);
             forwardSpeed = Vector3.Dot(flatVel, transform.forward);
 
-            // 그립 적용 전 속도 캡처 (스핀아웃 트리거용)
-            preGripFlat = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z);
-
             // 측면 마찰: velocity → 차 전방 정렬 (Y 보존)
             float grip = Mathf.Lerp(lowSpeedGrip, highSpeedGrip, speedRatio);
             if (_shiftKey) grip *= driftGripMultiplier; // 드리프트 중 그립 감소
@@ -152,7 +180,7 @@ public class CarController : MonoBehaviour
                 Vector3 targetDir = forwardSpeed >= 0f ? transform.forward : -transform.forward;
                 float steerGripReduction = Mathf.Lerp(1f, 0.2f, Mathf.Abs(inputTurn));
                 float blendT = 1f - Mathf.Exp(-grip * gripRate * steerGripReduction * Time.fixedDeltaTime);
-                Vector3 blended = Vector3.Lerp(flatVel, targetDir * Mathf.Min(speed, maxSpeed), blendT);
+                Vector3 blended = Vector3.Lerp(flatVel, targetDir * Mathf.Min(speed, activeMaxSpeed), blendT);
                 _rb.linearVelocity = new Vector3(blended.x, _rb.linearVelocity.y, blended.z);
             }
         }
@@ -161,35 +189,55 @@ public class CarController : MonoBehaviour
         float steerForwardSpeed = Vector3.Dot(new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z), transform.forward);
         if (grounded && Mathf.Abs(steerForwardSpeed) > 0.5f)
         {
-            float turnMult = Mathf.Lerp(1f, 0.4f, speedRatio);
+            float turnMult = Mathf.Lerp(1f, 0.6f, speedRatio);
             float turnDir = inputTurn * Mathf.Sign(steerForwardSpeed);
             Quaternion deltaRot = Quaternion.Euler(0f, turnDir * turnSpeed * turnMult * Time.fixedDeltaTime, 0f);
             _rb.MoveRotation(_rb.rotation * deltaRot);
         }
 
-        // 스핀아웃 트리거: 드리프트(Shift) 중 측면 슬립 임계값 초과 시 발동
-        if (grounded) _spinCooldown -= Time.fixedDeltaTime;
-        float preGripSpeed = preGripFlat.magnitude;
-        if (grounded && _spinCooldown <= 0f && _shiftKey && preGripSpeed > spinoutMinSpeed)
+        // 부스터: 활성화 첫 프레임에 즉시 속도 점프, 이후 연료 소모하며 상한 유지
+        if (_isBoosting)
         {
-            if (preGripSpeed > 0.01f)
+            Vector3 bv = _rb.linearVelocity;
+            Vector3 bf = new Vector3(bv.x, 0f, bv.z);
+            Vector3 dir = bf.sqrMagnitude > 0.001f ? bf.normalized : transform.forward;
+
+            if (!_wasBoostingLastFrame)
             {
-                float lateralRatio = Mathf.Abs(Vector3.Dot(preGripFlat, transform.right)) / preGripSpeed;
-                if (lateralRatio > spinoutThreshold)
+                // 1단계: 첫 프레임 — boostImpulseSpeed까지 즉시 점프 (다음 프레임 클램프 면제)
+                _boostImpulseActive = true;
+                float impulseTarget = Mathf.Max(bf.magnitude, boostImpulseSpeed);
+                _rb.linearVelocity = new Vector3(dir.x * impulseTarget, bv.y, dir.z * impulseTarget);
+                if (camController != null)
+                    camController.TriggerShake(boostShake);
+            }
+            else
+            {
+                // 2단계: 이후 프레임 — boostMaxSpeed까지 점진 가속 (클램프 복귀)
+                _boostImpulseActive = false;
+                _rb.AddForce(dir * boostForce, ForceMode.Acceleration);
+                Vector3 after = _rb.linearVelocity;
+                Vector3 afterFlat = new Vector3(after.x, 0f, after.z);
+                if (afterFlat.magnitude > boostMaxSpeed)
                 {
-                    float lateral = Vector3.Dot(preGripFlat, transform.right);
-                    float fwd = Vector3.Dot(preGripFlat, transform.forward);
-                    float spinSign = Mathf.Sign(-lateral * fwd);
-                    TriggerSpinout(spinSign, Mathf.Sign(lateral));
+                    Vector3 capped = afterFlat.normalized * boostMaxSpeed;
+                    _rb.linearVelocity = new Vector3(capped.x, after.y, capped.z);
                 }
             }
-        }
 
+            _boostFuel = Mathf.Max(0f, _boostFuel - boostDrainRate * Time.fixedDeltaTime);
+            if (_boostFuel <= 0f) _isBoosting = false;
+        }
+        if (!_isBoosting) _boostImpulseActive = false;
+        _wasBoostingLastFrame = _isBoosting;
+
+        _cachedVel = _rb.linearVelocity;
         _sDown = false; _aDown = false; _dDown = false;
     }
 
     private void TriggerSpinout(float spinSign, float triggerTurnDir)
     {
+        if (_isSpinning) return;
         Vector3 vel = _rb.linearVelocity;
         Vector3 flatVel = new Vector3(vel.x, 0f, vel.z);
         if (flatVel.sqrMagnitude < 0.01f) return;
@@ -216,7 +264,6 @@ public class CarController : MonoBehaviour
         if (_spinElapsed > spinoutDuration * 3f)
         {
             _isSpinning = false;
-            _spinCooldown = spinoutDuration;
             _sDown = false; _aDown = false; _dDown = false;
             return;
         }
@@ -271,24 +318,60 @@ public class CarController : MonoBehaviour
         if (_spinAngle >= _targetAngle)
         {
             _isSpinning = false;
-            _spinCooldown = 0.1f;
         }
 
+        _cachedVel = _rb.linearVelocity;
         _sDown = false; _aDown = false; _dDown = false;
     }
 
     // GDD: 좀비 충돌 시 속도 감소 (ZombieCollision에서 호출)
     public void ApplySpeedPenalty(float amount)
     {
+        if (_rb == null) return;
         Vector3 vel = _rb.linearVelocity;
         float flatSpeed = new Vector3(vel.x, 0f, vel.z).magnitude;
-        float reduced = Mathf.Max(0f, flatSpeed - amount);
+        // 최저 속도 보장 (이미 minSpeed 이하면 더 줄이지 않음)
+        float floor = Mathf.Min(flatSpeed, minSpeedAfterHit);
+        float reduced = Mathf.Max(floor, flatSpeed - amount);
         Vector3 flatDir = flatSpeed > 0.001f ? new Vector3(vel.x, 0f, vel.z).normalized : Vector3.zero;
         _rb.linearVelocity = flatDir * reduced + new Vector3(0f, vel.y, 0f);
+        _boostFuel = Mathf.Min(_boostFuel + boostFuelPerHit, maxBoostFuel);
+        _cachedVel = _rb.linearVelocity;
+        if (camController != null)
+        {
+            float speedRatio = MaxSpeed > 0f ? Mathf.Clamp01(flatSpeed / MaxSpeed) : 0f;
+            camController.TriggerShake(Mathf.Lerp(hitShakeBase, hitShakeMax, speedRatio));
+        }
+        StopCoroutine("HitStopRoutine");
+        StartCoroutine("HitStopRoutine");
     }
 
-    public float CurrentSpeed => new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z).magnitude;
+    private void OnDisable()
+    {
+        // HitStopRoutine 실행 중 오브젝트 비활성화 시 timeScale 복구
+        Time.timeScale = 1f;
+        Time.fixedDeltaTime = 0.02f;
+    }
+
+    private System.Collections.IEnumerator HitStopRoutine()
+    {
+        Time.timeScale = hitStopScale;
+        Time.fixedDeltaTime = 0.02f * hitStopScale;
+        float elapsed = 0f;
+        while (elapsed < hitStopDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+        Time.timeScale = 1f;
+        Time.fixedDeltaTime = 0.02f;
+    }
+
+    public float CurrentSpeed => new Vector3(_cachedVel.x, 0f, _cachedVel.z).magnitude;
     public float MaxSpeed => maxSpeed;
-    public float LateralSpeed => Vector3.Dot(_rb.linearVelocity, transform.right);
+    public Vector3 FlatVelocity => new Vector3(_cachedVel.x, 0f, _cachedVel.z);
+    public float LateralSpeed => Vector3.Dot(_cachedVel, transform.right);
     public bool IsSpinning => _isSpinning;
+    public float BoostFuelRatio => maxBoostFuel > 0f ? _boostFuel / maxBoostFuel : 0f;
+    public bool IsBoostActive => _isBoosting;
 }
