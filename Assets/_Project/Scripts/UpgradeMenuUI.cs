@@ -52,8 +52,8 @@ public class UpgradeMenuUI : MonoBehaviour
             },
             new UpgradeOption
             {
-                label = "충돌 연료 +50%",
-                apply = (car, xp) => car.UpgradeBoostFuelPerHit(1.5f)
+                label = "드리프트 충전 +50%",
+                apply = (car, xp) => car.UpgradeDriftFuelRate(1.5f)
             },
         };
     }

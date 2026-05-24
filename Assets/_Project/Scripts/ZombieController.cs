@@ -29,10 +29,18 @@ public class ZombieController : MonoBehaviour
     [SerializeField] int orbCountMin = 3;
     [SerializeField] int orbCountMax = 5;
 
+    [Header("Drift Launch")]
+    [SerializeField] int maxChainKills = 3;
+    [SerializeField] float chainKillRadius = 1.8f;
+    [SerializeField] float homingRadius = 8f;
+    [SerializeField] float homingStrength = 3f;
+
     Transform _target;
     Rigidbody _rb;
     Collider _carCollider;
     bool _dead;
+    bool _launched;
+    int _chainKillCount;
     Vector3 _velocity;
 
     void Awake()
@@ -113,6 +121,8 @@ public class ZombieController : MonoBehaviour
         foreach (var col in nearby)
         {
             if (col.gameObject == gameObject) continue;
+            var z = col.GetComponent<ZombieController>();
+            if (z != null && z._launched) continue;
             Vector3 away = transform.position - col.transform.position;
             away.y = 0f;
             float d = away.magnitude;
@@ -150,19 +160,114 @@ public class ZombieController : MonoBehaviour
         if (killSound != null)
             AudioSource.PlayClipAtPoint(killSound, pos);
 
-        if (xpOrbPrefab != null)
+        SpawnXPOrbs(pos, car.transform);
+
+        if (car.IsDrifting)
         {
-            int count = Random.Range(orbCountMin, orbCountMax + 1);
-            for (int i = 0; i < count; i++)
-            {
-                float angle = (360f / count) * i + Random.Range(-30f, 30f);
-                Vector3 burstDir = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
-                var obj = Instantiate(xpOrbPrefab, pos, Quaternion.identity);
-                var orb = obj.GetComponent<XPOrb>();
-                if (orb != null) orb.Init(burstDir, car.transform);
-            }
+            Vector3 lateralDir = car.transform.right * Mathf.Sign(car.LateralSpeed);
+            if (Mathf.Abs(car.LateralSpeed) < 0.1f) lateralDir = car.transform.right;
+            float lateralSpeed = Mathf.Clamp(Mathf.Abs(car.LateralSpeed), 8f, 15f);
+            Launch(lateralDir * lateralSpeed + Vector3.up * 5f);
+            DriftComboUI.Instance?.RegisterDriftKill();
         }
+        else if (car.IsBoostActive)
+        {
+            float boostSpeed = Mathf.Clamp(car.CurrentSpeed, 10f, 20f);
+            Launch(car.FlatVelocity.normalized * boostSpeed + Vector3.up * 4f);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    public void LaunchKill()
+    {
+        if (_dead) return;
+        _dead = true;
+
+        Vector3 pos = transform.position;
+
+        if (killParticlePrefab != null)
+            Instantiate(killParticlePrefab, pos, Quaternion.identity);
+
+        if (killSound != null)
+            AudioSource.PlayClipAtPoint(killSound, pos);
+
+        SpawnXPOrbs(pos, _target);
 
         Destroy(gameObject);
+    }
+
+    void SpawnXPOrbs(Vector3 pos, Transform orbTarget)
+    {
+        if (xpOrbPrefab == null) return;
+        int count = Random.Range(orbCountMin, orbCountMax + 1);
+        for (int i = 0; i < count; i++)
+        {
+            float angle = (360f / count) * i + Random.Range(-30f, 30f);
+            Vector3 burstDir = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
+            var obj = Instantiate(xpOrbPrefab, pos, Quaternion.identity);
+            var orb = obj.GetComponent<XPOrb>();
+            if (orb != null) orb.Init(burstDir, orbTarget);
+        }
+    }
+
+    public void Launch(Vector3 launchVelocity)
+    {
+        _dead = true;
+        _launched = true;
+        _rb.isKinematic = false;
+        GetComponent<Collider>().isTrigger = false;
+        _rb.linearVelocity = launchVelocity;
+        Destroy(gameObject, 3f);
+        StartCoroutine(ChainKillRoutine());
+    }
+
+    System.Collections.IEnumerator ChainKillRoutine()
+    {
+        while (_chainKillCount < maxChainKills)
+        {
+            // 근처 좀비 쪽으로 속도 방향 보정
+            ZombieController nearest = FindNearestLivingZombie(homingRadius);
+            if (nearest != null)
+            {
+                Vector3 vel = _rb.linearVelocity;
+                Vector3 toTarget = (nearest.transform.position - transform.position).normalized;
+                Vector3 newDir = Vector3.Lerp(vel.normalized, toTarget, homingStrength * Time.fixedDeltaTime);
+                _rb.linearVelocity = newDir * vel.magnitude;
+            }
+
+            // 체인킬 판정
+            Collider[] hits = Physics.OverlapSphere(transform.position, chainKillRadius, zombieLayer);
+            foreach (var col in hits)
+            {
+                if (_chainKillCount >= maxChainKills) break;
+                if (col.gameObject == gameObject) continue;
+                var other = col.GetComponent<ZombieController>();
+                if (other != null && !other._launched)
+                {
+                    _chainKillCount++;
+                    other.LaunchKill();
+                }
+            }
+            yield return new WaitForFixedUpdate();
+        }
+    }
+
+    ZombieController FindNearestLivingZombie(float radius)
+    {
+        Collider[] hits = Physics.OverlapSphere(transform.position, radius, zombieLayer);
+        ZombieController nearest = null;
+        float minDist = float.MaxValue;
+        foreach (var col in hits)
+        {
+            if (col.gameObject == gameObject) continue;
+            var z = col.GetComponent<ZombieController>();
+            if (z == null || z._dead) continue;
+            float d = (col.transform.position - transform.position).sqrMagnitude;
+            if (d < minDist) { minDist = d; nearest = z; }
+        }
+        return nearest;
     }
 }
