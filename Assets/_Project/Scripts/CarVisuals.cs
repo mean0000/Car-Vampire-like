@@ -20,16 +20,26 @@ public class CarVisuals : MonoBehaviour
     [SerializeField] private float pitchSpeed     = 5f;
     [SerializeField] private float accelSensitivity = 0.15f; // 가속도 → 피치 변환율
 
+    [Header("Slope Tilt (지면 추종)")]
+    [SerializeField] private float slopeTiltSpeed  = 5f;   // 지면 기울기 추종 속도
+    [SerializeField] private float maxSlopeAngle   = 25f;  // 최대 경사 기울기 (도)
+    [SerializeField] private float groundCheckDist = 0.5f; // 레이캐스트 거리
+    [SerializeField] private LayerMask groundLayer;        // 지면 레이어
+
     private float _currentRoll;
     private float _currentPitch;
     private float _prevSpeed;
     private float _accel;
+    private float _currentSlopePitch;
+    private float _currentSlopeRoll;
 
     private void Start()
     {
         if (car == null) car = GetComponentInParent<CarController>();
         if (bodyTransform == null)
             Debug.LogWarning("[CarVisuals] bodyTransform이 할당되지 않았습니다.", this);
+        if (groundLayer == 0)
+            Debug.LogWarning("[CarVisuals] groundLayer가 할당되지 않았습니다. Slope Tilt가 동작하지 않습니다.", this);
         _prevSpeed = car != null ? car.CurrentSpeed : 0f;
     }
 
@@ -59,6 +69,24 @@ public class CarVisuals : MonoBehaviour
         _currentPitch = Mathf.Lerp(_currentPitch, targetPitch,
             1f - Mathf.Exp(-pitchSpeed * dt));
 
-        bodyTransform.localRotation = Quaternion.Euler(_currentPitch, 0f, _currentRoll);
+        Vector3 groundNormal = Vector3.up;
+        if (Physics.Raycast(car.transform.position, Vector3.down, out RaycastHit slopeHit, groundCheckDist, groundLayer, QueryTriggerInteraction.Ignore))
+            groundNormal = slopeHit.normal;
+
+        float targetSlopePitch = Mathf.Clamp(
+            -Mathf.Asin(Mathf.Clamp(Vector3.Dot(groundNormal, car.transform.forward), -1f, 1f)) * Mathf.Rad2Deg,
+            -maxSlopeAngle, maxSlopeAngle);
+        float targetSlopeRoll = Mathf.Clamp(
+            -Mathf.Asin(Mathf.Clamp(Vector3.Dot(groundNormal, car.transform.right), -1f, 1f)) * Mathf.Rad2Deg,
+            -maxSlopeAngle, maxSlopeAngle);
+
+        float slopeLerpT = 1f - Mathf.Exp(-slopeTiltSpeed * dt);
+        _currentSlopePitch = Mathf.Lerp(_currentSlopePitch, targetSlopePitch, slopeLerpT);
+        _currentSlopeRoll  = Mathf.Lerp(_currentSlopeRoll,  targetSlopeRoll,  slopeLerpT);
+
+        bodyTransform.localRotation = Quaternion.Euler(
+            _currentPitch + _currentSlopePitch,
+            0f,
+            _currentRoll  + _currentSlopeRoll);
     }
 }

@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ZombieCrush HUD Mockup</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+  }
+
+  .screen {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    background:
+      radial-gradient(ellipse at 60% 40%, #1a1a14 0%, #0d0d0d 60%, #080808 100%);
+  }
+
+  /* ── XP BAR (NANO HARVEST) ─────────────────────── */
+  .xp-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 6px;
+    background: #0d1f1f;
+  }
+  .xp-fill {
+    height: 100%;
+    width: 62%;
+    background: linear-gradient(90deg, #00bcd4, #00e5ff);
+    box-shadow: 0 0 8px #00e5ff88;
+    transition: width 0.4s ease;
+  }
+
+  /* ── PLAYTIME (상단 중앙) ───────────────────────── */
+  .playtime-wrap {
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .playtime-panel {
+    background: #060f10;
+    border: 1px solid #00bcd455;
+    padding: 6px 20px;
+    clip-path: polygon(8px 0%, calc(100% - 8px) 0%, 100% 100%, 0% 100%);
+  }
+  .playtime-text {
+    color: #00e5ff;
+    font-size: 18px;
+    letter-spacing: 4px;
+    text-shadow: 0 0 10px #00e5ffaa;
+  }
+  .keyring-line {
+    width: 1px;
+    height: 18px;
+    background: #00bcd466;
+  }
+  .keyring-charm {
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid #00bcd4aa;
+    border-radius: 50%;
+    background: #00bcd411;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    color: #00bcd4;
+  }
+
+  /* ── GAMEPLAY AREA ──────────────────────────────── */
+  .gameplay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* 배경 그리드 (맵 느낌) */
+  .map-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(#ffffff04 1px, transparent 1px),
+      linear-gradient(90deg, #ffffff04 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  /* 좀비들 */
+  .zombie {
+    position: absolute;
+    width: 8px; height: 8px;
+    background: #4a3a2a;
+    border-radius: 50%;
+    box-shadow: 0 0 4px #00000088;
+  }
+
+  /* 차량 */
+  .car {
+    position: relative;
+    z-index: 10;
+  }
+  .car-body {
+    width: 32px;
+    height: 52px;
+    background: linear-gradient(160deg, #e8e0d0, #c8bfb0);
+    border-radius: 4px 4px 2px 2px;
+    position: relative;
+    box-shadow: 0 0 12px #00000066, 0 2px 4px #000;
+  }
+  .car-body::before {
+    content: '';
+    position: absolute;
+    top: 8px; left: 4px; right: 4px; height: 16px;
+    background: #1a2a3a88;
+    border-radius: 2px;
+  }
+  .car-boost-left, .car-boost-right {
+    position: absolute;
+    bottom: -14px;
+    width: 6px;
+    height: 14px;
+    background: linear-gradient(180deg, #0099ff44, #00ccff00);
+    animation: boostFlicker 0.15s infinite alternate;
+  }
+  .car-boost-left  { left: 4px; }
+  .car-boost-right { right: 4px; }
+  .car-boost-left::after, .car-boost-right::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 2px; height: 100%;
+    background: #00eeff;
+    box-shadow: 0 0 6px #00eeffcc;
+  }
+  @keyframes boostFlicker {
+    from { transform: scaleY(0.8) scaleX(0.9); opacity: 0.7; }
+    to   { transform: scaleY(1.1) scaleX(1.1); opacity: 1.0; }
+  }
+
+  /* ── BOTTOM DASHBOARD ───────────────────────────── */
+  .dashboard {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+  }
+
+  /* ── DASHBOARD LEFT (홀로그램) ──────────────────── */
+  .dash-left {
+    flex: 0 0 auto;
+    width: 580px;
+    height: 108px;
+    background: #020d0e;
+    border: 1px solid #00bcd433;
+    border-top: 1px solid #00bcd466;
+    position: relative;
+    display: flex;
+    gap: 0;
+    overflow: hidden;
+  }
+  /* 스캔라인 */
+  .dash-left::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      #00000022 3px,
+      #00000022 4px
+    );
+    pointer-events: none;
+  }
+  /* 상단 액센트 라인 */
+  .dash-left::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #00bcd4, transparent);
+    box-shadow: 0 0 8px #00bcd4;
+  }
+
+  /* 파트너AI 영역 */
+  .partner-ai {
+    width: 110px;
+    height: 100%;
+    background: #030808;
+    border-right: 1px solid #00bcd422;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex-shrink: 0;
+    padding: 8px;
+  }
+  .ai-face {
+    font-size: 22px;
+    color: #00ff88;
+    text-shadow: 0 0 8px #00ff88;
+    animation: aiPulse 2.5s ease-in-out infinite;
+  }
+  @keyframes aiPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+  .ai-text {
+    font-size: 9px;
+    color: #00cc6688;
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  /* 게이지 영역 */
+  .gauges {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 14px 12px 10px;
+  }
+  .gauge-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .gauge-label {
+    font-size: 10px;
+    color: #00bcd4bb;
+    letter-spacing: 2px;
+    width: 80px;
+    flex-shrink: 0;
+    text-shadow: 0 0 6px #00bcd4;
+  }
+  .gauge-track {
+    flex: 1;
+    height: 16px;
+    background: #040c0c;
+    border: 1px solid #00bcd422;
+    position: relative;
+    overflow: hidden;
+  }
+  .gauge-fill {
+    height: 100%;
+    position: relative;
+    transition: width 0.3s ease;
+  }
+  .gauge-fill::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 2px; height: 100%;
+    background: white;
+    opacity: 0.6;
+  }
+
+  /* HULL 게이지 */
+  .hull-fill {
+    width: 78%;
+    background: linear-gradient(90deg, #004d4a, #00bcd4);
+    box-shadow: inset 0 0 6px #00bcd422;
+  }
+  /* SYNC RATE 게이지 */
+  .sync-fill {
+    width: 43%;
+    background: linear-gradient(90deg, #1a4a2a, #00ff88, #cc4400);
+    background-size: 300% 100%;
+    background-position: 0% 50%;
+    box-shadow: inset 0 0 6px #ff440022;
+  }
+  .gauge-value {
+    font-size: 10px;
+    color: #00bcd488;
+    width: 32px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .sync-value { color: #ff6633aa; }
+
+  /* ── DASHBOARD RIGHT (아날로그 연료계) ─────────── */
+  .dash-right {
+    flex: 0 0 auto;
+    width: 300px;
+    height: 108px;
+    background: #040404;
+    border: 1px solid #33220000;
+    outline: 1px solid #ff990022;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .suppress-label {
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: #cc7700;
+    text-align: center;
+  }
+  .suppress-track {
+    flex: 1;
+    background: #0a0a0a;
+    border: 1px solid #ff990033;
+    position: relative;
+    overflow: hidden;
+  }
+  .suppress-fill {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 70%;
+    background: linear-gradient(90deg, #cc5500, #ffaa00, #ffdd44);
+    transition: width 0.3s ease;
+  }
+  /* 연료계 세그먼트 선 */
+  .suppress-track::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent calc(20% - 1px),
+      #04040466 calc(20% - 1px),
+      #04040466 20%
+    );
+    pointer-events: none;
+  }
+  .suppress-bottom {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: #664400;
+    letter-spacing: 1px;
+  }
+
+  /* ── VIGNETTE (SYNC RATE 연동 예시) ────────────── */
+  .vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center,
+      transparent 50%,
+      #cc000018 80%,
+      #cc000033 100%
+    );
+    pointer-events: none;
+  }
+
+  /* ── LEGEND ─────────────────────────────────────── */
+  .legend {
+    position: absolute;
+    top: 60px;
+    right: 16px;
+    background: #00000088;
+    border: 1px solid #ffffff11;
+    padding: 10px 14px;
+    font-size: 10px;
+    color: #ffffff55;
+    line-height: 2;
+    letter-spacing: 1px;
+  }
+  .legend span { color: #ffffff99; }
+</style>
+</head>
+<body>
+<div class="screen">
+
+  <!-- XP BAR -->
+  <div class="xp-bar"><div class="xp-fill"></div></div>
+
+  <!-- PLAYTIME -->
+  <div class="playtime-wrap">
+    <div class="playtime-panel">
+      <div class="playtime-text">12:34</div>
+    </div>
+    <div class="keyring-line"></div>
+    <div class="keyring-charm">★</div>
+  </div>
+
+  <!-- GAMEPLAY -->
+  <div class="gameplay">
+    <div class="map-grid"></div>
+
+    <!-- 좀비 배치 (예시) -->
+    <div class="zombie" style="top:32%; left:28%"></div>
+    <div class="zombie" style="top:44%; left:22%"></div>
+    <div class="zombie" style="top:38%; left:55%"></div>
+    <div class="zombie" style="top:55%; left:48%"></div>
+    <div class="zombie" style="top:29%; left:68%"></div>
+    <div class="zombie" style="top:60%; left:35%"></div>
+    <div class="zombie" style="top:51%; left:72%"></div>
+
+    <!-- 차량 -->
+    <div class="car" style="margin-top: 40px;">
+      <div class="car-body"></div>
+      <div class="car-boost-left"></div>
+      <div class="car-boost-right"></div>
+    </div>
+  </div>
+
+  <!-- VIGNETTE -->
+  <div class="vignette"></div>
+
+  <!-- BOTTOM DASHBOARD -->
+  <div class="dashboard">
+    <!-- LEFT: 홀로그램 대시보드 -->
+    <div class="dash-left">
+      <div class="partner-ai">
+        <div class="ai-face">&gt;_&lt;</div>
+        <div class="ai-text">시스템 안정<br>전방 밀도 높음</div>
+      </div>
+      <div class="gauges">
+        <div class="gauge-row">
+          <div class="gauge-label">HULL</div>
+          <div class="gauge-track">
+            <div class="gauge-fill hull-fill"></div>
+          </div>
+          <div class="gauge-value">78%</div>
+        </div>
+        <div class="gauge-row">
+          <div class="gauge-label">SYNC RATE</div>
+          <div class="gauge-track">
+            <div class="gauge-fill sync-fill"></div>
+          </div>
+          <div class="gauge-value sync-value">43%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 스페이서 -->
+    <div style="flex:1"></div>
+
+    <!-- RIGHT: 아날로그 연료계 -->
+    <div class="dash-right">
+      <div class="suppress-label">S U P P R E S S</div>
+      <div class="suppress-track">
+        <div class="suppress-fill"></div>
+      </div>
+      <div class="suppress-bottom">
+        <span>EMPTY</span>
+        <span>FULL</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEGEND (디자이너용 설명) -->
+  <div class="legend">
+    <span>XP BAR</span> — 상단 얇은 띠, NANO HARVEST<br>
+    <span>PLAYTIME</span> — 상단 중앙, 키링 장식<br>
+    <span>HULL</span> — 차량 내구도, 0 = 게임오버<br>
+    <span>SYNC RATE</span> — 나노봇 오염도, 100% = 게임오버<br>
+    <span>SUPPRESS</span> — 부스터 연료, 아날로그 연료계<br>
+    <span>후방 파티클</span> — 잔량 따라 강도 변화
+  </div>
+
+</div>
+</body>
+</html>
