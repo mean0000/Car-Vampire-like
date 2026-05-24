@@ -15,6 +15,7 @@ public class CarController : MonoBehaviour
 
     [Header("Boost")]
     [SerializeField] private float maxBoostFuel = 100f;
+    [SerializeField] private float syncRatePerSecond = 0.05f; // 부스트 중 초당 SYNC RATE 상승량
     [SerializeField] private float boostFuelPerHit = 20f;   // 좀비 1마리 충돌당 충전
     [SerializeField] private float boostDrainRate = 30f;    // 초당 연료 소모
     [SerializeField] private float boostImpulseSpeed = 50f; // 부스터 활성화 순간 도달 속도 (m/s)
@@ -226,6 +227,7 @@ public class CarController : MonoBehaviour
             }
 
             _boostFuel = Mathf.Max(0f, _boostFuel - boostDrainRate * Time.fixedDeltaTime);
+            SyncRateManager.Instance?.AddSync(syncRatePerSecond * Time.fixedDeltaTime);
             if (_boostFuel <= 0f) _isBoosting = false;
         }
         if (!_isBoosting) _boostImpulseActive = false;
@@ -349,8 +351,12 @@ public class CarController : MonoBehaviour
     private void OnDisable()
     {
         // HitStopRoutine 실행 중 오브젝트 비활성화 시 timeScale 복구
-        Time.timeScale = 1f;
-        Time.fixedDeltaTime = 0.02f;
+        // 업그레이드 메뉴가 열려있으면 건드리지 않음 (메뉴가 직접 복구 책임)
+        if (UpgradeMenuUI.Instance == null || !UpgradeMenuUI.Instance.IsPanelOpen)
+        {
+            Time.timeScale = 1f;
+            Time.fixedDeltaTime = 0.02f;
+        }
     }
 
     private System.Collections.IEnumerator HitStopRoutine()
@@ -363,9 +369,17 @@ public class CarController : MonoBehaviour
             elapsed += Time.unscaledDeltaTime;
             yield return null;
         }
-        Time.timeScale = 1f;
-        Time.fixedDeltaTime = 0.02f;
+        // 업그레이드 메뉴가 열려있으면 timeScale을 건드리지 않음
+        if (UpgradeMenuUI.Instance == null || !UpgradeMenuUI.Instance.IsPanelOpen)
+        {
+            Time.timeScale = 1f;
+            Time.fixedDeltaTime = 0.02f;
+        }
     }
+
+    public void UpgradeMaxSpeed(float multiplier) { maxSpeed *= multiplier; }
+    public void UpgradeBoostCapacity(float multiplier) { maxBoostFuel *= multiplier; }
+    public void UpgradeBoostFuelPerHit(float multiplier) { boostFuelPerHit *= multiplier; }
 
     public float CurrentSpeed => new Vector3(_cachedVel.x, 0f, _cachedVel.z).magnitude;
     public float MaxSpeed => maxSpeed;

@@ -20,6 +20,15 @@ public class ZombieController : MonoBehaviour
     [Header("Smoothing")]
     [SerializeField] float velocitySmoothing = 8f; // 클수록 반응 빠름, 작을수록 부드러움
 
+    [Header("Kill Feedback")]
+    [SerializeField] ParticleSystem killParticlePrefab;
+    [SerializeField] AudioClip killSound;
+
+    [Header("XP")]
+    [SerializeField] GameObject xpOrbPrefab;
+    [SerializeField] int orbCountMin = 3;
+    [SerializeField] int orbCountMax = 5;
+
     Transform _target;
     Rigidbody _rb;
     Collider _carCollider;
@@ -132,6 +141,28 @@ public class ZombieController : MonoBehaviour
 
         _dead = true;
         car.ApplySpeedPenalty(speedPenalty);
+
+        Vector3 pos = transform.position;
+
+        if (killParticlePrefab != null)
+            Instantiate(killParticlePrefab, pos, Quaternion.identity);
+
+        if (killSound != null)
+            AudioSource.PlayClipAtPoint(killSound, pos);
+
+        if (xpOrbPrefab != null)
+        {
+            int count = Random.Range(orbCountMin, orbCountMax + 1);
+            for (int i = 0; i < count; i++)
+            {
+                float angle = (360f / count) * i + Random.Range(-30f, 30f);
+                Vector3 burstDir = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
+                var obj = Instantiate(xpOrbPrefab, pos, Quaternion.identity);
+                var orb = obj.GetComponent<XPOrb>();
+                if (orb != null) orb.Init(burstDir, car.transform);
+            }
+        }
+
         Destroy(gameObject);
     }
 }

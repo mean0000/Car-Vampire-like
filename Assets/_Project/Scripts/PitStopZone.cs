@@ -1,0 +1,31 @@
+using UnityEngine;
+
+/// <summary>
+/// 피트스톱 거점 트리거 존.
+/// CarController를 가진 오브젝트가 진입하면 업그레이드 메뉴를 연다.
+/// </summary>
+[RequireComponent(typeof(Collider))]
+public class PitStopZone : MonoBehaviour
+{
+    [SerializeField] float cooldown = 10f;
+    [SerializeField] float syncReduction = 0.2f;
+
+    float _lastTriggerTime = -999f;
+
+    void Awake()
+    {
+        GetComponent<Collider>().isTrigger = true;
+    }
+
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.GetComponentInParent<CarController>() == null) return;
+        if (UpgradeMenuUI.Instance == null) return;
+        if (UpgradeMenuUI.Instance.IsPanelOpen) return;
+        if (Time.time - _lastTriggerTime < cooldown) return;
+
+        _lastTriggerTime = Time.time;
+        SyncRateManager.Instance?.ReduceSync(syncReduction);
+        UpgradeMenuUI.Instance.Show();
+    }
+}
