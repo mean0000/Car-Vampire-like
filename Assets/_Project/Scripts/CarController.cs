@@ -8,7 +8,7 @@ public class CarController : MonoBehaviour
     [SerializeField] private CameraController camController;
     [SerializeField] private float hitShakeBase = 0.2f;    // 충돌 기본 흔들림
     [SerializeField] private float hitShakeMax  = 0.8f;    // 충돌 최대 흔들림 (최고속 시)
-    [SerializeField] private float boostShake   = 0.6f;    // 부스터 발동 흔들림
+    [SerializeField] private float boostShake   = 0f;      // 부스터 발동 흔들림
     [SerializeField] private float minSpeedAfterHit = 3f;  // 좀비 충돌 후 최저 속도
     [SerializeField] private float hitStopScale    = 0.4f; // 히트스탑 timeScale (0=완전정지, 1=없음)
     [SerializeField] private float hitStopDuration = 0.04f;// 히트스탑 지속 시간 (초)
@@ -59,6 +59,7 @@ public class CarController : MonoBehaviour
     // 키 입력 감지
     private bool _shiftKey; // 현재 프레임 Shift 눌림 여부
     private bool _wasShiftLastFrame;
+    private float _driftKickCooldown; // 드리프트 킥 쿨다운 (빠른 반복 입력 방지)
 
     private Rigidbody _rb;
     private Collider _col;
@@ -74,10 +75,16 @@ public class CarController : MonoBehaviour
         _rb.angularDamping = 4f;
     }
 
-    private bool IsGrounded()
+    private bool IsGrounded(out Vector3 groundNormal)
     {
         Vector3 origin = new Vector3(transform.position.x, _col.bounds.min.y + 0.05f, transform.position.z);
-        return Physics.Raycast(origin, Vector3.down, groundCheckDist, groundLayer, QueryTriggerInteraction.Ignore);
+        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, groundCheckDist, groundLayer, QueryTriggerInteraction.Ignore))
+        {
+            groundNormal = hit.normal;
+            return true;
+        }
+        groundNormal = Vector3.up;
+        return false;
     }
 
     private void Update()
@@ -103,7 +110,7 @@ public class CarController : MonoBehaviour
         float speedRatio = Mathf.Clamp01(speed / maxSpeed);
         float forwardSpeed = Vector3.Dot(flatVel, transform.forward);
 
-        bool grounded = IsGrounded();
+        bool grounded = IsGrounded(out Vector3 groundNormal);
 
         // 부스터 상태 결정 (클램프보다 먼저 평가 → 이 프레임 상한 즉시 적용 / grounded 포함으로 IsBoostActive = "실제 활성")
         _isBoosting = Input.GetKey(KeyCode.Space) && _boostFuel > 0f && grounded;
@@ -114,7 +121,11 @@ public class CarController : MonoBehaviour
             if (Mathf.Abs(inputForward) > 0.01f)
             {
                 float accel = engineForce * (1f - speedRatio * speedRatio);
-                _rb.AddForce(transform.forward * inputForward * accel, ForceMode.Acceleration);
+                // 경사면 방향으로 force 투영 — 언덕을 오를 수 있도록 (수직 벽 NaN 방지)
+                Vector3 slopeForward = Vector3.ProjectOnPlane(transform.forward, groundNormal);
+                if (slopeForward.sqrMagnitude < 0.001f) slopeForward = transform.forward;
+                else slopeForward.Normalize();
+                _rb.AddForce(slopeForward * inputForward * accel, ForceMode.Acceleration);
             }
             // 감속
             else if (speed > 0.5f)
@@ -202,7 +213,10 @@ public class CarController : MonoBehaviour
             {
                 // 2단계: 이후 프레임 — boostMaxSpeed까지 점진 가속 (클램프 복귀)
                 _boostImpulseActive = false;
-                _rb.AddForce(dir * boostForce, ForceMode.Acceleration);
+                Vector3 slopeDir = Vector3.ProjectOnPlane(dir, groundNormal);
+                if (slopeDir.sqrMagnitude < 0.001f) slopeDir = dir;
+                else slopeDir.Normalize();
+                _rb.AddForce(slopeDir * boostForce, ForceMode.Acceleration);
                 Vector3 after = _rb.linearVelocity;
                 Vector3 afterFlat = new Vector3(after.x, 0f, after.z);
                 if (afterFlat.magnitude > boostMaxSpeed)
@@ -223,12 +237,14 @@ public class CarController : MonoBehaviour
         if (IsDrifting && !_isBoosting)
             _boostFuel = Mathf.Min(_boostFuel + driftFuelRate * Time.fixedDeltaTime, maxBoostFuel);
 
-        // 드리프트 진입 킥: Shift를 막 눌렀을 때 횡방향으로 차를 밀어냄
-        if (_shiftKey && !_wasShiftLastFrame && speed > 5f && !_isBoosting)
+        // 드리프트 진입 킥: Shift를 막 눌렀을 때 횡방향으로 차를 밀어냄 (쿨다운으로 연속 발동 방지)
+        if (_driftKickCooldown > 0f) _driftKickCooldown -= Time.fixedDeltaTime;
+        if (_shiftKey && !_wasShiftLastFrame && speed > 5f && !_isBoosting && _driftKickCooldown <= 0f)
         {
             float hInput = Input.GetAxisRaw("Horizontal");
             float kickDir = Mathf.Abs(hInput) > 0.1f ? -Mathf.Sign(hInput) : 1f;
             _rb.AddForce(transform.right * kickDir * driftEntryKick, ForceMode.VelocityChange);
+            _driftKickCooldown = 0.5f;
         }
         _wasShiftLastFrame = _shiftKey;
 
