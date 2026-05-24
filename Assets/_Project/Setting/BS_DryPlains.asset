@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eab2ad5f8278fed45b181e0f48a795b2, type: 3}
+  m_Name: BS_DryPlains
+  m_EditorClassIdentifier: Assembly-CSharp::BiomeSettings
+  biomeName: DryPlains
+  props:
+  - prefab: {fileID: 6559637889702443159, guid: 72287e0650bfa7c488f086b1572e2e0d, type: 3}
+    density: 0.8
+    minSlope: 0
+    maxSlope: 0
+    minHeight: 2
+    maxHeight: 3
+    minScale: 1
+    maxScale: 2
+    minSpacing: 0
+  - prefab: {fileID: 2601370456692127867, guid: aca4bf9f086f42f4e9ac5994771d9475, type: 3}
+    density: 0.7
+    minSlope: 0
+    maxSlope: 0
+    minHeight: 1
+    maxHeight: 3
+    minScale: 1
+    maxScale: 3
+    minSpacing: 0
+  densityNoiseScale: 0.04
+  densityNoiseOffset: {x: 0, y: 0}
