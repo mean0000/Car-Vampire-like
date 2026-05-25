@@ -1,5 +1,67 @@
 {
   "dependencies": {
+    "com.distantlands.cozy.blocks": {
+      "version": "file:com.distantlands.cozy.blocks",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.distantlands.cozy.core": "3.5.0"
+      }
+    },
+    "com.distantlands.cozy.core": {
+      "version": "file:com.distantlands.cozy.core",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
+    "com.distantlands.cozy.eclipse": {
+      "version": "file:com.distantlands.cozy.eclipse",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.distantlands.cozy.core": "3.5.0"
+      }
+    },
+    "com.distantlands.cozy.habits": {
+      "version": "file:com.distantlands.cozy.habits",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.distantlands.cozy.core": "3.5.0"
+      }
+    },
+    "com.distantlands.cozy.horizon": {
+      "version": "file:com.distantlands.cozy.horizon",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.distantlands.cozy.core": "3.6.0"
+      }
+    },
+    "com.distantlands.cozy.link": {
+      "version": "file:com.distantlands.cozy.link",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.distantlands.cozy.core": "3.5.0"
+      }
+    },
+    "com.distantlands.cozy.plume": {
+      "version": "file:com.distantlands.cozy.plume",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.distantlands.cozy.core": "3.6.7"
+      }
+    },
+    "com.distantlands.cozy.resound": {
+      "version": "file:com.distantlands.cozy.resound",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.distantlands.cozy.core": "3.5.0"
+      }
+    },
     "com.unity.2d.sprite": {
       "version": "1.0.0",
       "depth": 1,
@@ -144,6 +206,45 @@
       "dependencies": {},
       "url": "https://packages.unity.com"
     },
+    "com.unity.render-pipelines.core": {
+      "version": "17.3.0",
+      "depth": 1,
+      "source": "builtin",
+      "dependencies": {
+        "com.unity.burst": "1.8.14",
+        "com.unity.mathematics": "1.3.2",
+        "com.unity.ugui": "2.0.0",
+        "com.unity.collections": "2.4.3",
+        "com.unity.modules.physics": "1.0.0",
+        "com.unity.modules.terrain": "1.0.0",
+        "com.unity.modules.jsonserialize": "1.0.0"
+      }
+    },
+    "com.unity.render-pipelines.universal": {
+      "version": "17.3.0",
+      "depth": 0,
+      "source": "builtin",
+      "dependencies": {
+        "com.unity.render-pipelines.core": "17.3.0",
+        "com.unity.shadergraph": "17.3.0",
+        "com.unity.render-pipelines.universal-config": "17.0.3"
+      }
+    },
+    "com.unity.render-pipelines.universal-config": {
+      "version": "17.0.3",
+      "depth": 1,
+      "source": "builtin",
+      "dependencies": {
+        "com.unity.render-pipelines.core": "17.0.3"
+      }
+    },
+    "com.unity.searcher": {
+      "version": "4.9.4",
+      "depth": 2,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
     "com.unity.serialization": {
       "version": "3.1.3",
       "depth": 1,
@@ -160,6 +261,15 @@
       "source": "registry",
       "dependencies": {},
       "url": "https://packages.unity.com"
+    },
+    "com.unity.shadergraph": {
+      "version": "17.3.0",
+      "depth": 1,
+      "source": "builtin",
+      "dependencies": {
+        "com.unity.render-pipelines.core": "17.3.0",
+        "com.unity.searcher": "4.9.3"
+      }
     },
     "com.unity.test-framework": {
       "version": "1.6.0",

@@ -13,6 +13,9 @@ public class ChunkManager : MonoBehaviour
     private readonly HashSet<Vector2Int> _neededChunks = new HashSet<Vector2Int>();
     private readonly List<Vector2Int> _toRemove = new List<Vector2Int>();
 
+    /// <summary>초기 청크 생성이 완료되었는지 여부. 다른 시스템이 참조.</summary>
+    public bool InitialChunksReady { get; private set; }
+
     private void Update()
     {
         if (playerTransform == null || chunkPrefab == null)
@@ -24,6 +27,9 @@ public class ChunkManager : MonoBehaviour
 
         _lastPlayerChunk = currentChunk;
         UpdateChunks(currentChunk);
+
+        if (!InitialChunksReady)
+            InitialChunksReady = true;
     }
 
     private void UpdateChunks(Vector2Int center)

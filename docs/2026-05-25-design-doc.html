@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZombieCrush — 무기 & 업그레이드 설계 문서</title>
+<style>
+  :root {
+    --bg:       #0d0d0f;
+    --surface:  #141418;
+    --surface2: #1c1c22;
+    --border:   #2a2a35;
+    --accent:   #e63946;
+    --accent2:  #ff6b35;
+    --green:    #2ec4b6;
+    --blue:     #4895ef;
+    --purple:   #9b5de5;
+    --gold:     #f9c74f;
+    --text:     #e8e8f0;
+    --muted:    #888899;
+    --tag-orbital:    #4895ef22;
+    --tag-orbital-b:  #4895ef;
+    --tag-period:     #2ec4b622;
+    --tag-period-b:   #2ec4b6;
+    --tag-cond:       #f9c74f22;
+    --tag-cond-b:     #f9c74f;
+    --tag-deploy:     #9b5de522;
+    --tag-deploy-b:   #9b5de5;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  /* ── Header ── */
+  header {
+    background: linear-gradient(135deg, #1a0005 0%, #0d0d0f 60%);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 40px 36px;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 20% 50%, #e6394615 0%, transparent 60%);
+    pointer-events: none;
+  }
+  header .eyebrow {
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  header h1 {
+    font-size: 32px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.5px;
+  }
+  header h1 span { color: var(--accent); }
+  header .meta {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    gap: 20px;
+  }
+  header .meta span { display: flex; align-items: center; gap: 6px; }
+  header .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #2ec4b622;
+    color: var(--green);
+    border: 1px solid #2ec4b644;
+    margin-left: 4px;
+  }
+
+  /* ── Nav ── */
+  nav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 40px;
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+  }
+  nav a {
+    display: block;
+    padding: 14px 20px;
+    font-size: 13px;
+    color: var(--muted);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  nav a:hover { color: var(--text); border-color: var(--border); }
+  nav a.active { color: var(--accent); border-color: var(--accent); }
+
+  /* ── Layout ── */
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px; }
+
+  section { margin-bottom: 56px; }
+
+  h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .section-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 24px 0 12px;
+  }
+
+  p { color: var(--muted); margin-bottom: 12px; }
+
+  /* ── Tree Header ── */
+  .tree-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .tree-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .tree-icon.survival  { background: #2ec4b615; border: 1px solid #2ec4b640; }
+  .tree-icon.melee     { background: #e6394615; border: 1px solid #e6394640; }
+  .tree-icon.ranged    { background: #4895ef15; border: 1px solid #4895ef40; }
+  .tree-icon.architect { background: #9b5de515; border: 1px solid #9b5de540; }
+
+  .tree-info h3 { margin: 0; font-size: 17px; }
+  .tree-info .desc { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
+
+  .tree-identity {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--surface2);
+    border-left: 3px solid;
+  }
+  .survival  .tree-identity { border-color: var(--green); }
+  .melee     .tree-identity { border-color: var(--accent); }
+  .ranged    .tree-identity { border-color: var(--blue); }
+  .architect .tree-identity { border-color: var(--purple); }
+
+  /* ── Weapon Cards ── */
+  .weapon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .weapon-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    transition: border-color 0.15s;
+  }
+  .weapon-card:hover { border-color: #3a3a48; }
+
+  .survival  .weapon-card { border-left: 3px solid var(--green); }
+  .melee     .weapon-card { border-left: 3px solid var(--accent); }
+  .ranged    .weapon-card { border-left: 3px solid var(--blue); }
+  .architect .weapon-card { border-left: 3px solid var(--purple); }
+
+  .weapon-card .wid {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .weapon-card .wname {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+  .weapon-card .wdesc {
+    font-size: 12px;
+    color: #aaaabb;
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+
+  /* ── Trigger Tag ── */
+  .trigger-tag {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .t-orbital  { background: var(--tag-orbital);  color: var(--tag-orbital-b);  border: 1px solid #4895ef33; }
+  .t-period   { background: var(--tag-period);   color: var(--tag-period-b);   border: 1px solid #2ec4b633; }
+  .t-cond     { background: var(--tag-cond);     color: var(--tag-cond-b);     border: 1px solid #f9c74f33; }
+  .t-deploy   { background: var(--tag-deploy);   color: var(--tag-deploy-b);   border: 1px solid #9b5de533; }
+
+  /* ── Table ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 12px 0 20px;
+  }
+  thead tr { border-bottom: 2px solid var(--border); }
+  th {
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: #ccccd8;
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #ffffff05; }
+
+  /* ── Synergy ── */
+  .synergy-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+  .synergy-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .synergy-card .trees {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .synergy-card .tree-badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .tb-s { background: #2ec4b622; color: var(--green); }
+  .tb-m { background: #e6394622; color: var(--accent); }
+  .tb-r { background: #4895ef22; color: var(--blue); }
+  .tb-a { background: #9b5de522; color: var(--purple); }
+  .synergy-card .combo { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  .synergy-card .effect { font-size: 12px; color: var(--muted); }
+
+  /* ── Upgrade Tier ── */
+  .tier-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .tier-card {
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+  .tier-normal   { background: #1e1e28; border: 1px solid #3a3a48; }
+  .tier-rare     { background: #1a1a2e; border: 1px solid #4895ef44; }
+  .tier-legendary{ background: #1e1508; border: 1px solid #f9c74f44; }
+  .tier-card .tier-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .tier-normal .tier-label   { color: var(--muted); }
+  .tier-rare .tier-label     { color: var(--blue); }
+  .tier-legendary .tier-label{ color: var(--gold); }
+  .tier-card .tier-desc { font-size: 12px; color: var(--muted); }
+
+  /* ── Mechanism Sections ── */
+  .mech-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 700px) { .mech-grid { grid-template-columns: 1fr; } }
+
+  .info-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+  .info-card h4 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .info-card h4 .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ── Probability Bar ── */
+  .prob-row { margin-bottom: 10px; }
+  .prob-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+  .prob-label .name { color: var(--text); font-weight: 600; }
+  .prob-label .nums { color: var(--muted); }
+  .prob-bar { height: 6px; background: #222228; border-radius: 3px; overflow: hidden; }
+  .prob-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+  .fill-normal    { background: #555566; }
+  .fill-rare      { background: var(--blue); }
+  .fill-legendary { background: var(--gold); }
+
+  /* ── Affinity Visual ── */
+  .affinity-example {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .aff-bar-wrap { flex: 1; text-align: center; }
+  .aff-bar-wrap .aff-label { font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+  .aff-bar-bg { height: 60px; background: #222228; border-radius: 4px; overflow: hidden; display: flex; align-items: flex-end; }
+  .aff-bar-fill { width: 100%; border-radius: 4px 4px 0 0; transition: height 0.3s; }
+  .aff-val { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  .aff-s .aff-bar-fill { background: var(--green); }
+  .aff-m .aff-bar-fill { background: var(--accent); }
+  .aff-r .aff-bar-fill { background: var(--blue); }
+  .aff-a .aff-bar-fill { background: var(--purple); }
+
+  /* ── Algorithm Flowchart ── */
+  .flow {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+  }
+  .flow-step {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 0;
+    position: relative;
+  }
+  .flow-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 16px;
+    top: 36px;
+    width: 2px;
+    bottom: 0;
+    background: var(--border);
+  }
+  .flow-step .step-circle {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+    flex-shrink: 0;
+    z-index: 1;
+  }
+  .flow-step .step-body { padding-bottom: 24px; flex: 1; }
+  .flow-step .step-title { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 4px; line-height: 34px; }
+  .flow-step .step-detail { font-size: 12px; color: var(--muted); }
+  .flow-step .step-detail ul { padding-left: 16px; }
+  .flow-step .step-detail li { margin-bottom: 2px; }
+
+  .sc-0  { background: #333340; color: var(--muted); }
+  .sc-1  { background: #1a2e4a; color: var(--blue); border: 1px solid #4895ef44; }
+  .sc-2  { background: #2a1f00; color: var(--gold); border: 1px solid #f9c74f44; }
+  .sc-3  { background: #1a2e4a; color: var(--blue); border: 1px solid #4895ef44; }
+  .sc-4  { background: #1e1e2e; color: var(--purple); border: 1px solid #9b5de544; }
+  .sc-5  { background: #1e1e2e; color: var(--purple); border: 1px solid #9b5de544; }
+  .sc-6a { background: #102010; color: var(--green); border: 1px solid #2ec4b644; }
+  .sc-6b { background: #2a1010; color: var(--accent); border: 1px solid #e6394644; }
+  .sc-7  { background: #333340; color: var(--muted); }
+
+  /* ── Pity ── */
+  .pity-cards { display: flex; gap: 12px; }
+  .pity-card {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+  .pity-card .pity-num {
+    font-size: 40px;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .pity-card.rare .pity-num   { color: var(--blue); }
+  .pity-card.legendary .pity-num { color: var(--gold); }
+  .pity-card .pity-label { font-size: 11px; color: var(--muted); }
+  .pity-card .pity-effect { font-size: 12px; color: var(--text); margin-top: 8px; }
+
+  /* ── Code Block ── */
+  pre {
+    background: #0a0a0e;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    font-family: 'Consolas', 'Fira Code', monospace;
+    font-size: 12px;
+    color: #a0d0a0;
+    overflow-x: auto;
+    line-height: 1.6;
+    margin: 12px 0;
+  }
+
+  /* ── Warning List ── */
+  .warning-list { display: flex; flex-direction: column; gap: 10px; }
+  .warning-item {
+    display: flex;
+    gap: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    align-items: flex-start;
+  }
+  .warning-item .warn-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .warning-item .warn-text { font-size: 13px; color: var(--muted); }
+  .warning-item .warn-text strong { color: var(--text); }
+
+  /* ── Dedup Rules ── */
+  .rule-list { display: flex; flex-direction: column; gap: 8px; }
+  .rule-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .rule-num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--border);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .rule-text { font-size: 13px; color: var(--muted); }
+
+  /* ── File Tree ── */
+  .file-tree {
+    background: #0a0a0e;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    font-family: 'Consolas', 'Fira Code', monospace;
+    font-size: 12px;
+    line-height: 1.8;
+  }
+  .file-tree .dir  { color: var(--blue); }
+  .file-tree .file { color: #a0d0a0; }
+  .file-tree .note { color: var(--muted); }
+
+  /* ── Priority MVP ── */
+  .mvp-list { display: flex; flex-direction: column; gap: 8px; }
+  .mvp-item {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .mvp-rank {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 800;
+    flex-shrink: 0;
+  }
+  .mvp-rank-1 { background: #f9c74f22; color: var(--gold); border: 1px solid #f9c74f44; }
+  .mvp-rank-2 { background: #aaaaaa22; color: #aaa; border: 1px solid #aaaaaa44; }
+  .mvp-rank-3 { background: #cd7f3222; color: #cd7f32; border: 1px solid #cd7f3244; }
+  .mvp-rank-n { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+  .mvp-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .mvp-reason { font-size: 12px; color: var(--muted); margin-left: auto; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: var(--border); margin: 40px 0; }
+
+  /* ── Pill Tags ── */
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .pill-green  { background: #2ec4b622; color: var(--green); }
+  .pill-red    { background: #e6394622; color: var(--accent); }
+  .pill-blue   { background: #4895ef22; color: var(--blue); }
+  .pill-purple { background: #9b5de522; color: var(--purple); }
+  .pill-gold   { background: #f9c74f22; color: var(--gold); }
+
+  /* ── Part separator ── */
+  .part-banner {
+    background: linear-gradient(90deg, #1a0510 0%, var(--surface) 100%);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 36px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .part-banner .part-num {
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .part-banner .part-title { font-size: 18px; font-weight: 700; color: #fff; }
+  .part-banner .part-sub   { font-size: 12px; color: var(--muted); margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">ZombieCrush · Game Design Document</div>
+  <h1><span>무기</span> &amp; 업그레이드 시스템 설계</h1>
+  <div class="meta">
+    <span>📅 확정일: 2026-05-25</span>
+    <span>상태 <span class="badge">설계 확정</span></span>
+    <span>무기 20종 · 트리 4개</span>
+  </div>
+</header>
+
+<nav>
+  <a href="#weapons" class="active">무기 시스템</a>
+  <a href="#mechanism">선택 메커니즘</a>
+  <a href="#rarity">희귀도</a>
+  <a href="#affinity">트리 어피니티</a>
+  <a href="#algorithm">알고리즘</a>
+  <a href="#impl">구현 가이드</a>
+</nav>
+
+<div class="container">
+
+  <!-- ════════════════════════════════════
+       PART 1: 무기 시스템
+  ════════════════════════════════════ -->
+  <div id="weapons">
+    <div class="part-banner" style="margin-top:8px;">
+      <div class="part-num">I</div>
+      <div>
+        <div class="part-title">무기 시스템</div>
+        <div class="part-sub">4트리 20종 — 발동 방식 · 설계 원칙 · 시너지</div>
+      </div>
+    </div>
+
+    <!-- 설계 원칙 -->
+    <section>
+      <h2><span class="section-num">①</span>설계 원칙</h2>
+      <div class="mech-grid">
+        <div class="info-card">
+          <h4><span class="dot" style="background:var(--accent)"></span>로드킬이 주 딜</h4>
+          <p style="font-size:13px;">무기는 "보조 레이어". 무기가 운전을 대체하지 않는다. 좀비를 치는 행위 자체가 항상 가장 강력한 수단.</p>
+        </div>
+        <div class="info-card">
+          <h4><span class="dot" style="background:var(--green)"></span>조작 실력과 시너지</h4>
+          <p style="font-size:13px;">잘 운전할수록 더 강해지는 무기 구조. 드리프트, 속도, 급가속이 직접 무기 발동 조건이 된다.</p>
+        </div>
+        <div class="info-card">
+          <h4><span class="dot" style="background:var(--blue)"></span>차량 부착물에 한정 안 함</h4>
+          <p style="font-size:13px;">나노봇 SF 세계관으로 오비탈·자동·설치형 모두 허용. 물리적 부착 여부는 고려하지 않는다.</p>
+        </div>
+        <div class="info-card">
+          <h4><span class="dot" style="background:var(--purple)"></span>자동 발동</h4>
+          <p style="font-size:13px;">플레이어 별도 조작 없이 조건/주기/항시로 작동. 운전에 집중하면서도 화력이 자동으로 유지.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 발동 방식 -->
+    <section>
+      <h2><span class="section-num">②</span>발동 방식 분류</h2>
+      <table>
+        <thead><tr><th>유형</th><th>설명</th><th>예시</th></tr></thead>
+        <tbody>
+          <tr><td><span class="trigger-tag t-orbital">오비탈</span></td><td>차량 주변에 항시 활성, 거리/공전 형태 유지</td><td>나노봇 실드, Wreck Ball</td></tr>
+          <tr><td><span class="trigger-tag t-period">주기</span></td><td>N초마다 자동 발동</td><td>EMP 버스트, 자동 저격 드론</td></tr>
+          <tr><td><span class="trigger-tag t-cond">조건</span></td><td>드리프트·속도·피격 등 특정 상태 진입 시</td><td>드리프트 슬래셔, 혈액 나노봇</td></tr>
+          <tr><td><span class="trigger-tag t-deploy">설치</span></td><td>지나간 자리나 특정 위치에 오브젝트 배치</td><td>나노봇 지뢰, 전기 울타리</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 트리 1: 생존 -->
+    <section class="survival">
+      <h2><span class="section-num" style="background:var(--green)">S</span>트리 1 — 생존 (Survival)</h2>
+      <div class="tree-header">
+        <div class="tree-icon survival">🛡️</div>
+        <div class="tree-info">
+          <h3 style="color:var(--green)">생존 트리</h3>
+          <div class="desc">방어 · 지속생존 · 유틸리티 — 이 트리만으로 컨셉 빌드 가능</div>
+        </div>
+      </div>
+      <div class="weapon-grid">
+        <div class="weapon-card"><div class="wid">S1</div><div class="wname">나노봇 실드</div><div class="wdesc">차량 주변 나노봇 입자막. 접근 좀비 틱 데미지 + 충돌 데미지 경감</div><span class="trigger-tag t-orbital">오비탈 (항시)</span></div>
+        <div class="weapon-card"><div class="wid">S2</div><div class="wname">EMP 버스트</div><div class="wdesc">주기적 전자기 펄스. 반경 내 좀비 슬로우 + 넘어뜨림</div><span class="trigger-tag t-period">주기 (5초)</span></div>
+        <div class="weapon-card"><div class="wid">S3</div><div class="wname">연막 방출기</div><div class="wdesc">일정 속도 이상 주행 중 후방 연막 생성. 진입 좀비 이속 감소</div><span class="trigger-tag t-cond">조건 (속도 임계값)</span></div>
+        <div class="weapon-card"><div class="wid">S4</div><div class="wname">혈액 나노봇</div><div class="wdesc">피격 후 N초 경과 시 Hull 자동 회복. 쿨다운 존재</div><span class="trigger-tag t-cond">조건 (피격 감지 후)</span></div>
+        <div class="weapon-card"><div class="wid">S5</div><div class="wname">좀비 자기장</div><div class="wdesc">근처 좀비를 진행 방향으로 끌어당겨 로드킬 히트율 상승</div><span class="trigger-tag t-orbital">오비탈 (항시 인력)</span></div>
+      </div>
+      <div class="tree-identity">혼자서도 살아남는 순수 생존형. 킬 효율보다 버티기에 특화.</div>
+    </section>
+
+    <!-- 트리 2: 근접 -->
+    <section class="melee">
+      <h2><span class="section-num" style="background:var(--accent)">M</span>트리 2 — 근접 (Melee)</h2>
+      <div class="tree-header">
+        <div class="tree-icon melee">⚡</div>
+        <div class="tree-info">
+          <h3 style="color:var(--accent)">근접 트리</h3>
+          <div class="desc">속도 · 드리프트 · 근접 전투 — 운전 실력이 직접 딜로 전환</div>
+        </div>
+      </div>
+      <div class="weapon-grid">
+        <div class="weapon-card"><div class="wid">M1</div><div class="wname">드리프트 슬래셔</div><div class="wdesc">드리프트 중 차량 측면으로 충격파. 슬라이딩 구간 내 좀비에게 폭발적 데미지</div><span class="trigger-tag t-cond">조건 (드리프트 입력)</span></div>
+        <div class="weapon-card"><div class="wid">M2</div><div class="wname">킬 체인</div><div class="wdesc">로드킬 직후 0.5초 내 추가 충돌 시 데미지 배수 증가. 최대 5연속 콤보</div><span class="trigger-tag t-cond">조건 (로드킬 → 콤보)</span></div>
+        <div class="weapon-card"><div class="wid">M3</div><div class="wname">충격파 부스터</div><div class="wdesc">급발진·부스트 사용 시 전방 충격파. 전방 좀비 날려보냄</div><span class="trigger-tag t-cond">조건 (가속도 임계값)</span></div>
+        <div class="weapon-card"><div class="wid">M4</div><div class="wname">스핀 오비탈 (Wreck Ball)</div><div class="wdesc">차량 주위 공전하는 폐차 잔해 2개. 지나가며 좀비 타격</div><span class="trigger-tag t-orbital">오비탈 (공전형)</span></div>
+        <div class="weapon-card"><div class="wid">M5</div><div class="wname">속도 폭발</div><div class="wdesc">최고속 3초 유지 시 차체 일시 관통형 변환. 군중 돌파 가능</div><span class="trigger-tag t-cond">조건 (속도 유지 시간)</span></div>
+      </div>
+      <div class="tree-identity">운전 잘 하면 무기도 강해지는 기술형. 드리프트 콤보가 핵심 루프.</div>
+    </section>
+
+    <!-- 트리 3: 원거리 -->
+    <section class="ranged">
+      <h2><span class="section-num" style="background:var(--blue)">R</span>트리 3 — 원거리 (Ranged)</h2>
+      <div class="tree-header">
+        <div class="tree-icon ranged">🎯</div>
+        <div class="tree-info">
+          <h3 style="color:var(--blue)">원거리 트리</h3>
+          <div class="desc">자동 발사 · 지향성 공격 — 운전에 집중하면서 화력을 보완</div>
+        </div>
+      </div>
+      <div class="weapon-grid">
+        <div class="weapon-card"><div class="wid">R1</div><div class="wname">자동 저격 드론</div><div class="wdesc">차량 위를 따라다니는 드론 1기. 최원거리 좀비 자동 저격</div><span class="trigger-tag t-period">주기 (3초)</span></div>
+        <div class="weapon-card"><div class="wid">R2</div><div class="wname">나노봇 포자</div><div class="wdesc">후방 120도 부채꼴로 포자 방출. 접촉 좀비 지속 데미지 + 이속 감소</div><span class="trigger-tag t-period">주기 (2초)</span></div>
+        <div class="weapon-card"><div class="wid">R3</div><div class="wname">유도 미니건</div><div class="wdesc">가장 가까운 좀비 락온 후 고속 연사. 타겟 소멸 시 자동 전환</div><span class="trigger-tag t-period">연속 (근거리 락온)</span></div>
+        <div class="weapon-card"><div class="wid">R4</div><div class="wname">EMP 미사일</div><div class="wdesc">좀비 군집 밀도 높은 곳에 자동 유도 미사일. 착탄 폭발 + 기절</div><span class="trigger-tag t-period">주기 (8초)</span></div>
+        <div class="weapon-card"><div class="wid">R5</div><div class="wname">전기 체인</div><div class="wdesc">가장 가까운 좀비에 전격. 최대 5연쇄로 인접 좀비에게 번개처럼 튀어나감</div><span class="trigger-tag t-period">주기 (2.5초)</span></div>
+      </div>
+      <div class="tree-identity">수동 조작 없이 자동 화력 유지. 운전에 집중할수록 시너지가 좋아짐.</div>
+    </section>
+
+    <!-- 트리 4: 설치/설계 -->
+    <section class="architect">
+      <h2><span class="section-num" style="background:var(--purple)">A</span>트리 4 — 설치/설계 (Architect)</h2>
+      <div class="tree-header">
+        <div class="tree-icon architect">🔧</div>
+        <div class="tree-info">
+          <h3 style="color:var(--purple)">설치/설계 트리</h3>
+          <div class="desc">하이리스크 하이리턴 — 지형과 동선을 설계해야 강력해지는 전략형</div>
+        </div>
+      </div>
+      <div class="weapon-grid">
+        <div class="weapon-card"><div class="wid">A1</div><div class="wname">나노봇 지뢰</div><div class="wdesc">지나간 자리에 자동 배치. 좀비가 밟으면 폭발 (맵에 최대 N개 유지)</div><span class="trigger-tag t-deploy">설치 (주기적 자동 배치)</span></div>
+        <div class="weapon-card"><div class="wid">A2</div><div class="wname">전기 울타리</div><div class="wdesc">드리프트 경로를 따라 전기 라인 생성. 접촉 좀비 감전 + 넘어짐. 시간 후 소멸</div><span class="trigger-tag t-deploy">설치 (드리프트 중 생성)</span></div>
+        <div class="weapon-card"><div class="wid">A3</div><div class="wname">홀로 데코이</div><div class="wdesc">Hull 40% 이하 시 가짜 차량 홀로그램 투영. 좀비 유인 후 폭발 소멸</div><span class="trigger-tag t-cond">조건 (HP 40%, 쿨 15초)</span></div>
+        <div class="weapon-card"><div class="wid">A4</div><div class="wname">타르 폭탄</div><div class="wdesc">전방에 타르 투척. 착탄 지점 슬로우 지대 생성. 마찰열·전기로 점화 가능</div><span class="trigger-tag t-deploy">설치 (주기 5초)</span></div>
+        <div class="weapon-card"><div class="wid">A5</div><div class="wname">블랙홀 발생기</div><div class="wdesc">최고속 도달 시 진행 방향에 소형 블랙홀 투사. 좀비 흡입 후 폭발</div><span class="trigger-tag t-cond">조건 (최고속 + 쿨 20초)</span></div>
+      </div>
+      <div class="tree-identity">설치만으론 약함. 드리프트/속도 조건이 얽혀 있어 운전 실력도 요구.</div>
+    </section>
+
+    <!-- 시너지 -->
+    <section>
+      <h2><span class="section-num">③</span>주요 시너지 조합</h2>
+      <div class="synergy-grid">
+        <div class="synergy-card">
+          <div class="trees"><span class="tree-badge tb-m">MELEE</span><span class="tree-badge tb-a">ARCHITECT</span></div>
+          <div class="combo">드리프트 슬래셔 + 전기 울타리</div>
+          <div class="effect">드리프트 한 번에 공격 + 울타리 동시 생성. M+A 혼합 빌드의 핵심 축.</div>
+        </div>
+        <div class="synergy-card">
+          <div class="trees"><span class="tree-badge tb-m">MELEE</span><span class="tree-badge tb-m">MELEE</span></div>
+          <div class="combo">킬 체인 + 속도 폭발</div>
+          <div class="effect">고속 연속 로드킬로 콤보 + 관통 극대화. 순수 근접 빌드의 최강 조합.</div>
+        </div>
+        <div class="synergy-card">
+          <div class="trees"><span class="tree-badge tb-a">ARCHITECT</span><span class="tree-badge tb-r">RANGED</span></div>
+          <div class="combo">타르 폭탄 + 전기 체인</div>
+          <div class="effect">타르로 군집 슬로우 → 전기 연쇄 폭발. 밸런스 최우선 모니터링 대상.</div>
+        </div>
+        <div class="synergy-card">
+          <div class="trees"><span class="tree-badge tb-s">SURVIVAL</span><span class="tree-badge tb-s">SURVIVAL</span></div>
+          <div class="combo">나노봇 실드 + 좀비 자기장</div>
+          <div class="effect">좀비를 끌어당기면서 실드로 틱 데미지. 순수 생존 컨셉 플레이.</div>
+        </div>
+        <div class="synergy-card">
+          <div class="trees"><span class="tree-badge tb-s">SURVIVAL</span><span class="tree-badge tb-r">RANGED</span></div>
+          <div class="combo">EMP 버스트 + EMP 미사일</div>
+          <div class="effect">전자기 집중 빌드. 기절/슬로우로 군집 제어에 특화.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 업그레이드 등급 -->
+    <section>
+      <h2><span class="section-num">④</span>무기 강화 등급</h2>
+      <div class="tier-row">
+        <div class="tier-card tier-normal">
+          <div class="tier-label">Normal · Lv 1~2</div>
+          <div class="tier-desc">수치 향상<br>데미지 · 쿨다운 · 범위 · 개수</div>
+        </div>
+        <div class="tier-card tier-rare">
+          <div class="tier-label">Rare · Lv 3~4</div>
+          <div class="tier-desc">부가 효과 추가<br>상태이상 · 연쇄 · 조건 변화</div>
+        </div>
+        <div class="tier-card tier-legendary">
+          <div class="tier-label">Legendary · Lv 5</div>
+          <div class="tier-desc">행동 방식 자체 변화<br>발동 조건 완화 · 새로운 형태</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ════════════════════════════════════
+       PART 2: 업그레이드 메커니즘
+  ════════════════════════════════════ -->
+  <div id="mechanism">
+    <div class="part-banner">
+      <div class="part-num">II</div>
+      <div>
+        <div class="part-title">업그레이드 선택 메커니즘</div>
+        <div class="part-sub">카드 풀 구성 · 희귀도 · 트리 어피니티 · 피티 · 알고리즘</div>
+      </div>
+    </div>
+
+    <!-- 핵심 전제 -->
+    <section>
+      <h2><span class="section-num">⑤</span>핵심 전제</h2>
+      <div class="mech-grid">
+        <div class="info-card">
+          <h4><span class="dot" style="background:var(--gold)"></span>PendingLevels 소진</h4>
+          <p style="font-size:13px;">피트스톱 진입 시 쌓인 레벨을 전부 소진하며 선택. 레벨 3이면 3번 선택, 0이면 UI 미표시.</p>
+        </div>
+        <div class="info-card">
+          <h4><span class="dot" style="background:var(--blue)"></span>카드 4장 제시</h4>
+          <p style="font-size:13px;">매 선택 화면에 4장. 해금(신규 무기)과 강화(기존 레벨업)가 보유 무기 수에 따라 혼합.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 카드 풀 구성 -->
+    <section>
+      <h2><span class="section-num">⑥</span>카드 풀 구성 규칙</h2>
+      <table>
+        <thead><tr><th>보유 무기 수</th><th>해금 슬롯</th><th>강화 슬롯</th></tr></thead>
+        <tbody>
+          <tr><td>0개</td><td><span class="pill pill-green">4</span></td><td>0</td></tr>
+          <tr><td>1~2개</td><td><span class="pill pill-green">2</span></td><td><span class="pill pill-blue">2</span></td></tr>
+          <tr><td>3~4개</td><td><span class="pill pill-green">1</span></td><td><span class="pill pill-blue">3</span></td></tr>
+          <tr><td>5개 이상</td><td><span class="pill pill-green">0~1</span> (해금 가능 시만)</td><td><span class="pill pill-blue">3~4</span></td></tr>
+        </tbody>
+      </table>
+      <div style="display:flex;gap:12px;font-size:13px;color:var(--muted);">
+        <span>· 같은 트리 카드: 한 화면에 최대 <strong style="color:var(--text)">2장</strong></span>
+        <span>· 동일 무기 카드: 같은 화면에 <strong style="color:var(--accent)">절대 중복 불가</strong></span>
+      </div>
+    </section>
+
+    <!-- 희귀도 -->
+    <section id="rarity">
+      <h2><span class="section-num">⑦</span>희귀도 가중치</h2>
+      <div class="mech-grid">
+        <div class="info-card">
+          <h4><span class="dot" style="background:var(--muted)"></span>기본 확률</h4>
+          <div style="margin-top:12px;">
+            <div class="prob-row">
+              <div class="prob-label"><span class="name">Normal</span><span class="nums">70% → 40%</span></div>
+              <div class="prob-bar"><div class="prob-fill fill-normal" style="width:70%"></div></div>
+            </div>
+            <div class="prob-row">
+              <div class="prob-label"><span class="name" style="color:var(--blue)">Rare</span><span class="nums">25% → 40%</span></div>
+              <div class="prob-bar"><div class="prob-fill fill-rare" style="width:25%"></div></div>
+            </div>
+            <div class="prob-row">
+              <div class="prob-label"><span class="name" style="color:var(--gold)">Legendary</span><span class="nums">5% → 20%</span></div>
+              <div class="prob-bar"><div class="prob-fill fill-legendary" style="width:5%"></div></div>
+            </div>
+            <p style="font-size:11px;margin-top:8px;">→ 화살표는 게임 후반(20분 or Lv30) 최대 변화값</p>
+          </div>
+        </div>
+        <div class="info-card">
+          <h4><span class="dot" style="background:var(--gold)"></span>Bank Bonus (레벨 축적 보정)</h4>
+          <p style="font-size:13px;">피트스톱 진입 시 PendingLevels ≥ 5이면 Legendary 확률 추가 보정.</p>
+          <pre>bankBonus = Clamp01((pendingLevels - 4) * 0.03f)
+// 레벨 5부터 3%씩 증가</pre>
+          <p style="font-size:12px;color:var(--muted);">늦게 방문할수록 고등급 카드 확률 상승 → 리스크-리턴 장치</p>
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <h3>진행도에 따른 확률 공식</h3>
+        <pre>timeFactor  = Clamp01(gameTime / 1200f)   // 20분에 최대
+levelFactor = Clamp01(playerLevel / 30f)  // 레벨 30에 최대
+progression = Max(timeFactor, levelFactor)
+
+Normal:     70% - (30% × progression)   →  70% ~ 40%
+Rare:       25% + (15% × progression)   →  25% ~ 40%
+Legendary:   5% + (15% × progression)   →   5% ~ 20%</pre>
+      </div>
+    </section>
+
+    <!-- 트리 어피니티 -->
+    <section id="affinity">
+      <h2><span class="section-num">⑧</span>트리 어피니티 (Tree Affinity)</h2>
+      <div class="mech-grid">
+        <div class="info-card">
+          <h4><span class="dot" style="background:var(--green)"></span>점수 계산</h4>
+          <table style="margin:8px 0;">
+            <thead><tr><th>행동</th><th>점수</th></tr></thead>
+            <tbody>
+              <tr><td>해당 트리 무기 해금</td><td><span class="pill pill-green">+2점</span></td></tr>
+              <tr><td>해당 트리 무기 강화</td><td><span class="pill pill-green">+1점</span></td></tr>
+              <tr><td>피트스톱 완료 후 감쇠</td><td><span class="pill pill-red">× 0.9</span></td></tr>
+            </tbody>
+          </table>
+          <p style="font-size:12px;">최근 선택이 더 큰 영향. 감쇠 덕에 방향 전환도 가능.</p>
+        </div>
+        <div class="info-card">
+          <h4><span class="dot" style="background:var(--blue)"></span>가중치 반영 공식</h4>
+          <pre>가중치 = 1.0 + affinityScore × 0.5
+
+근접 어피니티 6점 → 가중치 4.0
+원거리 어피니티 0점 → 가중치 1.0</pre>
+          <p style="font-size:12px;margin-top:6px;">· 해금 카드 1.2배 추가 가중치 (해금 우선 유도)<br>· 한 트리 최대 2장 규칙으로 "우연한 발견" 보장<br>· 어피니티 0인 트리도 완전히 사라지지 않음</p>
+        </div>
+      </div>
+      <div class="info-card" style="margin-top:12px;">
+        <h4><span class="dot" style="background:var(--purple)"></span>어피니티 시각화 예시 (근접 집중 플레이어)</h4>
+        <div class="affinity-example">
+          <div class="aff-bar-wrap aff-s"><div class="aff-label">생존</div><div class="aff-bar-bg"><div class="aff-bar-fill" style="height:15%"></div></div><div class="aff-val">1.5배</div></div>
+          <div class="aff-bar-wrap aff-m"><div class="aff-label">근접</div><div class="aff-bar-bg"><div class="aff-bar-fill" style="height:80%"></div></div><div class="aff-val">4.0배</div></div>
+          <div class="aff-bar-wrap aff-r"><div class="aff-label">원거리</div><div class="aff-bar-bg"><div class="aff-bar-fill" style="height:10%"></div></div><div class="aff-val">1.0배</div></div>
+          <div class="aff-bar-wrap aff-a"><div class="aff-label">설치</div><div class="aff-bar-bg"><div class="aff-bar-fill" style="height:20%"></div></div><div class="aff-val">2.0배</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 중복 방지 -->
+    <section>
+      <h2><span class="section-num">⑨</span>중복 방지 규칙</h2>
+      <div class="rule-list">
+        <div class="rule-item"><div class="rule-num">1</div><div class="rule-text">동일 무기 카드 같은 화면에 2장 이상 불가</div></div>
+        <div class="rule-item"><div class="rule-num">2</div><div class="rule-text">이미 보유한 무기의 <strong>해금</strong> 카드 불가</div></div>
+        <div class="rule-item"><div class="rule-num">3</div><div class="rule-text">최대 등급(전설) 무기의 <strong>강화</strong> 카드 불가</div></div>
+        <div class="rule-item"><div class="rule-num">4</div><div class="rule-text">같은 트리에서 최대 2장</div></div>
+        <div class="rule-item"><div class="rule-num">5</div><div class="rule-text">같은 피트스톱 내 연속 선택 간: 직전 선택 카드와 동일 카드의 가중치 <strong>50% 감소</strong> (완전 차단 아님)</div></div>
+      </div>
+    </section>
+
+    <!-- 리롤 -->
+    <section>
+      <h2><span class="section-num">⑩</span>리롤 시스템</h2>
+      <table>
+        <thead><tr><th>항목</th><th>값</th></tr></thead>
+        <tbody>
+          <tr><td>피트스톱당 최대 횟수</td><td><span class="pill pill-blue">2회</span></td></tr>
+          <tr><td>비용</td><td>나노봇 코어 50개 <em>또는</em> 레벨 1 소진</td></tr>
+          <tr><td>리롤 시 어피니티</td><td>그대로 유지 (빌드 방향성 보존)</td></tr>
+          <tr><td>최소 변경 보장</td><td>이전 카드 중 최소 <span class="pill pill-red">2장</span>은 반드시 교체</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 피티 -->
+    <section>
+      <h2><span class="section-num">⑪</span>보장(Pity) 시스템</h2>
+      <div class="pity-cards">
+        <div class="pity-card rare">
+          <div class="pity-num">4</div>
+          <div class="pity-label">회 연속 Normal만 나오면</div>
+          <div class="pity-effect">다음 화면에서 1장 이상<br><strong style="color:var(--blue)">Rare 이상 보장</strong></div>
+        </div>
+        <div class="pity-card legendary">
+          <div class="pity-num">12</div>
+          <div class="pity-label">회 연속 Legendary 없으면</div>
+          <div class="pity-effect">다음 화면에서 1장<br><strong style="color:var(--gold)">Legendary 보장</strong></div>
+        </div>
+      </div>
+      <p style="margin-top:12px;font-size:13px;">해당 등급이 나오면 카운터 리셋. 첫 피트스톱은 전부 Normal 고정 (피티 카운터 시작 기점).</p>
+    </section>
+
+    <!-- 알고리즘 순서도 -->
+    <section id="algorithm">
+      <h2><span class="section-num">⑫</span>카드 선택 알고리즘</h2>
+      <div class="flow">
+        <div class="flow-step">
+          <div class="step-circle sc-0">0</div>
+          <div class="step-body">
+            <div class="step-title">피트스톱 진입</div>
+            <div class="step-detail">PendingLevels 확인 → 0이면 힐/Sync 감소만 수행 후 종료</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-circle sc-1">1</div>
+          <div class="step-body">
+            <div class="step-title">선택 라운드 시작 (PendingLevels 횟수 반복)</div>
+            <div class="step-detail">PendingLevels-- / rerollCount = 0</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-circle sc-2">2</div>
+          <div class="step-body">
+            <div class="step-title">슬롯 구성 결정</div>
+            <div class="step-detail">
+              ownedCount 기반으로 해금/강화 슬롯 수 결정<br>
+              <strong>첫 피트스톱 첫 선택이면</strong> → 4트리 각 1장 Normal 해금 → STEP 5로
+            </div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-circle sc-3">3</div>
+          <div class="step-body">
+            <div class="step-title">희귀도 결정</div>
+            <div class="step-detail">
+              progression 계산 → RarityRoller.Roll()<br>
+              PityTracker.GetGuaranteedRarity() 확인 → 보장 등급 있으면 첫 슬롯에 강제 적용
+            </div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-circle sc-4">4</div>
+          <div class="step-body">
+            <div class="step-title">카드 풀 구축 및 선택</div>
+            <div class="step-detail">
+              <ul>
+                <li>해금 풀: 미보유 무기 목록</li>
+                <li>강화 풀: 보유 무기 중 최대 등급 미달 목록</li>
+                <li>트리 어피니티 가중치 적용 + 해금 카드 1.2배</li>
+                <li>중복 방지 검증 후 4장 선택</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-circle sc-5">5</div>
+          <div class="step-body">
+            <div class="step-title">UI 표시</div>
+            <div class="step-detail">Time.timeScale = 0 / 카드 4장 + 리롤 버튼 표시 / 플레이어 입력 대기</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-circle sc-6a">6A</div>
+          <div class="step-body">
+            <div class="step-title">카드 선택 시</div>
+            <div class="step-detail">
+              해금: Inventory.Unlock() + Affinity +2<br>
+              강화: Inventory.Upgrade() + Affinity +1<br>
+              PityTracker.OnCardsPicked() / AffinityTracker.DecayAll() (×0.9)<br>
+              PendingLevels > 0 → STEP 1 / 아니면 STEP 7
+            </div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-circle sc-6b">6B</div>
+          <div class="step-body">
+            <div class="step-title">리롤 시</div>
+            <div class="step-detail">rerollCount &lt; 2 확인 + 비용 지불 / 최소 2장 교체 보장 → STEP 4</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-circle sc-7">7</div>
+          <div class="step-body">
+            <div class="step-title">종료</div>
+            <div class="step-detail">Time.timeScale = 1 / UI 닫기 / 게임 재개</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ════════════════════════════════════
+       PART 3: 구현 가이드
+  ════════════════════════════════════ -->
+  <div id="impl">
+    <div class="part-banner">
+      <div class="part-num">III</div>
+      <div>
+        <div class="part-title">구현 가이드</div>
+        <div class="part-sub">MVP 우선순위 · 파일 구조 · 주의사항</div>
+      </div>
+    </div>
+
+    <!-- MVP 우선순위 -->
+    <section>
+      <h2><span class="section-num">⑬</span>MVP 구현 우선순위</h2>
+      <div class="mvp-list">
+        <div class="mvp-item"><div class="mvp-rank mvp-rank-1">1</div><div><div class="mvp-name">M1 드리프트 슬래셔</div><div style="font-size:12px;color:var(--muted)">핵심 차별화 재미 즉시 검증 가능</div></div></div>
+        <div class="mvp-item"><div class="mvp-rank mvp-rank-2">2</div><div><div class="mvp-name">M2 킬 체인</div><div style="font-size:12px;color:var(--muted)">로드킬 루프 강화, 구현 비교적 단순</div></div></div>
+        <div class="mvp-item"><div class="mvp-rank mvp-rank-3">3</div><div><div class="mvp-name">R1 자동 저격 드론</div><div style="font-size:12px;color:var(--muted)">기본 자동화 뱀서 맛 제공</div></div></div>
+        <div class="mvp-item"><div class="mvp-rank mvp-rank-n">4</div><div><div class="mvp-name">A1 나노봇 지뢰</div><div style="font-size:12px;color:var(--muted)">설치형 플레이 스타일 검증</div></div></div>
+        <div class="mvp-item"><div class="mvp-rank mvp-rank-n">5</div><div><div class="mvp-name">S2 EMP 버스트</div><div style="font-size:12px;color:var(--muted)">생존 유틸 루프 검증</div></div></div>
+      </div>
+    </section>
+
+    <!-- 파일 구조 -->
+    <section>
+      <h2><span class="section-num">⑭</span>구현 파일 구조</h2>
+      <div class="file-tree">
+        <span class="dir">Assets/_Project/Scripts/</span><br>
+        &nbsp;&nbsp;<span class="dir">└── Upgrade/</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">├── Data/</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">├── WeaponData.cs</span>          <span class="note">ScriptableObject — 무기 정의</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">└── UpgradeCard.cs</span>         <span class="note">카드 데이터 클래스</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">├── CardPoolBuilder.cs</span>         <span class="note">카드 풀 구축 + 가중치 선택</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">├── RarityRoller.cs</span>            <span class="note">희귀도 확률 계산</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">├── TreeAffinityTracker.cs</span>     <span class="note">트리 어피니티 추적</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">├── PityTracker.cs</span>             <span class="note">피티 보장 시스템</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">└── PlayerWeaponInventory.cs</span>   <span class="note">보유 무기 관리 싱글톤</span><br>
+        <br>
+        <span class="note">── 기존 파일 수정 ──</span><br>
+        <span class="file">XPManager.cs</span>              <span class="note">PendingLevels 필드 + ConsumeLevels()</span><br>
+        <span class="file">PitStopZone.cs</span>            <span class="note">PendingLevels > 0 확인 후 UI 오픈</span><br>
+        <span class="file">UpgradeMenuUI.cs</span>          <span class="note">하드코딩 제거, 4장 카드 + 리롤, 다회 루프</span>
+      </div>
+    </section>
+
+    <!-- 주의사항 -->
+    <section>
+      <h2><span class="section-num">⑮</span>주의사항</h2>
+      <div class="warning-list">
+        <div class="warning-item"><div class="warn-icon">⚠️</div><div class="warn-text"><strong>R3 유도 미니건</strong> — 락온 연사는 "운전이 의미 없는" 상태로 빠질 수 있음. 락온 거리를 짧게 제한할 것.</div></div>
+        <div class="warning-item"><div class="warn-icon">⚠️</div><div class="warn-text"><strong>A4 타르 + R5 전기 체인</strong> — 강력한 시너지. 밸런스 최우선 모니터링 대상.</div></div>
+        <div class="warning-item"><div class="warn-icon">⚠️</div><div class="warn-text"><strong>A5 블랙홀 발생기</strong> — 세계관 내 가장 SF적인 무기. 플레이어 반응 보고 유지 여부 결정.</div></div>
+        <div class="warning-item"><div class="warn-icon">⚠️</div><div class="warn-text"><strong>S5 좀비 자기장</strong> — 좀비 대량 집결 시 성능 부하 가능. 오브젝트 풀링 이후 도입 권장.</div></div>
+        <div class="warning-item"><div class="warn-icon">💡</div><div class="warn-text"><strong>Time.timeScale = 0</strong> — 다회 선택 루프 동안 유지. 매번 토글하지 말고 모든 선택 완료 후 1로 복구.</div></div>
+        <div class="warning-item"><div class="warn-icon">💡</div><div class="warn-text"><strong>카드 풀 고갈 폴백</strong> — 20종 전부 전설 달성 시 패시브 스탯 카드(속도·부스트·드리프트)를 폴백으로 제시.</div></div>
+        <div class="warning-item"><div class="warn-icon">💡</div><div class="warn-text"><strong>RarityRoller 수치</strong> — ScriptableObject + AnimationCurve로 구현해 코드 수정 없이 Inspector 튜닝 가능하게.</div></div>
+      </div>
+    </section>
+
+  </div>
+
+</div><!-- /container -->
+
+</body>
+</html>

@@ -8,10 +8,11 @@ public class XPManager : MonoBehaviour
 {
     public static XPManager Instance { get; private set; }
 
-    [SerializeField] int[] xpThresholds = { 5, 12, 22, 35, 50 };
-
     public int CurrentLevel { get; private set; } = 1;
     public int CurrentXP { get; private set; } = 0;
+
+    /// <summary>피트스톱에서 아직 처리되지 않은 레벨업 횟수.</summary>
+    public int PendingLevels { get; private set; } = 0;
 
     /// <summary>좀비 처치 XP 보너스 (업그레이드로 증가)</summary>
     public int bonusXP = 0;
@@ -35,7 +36,7 @@ public class XPManager : MonoBehaviour
     /// <summary>XP를 추가하고 레벨업 여부를 확인.</summary>
     public void AddXP(int amount)
     {
-        CurrentXP += amount + bonusXP;
+        CurrentXP += Mathf.Max(0, amount + bonusXP);
 
         while (true)
         {
@@ -52,16 +53,27 @@ public class XPManager : MonoBehaviour
     {
         CurrentXP = 0;
         CurrentLevel++;
+        PendingLevels++;
         OnLevelChanged?.Invoke(CurrentLevel);
 
         // 업그레이드는 피트스톱 거점 진입 시 트리거 (PitStopZone.cs)
     }
 
-    /// <summary>현재 레벨에서 다음 레벨까지 필요한 XP. 임계값 범위 초과 시 마지막 값 사용.</summary>
+    /// <summary>
+    /// 현재 레벨에서 다음 레벨까지 필요한 XP.
+    /// 공식: 10 + (level * 8) + (level * level * 2), 40레벨까지 스케일.
+    /// </summary>
     public int GetCurrentThreshold()
     {
-        if (xpThresholds == null || xpThresholds.Length == 0) return 10;
-        int idx = Mathf.Clamp(CurrentLevel - 1, 0, xpThresholds.Length - 1);
-        return xpThresholds[idx];
+        int lv = Mathf.Clamp(CurrentLevel, 1, 40);
+        return 10 + (lv * 8) + (lv * lv * 2);
+    }
+
+    /// <summary>PendingLevels가 남아있으면 1 소비하고 true 반환. 없으면 false.</summary>
+    public bool ConsumePendingLevel()
+    {
+        if (PendingLevels <= 0) return false;
+        PendingLevels--;
+        return true;
     }
 }

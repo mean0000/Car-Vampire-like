@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZombieCrush Dev Log — 2026-05-25 Session 2</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2129;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-dim: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --red: #f85149;
+    --orange: #d29922;
+    --purple: #bc8cff;
+    --cyan: #39d353;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 4rem 0 3rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 3rem;
+  }
+  .hero-badge {
+    display: inline-block;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 0.3rem 1rem;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+  }
+  .hero h1 {
+    font-size: 2.4rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero p { color: var(--text-dim); font-size: 1.1rem; }
+
+  /* Stats bar */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    margin-bottom: 3rem;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.2rem;
+    text-align: center;
+  }
+  .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--accent); }
+  .stat-label { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.3rem; }
+
+  /* Section */
+  section {
+    margin-bottom: 3rem;
+    padding-bottom: 3rem;
+    border-bottom: 1px solid var(--border);
+  }
+  section:last-of-type { border-bottom: none; }
+  .section-num {
+    font-size: 0.7rem;
+    color: var(--purple);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.3rem;
+  }
+  h2 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 1.5rem 0 0.5rem;
+    color: var(--accent);
+  }
+  p { margin-bottom: 0.8rem; color: var(--text); }
+  .dim { color: var(--text-dim); }
+
+  /* Blockquote */
+  blockquote {
+    border-left: 3px solid var(--orange);
+    padding: 0.8rem 1.2rem;
+    margin: 1rem 0;
+    background: var(--surface);
+    border-radius: 0 8px 8px 0;
+    font-style: italic;
+    color: var(--orange);
+  }
+
+  /* Code */
+  pre {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin: 1rem 0;
+  }
+  code {
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    color: var(--cyan);
+  }
+  pre code { color: var(--text); }
+  .kw { color: var(--purple); }
+  .fn { color: var(--accent); }
+  .cm { color: var(--text-dim); }
+  .st { color: var(--green); }
+  .num { color: var(--orange); }
+
+  /* Flow diagram */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 1.5rem 0;
+    flex-wrap: wrap;
+  }
+  .flow-step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.8rem 1rem;
+    text-align: center;
+    min-width: 120px;
+  }
+  .flow-step .label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; }
+  .flow-step .value { font-size: 0.95rem; font-weight: 600; }
+  .flow-step .detail { font-size: 0.75rem; color: var(--text-dim); margin-top: 0.2rem; }
+  .flow-arrow { color: var(--text-dim); font-size: 1.2rem; padding: 0 0.3rem; }
+
+  /* Cards */
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin: 1rem 0; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+  .card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.8rem; }
+  .card-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .card-title { font-weight: 600; font-size: 1rem; }
+  .card-role { font-size: 0.8rem; color: var(--text-dim); margin-bottom: 0.8rem; }
+  .card ul { list-style: none; padding: 0; }
+  .card li { font-size: 0.85rem; padding: 0.3rem 0; color: var(--text-dim); }
+  .card li::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 0.5rem; vertical-align: middle; }
+
+  /* Zombie-specific card colors */
+  .card.ranged { border-top: 3px solid var(--red); }
+  .card.ranged li::before { background: var(--red); }
+  .card.charger { border-top: 3px solid var(--green); }
+  .card.charger li::before { background: var(--green); }
+  .card.laser { border-top: 3px solid #fff; }
+  .card.laser li::before { background: #fff; }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.85rem;
+  }
+  th, td {
+    padding: 0.6rem 0.8rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th { color: var(--text-dim); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  td { color: var(--text); }
+  tr:hover td { background: var(--surface); }
+
+  /* Tags */
+  .tag {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+  .tag-critical { background: rgba(248,81,73,0.15); color: var(--red); }
+  .tag-high { background: rgba(210,153,34,0.15); color: var(--orange); }
+  .tag-medium { background: rgba(88,166,255,0.15); color: var(--accent); }
+
+  /* Evolution timeline */
+  .timeline { position: relative; margin: 1.5rem 0; padding-left: 2rem; }
+  .timeline::before { content: ''; position: absolute; left: 0.5rem; top: 0; bottom: 0; width: 2px; background: var(--border); }
+  .timeline-item { position: relative; margin-bottom: 2rem; }
+  .timeline-dot {
+    position: absolute;
+    left: -1.65rem;
+    top: 0.3rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--bg);
+  }
+  .timeline-dot.fail { border-color: var(--red); background: var(--red); }
+  .timeline-dot.success { border-color: var(--green); background: var(--green); }
+  .timeline-label { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.3rem; }
+  .timeline-title { font-weight: 600; margin-bottom: 0.3rem; }
+  .timeline-desc { font-size: 0.85rem; color: var(--text-dim); }
+
+  /* State machine */
+  .state-machine {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 1rem 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .state {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 0.6rem 1rem;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  .state.active { border-color: var(--green); color: var(--green); }
+  .state-arrow { color: var(--text-dim); font-size: 0.9rem; padding: 0 0.4rem; }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 2rem 0;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-badge">ZombieCrush Development Log</div>
+  <h1>Session 2 — 2026.05.25</h1>
+  <p>좀비 공격 시스템 전면 개편 &amp; 좀비 변종 구현</p>
+</div>
+
+<!-- Stats -->
+<div class="stats">
+  <div class="stat">
+    <div class="stat-value">3</div>
+    <div class="stat-label">시스템 구현</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">9</div>
+    <div class="stat-label">수정 파일</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">6</div>
+    <div class="stat-label">코드 리뷰</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">15+</div>
+    <div class="stat-label">버그 수정</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">3</div>
+    <div class="stat-label">예측 알고리즘 반복</div>
+  </div>
+</div>
+
+<!-- Section 1: Attack System Overhaul -->
+<section>
+  <div class="section-num">Part 01</div>
+  <h2>근접공격 → 원거리 공격 전환</h2>
+
+  <blockquote>
+    "차로 좀비를 박아서 죽이는데, 왜 잘못 박으면 대미지?"<br>
+    — 핵심 루프와 모순되는 근접 데미지 시스템 제거
+  </blockquote>
+
+  <p>이 게임의 핵심은 <strong>"차로 좀비를 치는 것"</strong>이다. 충돌 시 차에 데미지가 들어오면 플레이어는 회피 플레이를 하게 되고, 이는 게임이 의도한 방향과 정반대다. AI 나노봇 세계관을 활용해 모든 좀비를 원거리 공격으로 전환했다.</p>
+
+  <h3>2페이즈 공격 흐름</h3>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="label">Search</div>
+      <div class="value">0.6초</div>
+      <div class="detail">매 프레임 예측 계산</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="label">Lock</div>
+      <div class="value">0.4초</div>
+      <div class="detail">인디케이터 표시</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="label">Fire</div>
+      <div class="value">Arc</div>
+      <div class="detail">포물선 투사체</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="label">Cooldown</div>
+      <div class="value">2.5초</div>
+      <div class="detail">다음 공격 대기</div>
+    </div>
+  </div>
+
+  <p class="dim">첫 공격은 0.2~0.5초 딜레이만 부여하여 즉각 반응. 이후 2.5초 쿨타임.</p>
+</section>
+
+<!-- Section 2: Prediction Evolution -->
+<section>
+  <div class="section-num">Part 02</div>
+  <h2>투사체 예측 — 3차 진화</h2>
+
+  <p>이동하는 차량을 맞추기 위한 예측 시스템을 3차례 설계하고 2번 폐기한 과정.</p>
+
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-dot fail"></div>
+      <div class="timeline-label">1차 시도 — 폐기</div>
+      <div class="timeline-title">Angular Velocity 기반 곡선 예측</div>
+      <div class="timeline-desc">차의 회전 속도로 커브 궤적을 예측. totalLeadTime(1.8초)이 과도해 탄착점이 수십 미터 빗나감. Angular velocity 회전이 예측이 아닌 노이즈로 작용.</div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-dot fail"></div>
+      <div class="timeline-label">2차 시도 — 폐기</div>
+      <div class="timeline-title">Quadratic Intercept 이차방정식</div>
+      <div class="timeline-desc">Halo, L4D, Overwatch 등이 사용하는 업계 표준 공식 적용. 그러나 이 공식은 "일정 속도" 투사체용이고, 우리 투사체는 고정 비행시간(Lerp) 방식이라 공식 전제 자체가 맞지 않았음.</div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-dot success"></div>
+      <div class="timeline-label">3차 시도 — 채택</div>
+      <div class="timeline-title">고정 비행시간 선형 예측</div>
+      <div class="timeline-desc">투사체가 항상 flightDuration초 후 도착하므로, 전체 리드타임만큼 현재 속도로 선형 예측. 물리적으로 정확하고 코드 3줄로 해결.</div>
+    </div>
+  </div>
+
+  <h3>최종 구현</h3>
+  <pre><code><span class="kw">float</span> totalLead = remainSearch + lockTime + flightDuration;
+_aimTarget = _target.position + carVel * totalLead;</code></pre>
+
+  <p><strong>핵심 교훈:</strong> 투사체 모델(일정 속도 vs 고정 시간)에 따라 올바른 예측 공식이 다르다. 복잡한 공식이 항상 정답은 아니다.</p>
+</section>
+
+<!-- Section 3: Zombie Variants -->
+<section>
+  <div class="section-num">Part 03</div>
+  <h2>좀비 변종 시스템</h2>
+
+  <p>3종 좀비가 80% 코드를 공유(이동, 스폰, 킬, 터레인)하므로 상속 대신 <code>enum</code> 분기를 선택. FixedUpdate에서 공격 로직만 switch로 분기한다.</p>
+
+  <div class="card-grid">
+    <!-- Ranged -->
+    <div class="card ranged">
+      <div class="card-header">
+        <div class="card-dot" style="background: var(--red);"></div>
+        <div class="card-title">Ranged (원거리형)</div>
+      </div>
+      <div class="card-role">기본 좀비 — 포물선 투사체</div>
+      <ul>
+        <li>사거리 25m에서 정지 후 사격</li>
+        <li>선형 예측 + 랜덤 산포</li>
+        <li>착탄 지점 인디케이터 표시</li>
+        <li>Search → Lock → Fire 흐름</li>
+      </ul>
+    </div>
+
+    <!-- Charger -->
+    <div class="card charger">
+      <div class="card-header">
+        <div class="card-dot" style="background: var(--green);"></div>
+        <div class="card-title">Charger (돌진형)</div>
+      </div>
+      <div class="card-role">코너 차단자 — 커브 안쪽 점거</div>
+      <ul>
+        <li>직선에서는 위협 없음</li>
+        <li>코너링 감지 시 안쪽으로 이동</li>
+        <li>1.8배속 돌진 → 측면/후면 데미지</li>
+        <li>정면 충돌 시 일반 킬 (보상)</li>
+      </ul>
+    </div>
+
+    <!-- Laser -->
+    <div class="card laser">
+      <div class="card-header">
+        <div class="card-dot" style="background: #fff;"></div>
+        <div class="card-title">Laser (레이저형)</div>
+      </div>
+      <div class="card-role">히트스캔 저격 — 붉은 조준선</div>
+      <ul>
+        <li>30m에서 정지, 2초 조준</li>
+        <li>붉은 레이저 조준선 표시</li>
+        <li>히트스캔 즉발 데미지</li>
+        <li>조준 시작 후 거리 무제한</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Charger 상태 머신</h3>
+  <div class="state-machine">
+    <div class="state">Stalk</div>
+    <div class="state-arrow">→</div>
+    <div class="state active">Position</div>
+    <div class="state-arrow">→</div>
+    <div class="state active">Charge</div>
+    <div class="state-arrow">→</div>
+    <div class="state">Recover</div>
+    <div class="state-arrow">↩</div>
+  </div>
+
+  <p>Angular velocity로 차량 코너링을 감지하고, 커브 안쪽에 포지셔닝한 뒤 돌진한다. 플레이어는 반대로 꺾거나, 정면으로 맞서거나, 드리프트/부스트로 돌파할 수 있다.</p>
+
+  <h3>Laser 상태 머신</h3>
+  <div class="state-machine">
+    <div class="state">Idle</div>
+    <div class="state-arrow">→</div>
+    <div class="state active">Aiming</div>
+    <div class="state-arrow">→</div>
+    <div class="state active">Firing</div>
+    <div class="state-arrow">→</div>
+    <div class="state">Cooldown</div>
+    <div class="state-arrow">↩</div>
+  </div>
+
+  <p>2초간 붉은 조준선을 표시하여 위협을 예고한 뒤, 히트스캔 레이저로 즉발 데미지. 시각적 경고가 회피의 핵심.</p>
+
+  <h3>난이도별 출현 확률</h3>
+  <table>
+    <thead>
+      <tr><th>Difficulty</th><th>Ranged</th><th>Charger</th><th>Laser</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>0 ~ 0.2 (초반)</td><td>100%</td><td>—</td><td>—</td></tr>
+      <tr><td>0.2 ~ 0.5 (중반)</td><td>70%</td><td>30%</td><td>—</td></tr>
+      <tr><td>0.5 ~ 1.0 (후반)</td><td>50%</td><td>30%</td><td>20%</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- Section 4: QA -->
+<section>
+  <div class="section-num">Part 04</div>
+  <h2>품질 보증 — Stab + Codex 병렬 리뷰</h2>
+
+  <p>모든 구현 후 Stab(보안/엣지케이스) + Codex(로직 정합성) 에이전트를 병렬로 실행. 총 6회 리뷰, 15건 이상 이슈 발견 및 수정.</p>
+
+  <table>
+    <thead>
+      <tr><th>이슈</th><th>심각도</th><th>수정</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>innerPos 부호 오류 (바깥쪽으로 이동)</td>
+        <td><span class="tag tag-critical">Critical</span></td>
+        <td><code>-</code> → <code>+</code> (Unity angularVelocity.y 부호)</td>
+      </tr>
+      <tr>
+        <td>이차방정식이 고정시간 투사체와 불일치</td>
+        <td><span class="tag tag-critical">Critical</span></td>
+        <td>선형 예측으로 전면 교체</td>
+      </tr>
+      <tr>
+        <td>OnTriggerEnter <code>_charging</code> 레이스 컨디션</td>
+        <td><span class="tag tag-high">High</span></td>
+        <td><code>_chargerState</code> 직접 체크로 교체</td>
+      </tr>
+      <tr>
+        <td>Material 누수 (EnsureLaserLine)</td>
+        <td><span class="tag tag-high">High</span></td>
+        <td>OnDestroy에서 <code>Destroy(material)</code></td>
+      </tr>
+      <tr>
+        <td>Raycast 레이어마스크 없음</td>
+        <td><span class="tag tag-high">High</span></td>
+        <td>차량 레이어만 대상 마스크 적용</td>
+      </tr>
+      <tr>
+        <td>Position 상태 조기 종료</td>
+        <td><span class="tag tag-high">High</span></td>
+        <td><code>!carTurning</code> 조건 제거</td>
+      </tr>
+      <tr>
+        <td><code>_charging</code> Init 미초기화</td>
+        <td><span class="tag tag-high">High</span></td>
+        <td>Init()에서 전체 상태 리셋</td>
+      </tr>
+      <tr>
+        <td>Shader.Find null 미체크</td>
+        <td><span class="tag tag-medium">Medium</span></td>
+        <td>null 가드 추가</td>
+      </tr>
+      <tr>
+        <td>LaunchKill 레이저 미정리</td>
+        <td><span class="tag tag-medium">Medium</span></td>
+        <td><code>_laserLine.enabled = false</code></td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- Section 5: Files -->
+<section>
+  <div class="section-num">Part 05</div>
+  <h2>수정 파일 목록</h2>
+
+  <table>
+    <thead>
+      <tr><th>파일</th><th>변경</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>ZombieController.cs</code></td><td>근접 제거, 원거리, ZombieType enum, Charger 4상태, Laser 히트스캔, 예측 3차 개선</td></tr>
+      <tr><td><code>ZombieProjectile.cs</code></td><td>포물선 arc, OverlapSphere 착탄, 인디케이터 소유권</td></tr>
+      <tr><td><code>ZombieSpawner.cs</code></td><td>타입별 프리팹, RollZombieType, GetPrefabForType</td></tr>
+      <tr><td><code>ZombieCharger.prefab</code></td><td>신규 — 녹색</td></tr>
+      <tr><td><code>ZombieLaser.prefab</code></td><td>신규 — 흰색</td></tr>
+      <tr><td><code>BlastIndicator.prefab</code></td><td>신규 — 착탄 인디케이터</td></tr>
+      <tr><td><code>ZombieProjectile.prefab</code></td><td>업데이트 — 물리 제거</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- Section 6: Remaining -->
+<section>
+  <div class="section-num">Part 06</div>
+  <h2>남은 작업</h2>
+
+  <table>
+    <thead>
+      <tr><th>항목</th><th>상태</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>투사체 예측 정확도 플레이테스트 튜닝</td><td class="dim">대기</td></tr>
+      <tr><td>Charger turnDetectThreshold 조향 튜닝</td><td class="dim">대기</td></tr>
+      <tr><td>Laser 조준선 지형 관통 시각적 이슈</td><td class="dim">대기</td></tr>
+      <tr><td>groundLayer 전용 레이어 설정</td><td class="dim">대기</td></tr>
+      <tr><td>UI 게이지 전용 스프라이트 교체</td><td class="dim">대기</td></tr>
+      <tr><td>좀비 변종 시각적 차별화 (모델/이펙트)</td><td class="dim">대기</td></tr>
+    </tbody>
+  </table>
+</section>
+
+</div>
+
+<div class="footer">
+  ZombieCrush &mdash; Development Log &mdash; 2026-05-25 Session 2
+</div>
+
+</body>
+</html>

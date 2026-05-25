@@ -1,35 +1,63 @@
 using System.Collections.Generic;
+using DistantLands.Cozy;
 using UnityEngine;
 
 public class ZombieSpawner : MonoBehaviour
 {
     [SerializeField] GameObject zombiePrefab;
+    [SerializeField] GameObject chargerPrefab;
+    [SerializeField] GameObject laserPrefab;
     [SerializeField] Transform carTransform;
     [SerializeField] float spawnInterval = 1.5f;
     [SerializeField] float minSpawnInterval = 0.3f;
     [SerializeField] float minSpawnRadius = 15f;
     [SerializeField] float maxSpawnRadius = 25f;
-    [SerializeField] int maxZombies = 50;
     [SerializeField] float despawnDistance = 100f;
+    [SerializeField] LayerMask groundLayer = -1;
     [SerializeField, Range(0f, 1f)] float forwardBias = 0.6f;
     [SerializeField, Range(0f, 1f)] float frontSpawnChance = 0.45f;
 
     [Header("Horde")]
     [SerializeField] float hordeInterval = 15f;
-    [SerializeField] int hordeSize = 12;
     [SerializeField] float hordeSpread = 4f;
 
     [Header("Front Density")]
-    [SerializeField] float frontCheckInterval = 3f;   // 전방 밀도 체크 주기 (초)
-    [SerializeField] float frontCheckDistance = 80f;  // 전방으로 체크할 거리
-    [SerializeField] float frontCheckAngle = 50f;     // 전방 판정 반각 (°) — 좌우 각각
-    [SerializeField] int frontHordeThreshold = 5;     // 이 수 미만이면 무리 소환
+    [SerializeField] float frontCheckInterval = 3f;
+    [SerializeField] float frontCheckDistance = 80f;
+    [SerializeField] float frontCheckAngle = 50f;
+    [SerializeField] int frontHordeThreshold = 5;
+
+    [Header("Day/Night")]
+    [SerializeField] float nightSpawnRateMultiplier = 0.7f;
+    [SerializeField] float nightSpeedBonus = 1.5f;
+    [SerializeField] float cozyTimeSpeed = 1f;
+
+    [Header("Difficulty")]
+    [SerializeField] float maxDifficultyTime = 600f;
+    [SerializeField] float maxDifficultyDist = 5000f;
+    [SerializeField] int minMaxZombies = 50;
+    [SerializeField] int maxMaxZombies = 120;
+    [SerializeField] int minHordeSize = 12;
+    [SerializeField] int maxHordeSize = 25;
+    [SerializeField] float surgeDistInterval = 500f;
+    [SerializeField] float surgeTimeInterval = 60f;
+    [SerializeField] float surgeCooldown = 3f;
 
     float _timer;
     float _hordeTimer;
     float _frontCheckTimer;
+    float _elapsedTime;
+    float _totalDistance;
+    float _nextSurgeDist;
+    float _nextSurgeTime;
+    float _surgeCooldownTimer;
+    Vector3 _prevCarPos;
     CarController _car;
     List<ZombieController> _activeZombies = new List<ZombieController>();
+    CozyWeather _cozy;
+    CozyTimeModule _timeModule;
+    bool _isNight;
+    float _prevCozyTimeSpeed;
 
     void Start()
     {
@@ -39,14 +67,59 @@ public class ZombieSpawner : MonoBehaviour
             if (found != null) carTransform = found.transform;
         }
         if (carTransform != null)
+        {
             _car = carTransform.GetComponent<CarController>();
+            _prevCarPos = carTransform.position;
+        }
+
+        _nextSurgeDist = surgeDistInterval;
+        _nextSurgeTime = surgeTimeInterval;
+        _cozy = CozyWeather.instance;
+        if (_cozy != null)
+        {
+            _timeModule = _cozy.timeModule;
+            if (_timeModule?.perennialProfile != null)
+            {
+                _timeModule.perennialProfile.timeMovementSpeed = cozyTimeSpeed;
+                _prevCozyTimeSpeed = cozyTimeSpeed;
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[ZombieSpawner] CozyWeather not found — day/night disabled.");
+        }
     }
 
     void Update()
     {
         if (carTransform == null) return;
 
-        // 거리 초과 좀비 삭제 + 전체/전방 활성 수 카운트 (루프 1회)
+        if (_timeModule != null)
+        {
+            // Inspector에서 값 변경 시에만 적용
+            if (!Mathf.Approximately(_prevCozyTimeSpeed, cozyTimeSpeed) && _timeModule.perennialProfile != null)
+            {
+                _timeModule.perennialProfile.timeMovementSpeed = cozyTimeSpeed;
+                _prevCozyTimeSpeed = cozyTimeSpeed;
+            }
+            float t = _timeModule.currentTime;
+            _isNight = t < new MeridiemTime(5, 30) || t >= new MeridiemTime(21, 0);
+        }
+
+        _elapsedTime += Time.deltaTime;
+
+        Vector3 carPos = carTransform.position;
+        _totalDistance += Vector3.Distance(carPos, _prevCarPos);
+        _prevCarPos = carPos;
+
+        float timeFactor = Mathf.Clamp01(_elapsedTime / maxDifficultyTime);
+        float distFactor = Mathf.Clamp01(_totalDistance / maxDifficultyDist);
+        float difficulty = Mathf.Max(timeFactor, distFactor);
+
+        int maxZombies = Mathf.RoundToInt(Mathf.Lerp(minMaxZombies, maxMaxZombies, difficulty));
+        int hordeSize  = Mathf.RoundToInt(Mathf.Lerp(minHordeSize,  maxHordeSize,  difficulty));
+
+        // 거리 초과 좀비 삭제 + 전방 활성 수 카운트
         int frontCount = 0;
         Vector3 carFwd = GetCarForward();
 
@@ -55,7 +128,7 @@ public class ZombieSpawner : MonoBehaviour
             if (_activeZombies[i] == null) { _activeZombies.RemoveAt(i); continue; }
 
             ZombieController z = _activeZombies[i];
-            float dist = Vector3.Distance(z.transform.position, carTransform.position);
+            float dist = Vector3.Distance(z.transform.position, carPos);
             if (dist > despawnDistance)
             {
                 Destroy(z.gameObject);
@@ -63,10 +136,9 @@ public class ZombieSpawner : MonoBehaviour
                 continue;
             }
 
-            // 전방 범위 내 좀비 카운트
             if (dist <= frontCheckDistance)
             {
-                Vector3 toZombie = z.transform.position - carTransform.position;
+                Vector3 toZombie = z.transform.position - carPos;
                 toZombie.y = 0f;
                 if (toZombie.sqrMagnitude > 0.001f &&
                     Vector3.Angle(carFwd, toZombie.normalized) <= frontCheckAngle)
@@ -76,39 +148,78 @@ public class ZombieSpawner : MonoBehaviour
 
         int activeCount = _activeZombies.Count;
 
-        // 개별 스폰 (속도에 비례해 간격 단축)
-        float speedRatio = (_car != null && _car.MaxSpeed > 0f)
-            ? Mathf.Clamp01(_car.CurrentSpeed / _car.MaxSpeed) : 0f;
-        float dynamicInterval = Mathf.Lerp(spawnInterval, minSpawnInterval, speedRatio);
+        float dynamicInterval = Mathf.Lerp(spawnInterval, minSpawnInterval, difficulty);
+        if (_isNight) dynamicInterval *= nightSpawnRateMultiplier;
+
+        float speedBonus = _isNight ? nightSpeedBonus : 0f;
 
         _timer += Time.deltaTime;
         if (_timer >= dynamicInterval && activeCount < maxZombies)
         {
             _timer = 0f;
-            SpawnSingle();
+            SpawnSingle(difficulty, speedBonus);
         }
 
         bool hordeSpawnedThisFrame = false;
 
-        // 주기적 군중 스폰
         _hordeTimer += Time.deltaTime;
         if (_hordeTimer >= hordeInterval)
         {
             _hordeTimer = 0f;
-            hordeSpawnedThisFrame = SpawnHorde(_activeZombies.Count);
+            hordeSpawnedThisFrame = SpawnHorde(activeCount, hordeSize, difficulty, SpawnAnimation.RiseFromGround, speedBonus);
         }
 
-        // 전방 밀도 부족 시 군중 소환
         _frontCheckTimer += Time.deltaTime;
         if (_frontCheckTimer >= frontCheckInterval)
         {
             _frontCheckTimer = 0f;
             if (frontCount < frontHordeThreshold && !hordeSpawnedThisFrame)
-                SpawnHorde(_activeZombies.Count);
+                hordeSpawnedThisFrame = SpawnHorde(activeCount, hordeSize, difficulty, SpawnAnimation.RiseFromGround, speedBonus);
+        }
+
+        // 서지 이벤트 (거리 또는 시간 트리거)
+        _surgeCooldownTimer -= Time.deltaTime;
+        if (_surgeCooldownTimer <= 0f && !hordeSpawnedThisFrame)
+        {
+            bool surgeTriggered = _totalDistance >= _nextSurgeDist || _elapsedTime >= _nextSurgeTime;
+            if (surgeTriggered)
+            {
+                int surgeSize = Mathf.RoundToInt(hordeSize * 1.5f);
+                if (SpawnHorde(_activeZombies.Count, surgeSize, difficulty, SpawnAnimation.RushFromSide, speedBonus))
+                {
+                    _nextSurgeDist = _totalDistance + surgeDistInterval;
+                    _nextSurgeTime = _elapsedTime + surgeTimeInterval;
+                    _surgeCooldownTimer = surgeCooldown;
+                }
+            }
         }
     }
 
-    void SpawnSingle()
+    ZombieType RollZombieType(float difficulty)
+    {
+        if (difficulty < 0.2f) return ZombieType.Ranged;
+
+        float r = Random.value;
+        if (difficulty < 0.5f)
+        {
+            return r < 0.70f ? ZombieType.Ranged : ZombieType.Charger;
+        }
+        if (r < 0.50f) return ZombieType.Ranged;
+        if (r < 0.80f) return ZombieType.Charger;
+        return ZombieType.Laser;
+    }
+
+    GameObject GetPrefabForType(ZombieType type)
+    {
+        switch (type)
+        {
+            case ZombieType.Charger: return chargerPrefab != null ? chargerPrefab : zombiePrefab;
+            case ZombieType.Laser:   return laserPrefab != null ? laserPrefab : zombiePrefab;
+            default:                 return zombiePrefab;
+        }
+    }
+
+    void SpawnSingle(float difficulty, float speedBonus = 0f)
     {
         if (zombiePrefab == null)
         {
@@ -119,30 +230,59 @@ public class ZombieSpawner : MonoBehaviour
         Vector3 center = FindSpawnCenter();
         if (center == Vector3.zero) return;
 
-        GameObject obj = Instantiate(zombiePrefab, center, Quaternion.identity);
+        ZombieType type = RollZombieType(difficulty);
+        GameObject prefab = GetPrefabForType(type);
+        GameObject obj = Instantiate(prefab, center, Quaternion.identity);
         ZombieController zombie = obj.GetComponent<ZombieController>();
-        if (zombie != null) { zombie.Init(carTransform); _activeZombies.Add(zombie); }
+        if (zombie != null)
+        {
+            zombie.Init(carTransform, difficulty, speedBonus);
+            zombie.SetZombieType(type);
+            zombie.PlaySpawnAnimation(SpawnAnimation.RiseFromGround);
+            _activeZombies.Add(zombie);
+        }
     }
 
-    bool SpawnHorde(int currentActive)
+    bool SpawnHorde(int currentActive, int hordeSize, float difficulty, SpawnAnimation anim, float speedBonus = 0f)
     {
         if (zombiePrefab == null || carTransform == null) return false;
 
-        Vector3 center = GetFrontEdgePosition(); // 군중은 항상 전방에 소환
+        Vector3 center = GetFrontEdgePosition();
         if (center == Vector3.zero) return false;
 
+        int maxZombies = Mathf.RoundToInt(Mathf.Lerp(minMaxZombies, maxMaxZombies, difficulty));
         int spawnCount = Mathf.Min(hordeSize, maxZombies - currentActive);
         if (spawnCount <= 0) return false;
 
+        float hordeSpreadVal = hordeSpread;
+
         for (int i = 0; i < spawnCount; i++)
         {
-            Vector2 offset = Random.insideUnitCircle * hordeSpread;
-            Vector3 pos = center + new Vector3(offset.x, 0f, offset.y);
-            pos.y = carTransform.position.y;
+            Vector2 offset = Random.insideUnitCircle * hordeSpreadVal;
+            Vector3 targetPos = center + new Vector3(offset.x, 0f, offset.y);
+            targetPos.y = SampleTerrainHeight(targetPos);
 
-            GameObject obj = Instantiate(zombiePrefab, pos, Quaternion.identity);
+            Vector3 spawnPos = targetPos;
+            if (anim == SpawnAnimation.RushFromSide)
+            {
+                // 측면 8-12m 오프셋에서 시작
+                Vector3 lateral = carTransform.right * (Random.value > 0.5f ? 1f : -1f);
+                float sideDist = Random.Range(8f, 12f);
+                spawnPos = targetPos + lateral * sideDist;
+                spawnPos.y = SampleTerrainHeight(spawnPos);
+            }
+
+            ZombieType type = RollZombieType(difficulty);
+            GameObject prefab = GetPrefabForType(type);
+            GameObject obj = Instantiate(prefab, spawnPos, Quaternion.identity);
             ZombieController zombie = obj.GetComponent<ZombieController>();
-            if (zombie != null) { zombie.Init(carTransform); _activeZombies.Add(zombie); }
+            if (zombie != null)
+            {
+                zombie.Init(carTransform, difficulty, speedBonus);
+                zombie.SetZombieType(type);
+                zombie.PlaySpawnAnimation(anim, targetPos, anim == SpawnAnimation.RushFromSide);
+                _activeZombies.Add(zombie);
+            }
         }
         return true;
     }
@@ -176,7 +316,7 @@ public class ZombieSpawner : MonoBehaviour
         {
             Vector2 dir = i == 0 ? biasedDir : Random.insideUnitCircle.normalized;
             Vector3 candidate = carTransform.position + new Vector3(dir.x * dist, 0f, dir.y * dist);
-            candidate.y = carTransform.position.y;
+            candidate.y = SampleTerrainHeight(candidate);
 
             if (cam == null || IsOutsideViewport(cam, candidate))
                 return candidate;
@@ -208,12 +348,11 @@ public class ZombieSpawner : MonoBehaviour
         Vector3 predicted = carTransform.position + dir * predictDist;
         Vector2 spread = Random.insideUnitCircle * 6f;
         predicted += new Vector3(spread.x, 0f, spread.y);
-        predicted.y = carTransform.position.y;
+        predicted.y = SampleTerrainHeight(predicted);
 
         return predicted;
     }
 
-    // 차량 이동 방향 (정지 시 transform.forward 사용)
     Vector3 GetCarForward()
     {
         if (_car != null && _car.FlatVelocity.sqrMagnitude > 0.1f)
@@ -221,6 +360,16 @@ public class ZombieSpawner : MonoBehaviour
         Vector3 fwd = carTransform.forward;
         fwd.y = 0f;
         return fwd.sqrMagnitude > 0.001f ? fwd.normalized : Vector3.forward;
+    }
+
+    /// <summary>월드 좌표에서 지형 높이를 Raycast로 샘플링. 실패 시 차량 높이 폴백.</summary>
+    float SampleTerrainHeight(Vector3 worldPos)
+    {
+        Vector3 origin = new Vector3(worldPos.x, 200f, worldPos.z);
+        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, 400f,
+                            groundLayer, QueryTriggerInteraction.Ignore))
+            return hit.point.y;
+        return carTransform != null ? carTransform.position.y : 0f;
     }
 
     bool IsOutsideViewport(Camera cam, Vector3 worldPos)

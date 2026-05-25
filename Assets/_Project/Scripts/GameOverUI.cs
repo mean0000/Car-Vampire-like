@@ -30,12 +30,16 @@ public class GameOverUI : MonoBehaviour
     {
         if (SyncRateManager.Instance != null)
             SyncRateManager.Instance.OnSyncMaxed += Show;
+        if (HullManager.Instance != null)
+            HullManager.Instance.OnHullDepleted += Show;
     }
 
     private void OnDisable()
     {
         if (SyncRateManager.Instance != null)
             SyncRateManager.Instance.OnSyncMaxed -= Show;
+        if (HullManager.Instance != null)
+            HullManager.Instance.OnHullDepleted -= Show;
     }
 
     private void OnDestroy()
@@ -43,15 +47,20 @@ public class GameOverUI : MonoBehaviour
         if (Instance == this) Instance = null;
         if (SyncRateManager.Instance != null)
             SyncRateManager.Instance.OnSyncMaxed -= Show;
+        if (HullManager.Instance != null)
+            HullManager.Instance.OnHullDepleted -= Show;
     }
 
     private void Show()
     {
         if (IsPanelOpen) return;
-        if (panel == null) return;
-        panel.SetActive(true);
         IsPanelOpen = true;
         Time.timeScale = 0f;
+        Time.fixedDeltaTime = 0.02f * Time.timeScale;
+        if (panel != null)
+            panel.SetActive(true);
+        else
+            Debug.LogError("[GameOverUI] panel이 연결되지 않았습니다. Inspector에서 할당하세요.");
     }
 
     /// <summary>

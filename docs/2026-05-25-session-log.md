@@ -176,6 +176,44 @@ Canvas 재구성 후 씬이 dirty 상태 — **Unity에서 Ctrl+S로 저장 필�
 
 ---
 
+## 5. Feel 피드백 현대화 (2026-05-25 추가 세션)
+
+### 배경
+게임이 "플래시게임 같다"는 문제 → Feel이 전혀 연결되지 않은 상태였음.
+MMSpring 시스템(Feel v4.1)으로 전면 교체.
+
+### 제거한 것
+- `MMF_Player killFeedback`, `driftKillFeedback` (ZombieController)
+- `MMF_Player boostStartFeedback`, `driftTierUpFeedback` (CarBoost)
+- `Car/BoostStartFeedback`, `Car/DriftTierUpFeedback` 씬 GO
+
+### 새로 추가한 것
+
+| 이벤트 | 피드백 |
+|---|---|
+| 일반 킬 | `MMSpringScale.Bump(0.3, -0.5, 0.3)` + 히트스탑 0.05s (TimeScale 0.03) |
+| 드리프트 킬 | `MMSpringScale.Bump(0.5, -0.8, 0.5)` + 히트스탑 0.07s |
+| 부스트 시작 | `MMSpringChromaticAberrationIntensity_URP.Bump(0.8)` |
+| 드리프트 티어업 | `MMSpringChromaticAberrationIntensity_URP.Bump(0.25 × tier)` |
+
+### 인프라 변경
+- `MM_URP` 스크립팅 심볼 추가 (Feel URP 모듈 전체 활성화)
+- `Global Volume`에 `MMSpringChromaticAberrationIntensity_URP` 추가 및 CarBoost 연결
+- `Zombie.prefab`에 `MMSpringScale` 추가 (Damping=0.3, Frequency=12)
+
+### 코드 변경 파일
+- `ZombieController.cs` — using MoreMountains.Tools 추가, MMSpringScale 캐시, IsDrifting 로컬 캐싱, 히트스탑 호출
+- `CarBoost.cs` — #if MM_URP _springCA SerializeField, 부스트/티어업 Bump 호출
+
+### 보류 항목
+| 항목 | 이유 |
+|---|---|
+| 킬 squash 애니메이션 튜닝 | 일반 킬은 Destroy 즉시 호출 → 모델링 완료 후 재작업 |
+| UI Feel (콤보 텍스트, 연료 게이지) | UI 레이아웃 확정 후 한꺼번에 |
+| 히트스탑 수치 튜닝 | 플레이 밸런스 확정 후 |
+
+---
+
 ## 4. 관련 파일 목록
 
 | 파일 | 역할 | 상태 |

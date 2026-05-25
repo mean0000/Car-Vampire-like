@@ -5,6 +5,7 @@ using UnityEngine;
 /// 모든 보간은 지수 감쇠(Exponential Decay Lerp) 기반.
 /// SmoothDamp 미사용.
 /// </summary>
+[DefaultExecutionOrder(-50)] // MMWiggle보다 먼저 실행 → Feel 카메라 쉐이크 적용 가능
 [RequireComponent(typeof(Camera))]
 public class CameraController : MonoBehaviour
 {
@@ -31,6 +32,9 @@ public class CameraController : MonoBehaviour
     [SerializeField] private float fovBase      = 50f;
     [SerializeField] private float fovMax       = 72f;
     [SerializeField] private float fovSpeed     = 8f;
+    [SerializeField] private float boostFovKick = 12f;   // 부스트 진입 시 FOV 추가량
+    [SerializeField] private float fovKickAttack = 15f;  // FOV 킥 진입 속도
+    [SerializeField] private float fovKickDecay  = 4f;   // FOV 킥 복귀 속도
     [SerializeField] private float heightOffset = 18f;
     [SerializeField] private float heightBonus  = 8f;
     [SerializeField] private float pitchAngle   = 80f;       // X축 회전 (권장 75~85)
@@ -87,6 +91,7 @@ public class CameraController : MonoBehaviour
     private float   _shakeTime;
     private Vector3 _shakeOffset;
     private float _suspensionTime;
+    private float _fovKickAmount;  // 부스트 FOV 킥 현재 오프셋
 
     private void Awake()
     {
@@ -276,8 +281,17 @@ public class CameraController : MonoBehaviour
     // ── 4. FOV 동적 변화 ──────────────────────────────────────────────
     private void UpdateFOV(float speedRatio, float dt)
     {
-        // FOV 고정 — 속도 기반 확대/축소 제거 (멀미 방지)
-        _cam.fieldOfView = fovBase;
+        // 부스트 FOV 킥: 진입 시 빠르게 확장, 종료 시 천천히 복귀
+        bool isBoosting = car.IsBoostActive;
+        if (isBoosting)
+            _fovKickAmount = Mathf.Lerp(_fovKickAmount, boostFovKick,
+                1f - Mathf.Exp(-fovKickAttack * dt));
+        else
+            _fovKickAmount = Mathf.Lerp(_fovKickAmount, 0f,
+                1f - Mathf.Exp(-fovKickDecay * dt));
+
+        float baseFov = Mathf.Lerp(fovBase, fovMax, speedRatio);
+        _cam.fieldOfView = Mathf.Min(baseFov + _fovKickAmount, fovMax + boostFovKick);
     }
 
     // ── 5. 충돌 흔들림 (Perlin Noise) ─────────────────────────────────
