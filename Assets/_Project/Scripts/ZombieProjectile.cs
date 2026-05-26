@@ -17,6 +17,8 @@ public class ZombieProjectile : MonoBehaviour
     float _elapsed;
     bool _landed;
     GameObject _indicator;
+    Transform _carTransform;
+    float _homingRate; // 초당 최대 이동 거리 (수평)
 
     public void Init(Vector3 startPos, Vector3 targetPos, float damage, float flightDuration, float blastRadius)
     {
@@ -30,10 +32,29 @@ public class ZombieProjectile : MonoBehaviour
         Destroy(gameObject, lifetime);
     }
 
+    public void Init(Vector3 startPos, Vector3 targetPos, float damage, float flightDuration, float blastRadius, Transform carTransform, float homingRate)
+    {
+        Init(startPos, targetPos, damage, flightDuration, blastRadius);
+        _carTransform = carTransform;
+        _homingRate = homingRate;
+    }
+
     void Update()
     {
         _elapsed += Time.deltaTime;
         float t = Mathf.Clamp01(_elapsed / _flightDuration);
+
+        // 소프트 호밍: 비행 중간 구간(t=0.2~0.8)에서만 타겟 이동
+        if (_carTransform != null && _homingRate > 0f && t > 0.2f && t < 0.8f)
+        {
+            Vector3 carPos = _carTransform.position;
+            carPos.y = _target.y; // 수평면에서만 추적
+            float maxDelta = _homingRate * Time.deltaTime;
+            _target = Vector3.MoveTowards(_target, carPos, maxDelta);
+            // indicator도 착탄 예고 위치와 일치하도록 따라 이동
+            if (_indicator != null)
+                _indicator.transform.position = _target + Vector3.up * 0.05f;
+        }
 
         // 수평 보간
         Vector3 pos = Vector3.Lerp(_start, _target, t);

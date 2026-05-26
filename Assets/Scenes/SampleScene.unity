@@ -4552,9 +4552,69 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c570d5c0153b546479c175e326c124d7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ZombieSpawner
-  zombiePrefab: {fileID: 438990994745263437, guid: 0ebd7ec2cb7b0654cbc73e1977808f31, type: 3}
-  chargerPrefab: {fileID: 907826564960372930, guid: 501b1114b0475a84088892e797afbdab, type: 3}
-  laserPrefab: {fileID: 1304997228414609209, guid: 95411250f5062fc449eeb5dc59c03cde, type: 3}
+  rangedPrefabs:
+  - {fileID: 135313349653407898, guid: 7eb7eed86bae0c64c9449f150c5a8cb4, type: 3}
+  - {fileID: 9117231437072205731, guid: e4579550555ac3f408c96244ccd3253f, type: 3}
+  - {fileID: 4066188536210821765, guid: 613a7df744f013741a16b45a6e336897, type: 3}
+  - {fileID: 2520439361065662788, guid: 16f9d4163f0d9404ab3fa06ff4c51356, type: 3}
+  - {fileID: 2969491138021824002, guid: 94b52d1adbac4bb4aa3f6977529f280e, type: 3}
+  - {fileID: 5943540076415872941, guid: e5330c12b582d5a4b9f7c2dbedd57c8e, type: 3}
+  - {fileID: 3549416969819023205, guid: 7b27d993c8aec8d42b4fca01eee9fa55, type: 3}
+  - {fileID: 4608885917945164241, guid: bca45cfa3a47e7e459757b703eeb8021, type: 3}
+  - {fileID: 5895159201413510239, guid: 554711165d2764f4088e7483d8b75103, type: 3}
+  - {fileID: 3363149619540322749, guid: d55772fb31b89404cb6c7c7583e96e46, type: 3}
+  - {fileID: 9086133141228709190, guid: 8be75bf7d77dd9144b812ec90b5dd0e0, type: 3}
+  - {fileID: 8051800402095921520, guid: 9caefec96fdbb204188b33f459a6960e, type: 3}
+  - {fileID: 8504142121870812509, guid: 40bbbe1c49a617143af990ed8868e662, type: 3}
+  - {fileID: 8296064337958157850, guid: ca36b930af292fe49b339b41ca4903e7, type: 3}
+  - {fileID: 8462076112676103258, guid: 2fe7782be7bd81f4286f6819c2c521c8, type: 3}
+  - {fileID: 3557745106443684444, guid: 91a2c589c8e30934e9758f4e4c8afbcd, type: 3}
+  - {fileID: 5506640041163872654, guid: 36ff12e2536e6bc49bef255100e7b899, type: 3}
+  - {fileID: 2130044822352936982, guid: 2a245e901ca697d4ba89309c252ddbe0, type: 3}
+  - {fileID: 8864527388483758173, guid: 847ca48295d909e4091c44f4f4298b20, type: 3}
+  - {fileID: 6721119867122761297, guid: edd528c06458acb47bf1573d681253f4, type: 3}
+  chargerPrefabs:
+  - {fileID: 6188504496730411448, guid: 943c0953055885b41be8a6479ddd33c0, type: 3}
+  - {fileID: 2685523859084120148, guid: 979f7db5ec0ad2549afb71ba741fa5cb, type: 3}
+  - {fileID: 7337400261402411526, guid: 96dd459e2d595a144ba6c1372a89182c, type: 3}
+  - {fileID: 5672068895773696314, guid: f27fa986557c39f448d713c765e07dc4, type: 3}
+  - {fileID: 9071102218659871547, guid: 1063401dd5b242943b99f86aee52927f, type: 3}
+  - {fileID: 1867106292117458731, guid: d41a7eabc35761946aaffc11b2cbaf5d, type: 3}
+  - {fileID: 8980969235682693735, guid: b0f71c8bb087f4744a61835fadacb1cc, type: 3}
+  - {fileID: 3075915955012458673, guid: b3bc7c01003e65545b5584f3c013309c, type: 3}
+  - {fileID: 1980115606841286628, guid: 58c4f99fb0dbd5048a0d93ed96beb9ba, type: 3}
+  - {fileID: 5944433421373608129, guid: 2012ffa6ef88ee342821d550b7d9b8c3, type: 3}
+  - {fileID: 7224345318334303686, guid: bf25ef155d307764eab0a3b8f9812008, type: 3}
+  - {fileID: 2570076721866079745, guid: 597bea7ce01358441a72f04bd7d5ea81, type: 3}
+  - {fileID: 1293823328373267396, guid: 1580bb43d6a04154aa47b52f33a65fed, type: 3}
+  - {fileID: 5820200464234155597, guid: eba2209d58e01fc419fd7d7c592b6345, type: 3}
+  - {fileID: 1583716655469730624, guid: 496662276e81afe40b25ef0374039460, type: 3}
+  - {fileID: 3943484516818589424, guid: 5496f0b53d0fa7f4d96d297b88058636, type: 3}
+  - {fileID: 4201836602971611116, guid: 35a491ca24a4d5f4db42aa0766d5ad28, type: 3}
+  - {fileID: 330559522529392057, guid: 19219c4c7aac0234cb3b2c8f5732b98b, type: 3}
+  - {fileID: 5259936707310854231, guid: 8219737cee9c8474d9b5fd282ba79f22, type: 3}
+  - {fileID: 1495771736893523055, guid: ad6521197f390994ebff6a1c721bc701, type: 3}
+  laserPrefabs:
+  - {fileID: 2122718076489302588, guid: 6b914a9adc77f664085eb086d5cbf1b5, type: 3}
+  - {fileID: 682150378723977297, guid: 7345f196693041847b6b44205b847f4b, type: 3}
+  - {fileID: 8680316335424345532, guid: a4c2efded03295642af78be79525652d, type: 3}
+  - {fileID: 9210663541004201167, guid: 12d09297fe5d7d8439b2757d2de5a17a, type: 3}
+  - {fileID: 605436884252393561, guid: 59e72fedaa9cca647a0a0d6765163523, type: 3}
+  - {fileID: 8076351519738232576, guid: 8ba71b493d773c242a6206def98b8618, type: 3}
+  - {fileID: 2227353112358937064, guid: 065bad07bd17e9d4a9d9c8b7800f8880, type: 3}
+  - {fileID: 1508354515379048538, guid: 7110b3847cb3dcf489b3f2942e86b432, type: 3}
+  - {fileID: 5010665609270513885, guid: 483b59b504896014894ae64569d14ee7, type: 3}
+  - {fileID: 2987249308054465188, guid: d946b5e3b8508644e85ff1ea5f186a80, type: 3}
+  - {fileID: 1421837468032290285, guid: 49f35e770a6dcfb44a2f20b28fe7b980, type: 3}
+  - {fileID: 3537202159806808182, guid: 541291c1370776b46a2dab55b520c96e, type: 3}
+  - {fileID: 5025434553632943603, guid: cc0707e7ba6b1b442ab079e2445737e9, type: 3}
+  - {fileID: 4019617481088979122, guid: fbb21d5f868602b4aa55bb18d3c3d51b, type: 3}
+  - {fileID: 8434086434549803382, guid: 5b6b2ecc3e389ed418fba9e383d507a0, type: 3}
+  - {fileID: 131962721202851107, guid: fc751ecf86438ca4a92a3174609f07ee, type: 3}
+  - {fileID: 8680838654963526678, guid: 58893085f898e344b8959e269c956a21, type: 3}
+  - {fileID: 6680940255069116979, guid: 9acbad66515b4ba499769a7133a0a603, type: 3}
+  - {fileID: 8471376477908568445, guid: 29e6582baa8b6cc43a36c043444d2672, type: 3}
+  - {fileID: 5680485561313863731, guid: 8538911408a60324f98182256f8b3794, type: 3}
   carTransform: {fileID: 408198750}
   spawnInterval: 0.1
   minSpawnInterval: 0.3
@@ -4625,7 +4685,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 192.15479, y: 192.15479, z: 192.15479}
+  m_LocalScale: {x: 250.23552, y: 250.23552, z: 250.23552}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1440092486}
@@ -22550,7 +22610,7 @@ Transform:
   m_GameObject: {fileID: 1754959418}
   serializedVersion: 2
   m_LocalRotation: {x: 0.0000000037252899, y: -0, z: -0.0000000074505797, w: 1}
-  m_LocalPosition: {x: 328.42203, y: 82.956406, z: -178.29486}
+  m_LocalPosition: {x: 412.65692, y: 251.7258, z: -168.57959}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

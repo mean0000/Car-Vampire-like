@@ -48,6 +48,11 @@ public class ZombieController : MonoBehaviour
     [Header("Fuel")]
     [SerializeField] float killFuelAmount = 15f;
 
+    [Header("Spread Fire")]
+    [SerializeField] int spreadCount = 3;
+    [SerializeField] float spreadAngle = 30f;
+    [SerializeField] float spreadDifficultyThreshold = 0.5f;
+
     [Header("Ranged Attack")]
     [SerializeField] GameObject projectilePrefab;
     [SerializeField] GameObject indicatorPrefab;
@@ -80,7 +85,7 @@ public class ZombieController : MonoBehaviour
     [SerializeField] float laserAimTime = 2.0f;
     [SerializeField] float laserFireDuration = 0.3f;
     [SerializeField] float laserDamage = 6f;
-    [SerializeField] float laserCooldown = 3.5f;
+    [SerializeField] float laserCooldown = 2.5f;
     [SerializeField] Color laserAimColor = new Color(1f, 0f, 0f, 0.3f);
     [SerializeField] Color laserFireColor = new Color(1f, 0.2f, 0f, 1f);
     LineRenderer _laserLine;
@@ -97,6 +102,8 @@ public class ZombieController : MonoBehaviour
     [SerializeField] float homingStrength = 3f;
 
     MMSpringScale _springScale;
+    Animator _animator;
+    static readonly int SpeedHash = Animator.StringToHash("Speed");
 
     Transform _target;
     Rigidbody _rb;
@@ -111,6 +118,7 @@ public class ZombieController : MonoBehaviour
     Vector3 _velocity;
     ZombieBehavior _behavior;
     float _flankSign;
+    float _difficulty;
     float _fireTimer = -1f;
     bool _firstShot = true;
     bool _searching;
@@ -133,6 +141,8 @@ public class ZombieController : MonoBehaviour
         _springScale = GetComponent<MMSpringScale>();
         if (_springScale == null)
             Debug.LogWarning($"[ZombieController] MMSpringScale missing on {gameObject.name} — kill bump disabled", this);
+
+        _animator = GetComponent<Animator>();
     }
 
     void Start()
@@ -177,6 +187,7 @@ public class ZombieController : MonoBehaviour
         _carRb = target != null ? target.GetComponent<Rigidbody>() : null;
 
         moveSpeed = Mathf.Lerp(minMoveSpeed, maxMoveSpeed, difficulty) + speedBonus;
+        _difficulty = difficulty;
         _flankSign = Random.value > 0.5f ? 1f : -1f;
         _behavior = RollBehavior(difficulty);
     }
@@ -290,7 +301,15 @@ public class ZombieController : MonoBehaviour
             Vector3 nextPos = transform.position + _velocity * Time.fixedDeltaTime;
             nextPos.y = SampleTerrainHeight(nextPos) + _groundOffset;
             _rb.MovePosition(nextPos);
+
+            // 이동 방향으로 회전
+            Quaternion targetRot = Quaternion.LookRotation(_velocity.normalized, Vector3.up);
+            _rb.MoveRotation(Quaternion.Slerp(transform.rotation, targetRot, 10f * Time.fixedDeltaTime));
         }
+
+        // Animator Speed 파라미터
+        if (_animator != null)
+            _animator.SetFloat(SpeedHash, _velocity.magnitude);
     }
 
     void UpdateRangedAttack(float carDist)
@@ -310,7 +329,7 @@ public class ZombieController : MonoBehaviour
             {
                 _searching = true;
                 _phaseTimer = 0f;
-                _aimRandomOffset = Random.insideUnitCircle * blastRadius * 1.5f;
+                _aimRandomOffset = Random.insideUnitCircle * blastRadius * 0.3f;
             }
             if (_searching)
             {
@@ -328,6 +347,12 @@ public class ZombieController : MonoBehaviour
             // 2단계: 잠금 — indicator 표시 유지, 타이머 후 발사
             if (_locked)
             {
+                // lock 중에도 느린 보간으로 예측 추적 유지
+                Vector3 prevAim = _aimTarget;
+                UpdateAimPrediction();
+                _aimTarget = Vector3.Lerp(prevAim, _aimTarget, 0.3f);
+                UpdateIndicator(); // indicator도 따라 이동
+
                 _phaseTimer += Time.fixedDeltaTime;
                 if (_phaseTimer >= lockTime)
                 {
@@ -476,7 +501,7 @@ public class ZombieController : MonoBehaviour
         // 좀비/터레인 무시 — 차량 레이어만 대상
         int carLayer = _target.gameObject.layer;
         int mask = 1 << carLayer;
-        if (Physics.Raycast(origin, dir, out RaycastHit hit, laserRange, mask))
+        if (Physics.Raycast(origin, dir, out RaycastHit hit, laserRange, mask, QueryTriggerInteraction.Collide))
         {
             CarController car = hit.collider.GetComponentInParent<CarController>();
             if (car != null)
@@ -716,7 +741,28 @@ public class ZombieController : MonoBehaviour
         float remainSearch = Mathf.Max(searchTime - _phaseTimer, 0f);
         float totalLead = remainSearch + lockTime + flightDuration;
 
-        _aimTarget = _target.position + carVel * totalLead;
+        // 원호 예측: 차가 원형 주행 중일 때 회전 반경으로 착탄 위치 보정
+        float omega = _carRb != null ? _carRb.angularVelocity.y : 0f;
+        if (Mathf.Abs(omega) > 0.3f && carVel.magnitude > 0.1f)
+        {
+            float speed = carVel.magnitude;
+            float R = speed / Mathf.Abs(omega);
+
+            // 회전 중심 방향: omega > 0(좌회전)이면 중심은 오른쪽, omega < 0이면 왼쪽
+            float perpAngle = omega > 0f ? 90f : -90f;
+            Vector3 perp = Quaternion.Euler(0f, perpAngle, 0f) * carVel.normalized;
+            Vector3 center = _target.position + perp * R;
+
+            // 회전 각도만큼 오프셋 벡터를 회전시켜 예측 위치 산출
+            // Quaternion.Euler Y 양수 = CW, angularVelocity.y 양수 = CCW → 부호 반전
+            float angleDeg = -omega * totalLead * Mathf.Rad2Deg;
+            Vector3 offset = _target.position - center;
+            _aimTarget = center + Quaternion.Euler(0f, angleDeg, 0f) * offset;
+        }
+        else
+        {
+            _aimTarget = _target.position + carVel * totalLead;
+        }
 
         // 산포 (랜덤 오프셋)
         _aimTarget.x += _aimRandomOffset.x;
@@ -752,16 +798,69 @@ public class ZombieController : MonoBehaviour
         if (projectilePrefab == null || _target == null) return;
 
         Vector3 spawnPos = transform.position + Vector3.up * 1f;
-        GameObject obj = Instantiate(projectilePrefab, spawnPos, Quaternion.identity);
-        var proj = obj.GetComponent<ZombieProjectile>();
-        if (proj != null)
+
+        // 호밍 레이트: 40도/초
+        float homingRate = 40f;
+
+        // spreadCount는 홀수여야 중앙탄이 정확히 aimed 방향에 위치
+        int effectiveSpreadCount = spreadCount % 2 == 0 ? spreadCount + 1 : spreadCount;
+        bool useSpread = _difficulty >= spreadDifficultyThreshold && effectiveSpreadCount > 1;
+
+        if (useSpread)
         {
-            proj.Init(spawnPos, _aimTarget, projectileDamage, flightDuration, blastRadius);
-            // indicator를 투사체에 넘김 — 착탄 시까지 표시 유지
-            if (_indicator != null)
+            // 부채꼴 발사: 중앙(aimed+호밍) + 양쪽(static, 호밍 없음)
+            Vector3 dir = (_aimTarget - spawnPos);
+            dir.y = 0f;
+
+            float halfAngle = spreadAngle * 0.5f;
+            float step = spreadAngle / (effectiveSpreadCount - 1);
+            int centerIndex = effectiveSpreadCount / 2; // 홀수 보장 후 계산하므로 항상 정확
+
+            for (int i = 0; i < effectiveSpreadCount; i++)
             {
-                proj.SetIndicator(_indicator);
-                _indicator = null; // 소유권 이전
+                float angle = -halfAngle + step * i;
+                Vector3 rotatedDir = Quaternion.Euler(0f, angle, 0f) * dir;
+                Vector3 targetPos = spawnPos + rotatedDir;
+                targetPos.y = SampleTerrainHeight(targetPos);
+
+                GameObject obj = Instantiate(projectilePrefab, spawnPos, Quaternion.identity);
+                var proj = obj.GetComponent<ZombieProjectile>();
+                if (proj != null)
+                {
+                    bool isCenterShot = (i == centerIndex);
+                    if (isCenterShot)
+                    {
+                        // 중앙탄: aimed + 소프트 호밍
+                        proj.Init(spawnPos, _aimTarget, projectileDamage * 0.6f, flightDuration, blastRadius, _target, homingRate);
+                    }
+                    else
+                    {
+                        // 양쪽탄: static (호밍 없음), 데미지 감소
+                        proj.Init(spawnPos, targetPos, projectileDamage * 0.4f, flightDuration, blastRadius * 0.7f);
+                    }
+
+                    // indicator는 중앙탄에만
+                    if (isCenterShot && _indicator != null)
+                    {
+                        proj.SetIndicator(_indicator);
+                        _indicator = null;
+                    }
+                }
+            }
+        }
+        else
+        {
+            // 단발 + 소프트 호밍
+            GameObject obj = Instantiate(projectilePrefab, spawnPos, Quaternion.identity);
+            var proj = obj.GetComponent<ZombieProjectile>();
+            if (proj != null)
+            {
+                proj.Init(spawnPos, _aimTarget, projectileDamage, flightDuration, blastRadius, _target, homingRate);
+                if (_indicator != null)
+                {
+                    proj.SetIndicator(_indicator);
+                    _indicator = null;
+                }
             }
         }
     }

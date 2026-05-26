@@ -48,6 +48,13 @@ public class CarBoost : MonoBehaviour
     private int   _prevDriftTier;
     private bool  _wasDriftingForReward;
 
+    // 순이동 거리 추적 (원형 주행 패널티)
+    private const float NET_DISP_WINDOW    = 6f;   // 추적 윈도우 (초)
+    private const float NET_DISP_THRESHOLD = 30f;  // 이 거리 미만이면 효율 감소
+    private Vector3 _dispCheckPos;
+    private float   _dispTimer;
+    private float   _driftEfficiency = 1f;
+
     public bool  IsBoostActive  => _isBoosting;
     public float BoostFuelRatio => maxBoostFuel > 0f ? _boostFuel / maxBoostFuel : 0f;
     public int   DriftTier      => _driftTier;
@@ -62,10 +69,23 @@ public class CarBoost : MonoBehaviour
         _cam      = GetComponentInChildren<CameraController>();
         if (_cam == null) _cam = FindFirstObjectByType<CameraController>();
         _postBoostSpeed = 0f;
+        _dispCheckPos = transform.position;
     }
 
     private void FixedUpdate()
     {
+        // 순이동 거리 추적 (원형 주행 패널티)
+        _dispTimer += Time.fixedDeltaTime;
+        if (_dispTimer >= NET_DISP_WINDOW)
+        {
+            float netDist = Vector3.Distance(
+                new Vector3(transform.position.x, 0f, transform.position.z),
+                new Vector3(_dispCheckPos.x, 0f, _dispCheckPos.z));
+            _driftEfficiency = Mathf.Clamp01(netDist / NET_DISP_THRESHOLD);
+            _dispCheckPos = transform.position;
+            _dispTimer = 0f;
+        }
+
         bool grounded = _ground != null && _ground.IsGrounded;
         Vector3 groundNormal = _ground != null ? _ground.GroundNormal : Vector3.up;
         bool isDrifting = _movement != null && _movement.IsDrifting;
@@ -186,7 +206,7 @@ public class CarBoost : MonoBehaviour
             // 티어 기반 충전률 적용
             float multiplier = _driftTier > 0 && _driftTier <= driftTierFuelMultipliers.Length
                 ? driftTierFuelMultipliers[_driftTier - 1] : 1f;
-            _boostFuel = Mathf.Min(_boostFuel + driftFuelRate * multiplier * Time.fixedDeltaTime, maxBoostFuel);
+            _boostFuel = Mathf.Min(_boostFuel + driftFuelRate * multiplier * _driftEfficiency * Time.fixedDeltaTime, maxBoostFuel);
         }
         else
         {

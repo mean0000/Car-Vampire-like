@@ -4,9 +4,10 @@ using UnityEngine;
 
 public class ZombieSpawner : MonoBehaviour
 {
-    [SerializeField] GameObject zombiePrefab;
-    [SerializeField] GameObject chargerPrefab;
-    [SerializeField] GameObject laserPrefab;
+    [Header("Zombie Prefabs")]
+    [SerializeField] GameObject[] rangedPrefabs;
+    [SerializeField] GameObject[] chargerPrefabs;
+    [SerializeField] GameObject[] laserPrefabs;
     [SerializeField] Transform carTransform;
     [SerializeField] float spawnInterval = 1.5f;
     [SerializeField] float minSpawnInterval = 0.3f;
@@ -197,33 +198,70 @@ public class ZombieSpawner : MonoBehaviour
 
     ZombieType RollZombieType(float difficulty)
     {
-        if (difficulty < 0.2f) return ZombieType.Ranged;
+        if (difficulty < 0.15f) return ZombieType.Ranged;
 
         float r = Random.value;
-        if (difficulty < 0.5f)
+        if (difficulty < 0.35f)
         {
-            return r < 0.70f ? ZombieType.Ranged : ZombieType.Charger;
+            // 0.15~0.35: Laser 조기 등장
+            if (r < 0.70f) return ZombieType.Ranged;
+            if (r < 0.90f) return ZombieType.Charger;
+            return ZombieType.Laser;
         }
-        if (r < 0.50f) return ZombieType.Ranged;
-        if (r < 0.80f) return ZombieType.Charger;
+        if (difficulty < 0.6f)
+        {
+            if (r < 0.50f) return ZombieType.Ranged;
+            if (r < 0.75f) return ZombieType.Charger;
+            return ZombieType.Laser;
+        }
+        // 0.6+
+        if (r < 0.40f) return ZombieType.Ranged;
+        if (r < 0.70f) return ZombieType.Charger;
         return ZombieType.Laser;
+    }
+
+    // Inspector 배열에서 null 슬롯을 건너뛰고 유효한 프리팹을 랜덤 반환. 없으면 null.
+    GameObject PickFromPool(GameObject[] pool)
+    {
+        if (pool == null || pool.Length == 0) return null;
+        // 셔플된 인덱스 순서로 순회해 null 슬롯 회피
+        int start = Random.Range(0, pool.Length);
+        for (int i = 0; i < pool.Length; i++)
+        {
+            GameObject prefab = pool[(start + i) % pool.Length];
+            if (prefab != null) return prefab;
+        }
+        return null;
     }
 
     GameObject GetPrefabForType(ZombieType type)
     {
-        switch (type)
+        // 해당 타입 배열에서 랜덤 선택, 비어있으면 다른 배열로 폴백
+        GameObject[] pool = type switch
         {
-            case ZombieType.Charger: return chargerPrefab != null ? chargerPrefab : zombiePrefab;
-            case ZombieType.Laser:   return laserPrefab != null ? laserPrefab : zombiePrefab;
-            default:                 return zombiePrefab;
-        }
+            ZombieType.Charger => chargerPrefabs,
+            ZombieType.Laser   => laserPrefabs,
+            _                  => rangedPrefabs,
+        };
+
+        return PickFromPool(pool)
+            ?? PickFromPool(rangedPrefabs)
+            ?? PickFromPool(chargerPrefabs)
+            ?? PickFromPool(laserPrefabs);
+    }
+
+    bool AllPrefabsEmpty()
+    {
+        return (rangedPrefabs  == null || rangedPrefabs.Length  == 0) &&
+               (chargerPrefabs == null || chargerPrefabs.Length == 0) &&
+               (laserPrefabs   == null || laserPrefabs.Length   == 0);
     }
 
     void SpawnSingle(float difficulty, float speedBonus = 0f)
     {
-        if (zombiePrefab == null)
+        if (AllPrefabsEmpty())
         {
-            Debug.LogWarning("[ZombieSpawner] zombiePrefab이 할당되지 않았습니다.");
+            Debug.LogWarning("[ZombieSpawner] 프리팹 배열이 모두 비어있습니다.");
             return;
         }
 
@@ -245,7 +283,7 @@ public class ZombieSpawner : MonoBehaviour
 
     bool SpawnHorde(int currentActive, int hordeSize, float difficulty, SpawnAnimation anim, float speedBonus = 0f)
     {
-        if (zombiePrefab == null || carTransform == null) return false;
+        if (AllPrefabsEmpty() || carTransform == null) return false;
 
         Vector3 center = GetFrontEdgePosition();
         if (center == Vector3.zero) return false;

@@ -158,7 +158,7 @@ public class CarMovement : MonoBehaviour
         Quaternion steerDelta = Quaternion.identity;
         if (grounded && Mathf.Abs(steerFwdSpeed) > 0.5f)
         {
-            float turnMult = Mathf.Lerp(1f, 0.6f, speedRatio);
+            float turnMult = Mathf.Lerp(1f, 0.35f, speedRatio);
             float turnDir = inputTurn * Mathf.Sign(steerFwdSpeed);
             steerDelta = Quaternion.Euler(0f, turnDir * turnSpeed * turnMult * Time.fixedDeltaTime, 0f);
 
