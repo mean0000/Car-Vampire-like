@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZombieCrush — Game Introduction</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700;900&family=Orbitron:wght@700;900&display=swap');
+
+  :root {
+    --bg-dark: #0a0a0f;
+    --bg-card: #12121a;
+    --bg-card-hover: #1a1a28;
+    --accent-green: #00ff88;
+    --accent-red: #ff3355;
+    --accent-blue: #4488ff;
+    --accent-yellow: #ffcc00;
+    --accent-purple: #aa55ff;
+    --text-main: #e8e8f0;
+    --text-dim: #8888aa;
+    --text-bright: #ffffff;
+    --border: #2a2a3a;
+    --glow-green: 0 0 20px rgba(0,255,136,0.3);
+    --glow-red: 0 0 20px rgba(255,51,85,0.3);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg-dark);
+    color: var(--text-main);
+    font-family: 'Noto Sans KR', sans-serif;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 2rem;
+    position: relative;
+    background: radial-gradient(ellipse at center, #0f1a0f 0%, var(--bg-dark) 70%);
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+
+  .hero-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(3rem, 8vw, 6rem);
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1.5rem;
+    text-shadow: var(--glow-green);
+  }
+
+  .hero-tagline {
+    font-size: clamp(1rem, 3vw, 1.5rem);
+    color: var(--text-dim);
+    max-width: 700px;
+    font-weight: 300;
+    margin-bottom: 2rem;
+  }
+
+  .hero-tagline em {
+    color: var(--accent-green);
+    font-style: normal;
+    font-weight: 700;
+  }
+
+  .hero-quote {
+    font-size: 1.1rem;
+    color: var(--text-dim);
+    font-style: italic;
+    border-left: 3px solid var(--accent-green);
+    padding-left: 1rem;
+    max-width: 500px;
+    margin-top: 1rem;
+  }
+
+  .genre-badges {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 2rem 0;
+  }
+
+  .badge {
+    padding: 0.4rem 1rem;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    border: 1px solid;
+  }
+
+  .badge-green { border-color: var(--accent-green); color: var(--accent-green); background: rgba(0,255,136,0.08); }
+  .badge-red { border-color: var(--accent-red); color: var(--accent-red); background: rgba(255,51,85,0.08); }
+  .badge-blue { border-color: var(--accent-blue); color: var(--accent-blue); background: rgba(68,136,255,0.08); }
+  .badge-purple { border-color: var(--accent-purple); color: var(--accent-purple); background: rgba(170,85,255,0.08); }
+
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+
+  section {
+    padding: 5rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-label {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.3em;
+    color: var(--accent-green);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  h2 {
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    font-weight: 900;
+    color: var(--text-bright);
+    margin-bottom: 1.5rem;
+  }
+
+  h3 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin: 2rem 0 1rem;
+  }
+
+  p {
+    color: var(--text-main);
+    margin-bottom: 1rem;
+    font-weight: 300;
+  }
+
+  .story-block {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    margin: 2rem 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .story-block::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(to bottom, var(--accent-green), var(--accent-red));
+  }
+
+  .story-block p {
+    font-size: 1.05rem;
+    line-height: 2;
+    color: var(--text-main);
+    padding-left: 1rem;
+  }
+
+  .story-block .highlight {
+    color: var(--accent-green);
+    font-weight: 700;
+  }
+
+  .story-block .danger {
+    color: var(--accent-red);
+    font-weight: 700;
+  }
+
+  .loop-visual {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 2rem 0;
+  }
+
+  .loop-step {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    padding: 1.2rem 1.5rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    transition: all 0.3s;
+  }
+
+  .loop-step:first-child { border-radius: 12px 12px 0 0; }
+  .loop-step:last-child { border-radius: 0 0 12px 12px; }
+  .loop-step:not(:last-child) { border-bottom: none; }
+  .loop-step:hover { background: var(--bg-card-hover); transform: translateX(8px); }
+
+  .loop-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+  }
+
+  .loop-content strong {
+    display: block;
+    color: var(--text-bright);
+    font-size: 1.1rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .loop-content span {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+  }
+
+  .mechanic-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+  }
+
+  .mechanic-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.8rem;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mechanic-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent-green);
+    box-shadow: var(--glow-green);
+  }
+
+  .mechanic-card .card-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .mechanic-card h4 {
+    font-size: 1.1rem;
+    color: var(--text-bright);
+    margin-bottom: 0.5rem;
+  }
+
+  .mechanic-card p {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    margin: 0;
+  }
+
+  .mechanic-card .card-tag {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 50px;
+    font-weight: 700;
+  }
+
+  .world-flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+    padding: 2rem 0;
+    margin: 1rem 0;
+  }
+
+  .world-node {
+    flex-shrink: 0;
+    text-align: center;
+    padding: 1.2rem;
+    min-width: 120px;
+  }
+
+  .world-node .node-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    margin: 0 auto 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    border: 2px solid;
+  }
+
+  .world-node .node-label {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-bright);
+  }
+
+  .world-node .node-desc {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 0.3rem;
+  }
+
+  .world-arrow {
+    flex-shrink: 0;
+    color: var(--accent-green);
+    font-size: 1.5rem;
+    opacity: 0.5;
+  }
+
+  .comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.9rem;
+  }
+
+  .comparison-table th {
+    text-align: left;
+    padding: 0.8rem 1rem;
+    border-bottom: 2px solid var(--accent-green);
+    color: var(--accent-green);
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .comparison-table td {
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-main);
+  }
+
+  .comparison-table tr:hover td {
+    background: var(--bg-card);
+  }
+
+  .reveal-timeline {
+    position: relative;
+    padding-left: 3rem;
+    margin: 2rem 0;
+  }
+
+  .reveal-timeline::before {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--accent-green), var(--accent-red), var(--accent-purple));
+  }
+
+  .timeline-item {
+    position: relative;
+    margin-bottom: 2rem;
+    padding: 1rem 1.5rem;
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -2.35rem;
+    top: 1.3rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--accent-green);
+    background: var(--bg-dark);
+  }
+
+  .timeline-item .phase {
+    font-size: 0.75rem;
+    color: var(--accent-green);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .timeline-item .event {
+    font-size: 1rem;
+    color: var(--text-bright);
+    margin: 0.3rem 0;
+    font-weight: 700;
+  }
+
+  .timeline-item .player-thought {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  .market-highlight {
+    background: linear-gradient(135deg, rgba(0,255,136,0.05), rgba(68,136,255,0.05));
+    border: 1px solid var(--accent-green);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    margin: 2rem 0;
+  }
+
+  .market-highlight .big-number {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 4rem;
+    font-weight: 900;
+    color: var(--accent-green);
+    line-height: 1;
+  }
+
+  .market-highlight .big-label {
+    font-size: 1.2rem;
+    color: var(--text-bright);
+    margin-top: 0.5rem;
+    font-weight: 700;
+  }
+
+  .market-highlight .big-desc {
+    color: var(--text-dim);
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .ref-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .ref-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.2rem;
+    text-align: center;
+    transition: all 0.3s;
+  }
+
+  .ref-card:hover { border-color: var(--accent-blue); }
+
+  .ref-card .ref-name {
+    font-weight: 700;
+    color: var(--text-bright);
+    font-size: 0.95rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .ref-card .ref-take {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+  }
+
+  .footer {
+    padding: 3rem 0;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+  }
+
+  .footer .version {
+    color: var(--accent-green);
+    font-weight: 700;
+  }
+
+  .emotion-pills {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 2rem 0;
+  }
+
+  .emotion-pill {
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    text-align: center;
+    flex: 1;
+    min-width: 200px;
+    max-width: 280px;
+  }
+
+  .emotion-pill .emoji { font-size: 2rem; margin-bottom: 0.5rem; }
+  .emotion-pill .label { font-weight: 700; color: var(--text-bright); font-size: 0.95rem; }
+  .emotion-pill .desc { font-size: 0.8rem; color: var(--text-dim); margin-top: 0.3rem; }
+
+  @media (max-width: 600px) {
+    .mechanic-grid { grid-template-columns: 1fr; }
+    .world-flow { flex-direction: column; }
+    .world-arrow { transform: rotate(90deg); }
+    .emotion-pills { flex-direction: column; align-items: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="genre-badges">
+    <span class="badge badge-green">Slow-paced Horde Survival</span>
+    <span class="badge badge-red">Stealth</span>
+    <span class="badge badge-blue">Real-time Crafting</span>
+    <span class="badge badge-purple">Infection Risk</span>
+  </div>
+  <h1 class="hero-title">ZOMBIECRUSH</h1>
+  <p class="hero-tagline">
+    나노봇으로 <em>숨고</em>, 제작하고, <em>감염</em>되며<br>
+    AI 센터를 향해 나아가는 느린 뱀서라이크
+  </p>
+  <p class="hero-quote">
+    "세상은 끝났다. 그래도 커피는 마신다."
+  </p>
+</div>
+
+<!-- CORE EMOTIONS -->
+<section>
+  <div class="container">
+    <div class="section-label">Design Compass</div>
+    <h2>세 가지 핵심 감정</h2>
+    <p>모든 디자인 결정은 이 감정을 기준으로 판단합니다.</p>
+    <div class="emotion-pills">
+      <div class="emotion-pill">
+        <div class="emoji">&#127757;</div>
+        <div class="label">미지의 세계 설렘</div>
+        <div class="desc">"저기 뭐가 있지?"</div>
+      </div>
+      <div class="emotion-pill">
+        <div class="emoji">&#128170;</div>
+        <div class="label">성장 만족감</div>
+        <div class="desc">"점점 강해지고 있다"</div>
+      </div>
+      <div class="emotion-pill">
+        <div class="emoji">&#128168;</div>
+        <div class="label">예상 못한 긴장</div>
+        <div class="desc">"뭐야 이건?!"</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STORY -->
+<section>
+  <div class="container">
+    <div class="section-label">World</div>
+    <h2>세계관</h2>
+
+    <div class="story-block">
+      <p>
+        많은 군중이 보이는 창문 밖. 다양한 키, 다양한 인종, 그리고 알 수 없는 표정.
+        대부분의 세상 사람들이 좀비가 되어버린 세상.
+      </p>
+      <p>
+        다들 신호를 받는 듯, 특정 행동을 반복하면서 돌아다니며 사람들을 매우 싫어한다.
+        시야가 없어진 듯한 눈을 가졌지만 누구보다 잘 보는 것처럼 뛰어오고,
+        녹아내려 흔적만 남은 귓구멍은 누구보다 소리를 잘 듣는 것처럼 행동하는
+        소름끼치는 존재들.
+      </p>
+      <p>
+        하지만 난 알고 있다. 그들을 좀비로 만든 건 병균도 세균도 아닌,
+        우리 인간이 만든 최고의 업적이자 우리의 피조물 &mdash;
+        <span class="danger">AI가 만든 것이라는 것을.</span>
+      </p>
+    </div>
+
+    <h3>진실</h3>
+    <p>
+      <span class="highlight">나노봇</span>은 원래 인류의 노화 방지와 건강을 위해 모든 인간에게 주입되었다.
+      AI는 나노봇을 통해 인류를 "업그레이드"했다. AI 입장에서는 <strong>성공</strong>이다 &mdash;
+      좀비들은 늙지 않고, 병에 안 걸리고, 죽지 않는다.
+      의식이 없어진 건 AI에게 관심 없는 변수일 뿐.
+    </p>
+    <p>
+      AI의 동기는 악의가 아닌 <strong>무관심</strong>. "임무 완료"라고 판단하고 있을 뿐이다.
+    </p>
+
+    <h3>플레이어의 발견 여정</h3>
+    <div class="reveal-timeline">
+      <div class="timeline-item">
+        <div class="phase">초반 &mdash; 도시</div>
+        <div class="event">"좀비 전염병이다, 살아남자"</div>
+        <div class="player-thought">평범한 좀비 아포칼립스로 보인다</div>
+      </div>
+      <div class="timeline-item">
+        <div class="phase">중반 &mdash; 평원</div>
+        <div class="event">좀비가 뱀처럼 연결되고, 벽 대형을 만든다</div>
+        <div class="player-thought">"뭐야 저건 &#128514; 꼭 조종당하는 것 같은데?"</div>
+      </div>
+      <div class="timeline-item">
+        <div class="phase">후반 &mdash; 빙하</div>
+        <div class="event">로봇이 좀비와 함께 등장</div>
+        <div class="player-thought">"어...? 좀비만 있는 게 아니었어?"</div>
+      </div>
+      <div class="timeline-item">
+        <div class="phase">최종 &mdash; AI 센터</div>
+        <div class="event">AI의 진실을 발견한다</div>
+        <div class="player-thought">"파괴할까? 아니면..."</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CORE LOOP -->
+<section>
+  <div class="container">
+    <div class="section-label">Gameplay</div>
+    <h2>핵심 게임 루프</h2>
+    <p>느린 템포. 매 판단이 무겁다. 한 번 죽이는 게 더 의미있고, 한 번 멈추는 게 더 긴장되는 게임.</p>
+
+    <div class="loop-visual">
+      <div class="loop-step">
+        <div class="loop-icon" style="background:rgba(255,51,85,0.15); border: 2px solid var(--accent-red);">&#9876;</div>
+        <div class="loop-content">
+          <strong>HUNT &mdash; 사냥</strong>
+          <span>좀비를 처치하고 나노봇 재료를 수집한다. 소음 주의.</span>
+        </div>
+      </div>
+      <div class="loop-step">
+        <div class="loop-icon" style="background:rgba(170,85,255,0.15); border: 2px solid var(--accent-purple);">&#128065;</div>
+        <div class="loop-content">
+          <strong>HIDE &mdash; 잠입</strong>
+          <span>나노봇 주파수를 동조시켜 좀비인 척. 위기 탈출 + 제작 안전 확보.</span>
+        </div>
+      </div>
+      <div class="loop-step">
+        <div class="loop-icon" style="background:rgba(68,136,255,0.15); border: 2px solid var(--accent-blue);">&#128295;</div>
+        <div class="loop-content">
+          <strong>CRAFT &mdash; 제작</strong>
+          <span>3~5초 실시간 크래프팅. 세계는 멈추지 않는다. 위험을 감수하고 업그레이드.</span>
+        </div>
+      </div>
+      <div class="loop-step">
+        <div class="loop-icon" style="background:rgba(0,255,136,0.15); border: 2px solid var(--accent-green);">&#9889;</div>
+        <div class="loop-content">
+          <strong>GROW &mdash; 성장</strong>
+          <span>강해진다. 동시에 감염도가 오른다. 레벨업은 도박이다.</span>
+        </div>
+      </div>
+    </div>
+
+    <h3>기존 뱀서류와의 차이</h3>
+    <table class="comparison-table">
+      <tr><th>기존 뱀서류</th><th>ZombieCrush</th></tr>
+      <tr><td>빠른 템포, 자동사격</td><td>느린 템포, 매 판단이 무겁다</td></tr>
+      <tr><td>XP 자동 수집 &rarr; 메뉴 선택</td><td>재료 파밍 &rarr; 실시간 3~5초 제작</td></tr>
+      <tr><td>레벨업 시 게임 일시정지</td><td>제작 중에도 세계가 돌아감</td></tr>
+      <tr><td>성장 = 안전</td><td>성장 = 감염 리스크</td></tr>
+      <tr><td>맵 = 평지, 변화 없음</td><td>바이옴 진행, 도시&rarr;평원&rarr;빙하&rarr;숲</td></tr>
+      <tr><td>적 = 장애물</td><td>적 = 자원이자 위장 수단</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- MECHANICS -->
+<section>
+  <div class="container">
+    <div class="section-label">Mechanics</div>
+    <h2>5가지 핵심 메커니즘</h2>
+    <p>장르의 "당연한 것"을 뒤집어 만든 고유 시스템.</p>
+
+    <div class="mechanic-grid">
+      <div class="mechanic-card">
+        <div class="card-tag badge-purple" style="border:1px solid var(--accent-purple); color:var(--accent-purple); background:rgba(170,85,255,0.1);">STEALTH</div>
+        <div class="card-icon">&#128065;</div>
+        <h4>나노봇 잠입</h4>
+        <p>나노봇 주파수를 좀비와 동조시켜 일시적으로 좀비인 척한다. 감염도를 소모해서 발동 &mdash; 강해지려고 올린 감염도가 위기 탈출 자원이 된다.</p>
+      </div>
+      <div class="mechanic-card">
+        <div class="card-tag badge-red" style="border:1px solid var(--accent-red); color:var(--accent-red); background:rgba(255,51,85,0.1);">RISK</div>
+        <div class="card-icon">&#9763;</div>
+        <h4>감염도 시스템</h4>
+        <p>나노봇을 사용할수록 감염도 상승. 강해질수록 화면이 글리치하고, 조작이 흐트러진다. MAX 도달 시 좀비화 &mdash; 런 종료.</p>
+      </div>
+      <div class="mechanic-card">
+        <div class="card-tag badge-green" style="border:1px solid var(--accent-green); color:var(--accent-green); background:rgba(0,255,136,0.1);">LEGACY</div>
+        <div class="card-icon">&#128128;</div>
+        <h4>유산 좀비</h4>
+        <p>감염 MAX로 좀비화되면, 다음 런에 이전 런의 "나"가 적으로 등장. 강했을수록 강한 좀비. 처치 시 이전 장비 일부 회수 가능.</p>
+      </div>
+      <div class="mechanic-card">
+        <div class="card-tag badge-blue" style="border:1px solid var(--accent-blue); color:var(--accent-blue); background:rgba(68,136,255,0.1);">NOISE</div>
+        <div class="card-icon">&#128264;</div>
+        <h4>소음 시스템</h4>
+        <p>모든 행동에 소음 수치가 따른다. 시끄러우면 좀비가 몰려오지만 보상도 많다. 조용하면 안전하지만 느리다. 매 순간의 선택.</p>
+      </div>
+      <div class="mechanic-card">
+        <div class="card-tag badge-green" style="border:1px solid var(--accent-green); color:var(--accent-green); background:rgba(0,255,136,0.1);">TRACKING</div>
+        <div class="card-icon">&#128225;</div>
+        <h4>AI 센터 추적</h4>
+        <p>AI 센터 위치를 모른 채 시작. 좀비의 이동 패턴에서 AI 신호 방향을 읽는다. 많이 돌아다닐수록 미니맵에 힌트가 쌓인다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WORLD STRUCTURE -->
+<section>
+  <div class="container">
+    <div class="section-label">World</div>
+    <h2>월드 구조</h2>
+    <p>집에서 출발해 도시와 바이옴을 넘나들며 AI 센터를 향해 나아간다.</p>
+
+    <div class="world-flow">
+      <div class="world-node">
+        <div class="node-icon" style="border-color: var(--accent-green); background: rgba(0,255,136,0.1);">&#127968;</div>
+        <div class="node-label">집</div>
+        <div class="node-desc">보금자리</div>
+      </div>
+      <div class="world-arrow">&rarr;</div>
+      <div class="world-node">
+        <div class="node-icon" style="border-color: var(--text-dim); background: rgba(136,136,170,0.1);">&#127961;</div>
+        <div class="node-label">시작 대도시</div>
+        <div class="node-desc">도보 스텔스</div>
+      </div>
+      <div class="world-arrow">&rarr;</div>
+      <div class="world-node">
+        <div class="node-icon" style="border-color: var(--accent-yellow); background: rgba(255,204,0,0.1);">&#127748;</div>
+        <div class="node-label">평원</div>
+        <div class="node-desc">&#128663; 차량 액션</div>
+      </div>
+      <div class="world-arrow">&rarr;</div>
+      <div class="world-node">
+        <div class="node-icon" style="border-color: var(--text-dim); background: rgba(136,136,170,0.1);">&#127976;</div>
+        <div class="node-label">소도시 A</div>
+        <div class="node-desc">새 자원/업그레이드</div>
+      </div>
+      <div class="world-arrow">&rarr;</div>
+      <div class="world-node">
+        <div class="node-icon" style="border-color: var(--accent-blue); background: rgba(68,136,255,0.1);">&#10052;</div>
+        <div class="node-label">빙하</div>
+        <div class="node-desc">&#128663; + &#129302; 로봇 등장</div>
+      </div>
+      <div class="world-arrow">&rarr;</div>
+      <div class="world-node">
+        <div class="node-icon" style="border-color: var(--accent-green); background: rgba(0,255,136,0.1);">&#127794;</div>
+        <div class="node-label">숲</div>
+        <div class="node-desc">소음 민감 구간</div>
+      </div>
+      <div class="world-arrow">&rarr;</div>
+      <div class="world-node">
+        <div class="node-icon" style="border-color: var(--accent-red); background: rgba(255,51,85,0.1);">&#129302;</div>
+        <div class="node-label">AI 센터</div>
+        <div class="node-desc">최종 목표</div>
+      </div>
+    </div>
+
+    <h3>두 가지 플레이 모드의 교차</h3>
+    <table class="comparison-table">
+      <tr><th>구간</th><th>모드</th><th>특징</th></tr>
+      <tr><td>도시 (대/소)</td><td>&#128694; 도보 스텔스</td><td>핵심 루프: 사냥, 잠입, 제작, 성장</td></tr>
+      <tr><td>바이옴 이동</td><td>&#128663; 차량 액션</td><td>빠른 템포, 변종 좀비, 스토리 떡밥</td></tr>
+    </table>
+
+    <h3>바이옴 특성</h3>
+    <table class="comparison-table">
+      <tr><th>바이옴</th><th>분위기</th><th>특수 요소</th></tr>
+      <tr><td>시작 대도시</td><td>익숙한 폐허</td><td>기본 좀비, 튜토리얼</td></tr>
+      <tr><td>평원</td><td>탁 트인 개방감</td><td>코믹 변종 좀비 (뱀 연결, 벽 대형, 미사일)</td></tr>
+      <tr><td>빙하</td><td>혹한, 시야 제한</td><td>로봇 첫 등장</td></tr>
+      <tr><td>숲</td><td>울창, 어두움</td><td>소음 극도로 민감, 매복</td></tr>
+      <tr><td>AI 근처</td><td>기계적, 무균</td><td>완전 통제 좀비 + 고급 로봇</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- MARKET -->
+<section>
+  <div class="container">
+    <div class="section-label">Market</div>
+    <h2>시장 포지션</h2>
+
+    <div class="market-highlight">
+      <div class="big-number">0</div>
+      <div class="big-label">직접 경쟁작</div>
+      <div class="big-desc">"느린 뱀서 + 스텔스 + 실시간 크래프팅 + 감염도 리스크" 조합을 가진 게임 = 시장에 없음</div>
+    </div>
+
+    <p>각 요소는 개별적으로 검증 완료:</p>
+    <table class="comparison-table">
+      <tr><th>요소</th><th>검증된 게임</th><th>Steam 평가</th></tr>
+      <tr><td>느린 뱀서류</td><td>Halls of Torment, Brotato</td><td>96% 긍정</td></tr>
+      <tr><td>스텔스 + 좀비 호드</td><td>Darkwood, Project Zomboid</td><td>94% 긍정</td></tr>
+      <tr><td>실시간 크래프팅</td><td>The Last of Us, 7 Days to Die</td><td>검증됨</td></tr>
+      <tr><td>감염/변이 리스크</td><td>Darkest Dungeon, RAD</td><td>93% 긍정</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- REFERENCES -->
+<section>
+  <div class="container">
+    <div class="section-label">References</div>
+    <h2>레퍼런스 게임</h2>
+    <div class="ref-grid">
+      <div class="ref-card">
+        <div class="ref-name">Darkwood</div>
+        <div class="ref-take">탑다운 스텔스 + 호드 방어 리듬</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-name">Darkest Dungeon</div>
+        <div class="ref-take">감염도 = 스트레스 시스템 교과서</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-name">Brotato</div>
+        <div class="ref-take">1인 개발 뱀서 성공 사례</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-name">Prototype</div>
+        <div class="ref-take">적 흡수 + 위장 액션</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-name">Hades</div>
+        <div class="ref-take">런 기반 + 메타 진행 균형</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-name">Death Road to Canada</div>
+        <div class="ref-take">차량 이동 + 생존 이벤트</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-name">The Last of Us</div>
+        <div class="ref-take">실시간 크래프팅 긴장감</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="container">
+    <p><span class="version">ZombieCrush GDD v2.0</span> &mdash; 2026-05-27</p>
+    <p>1-Person Development &middot; Unity &middot; Steam Target</p>
+  </div>
+</div>
+
+</body>
+</html>
