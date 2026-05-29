@@ -212,6 +212,8 @@ bool CanHearPlayer()
 ### 6.1 `ZombieConfig.cs` (신규)
 
 ```csharp
+using UnityEngine;   // ★ 필수 — ScriptableObject/CreateAssetMenu/Header
+
 public enum ZombieType { General, Signal }
 
 [CreateAssetMenu(menuName = "ZombieCrush/ZombieConfig")]
@@ -248,6 +250,7 @@ public class ZombieConfig : ScriptableObject
     public float signalRadius = 15f;
     public float signalDelay = 3f;
     public int signalSummonCount = 4;
+    public float signalCooldown = 15f;   // ★ 재소환 쿨다운 (하드코딩 제거)
 
     [Header("XP Drop")]
     public int xpOrbCountMin = 3;
@@ -517,6 +520,17 @@ public class ZombieController : MonoBehaviour
         _state = ZombieState.Idle;
         _dead = false;
         _hasSignaled = false;
+
+        // ★ 풀링 대비 전체 리셋 (현재 Instantiate/Destroy라 무해하지만, 풀 도입 시 오염 방지)
+        _velocity = Vector3.zero;
+        _spawning = false;
+        _attackCooldownTimer = 0f;
+        _investigateTimer = 0f;
+        _investigateLookTimer = 0f;
+        _stealthLostTimer = 0f;
+        _stealthCooldownTimer = 0f;
+        _signalCooldownTimer = 0f;
+        _wasPlayerStealthLastFrame = false;
     }
 
     public void PlaySpawnAnimation(SpawnAnimation type, Vector3 rushTarget = default, bool hasRushTarget = false)
@@ -545,12 +559,25 @@ public class ZombieController : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (_dead || _spawning || _player == null) return;
+        // ★ _config null 가드 추가 (SO 미연결 좀비가 NRE 내지 않도록)
+        if (_dead || _spawning || _player == null || _config == null) return;
 
+        UpdateTimers();
         UpdateStealthTracking();
         UpdateStateMachine();
         UpdateMovement();
         UpdateAnimation();
+    }
+
+    // ★ 신규: 매 FixedUpdate에서 쿨다운 타이머 감소 (기존엔 signalCooldown이 안 줄어듦)
+    void UpdateTimers()
+    {
+        if (_signalCooldownTimer > 0f)
+        {
+            _signalCooldownTimer -= Time.fixedDeltaTime;
+            if (_signalCooldownTimer <= 0f)
+                _hasSignaled = false;   // 쿨다운 만료 → 재소환 가능
+        }
     }
 
     // ──────────── Stealth Tracking ────────────
@@ -569,17 +596,26 @@ public class ZombieController : MonoBehaviour
         // 1초 후 타겟 상실
         if (_stealthLostTimer > 0f)
         {
-            _stealthLostTimer -= Time.fixedDeltaTime;
-            if (_stealthLostTimer <= 0f)
+            // ★ 스텔스가 1초 안에 풀리면 grace 타이머 취소 (급속 토글 시 오작동 방지)
+            if (!stealthNow)
             {
-                _state = ZombieState.Idle;
-                _stealthCooldownTimer = 3.0f;
+                _stealthLostTimer = 0f;
+            }
+            else
+            {
+                _stealthLostTimer -= Time.fixedDeltaTime;
+                if (_stealthLostTimer <= 0f)
+                {
+                    _state = ZombieState.Idle;
+                    _stealthCooldownTimer = 3.0f;
+                }
             }
         }
-
-        // 쿨다운 감소
-        if (_stealthCooldownTimer > 0f)
+        // ★ else if — 같은 프레임에 set+decrement 되지 않도록
+        else if (_stealthCooldownTimer > 0f)
+        {
             _stealthCooldownTimer -= Time.fixedDeltaTime;
+        }
 
         _wasPlayerStealthLastFrame = stealthNow;
     }
@@ -596,7 +632,8 @@ public class ZombieController : MonoBehaviour
         float dist = toPlayer.magnitude;
 
         if (dist > _config.sightRange) return false;
-        if (dist < 0.01f) return true;
+        // ★ 초근접(겹침)은 각도 무의미 — 단, 스텔스는 위에서 이미 차단됨
+        if (dist < 0.5f) return true;
         if (Vector3.Angle(transform.forward, toPlayer) > _config.sightHalfAngle) return false;
 
         Vector3 eyePos = transform.position + Vector3.up * 1f;
@@ -866,7 +903,8 @@ public class ZombieController : MonoBehaviour
     {
         yield return new WaitForSeconds(_config.signalDelay);
 
-        if (_dead) yield break;
+        // ★ 대기 중 좀비 사망/플레이어 소멸 가드
+        if (_dead || _player == null) yield break;
 
         // TODO: 시그널 파티클/사운드
 
@@ -886,7 +924,7 @@ public class ZombieController : MonoBehaviour
             }
         }
 
-        _signalCooldownTimer = 15f;
+        _signalCooldownTimer = _config.signalCooldown;   // ★ 하드코딩 제거. UpdateTimers()가 감소시킴
     }
 
     // ──────────── Utility (기존 코드 재사용) ────────────
@@ -946,6 +984,7 @@ public class ZombieSpawner : MonoBehaviour
     [SerializeField] int minZombies = 15;
     [SerializeField] int maxZombies = 25;
     [SerializeField] float spawnInterval = 2f;
+    [SerializeField] float backfillInterval = 0.3f;   // ★ 최소인구 미달 시 빠른 보충 간격
 
     [Header("Spawn Radius")]
     [SerializeField] float minSpawnRadius = 20f;
@@ -960,6 +999,7 @@ public class ZombieSpawner : MonoBehaviour
 
     List<ZombieController> _activeZombies = new List<ZombieController>();
     float _timer;
+    float _backfillTimer;   // ★ 최소인구 보충용 별도 타이머
 
     void Start()
     {
@@ -984,9 +1024,21 @@ public class ZombieSpawner : MonoBehaviour
             SpawnOne();
         }
 
-        // 최소 인구 유지
+        // ★ 최소 인구 보충 — 프레임당 무제한이 아니라 backfillInterval로 레이트 제한
+        //   (기존엔 0→15까지 매 프레임 SpawnOne 호출되어 시작 시 버스트)
         if (_activeZombies.Count < minZombies)
-            SpawnOne();
+        {
+            _backfillTimer += Time.deltaTime;
+            if (_backfillTimer >= backfillInterval)
+            {
+                _backfillTimer = 0f;
+                SpawnOne();
+            }
+        }
+        else
+        {
+            _backfillTimer = 0f;
+        }
     }
 
     void SpawnOne()
@@ -1254,8 +1306,34 @@ void AttackZombie(ZombieController target)
 
 ---
 
+## 12. 리뷰 반영 (Stab + Codex, 2026-05-29)
+
+### 코드에 이미 수정 반영된 버그
+
+| # | 심각도 | 이슈 | 수정 |
+|---|---|---|---|
+| 1 | Critical | `ZombieConfig.cs` `using UnityEngine;` 누락 → 컴파일 불가 | §6.1 상단 추가 |
+| 2 | Critical | `_signalCooldownTimer` 미감소 + `_hasSignaled` 미리셋 → 신호좀비 평생 1회만 소환 | `UpdateTimers()` 신규 + 쿨다운 만료 시 `_hasSignaled=false` |
+| 3 | High | 스텔스 급속 토글 시 grace 타이머 미취소 → 추격 중 강제 Idle | `UpdateStealthTracking()` `!stealthNow` 분기 |
+| 4 | High | `SignalCoroutine` 3초 대기 후 `_player` null 가드 없음 | `if (_dead \|\| _player == null) yield break;` |
+| 5 | High | `_config` null 가드 부재 → SO 미연결 시 NRE | `FixedUpdate` 진입 가드에 `_config == null` 추가 |
+| 6 | Medium | `Init()` 타이머 필드 미초기화 → 풀링 시 오염 | 전체 필드 리셋 추가 |
+| 7 | Minor | 스텔스 쿨다운 같은 프레임 set+decrement | `else if` 처리 |
+| 8 | Minor | `dist < 0.01f` 조기반환이 각도/LOS 스킵 | 임계 `0.5f`로 조정 (스텔스는 상위에서 차단) |
+| 9 | Minor | 스포너 최소인구 보충이 프레임당 무제한 → 시작 시 버스트 | `backfillInterval` 레이트 제한 |
+
+### 판단 필요 (코드 미반영 — 플레이테스트/디자인 결정)
+
+- **암살 데미지 vs 좀비 HP**: 현재 암살 = 2데미지, 일반좀비 HP = 3. **백스탭 1방으로 안 죽음**(2/3). GDD §9 "신호좀비 먼저 암살" 의도와 충돌. → 옵션: ①암살을 즉사 처리 ②신호좀비 HP를 2로 ③암살 데미지를 HP 이상으로. **플레이테스트에서 결정.**
+- **암살의 스텔스 요구 여부** (Codex 제안): Codex는 "스텔스 중에만 암살"을 제안했으나, **GDD §6-4/§17은 암살 = 단순 백스탭(뒤에서 공격)으로 정의, 스텔스 무관**. → Codex 제안 **기각**. 현 설계(백스탭=암살) 유지.
+- **신호좀비 소환 타이밍**: Chase 진입 즉시 시그널 시작 → 3초 후 발동. 그 사이 Attack으로 전환돼도 코루틴은 계속 진행(의도된 동작). 필요 시 `SignalCoroutine`에 `_state == Chase` 체크 추가 가능.
+- **프리팹 콜라이더**: §8은 `isTrigger = true`. 좀비-좀비 분리는 `OverlapSphere`(queriesHitTriggers 기본 true)로 동작하고, 장애물 LOS는 non-trigger 건물 대상이라 그레이박스 설계상 OK. 단 Project Settings의 `Queries Hit Triggers`가 꺼져 있으면 분리가 깨짐 → 확인 필요.
+
+---
+
 ## 변경 이력
 
 | 날짜 | 변경 |
 |---|---|
 | 2026-05-29 | 초안 작성. 차량→도보 좀비 AI 전면 교체 설계. |
+| 2026-05-29 | Stab+Codex 리뷰 반영. 버그 9건 수정(컴파일 에러/신호쿨다운/스텔스토글/null가드 등), 판단 필요 4건 명시. |
