@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZombieCrush — 게임 종합 설계서</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Orbitron:wght@700;900&display=swap');
+
+  :root {
+    --bg-dark: #0a0a0f;
+    --bg-card: #12121a;
+    --bg-card-hover: #1a1a28;
+    --bg-inset: #0d0d14;
+    --accent-green: #00ff88;
+    --accent-red: #ff3355;
+    --accent-blue: #4488ff;
+    --accent-yellow: #ffcc00;
+    --accent-purple: #aa55ff;
+    --accent-orange: #ff8844;
+    --text-main: #e8e8f0;
+    --text-dim: #8888aa;
+    --text-bright: #ffffff;
+    --border: #2a2a3a;
+    --glow-green: 0 0 20px rgba(0,255,136,0.3);
+    --glow-red: 0 0 20px rgba(255,51,85,0.3);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; scroll-padding-top: 70px; }
+
+  body {
+    background: var(--bg-dark);
+    color: var(--text-main);
+    font-family: 'Noto Sans KR', sans-serif;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ---------- Top Nav ---------- */
+  .topnav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10,10,15,0.92);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 0.6rem 1rem;
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    font-size: 0.8rem;
+  }
+  .topnav a {
+    color: var(--text-dim);
+    text-decoration: none;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .topnav a:hover { color: var(--accent-green); background: rgba(0,255,136,0.08); }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    min-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 2rem;
+    position: relative;
+    background: radial-gradient(ellipse at center, #0f1a0f 0%, var(--bg-dark) 70%);
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+  .hero-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(3rem, 8vw, 6rem);
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1rem;
+    text-shadow: var(--glow-green);
+  }
+  .hero-tagline {
+    font-size: clamp(1.05rem, 3vw, 1.6rem);
+    color: var(--text-main);
+    max-width: 760px;
+    font-weight: 500;
+    margin-bottom: 1.2rem;
+  }
+  .hero-tagline em { color: var(--accent-green); font-style: normal; font-weight: 700; }
+  .hero-sub { color: var(--text-dim); font-size: 0.95rem; max-width: 620px; margin-bottom: 1.5rem; }
+  .hero-quote {
+    font-size: 1.05rem; color: var(--text-dim); font-style: italic;
+    border-left: 3px solid var(--accent-green); padding-left: 1rem;
+    max-width: 540px; margin-top: 1rem; text-align: left;
+  }
+  .genre-badges { display: flex; gap: 0.7rem; flex-wrap: wrap; justify-content: center; margin: 1.8rem 0 0.5rem; }
+  .badge {
+    padding: 0.4rem 1rem; border-radius: 50px; font-size: 0.82rem;
+    font-weight: 700; letter-spacing: 0.05em; border: 1px solid;
+  }
+  .badge-green { border-color: var(--accent-green); color: var(--accent-green); background: rgba(0,255,136,0.08); }
+  .badge-red { border-color: var(--accent-red); color: var(--accent-red); background: rgba(255,51,85,0.08); }
+  .badge-blue { border-color: var(--accent-blue); color: var(--accent-blue); background: rgba(68,136,255,0.08); }
+  .badge-purple { border-color: var(--accent-purple); color: var(--accent-purple); background: rgba(170,85,255,0.08); }
+  .badge-yellow { border-color: var(--accent-yellow); color: var(--accent-yellow); background: rgba(255,204,0,0.08); }
+
+  /* ---------- Layout ---------- */
+  .container { max-width: 1040px; margin: 0 auto; padding: 0 1.5rem; }
+  section { padding: 4rem 0 2rem; border-top: 1px solid var(--border); }
+  section:first-of-type { border-top: none; }
+
+  .section-tag {
+    font-family: 'Orbitron', sans-serif; font-size: 0.75rem; letter-spacing: 0.25em;
+    color: var(--accent-green); text-transform: uppercase; margin-bottom: 0.5rem;
+  }
+  h2 {
+    font-size: clamp(1.7rem, 4vw, 2.4rem); font-weight: 900; color: var(--text-bright);
+    margin-bottom: 0.4rem; line-height: 1.25;
+  }
+  h3 { font-size: 1.25rem; color: var(--text-bright); margin: 1.8rem 0 0.8rem; font-weight: 700; }
+  h4 { font-size: 1rem; color: var(--accent-blue); margin: 1.2rem 0 0.5rem; font-weight: 700; }
+  .lead { color: var(--text-dim); font-size: 1.05rem; max-width: 800px; margin-bottom: 1.5rem; }
+  p { margin-bottom: 0.8rem; }
+  strong { color: var(--text-bright); font-weight: 700; }
+  em { color: var(--accent-yellow); font-style: normal; }
+
+  /* ---------- Cards ---------- */
+  .grid { display: grid; gap: 1rem; }
+  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .grid-3 { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 1.4rem; transition: all 0.25s;
+  }
+  .card:hover { background: var(--bg-card-hover); border-color: #3a3a4e; transform: translateY(-2px); }
+  .card .num {
+    font-family: 'Orbitron', sans-serif; font-size: 1.6rem; font-weight: 900;
+    color: var(--accent-green); display: block; margin-bottom: 0.3rem;
+  }
+  .card h4 { margin-top: 0; color: var(--text-bright); font-size: 1.1rem; }
+  .card p { color: var(--text-dim); font-size: 0.92rem; margin-bottom: 0; }
+
+  .card-green { border-top: 3px solid var(--accent-green); }
+  .card-red { border-top: 3px solid var(--accent-red); }
+  .card-blue { border-top: 3px solid var(--accent-blue); }
+  .card-purple { border-top: 3px solid var(--accent-purple); }
+  .card-yellow { border-top: 3px solid var(--accent-yellow); }
+
+  /* ---------- Why callout ---------- */
+  .why {
+    background: linear-gradient(135deg, rgba(0,255,136,0.06), rgba(68,136,255,0.04));
+    border-left: 3px solid var(--accent-green); border-radius: 0 10px 10px 0;
+    padding: 1rem 1.3rem; margin: 1.2rem 0; font-size: 0.95rem;
+  }
+  .why::before {
+    content: 'WHY'; font-family: 'Orbitron', sans-serif; font-size: 0.7rem; letter-spacing: 0.2em;
+    color: var(--accent-green); display: block; margin-bottom: 0.3rem;
+  }
+  .note {
+    background: rgba(255,204,0,0.05); border-left: 3px solid var(--accent-yellow);
+    padding: 0.9rem 1.2rem; margin: 1rem 0; font-size: 0.92rem; color: var(--text-dim); border-radius: 0 8px 8px 0;
+  }
+
+  /* ---------- Tables ---------- */
+  .table-wrap { overflow-x: auto; margin: 1rem 0; border-radius: 10px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 480px; }
+  th, td { padding: 0.7rem 0.9rem; text-align: left; border-bottom: 1px solid var(--border); }
+  th { background: var(--bg-inset); color: var(--accent-green); font-weight: 700; font-size: 0.82rem; letter-spacing: 0.03em; }
+  td { color: var(--text-dim); }
+  td strong { color: var(--text-main); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.015); }
+
+  /* ---------- Loop diagram ---------- */
+  .loop {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+    gap: 0.5rem; margin: 1.5rem 0; padding: 1.5rem; background: var(--bg-inset);
+    border-radius: 12px; border: 1px solid var(--border);
+  }
+  .loop-node {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 0.8rem 1.1rem; text-align: center; min-width: 100px;
+  }
+  .loop-node .ico { font-size: 1.4rem; display: block; margin-bottom: 0.2rem; }
+  .loop-node .lbl { font-weight: 700; color: var(--text-bright); font-size: 0.95rem; }
+  .loop-node .cost { font-size: 0.75rem; color: var(--text-dim); }
+  .loop-arrow { color: var(--accent-green); font-size: 1.3rem; }
+
+  /* ---------- Engine (two-cost) ---------- */
+  .engine { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: center; margin: 1.5rem 0; }
+  .engine-side { padding: 1.3rem; border-radius: 12px; }
+  .engine-stealth { background: rgba(68,136,255,0.06); border: 1px solid rgba(68,136,255,0.3); }
+  .engine-combat { background: rgba(255,51,85,0.06); border: 1px solid rgba(255,51,85,0.3); }
+  .engine-vs { font-family: 'Orbitron', sans-serif; font-weight: 900; color: var(--text-dim); font-size: 1.1rem; }
+  @media (max-width: 720px) { .engine { grid-template-columns: 1fr; } .engine-vs { transform: rotate(90deg); } }
+
+  /* ---------- Pillars ---------- */
+  .pillar-head { display: flex; align-items: baseline; gap: 0.6rem; margin-bottom: 0.4rem; }
+  .pillar-head .pn { font-family: 'Orbitron', sans-serif; font-size: 0.85rem; color: var(--accent-purple); font-weight: 900; }
+
+  /* ---------- Timeline / roadmap ---------- */
+  .timeline { position: relative; padding-left: 1.5rem; margin: 1.5rem 0; }
+  .timeline::before { content: ''; position: absolute; left: 4px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+  .tl-item { position: relative; padding-bottom: 1.3rem; }
+  .tl-item::before {
+    content: ''; position: absolute; left: -1.5rem; top: 0.4rem; width: 11px; height: 11px;
+    border-radius: 50%; background: var(--bg-dark); border: 2px solid var(--text-dim);
+  }
+  .tl-item.done::before { background: var(--accent-green); border-color: var(--accent-green); box-shadow: var(--glow-green); }
+  .tl-item.active::before { background: var(--accent-yellow); border-color: var(--accent-yellow); }
+  .tl-item .tl-title { font-weight: 700; color: var(--text-bright); }
+  .tl-item .tl-status { font-size: 0.78rem; padding: 0.1rem 0.5rem; border-radius: 50px; margin-left: 0.5rem; }
+  .st-done { background: rgba(0,255,136,0.12); color: var(--accent-green); }
+  .st-active { background: rgba(255,204,0,0.12); color: var(--accent-yellow); }
+  .st-todo { background: rgba(136,136,170,0.12); color: var(--text-dim); }
+  .tl-item p { color: var(--text-dim); font-size: 0.9rem; margin: 0.2rem 0 0; }
+
+  /* ---------- Enemy cards ---------- */
+  .enemy-tag { display: inline-block; font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 50px; margin-left: 0.4rem; vertical-align: middle; }
+  .tag-mvp { background: rgba(0,255,136,0.15); color: var(--accent-green); }
+  .tag-full { background: rgba(136,136,170,0.12); color: var(--text-dim); }
+
+  /* ---------- State machine ---------- */
+  .fsm { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; justify-content: center; margin: 1.2rem 0; padding: 1.3rem; background: var(--bg-inset); border-radius: 12px; border: 1px solid var(--border); }
+  .fsm-state { background: var(--bg-card); border: 1px solid var(--accent-blue); color: var(--accent-blue); border-radius: 8px; padding: 0.5rem 0.9rem; font-weight: 700; font-size: 0.9rem; }
+  .fsm-state.dead { border-color: var(--accent-red); color: var(--accent-red); }
+  .fsm-arrow { color: var(--text-dim); font-size: 1.1rem; }
+
+  ul.clean { list-style: none; margin: 0.5rem 0; }
+  ul.clean li { padding-left: 1.4rem; position: relative; margin-bottom: 0.5rem; color: var(--text-dim); }
+  ul.clean li::before { content: '▸'; position: absolute; left: 0; color: var(--accent-green); }
+  ul.clean li strong { color: var(--text-main); }
+
+  .kv { display: flex; gap: 0.6rem; flex-wrap: wrap; margin: 0.8rem 0; }
+  .kv .chip { background: var(--bg-inset); border: 1px solid var(--border); border-radius: 8px; padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+  .kv .chip b { color: var(--accent-green); }
+
+  footer { text-align: center; padding: 3rem 1rem; color: var(--text-dim); font-size: 0.85rem; border-top: 1px solid var(--border); }
+  footer .doc-list { margin-top: 1rem; font-size: 0.78rem; line-height: 2; }
+
+  .pill { display:inline-block; font-size:0.72rem; padding:0.1rem 0.5rem; border-radius:50px; background:rgba(170,85,255,0.12); color:var(--accent-purple); margin-left:0.3rem;}
+</style>
+</head>
+<body>
+
+<!-- ===================== TOP NAV ===================== -->
+<nav class="topnav">
+  <a href="#concept">컨셉</a>
+  <a href="#emotion">핵심 감정</a>
+  <a href="#world">세계관</a>
+  <a href="#loop">핵심 루프</a>
+  <a href="#mechanics">5대 메커니즘</a>
+  <a href="#engine">두-비용 엔진</a>
+  <a href="#progression">진행 3기둥</a>
+  <a href="#noise">소음</a>
+  <a href="#infection">감염도</a>
+  <a href="#verbs">레벨업 동사</a>
+  <a href="#crafting">크래프팅</a>
+  <a href="#enemies">적</a>
+  <a href="#ai">좀비 AI</a>
+  <a href="#worldmap">월드</a>
+  <a href="#principles">원칙</a>
+  <a href="#market">시장</a>
+  <a href="#mvp">MVP</a>
+  <a href="#roadmap">로드맵</a>
+</nav>
+
+<!-- ===================== HERO ===================== -->
+<header class="hero">
+  <div class="section-tag">GAME DESIGN OVERVIEW · v2.7</div>
+  <h1 class="hero-title">ZombieCrush</h1>
+  <p class="hero-tagline">느린 뱀서라이크 × 스텔스 생존 — <em>나노봇으로 숨고, 제작하고, 감염되며</em> AI 센터를 향해 나아간다.</p>
+  <p class="hero-sub">빠른 자동사격 대신 매 판단이 무겁다. 적은 장애물이 아니라 자원이자 위장 수단이다. 강해질수록 죽음에 가까워진다.</p>
+  <div class="genre-badges">
+    <span class="badge badge-green">느린 호드 서바이벌</span>
+    <span class="badge badge-blue">스텔스</span>
+    <span class="badge badge-yellow">실시간 크래프팅</span>
+    <span class="badge badge-red">감염도 리스크</span>
+    <span class="badge badge-purple">로그라이트</span>
+  </div>
+  <blockquote class="hero-quote">"세상은 끝났다. 그래도 커피는 마신다."<br>— 톤: Hades식 따뜻한 어두움</blockquote>
+</header>
+
+<main class="container">
+
+<!-- ===================== CONCEPT ===================== -->
+<section id="concept">
+  <div class="section-tag">01 · Concept</div>
+  <h2>한 줄로</h2>
+  <p class="lead">느린 템포 호드 서바이벌 + 스텔스 + 실시간 크래프팅. 이 네 요소의 조합을 가진 게임이 현재 시장에 없다 — 각 요소는 개별적으로 검증됐고, 조합은 블루오션.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>기존 뱀서류</th><th>본 게임</th></tr></thead>
+      <tbody>
+        <tr><td>빠른 템포, 자동사격</td><td><strong>느린 템포, 매 판단이 무겁다</strong></td></tr>
+        <tr><td>XP 자동 수집 → 메뉴 선택</td><td><strong>재료 파밍 → 실시간 3~5초 제작</strong> (위험 감수)</td></tr>
+        <tr><td>맵 = 평지, 변화 없음</td><td><strong>바이옴 진행</strong>, 각 구역이 다른 경험</td></tr>
+        <tr><td>성장 = 안전</td><td><strong>성장 = 감염 리스크</strong> (강해질수록 위험)</td></tr>
+        <tr><td>적 = 장애물</td><td><strong>적 = 자원이자 위장 수단</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ===================== EMOTION ===================== -->
+<section id="emotion">
+  <div class="section-tag">02 · Design Compass</div>
+  <h2>핵심 감정 3가지</h2>
+  <p class="lead">모든 디자인 결정은 이 세 감정을 기준으로 판단한다. "이러면 재밌겠지"로 시작하지 않는다 — 감정에서 출발하고, 메커니즘은 도구다.</p>
+  <div class="grid grid-3">
+    <div class="card card-green">
+      <span class="num">01</span>
+      <h4>미지의 설렘</h4>
+      <p>"저기 뭐가 있지?" — 미지의 세계로 나아가는 끌림.</p>
+    </div>
+    <div class="card card-yellow">
+      <span class="num">02</span>
+      <h4>성장의 만족</h4>
+      <p>"점점 강해지고 있다" — 내 것이 커지는 체감.</p>
+    </div>
+    <div class="card card-red">
+      <span class="num">03</span>
+      <h4>이벤트의 긴장</h4>
+      <p>"뭐야 이건?!" — 예상 못한 사건의 짜릿함.</p>
+    </div>
+  </div>
+  <div class="why">방향 전환의 뿌리. 뱀서 전투 자체가 아니라 "성장 체감"이 핵심 재미였다는 자기분석에서 출발. 원하는 세 감정이 순수 뱀서로는 불가능했기에, 장르의 "당연한 것"을 뒤집어 메커니즘을 도출했다.</div>
+</section>
+
+<!-- ===================== WORLD ===================== -->
+<section id="world">
+  <div class="section-tag">03 · Lore</div>
+  <h2>세계관 — 좀비를 만든 건 병균이 아니다</h2>
+  <p class="lead">대부분의 인류가 좀비가 된 세상. 시야 없는 눈으로 누구보다 잘 보고, 녹아내린 귓구멍으로 누구보다 잘 듣는 존재들. 하지만 진실은 — 그들을 만든 건 우리의 피조물, <strong>AI</strong>다.</p>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <h4>나노봇의 진실</h4>
+      <p>원래 인류의 노화 방지·건강을 위해 모든 인간에게 주입된 나노봇. AI가 이것으로 인류를 "업그레이드"했다 — AI 입장에선 <strong>성공</strong>. 좀비는 늙지 않고, 병에 안 걸리고, 죽지 않는다. 의식이 사라진 건 AI에게 무관한 변수.</p>
+    </div>
+    <div class="card">
+      <h4>AI의 동기 = 무관심</h4>
+      <p>악의가 아니라 <strong>"임무 완료"</strong>라는 판단. 자신의 행위가 병균에 의한 것처럼 위장했다. 플레이어도 나노봇을 가졌기에 — 주파수를 동조시켜 <strong>좀비인 척</strong> 할 수 있다.</p>
+    </div>
+  </div>
+
+  <h3>플레이어가 알아가는 순서 <span class="pill">서사는 환경으로만</span></h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>진행 단계</th><th>플레이어가 아는 것</th></tr></thead>
+      <tbody>
+        <tr><td>초반 (도시)</td><td>"좀비 전염병이다, 살아남자"</td></tr>
+        <tr><td>중반 (평원)</td><td>좀비가 이상하게 행동 → "조종당하는 것 같은데?"</td></tr>
+        <tr><td>후반 (빙하~)</td><td>로봇 등장 → "좀비 뒤에 뭔가 있다"</td></tr>
+        <tr><td>최종 (AI 센터)</td><td>AI의 진실 발견 → 파괴? 리프로그래밍? 선택</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="color:var(--text-dim);font-size:0.9rem">DLC 떡밥: 외계 위협의 흔적이 후반부에 암시됨 (직접 등장 X).</p>
+</section>
+
+<!-- ===================== CORE LOOP ===================== -->
+<section id="loop">
+  <div class="section-tag">04 · Core Loop</div>
+  <h2>핵심 게임 루프</h2>
+  <div class="loop">
+    <div class="loop-node"><span class="ico">🗡️</span><span class="lbl">사냥</span><span class="cost">재료·킬</span></div>
+    <span class="loop-arrow">→</span>
+    <div class="loop-node"><span class="ico">👁️</span><span class="lbl">잠입</span><span class="cost">위기 탈출</span></div>
+    <span class="loop-arrow">→</span>
+    <div class="loop-node"><span class="ico">🔧</span><span class="lbl">제작</span><span class="cost">3~5초 실시간</span></div>
+    <span class="loop-arrow">→</span>
+    <div class="loop-node"><span class="ico">📈</span><span class="lbl">성장</span><span class="cost">+감염 리스크</span></div>
+    <span class="loop-arrow">↺</span>
+  </div>
+  <h3>기존 뱀서와의 핵심 차이</h3>
+  <ul class="clean">
+    <li><strong>레벨업 = 즉시 적용이 아닌 설계도 획득</strong> → 제작 타이밍 판단 추가</li>
+    <li><strong>제작 중에도 세계가 돌아감</strong> → 제작 = 위험한 순간 (TLoU식 노출 긴장)</li>
+    <li><strong>잠입으로 안전 확보</strong> → 스텔스에 이유가 생김</li>
+    <li><strong>시끄럽게 = 빠른 재료, 조용히(암살) = 안전 + 추가 데미지</strong> → 매 순간 트레이드오프</li>
+  </ul>
+  <div class="note">런 목표 시간: <strong>40분+</strong> (긴 쪽). 정확한 수치는 플레이테스트에서 조절. MVP 검증은 10~12분 슬라이스.</div>
+</section>
+
+<!-- ===================== 5 MECHANICS ===================== -->
+<section id="mechanics">
+  <div class="section-tag">05 · Confirmed Mechanics</div>
+  <h2>확정 메커니즘 5개</h2>
+  <p class="lead">시스템은 적게, 조합이 다양성을 만든다. 5개 메커니즘의 상호작용이 콘텐츠다.</p>
+  <div class="grid grid-2">
+    <div class="card card-blue">
+      <span class="num">01</span><h4>잠입 (나노봇 주파수 동조)</h4>
+      <p>주파수를 좀비와 동조시켜 일시적으로 좀비인 척. 쿨타임 액티브 스킬(3~5초). 위기 탈출·제작 전 안전 확보용. <strong>발동 시 감염도 상승</strong> — 쓸수록 죽음에 가까워지는 비상 스킬.</p>
+    </div>
+    <div class="card card-red">
+      <span class="num">02</span><h4>감염도 시스템</h4>
+      <p>잠입 사용 시에만 상승. MAX = 좀비화 = 런 종료. 내리는 유일한 수단은 <strong>집 복귀</strong>. 멀리 갈수록 귀환 압박 = 탐험 거리가 곧 리스크.</p>
+    </div>
+    <div class="card card-purple">
+      <span class="num">03</span><h4>유산 좀비</h4>
+      <p>감염 MAX로 좀비화 → 다음 런에 <strong>이전 런의 "나"</strong>가 적으로 등장. 강했을수록 강한 적. 처치 시 이전 장비·능력 일부 회수.</p>
+    </div>
+    <div class="card card-green">
+      <span class="num">04</span><h4>소음 시스템</h4>
+      <p>모든 행동에 소음 수치. 높으면 좀비 몰림(위험하지만 재료↑), 낮으면 안전(수급 느림). <strong>무소음 암살(뒤에서) = 추가 데미지 + 소음 0.</strong></p>
+    </div>
+    <div class="card card-yellow">
+      <span class="num">05</span><h4>AI 센터 추적</h4>
+      <p>위치를 모른 채 시작. 좀비들이 AI 신호를 향해 이동하는 패턴 → 돌아다닐수록 위치가 명확해짐(미니맵 힌트). 잠입 중엔 더 정확한 정보.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== TWO-COST ENGINE ===================== -->
+<section id="engine">
+  <div class="section-tag">06 · The Keystone</div>
+  <h2>두-비용 엔진 — 게임의 심장</h2>
+  <p class="lead">감염도와 소음은 따로 노는 두 미터가 아니라, <strong>두 가지 생존 방식의 대가</strong>다. 어느 쪽도 공짜가 아니다. 플레이어는 두 비용계 사이를 진동한다.</p>
+
+  <div class="engine">
+    <div class="engine-side engine-stealth">
+      <h4 style="color:var(--accent-blue)">🔵 스텔스 (잠입)</h4>
+      <p style="color:var(--text-dim);font-size:0.9rem"><strong>얻는 것:</strong> 호드 회피, 안전한 이동/접근</p>
+      <p style="color:var(--text-dim);font-size:0.9rem"><strong>비용:</strong> 감염도↑ (좀비화 + 귀환 압박)</p>
+    </div>
+    <div class="engine-vs">VS</div>
+    <div class="engine-side engine-combat">
+      <h4 style="color:var(--accent-red)">🔴 전투 (학살)</h4>
+      <p style="color:var(--text-dim);font-size:0.9rem"><strong>얻는 것:</strong> 빠른 처치, 레벨업 재료</p>
+      <p style="color:var(--text-dim);font-size:0.9rem"><strong>비용:</strong> 소음↑ (호드 유발 + HP 위험)</p>
+    </div>
+  </div>
+
+  <div class="why">스텔스는 소음의 카운터다. 소음으로 호드를 부른 뒤 스텔스로 탈출(감염 비용) → 감염 상승 → 귀환 압박. 이 고리가 닫혀야 루프가 돈다. 이 진동이 곧 "이 요소들이 하나의 루프에서 작동하는가"라는 핵심 과제의 답이다.</div>
+</section>
+
+<!-- ===================== PROGRESSION ===================== -->
+<section id="progression">
+  <div class="section-tag">07 · Progression</div>
+  <h2>진행 시스템 — 3기둥</h2>
+  <p class="lead">두 비판을 해결한 구조: ①스탯이 체감 안 됨 ②소모품-only면 설계도가 "쓸모없는 종이". 공통 뿌리 = 눈에 보이게 자라나는 "진행의 척추" 부재. 세 기둥 모두 기존 시스템(소음/감염/크래프팅)의 재조합 — 새 시스템 거의 없음.</p>
+
+  <div class="grid grid-3">
+    <div class="card card-blue">
+      <div class="pillar-head"><span class="pn">기둥 1</span></div>
+      <h4>장비 — 개조슬롯 + 접근 게이트</h4>
+      <p><strong>해금 축:</strong> 설계도 발견 = 제작 옵션 풀 영구 확장. <strong>성장 축:</strong> 장비에 개조 슬롯 → 같은 장비를 계속 강화·변형. 방독면 같은 장비는 새 구역 <strong>접근</strong>을 게이트.</p>
+    </div>
+    <div class="card card-yellow">
+      <div class="pillar-head"><span class="pn">기둥 2</span></div>
+      <h4>레벨업 — 질적 동사</h4>
+      <p>킬 누적 → 2개 중 1개 <strong>새 동사(행동)</strong> 획득. +%스탯이 아니라 임계값 질적 변화. 스텔스/전투/감염 3계열로 빌드 정체성.</p>
+    </div>
+    <div class="card card-red">
+      <div class="pillar-head"><span class="pn">기둥 3</span></div>
+      <h4>감염도 — cash-out 도박 화폐</h4>
+      <p>감염도는 여전히 100% 위험(MAX=즉사). 추가: <strong>얼마나 높이 끌어올린 채 살아 돌아오느냐 = 귀환 시 배당.</strong> 집 도착 순간 희귀 보상 실현 + 감염 0 리셋.</p>
+    </div>
+  </div>
+
+  <div class="why">크래프팅은 "힘"이 아니라 "접근(access)"을 게이트하라(Valheim/Subnautica) → 옛 장비가 영원히 다음 단계의 전제가 되어 절대 종이가 안 된다. 해금과 성장을 분리하라(Dead Cells). 숫자가 아니라 사건(EVENT). 감염 = press-your-luck 도박 화폐. 이로써 두-비용 엔진이 곧 진행 시스템 그 자체가 된다.</div>
+
+  <h3>감염도별 귀환 배당 <span class="pill">시작값</span></h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>귀환 감염도</th><th>배당</th><th>대가</th></tr></thead>
+      <tbody>
+        <tr><td><strong>~3</strong> (안전)</td><td>기본 재료</td><td>없음</td></tr>
+        <tr><td><strong>~6</strong> (보통)</td><td>+ 일반 설계도/개조 부품</td><td>약간</td></tr>
+        <tr><td><strong>~9</strong> (도박)</td><td>+ <strong>희귀 개조/변이 설계도</strong></td><td>귀환 내내 스텔스=죽음 (탈출 수단 無)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ===================== NOISE ===================== -->
+<section id="noise">
+  <div class="section-tag">08 · Noise System</div>
+  <h2>소음 — 전투의 비용</h2>
+  <div class="kv">
+    <span class="chip">범위 <b>0~100</b></span>
+    <span class="chip">근접 타격 <b>+10</b></span>
+    <span class="chip">암살 <b>+0</b> (×2 데미지)</span>
+    <span class="chip">크래프팅 <b>+20/초</b></span>
+    <span class="chip">자연 감소 <b>-3/초</b></span>
+    <span class="chip">가청 반경 <b>R = N×0.25m</b></span>
+  </div>
+
+  <h3>임계값 50 = 하드 게이트가 아니라 거동 전환선</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>누적 N</th><th>가청 반경</th><th>좀비 거동</th></tr></thead>
+      <tbody>
+        <tr><td>0–49</td><td>~0–12m</td><td><strong>조사</strong> — 반경 내 좀비가 소음 지점으로 이동 → 3초 살핌 → 복귀 (비커밋)</td></tr>
+        <tr><td>50–79</td><td>~12–18m</td><td><strong>추적 커밋</strong> — 플레이어 타겟 락, 스텔스/시야상실까지 추격</td></tr>
+        <tr><td>80–100</td><td>~20–25m</td><td>광범위 <strong>호드</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note"><strong>타이밍 검증:</strong> 크래프팅 3초 → 정확히 임계 50 돌파 (17→34→51). "제작이 끝나는 바로 그 순간 호드가 반응" = 의도된 정합. 근접 연타(쿨 0.4초)는 ~2킬 만에 호드 유발 → "조용히 vs 학살"이 수치로 성립.</div>
+
+  <h3>가독성 — 다이제틱 3층 <span class="pill">지속 HUD 링 없음</span></h3>
+  <ul class="clean">
+    <li><strong>1층 오디오:</strong> 행동음 + 소음 누적될수록 차오르는 긴장음</li>
+    <li><strong>2층 행동 펄스:</strong> 시끄러운 행동마다 그 지점에서 순간 확산 후 소멸. 펄스 크기 = 가청 반경, 색 = 임계 상태(50미만 흰색/이상 빨강). 펄스 자체가 미터 역할</li>
+    <li><strong>3층 좀비 반응:</strong> 반경 내 좀비가 고개 돌림 → ? (조사) → ! (추적). 월드가 직접 보여줌</li>
+  </ul>
+  <p style="color:var(--text-dim);font-size:0.88rem">레퍼런스: <em>Mark of the Ninja</em> (행동에서 확산·소멸하는 파동). "압박 없는 떠먹임 / 서사는 환경으로만" 원칙과 정합.</p>
+</section>
+
+<!-- ===================== INFECTION ===================== -->
+<section id="infection">
+  <div class="section-tag">09 · Infection</div>
+  <h2>감염도 — 스텔스의 비용 + 도박의 줄 길이</h2>
+  <div class="kv">
+    <span class="chip">범위 <b>0~10</b></span>
+    <span class="chip">스텔스 1회 <b>+1</b></span>
+    <span class="chip">집 도착 <b>0 리셋</b></span>
+    <span class="chip">MAX(10) <b>= 즉사</b></span>
+    <span class="chip">스텔스 지속 <b>3초</b> / 쿨 <b>8초</b></span>
+  </div>
+
+  <h3>도박 구조 — 왜 위험을 무릅쓰고 쓰는가</h3>
+  <p>감염도 10 = <strong>줄의 길이</strong>. 40초 귀환 중 스텔스 가능 횟수 ≈ 3~4회. 감염 6 이하 출발 = 안전 귀환선. <strong>감염 8~9에서 출발하면 귀환 예산이 거의 없어</strong> 돌아가는 길의 호드를 스텔스로 못 뚫는다.</p>
+  <div class="why">"8~9에서 한 번만 더"가 위험한 수치적 이유 = 귀환길 호드를 탈출할 스텔스가 없다. 이게 "귀환길이 점점 위험해짐 = 클라이맥스"의 엔진. MVP는 감염 디버프 없음 — 효과는 ①MAX=죽음 ②귀환 압박 둘뿐. 효과는 단순, 긴장은 구조에서.</div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>구간</th><th>I</th><th>연출 (시각만, 게임플레이 영향 없음)</th></tr></thead>
+      <tbody>
+        <tr><td>안전</td><td>0–3</td><td>없음 (녹색 미세)</td></tr>
+        <tr><td>감염</td><td>4–6</td><td>약한 노랑 정맥 — 비용 의식 시작</td></tr>
+        <tr><td>위험</td><td>7–8</td><td>주황 발광, 천천히 맥동 — "한 번만 더 vs 집" 갈등</td></tr>
+        <tr><td>임계</td><td>9</td><td>강한 빨강 + 심장박동음 — 다음 스텔스 = 죽음</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">감염도는 위험이자 <strong>귀환 시 배당 화폐</strong> — 높이 끌어올린 채 살아 돌아올수록 희귀 보상. 자세한 cash-out 구조는 <a href="#progression" style="color:var(--accent-green)">진행 3기둥 §07</a> 참조.</div>
+</section>
+
+<!-- ===================== VERBS ===================== -->
+<section id="verbs">
+  <div class="section-tag">10 · Level-up Verbs</div>
+  <h2>레벨업 동사 풀 — 스탯이 아니라 행동</h2>
+  <p class="lead">모든 동사는 <code>[조건] → 효과</code> 문법. 효과는 가능한 한 비-데미지 화폐(소음/감염/쿨다운/상태). 가장 강한 빌드 엔진 = 생산자→소비자 루프: 동사 A의 효과가 동사 B의 조건을 충족. 우리 코어(소음·감염)가 곧 시너지 통화.</p>
+
+  <div class="grid grid-3">
+    <div class="card card-blue">
+      <h4>🔵 스텔스 계열</h4>
+      <p style="color:var(--text-dim);font-size:0.88rem">소음/감지를 가지고 논다. 침묵 생성 → 침묵 소비(보상).</p>
+      <ul class="clean" style="font-size:0.85rem">
+        <li><strong>공허의 발소리:</strong> 웅크린 이동 중 소음 0</li>
+        <li><strong>숨죽인 손질:</strong> 소음 ≤20 크래프팅 시 속도 +40% (완료 시 감염+0.5)</li>
+        <li><strong>소음 미끼:</strong> 5m 밖에 소음 펄스 방출</li>
+      </ul>
+    </div>
+    <div class="card card-red">
+      <h4>🔴 전투 계열</h4>
+      <p style="color:var(--text-dim);font-size:0.88rem">소음을 비용이 아니라 연료로. 소음 = 탄약.</p>
+      <ul class="clean" style="font-size:0.85rem">
+        <li><strong>피의 리듬:</strong> 5연속 킬 → 다음 근접 소음0 + ×2</li>
+        <li><strong>파열:</strong> 근접 처치 → 주변 넉백 + 소음+15</li>
+        <li><strong>혼돈의 코어:</strong> 소음>50 → 피해+25%, 소음 감쇠 정지 ⚖️</li>
+      </ul>
+    </div>
+    <div class="card card-purple">
+      <h4>🟣 감염 계열 <span class="pill">옵트인</span></h4>
+      <p style="color:var(--text-dim);font-size:0.88rem">고감염을 무기로. 전부 양날검 — 보유 시 볼록 비용(감염 7+ 수신피해↑).</p>
+      <ul class="clean" style="font-size:0.85rem">
+        <li><strong>오염된 귀환:</strong> 감염≥7 시 집 방향 이동+20% (공격 시 해제)</li>
+        <li><strong>오염된 근육:</strong> 감염≥5 → 이동+25%, 공속+20%</li>
+        <li><strong>전이:</strong> 근접 처치 → 감염+0.5</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="why">감염 계열 = "감염을 무기로"의 그릇. 모두가 받는 패시브가 아니라 고른 사람만 얻는 빌드 → 감염 기본값은 순수 공포로 유지(톤 보존), 빌드 선택자만 고감염을 이점으로. 강요 X 욕망 O. (실 GPT-5 Codex 적대적 검토로 퇴행 동사 9종 수정·삭제됨.)</div>
+</section>
+
+<!-- ===================== CRAFTING ===================== -->
+<section id="crafting">
+  <div class="section-tag">11 · Crafting</div>
+  <h2>크래프팅 — 멈추지 않는 세계에서의 3초</h2>
+  <p class="lead">실시간 크래프팅 긴장감(TLoU 레퍼런스): 제작 3초 동안 노출 + 소음 +20/초 → 완료 순간 임계 50 돌파. "지금 이 회복약이 필요한데 만드는 3초가 위험하다."</p>
+
+  <h3>2층 구조</h3>
+  <div class="grid grid-2">
+    <div class="card card-yellow">
+      <h4>1층 — 해금 (레벨업)</h4>
+      <p>킬 5/12/25 → 레벨 1/2/3. 매 레벨업마다 미해금 아이템 2개 중 1개 설계도 선택. 등급/희귀도 없음. 선택의 무게 = "이번 런에 뭘 포기하나".</p>
+    </div>
+    <div class="card card-green">
+      <h4>2층 — 제작 (재료)</h4>
+      <p>설계도 보유 + 재료 5개 → 제작 3초(소음+20/s) → 아이템 1개. 어디서나(현장) 가능. 취소 자유(MVP), 단 발생한 소음은 남음.</p>
+    </div>
+  </div>
+
+  <h3>킬 = 수확 (Harvest)</h3>
+  <p>좀비 = 나노봇 감염된 인간 = <strong>걸어다니는 재료 캐시</strong>. 죽이기 = 나노봇/바이오매스 추출 (AI 감염 세계관 직결). 킬의 만족은 "경험치 그라인드"가 아니라 통쾌한 수확 + 빌드 엔진 가동. 암살(클린)=정밀 수확, 시끄러운 킬=대량 수확.</p>
+  <div class="why">킬은 권능 판타지가 아니라 <em>대가 있는 통쾌한 수확</em>. 긴장된 스텔스와의 대비가 "질러버리는" 순간을 짜릿하게 만든다. 새 시스템 0개 — 재료 시스템 + 보유 VFX/Feel/SFX 재조합.</div>
+
+  <h3>MVP 아이템 4종 <span class="pill">분류 확인 필요</span></h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>아이템</th><th>효과</th><th>루프 역할</th></tr></thead>
+      <tbody>
+        <tr><td><strong>단검</strong> (근접↑)</td><td>일반 좀비 3타→2타 (영구 업글)</td><td>전투 효율 마일스톤</td></tr>
+        <tr><td><strong>연막탄</strong></td><td>범위 좀비 추적 해제 + 스텔스 쿨 즉시 리셋 (소모품)</td><td>스텔스 탈출 콤보</td></tr>
+        <tr><td><strong>지뢰</strong></td><td>접근 좀비 범위킬 ~3m (소모품)</td><td>호드 관리·후퇴 엄폐</td></tr>
+        <tr><td><strong>구급상자</strong></td><td>HP +50 (회복 유일원) (소모품)</td><td>생존 자원</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ===================== ENEMIES ===================== -->
+<section id="enemies">
+  <div class="section-tag">12 · Adversaries</div>
+  <h2>적 타입 — 나노봇 변이 차이</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>이름</th><th>체형 / 행동</th><th>소음·스텔스 연동</th><th>범위</th></tr></thead>
+      <tbody>
+        <tr><td><strong>일반 좀비</strong><span class="enemy-tag tag-mvp">MVP</span></td><td>보통 / 기본 이동+공격</td><td>기본 감지</td><td>도시</td></tr>
+        <tr><td><strong>신호 좀비</strong><span class="enemy-tag tag-mvp">MVP</span></td><td>안테나 변이 / 발견 시 주변 호출</td><td><strong>스텔스 핵심 — 먼저 암살</strong></td><td>도시</td></tr>
+        <tr><td><strong>대형 좀비</strong><span class="enemy-tag tag-full">풀게임</span></td><td>크고 단단함 / 느리지만 고데미지</td><td>소음 둔감, 시야 넓음</td><td>도시</td></tr>
+        <tr><td><strong>소형 좀비</strong><span class="enemy-tag tag-full">풀게임</span></td><td>작고 빠름 / 민첩한 접근</td><td>소음 민감, 빠르게 달려옴</td><td>도시</td></tr>
+        <tr><td><strong>과부하 좀비</strong><span class="enemy-tag tag-full">풀게임</span></td><td>빛남 / 죽으면 폭발+소음</td><td>칠까 피할까 판단</td><td>도시</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <h3>그룹 시너지</h3>
+  <ul class="clean">
+    <li><strong>신호 + 소형:</strong> 신호가 호출 → 소형이 빠르게 몰려옴</li>
+    <li><strong>과부하 + 대형:</strong> 과부하 터뜨리면 대형이 반응해 접근</li>
+    <li><strong>신호 + 과부하:</strong> 신호 먼저 안 잡으면 과부하를 건드릴 수 없음</li>
+  </ul>
+  <p style="color:var(--text-dim);font-size:0.9rem">차량 이동 구간엔 변종 좀비 등장 — 평원(차보다 빠름, 뱀 연결체, 벽 대형), 빙하(미사일/레이저 + 로봇), 숲 이후(풀 카오스). 점점 비정상적 행동 = 스토리 전달 수단.</p>
+</section>
+
+<!-- ===================== ZOMBIE AI ===================== -->
+<section id="ai">
+  <div class="section-tag">13 · Zombie AI</div>
+  <h2>좀비 AI 상태머신 <span class="pill">2026-05-29 설계</span></h2>
+  <p class="lead">MVP 2종(일반·신호)은 단일 컨트롤러 + 타입 설정(ScriptableObject)으로. 시야 원뿔 + 소음 가청반경 듀얼 탐지, 스텔스 연동.</p>
+
+  <div class="fsm">
+    <span class="fsm-state">Idle</span>
+    <span class="fsm-arrow">→</span>
+    <span class="fsm-state">Investigate</span>
+    <span class="fsm-arrow">→</span>
+    <span class="fsm-state">Chase</span>
+    <span class="fsm-arrow">→</span>
+    <span class="fsm-state">Attack</span>
+    <span class="fsm-arrow">→</span>
+    <span class="fsm-state dead">Dead</span>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <h4>탐지 — 시야 + 청각</h4>
+      <ul class="clean" style="font-size:0.88rem">
+        <li><strong>시야:</strong> 정면 원뿔(60°, 12m) + LOS 레이캐스트(건물 차단)</li>
+        <li><strong>청각:</strong> NoiseManager 가청반경(N×0.25m), 장애물 감쇄</li>
+        <li><strong>스텔스:</strong> 발동 시 1초 후 타겟 상실 → 3초 재탐지 불가</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>신호 좀비 소환</h4>
+      <p style="font-size:0.88rem">Chase 진입 → 3초 후 반경 15m 내 <strong>기존 좀비 최대 4마리</strong>를 즉시 Chase로 전환(새 좀비 스폰 X → 인구 캡 유지). 먼저 암살하는 게 정답 — 백스탭(소음0, ×2 데미지).</p>
+    </div>
+  </div>
+  <h3>일반 vs 신호 (시작값)</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>항목</th><th>일반</th><th>신호</th></tr></thead>
+      <tbody>
+        <tr><td>이동 속도</td><td>3</td><td>2.5</td></tr>
+        <tr><td>시야 범위</td><td>12m</td><td>15m (넓음 → 암살 가치↑)</td></tr>
+        <tr><td>청각 배율</td><td>×1.0</td><td>×1.3 (소음 민감)</td></tr>
+        <tr><td>소환</td><td>—</td><td>반경 15m, 3초 후, 4마리</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="color:var(--text-dim);font-size:0.88rem">구현 핸드오프 문서(코드 포함)는 Stab+Codex 리뷰로 버그 9건 수정 완료. 차량 기반 구 AI(959줄)는 전면 교체 예정.</p>
+</section>
+
+<!-- ===================== WORLD MAP ===================== -->
+<section id="worldmap">
+  <div class="section-tag">14 · World Structure</div>
+  <h2>월드 — 두 가지 플레이 모드</h2>
+  <div class="grid grid-2">
+    <div class="card card-blue">
+      <h4>🚶 도보 스텔스 (도시)</h4>
+      <p>느린 템포, 소수 좀비. 핵심 루프(사냥/잠입/제작/성장)가 도는 곳. 대도시(튜토리얼+기본 파밍) / 소도시(중간 보급).</p>
+    </div>
+    <div class="card card-red">
+      <h4>🚗 차량 액션 (바이옴 이동)</h4>
+      <p>빠른 템포, 호드 물량전. 변종 좀비 + 스토리 떡밥. 코믹한 연출 + 점점 고조되는 긴장.</p>
+    </div>
+  </div>
+  <h3>전체 흐름</h3>
+  <div class="loop" style="font-size:0.85rem">
+    <div class="loop-node"><span class="lbl">집</span></div><span class="loop-arrow">→</span>
+    <div class="loop-node"><span class="lbl">시작 도시</span><span class="cost">익숙한 폐허</span></div><span class="loop-arrow">→</span>
+    <div class="loop-node"><span class="lbl">평원</span><span class="cost">코믹 변종</span></div><span class="loop-arrow">→</span>
+    <div class="loop-node"><span class="lbl">빙하</span><span class="cost">로봇 등장</span></div><span class="loop-arrow">→</span>
+    <div class="loop-node"><span class="lbl">숲</span><span class="cost">소리 기반</span></div><span class="loop-arrow">→</span>
+    <div class="loop-node"><span class="lbl">AI 센터</span><span class="cost">풀 카오스</span></div>
+  </div>
+  <div class="note"><strong>거리-보상 곡선:</strong> 집에서 멀수록 좀비 밀도↑ + 등급↑ + 희귀 재료 확률↑. 거리 전용 재료는 없음 — 완만한 가중치. 강요가 아니라 욕망: 안 가도 되지만, 가면 확실히 효율적.</div>
+</section>
+
+<!-- ===================== PRINCIPLES ===================== -->
+<section id="principles">
+  <div class="section-tag">15 · Design Principles</div>
+  <h2>디자인 원칙</h2>
+  <div class="grid grid-2">
+    <div class="card"><h4>압박 없는 떠먹임</h4><p>UI 알림/팝업/체크리스트 없음. 서사는 환경으로만.</p></div>
+    <div class="card"><h4>강요 X, 욕망 O</h4><p>플레이어의 자발적 판단이 핵심.</p></div>
+    <div class="card"><h4>톤: Hades식 따뜻한 어두움</h4><p>"세상은 끝났다. 그래도 커피는 마신다."</p></div>
+    <div class="card"><h4>메카닉은 단순함 유지</h4><p>있어보이지만 실상 단순한 조작.</p></div>
+    <div class="card"><h4>감정에서 출발</h4><p>"이러면 재밌겠지"로 시작하지 않는다. 메커니즘은 도구.</p></div>
+    <div class="card"><h4>당연한 것을 의심</h4><p>장르의 "당연한 것"을 뒤집을 수 있으면 뒤집는다.</p></div>
+    <div class="card"><h4>시스템은 적게</h4><p>조합이 다양성을 만든다. 5개 메커니즘의 상호작용이 콘텐츠.</p></div>
+  </div>
+</section>
+
+<!-- ===================== MARKET ===================== -->
+<section id="market">
+  <div class="section-tag">16 · Market</div>
+  <h2>시장 포지션 & 레퍼런스</h2>
+  <p class="lead">"느린 뱀서 + 스텔스 + 실시간 크래프팅 + 감염도 리스크" 4요소 조합 — <strong>직접 경쟁작 0개.</strong> 가장 가까운 게임은 Darkwood(3/4 요소, 뱀서류 아님). 각 개별 요소는 다른 장르에서 검증 완료.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>게임</th><th>가져올 것</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Darkwood</strong></td><td>탑다운 스텔스 + 호드 방어 리듬, 공포 분위기</td></tr>
+        <tr><td><strong>Darkest Dungeon</strong></td><td>감염도 = 스트레스 시스템 설계 교과서</td></tr>
+        <tr><td><strong>Brotato</strong></td><td>1인 개발 뱀서류 성공 사례 (96% 긍정)</td></tr>
+        <tr><td><strong>Prototype</strong></td><td>적 흡수 + 위장(잠입) 액션</td></tr>
+        <tr><td><strong>Hades</strong></td><td>런 기반 + 메타 진행의 균형</td></tr>
+        <tr><td><strong>The Last of Us</strong></td><td>실시간 크래프팅 긴장감</td></tr>
+        <tr><td><strong>Mark of the Ninja</strong></td><td>소음 시각화 (다이제틱 펄스)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ===================== MVP ===================== -->
+<section id="mvp">
+  <div class="section-tag">17 · MVP Spec</div>
+  <h2>MVP 프로토타입</h2>
+  <p class="lead"><strong>검증할 질문:</strong> "감염 수치가 올라가는 걸 알면서도 스텔스를 쓰고 싶은 유혹이 생기는가?" 10~12분 루프 1회, 회색 박스 소형 도시.</p>
+
+  <div class="grid grid-2">
+    <div class="card card-green">
+      <h4>✅ 성공 = 재미있다</h4>
+      <ul class="clean" style="font-size:0.88rem">
+        <li>집에서 멀어질수록 긴장감 상승</li>
+        <li>감염 8~9에서 "한 번만 더 vs 집" 갈등</li>
+        <li>제작 중 3초가 위협적</li>
+        <li>신호 좀비 발견 시 "먼저 암살 vs 피해가기" 판단</li>
+        <li>소음을 의식하며 플레이</li>
+      </ul>
+    </div>
+    <div class="card card-red">
+      <h4>❌ 실패 = 설계 재검토</h4>
+      <ul class="clean" style="font-size:0.88rem">
+        <li>스텔스를 아예 안 씀 → 효용 없음</li>
+        <li>쿨마다 씀 → 감염이 위협 아님</li>
+        <li>집에 안 돌아감 → 귀환 동기 없음</li>
+        <li>크래프팅 한 번도 안 함 → 비용 과다</li>
+        <li>소음 상관없이 마구 때림 → 시스템 무의미</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>MVP 범위</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>항목</th><th>포함</th><th>제외</th></tr></thead>
+      <tbody>
+        <tr><td>전투</td><td>마우스 클릭 근접 1종, 쿨 0.4초. 일반 좀비 3타</td><td>원거리, 자동공격</td></tr>
+        <tr><td>HP</td><td><strong>플레이어 100</strong>, 좀비 근접 타격 20 (5대=사망). 회복=구급상자 전용</td><td>패시브/킬드롭 회복</td></tr>
+        <tr><td>적</td><td>일반 + 신호 2종</td><td>대형, 소형, 과부하</td></tr>
+        <tr><td>스텔스</td><td>3초 은신, 감염+1, 쿨 8초</td><td>비주얼 이펙트</td></tr>
+        <tr><td>감염</td><td>0~10, HUD 숫자, MAX=종료</td><td>글리치, UI왜곡, 부분 회복</td></tr>
+        <tr><td>크래프팅</td><td>레벨업→설계도→3초 제작, 4종</td><td>스톡파일, 등급</td></tr>
+        <tr><td>좀비</td><td>세션 총 <strong>50~80</strong> 스폰, 동시 15~25 유지</td><td>고정 총량</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">아트: 그레이박스 단계 = 큐브/캡슐 프리미티브로 루프·시스템 훅 검증. 본 아트(로우폴리 통일, Darkwood식 3/4 카메라)는 그레이박스 통과 후.</div>
+</section>
+
+<!-- ===================== ROADMAP ===================== -->
+<section id="roadmap">
+  <div class="section-tag">18 · Roadmap</div>
+  <h2>개발 현황</h2>
+  <div class="timeline">
+    <div class="tl-item done"><span class="tl-title">컨셉 & 방향 전환</span><span class="tl-status st-done">완료</span><p>GDD v2.0~2.7. 5대 메커니즘·세계관 확정.</p></div>
+    <div class="tl-item done"><span class="tl-title">아트 디렉션</span><span class="tl-status st-done">완료</span><p>로우폴리 통일, ithappy 좀비 앵커, Darkwood식 3/4 카메라.</p></div>
+    <div class="tl-item done"><span class="tl-title">진행 시스템 3기둥</span><span class="tl-status st-done">완료</span><p>장비/레벨업/감염 cash-out. Codex 자문 + 리서치.</p></div>
+    <div class="tl-item done"><span class="tl-title">레벨업 동사 풀</span><span class="tl-status st-done">완료</span><p>3계열 동사, 실 GPT-5 Codex 적대 검토 반영.</p></div>
+    <div class="tl-item done"><span class="tl-title">좀비 AI 설계</span><span class="tl-status st-done">완료</span><p>상태머신 핸드오프 + 코드, Stab+Codex 리뷰.</p></div>
+    <div class="tl-item active"><span class="tl-title">그레이박스 구현</span><span class="tl-status st-active">진행 대기</span><p>씬 셋업 → 플레이어 컨트롤러 → 감염+소음 → 좀비 AI → 크래프팅.</p></div>
+    <div class="tl-item"><span class="tl-title">플레이테스트</span><span class="tl-status st-todo">예정</span><p>§17 성공/실패 기준 판정.</p></div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <p><strong>ZombieCrush</strong> · Unity (C#) · 1인 개발 · Steam 출시 + 포트폴리오 목표</p>
+  <p style="margin-top:0.5rem">게임 종합 설계서 v2.7 · 2026-05-29</p>
+  <div class="doc-list">
+    출처 문서: new-direction-gdd · infection-noise-design · progression-system · levelup-verbs · crafting-design · zombie-ai-handoff · greybox-setup · asset-system-mapping
+  </div>
+</footer>
+
+</body>
+</html>

@@ -239,7 +239,7 @@ public class ZombieConfig : ScriptableObject
     [Header("Combat")]
     public float attackRange = 1.5f;
     public float attackCooldown = 1.5f;
-    public float attackDamage = 10f;
+    public float attackDamage = 20f;   // ★ infection-noise §5.4 확정: 좀비 타격 20 (플레이어 100HP=5대 사망)
 
     [Header("Investigation")]
     public float investigateLookTime = 3f;
