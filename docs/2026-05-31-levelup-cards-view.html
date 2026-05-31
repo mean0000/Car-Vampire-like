@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZombieCrush — 레벨업 카드 카탈로그</title>
+<style>
+  :root{
+    --bg:#0e0f13; --panel:#171922; --panel2:#1d2030; --line:#2a2e3f;
+    --txt:#e7e9f0; --dim:#9aa0b4; --faint:#6b7186;
+    --weapon:#4a93ff; --survive:#37c87a; --noise:#28c2c8; --kill:#ff7a45;
+    --clock:#b466ff; --dist:#ffc24b; --sig:#f5d76e; --fall:#7b8194;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+    line-height:1.5;padding:32px 24px 80px;}
+  .wrap{max-width:1280px;margin:0 auto;}
+  h1{font-size:26px;margin:0 0 4px;}
+  .sub{color:var(--dim);font-size:14px;margin-bottom:24px;}
+  .sub b{color:#fff;}
+
+  /* 요약 바 */
+  .summary{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 18px;}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:10px 14px;font-size:13px;color:var(--dim);}
+  .stat b{color:#fff;font-size:18px;display:block;}
+
+  /* 범례 */
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px;font-size:12px;}
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;
+    font-weight:600;font-size:11.5px;white-space:nowrap;}
+  .b-ok{background:rgba(55,200,122,.15);color:#5fe39a;border:1px solid rgba(55,200,122,.4);}
+  .b-bat{background:rgba(255,90,90,.13);color:#ff8a8a;border:1px solid rgba(255,90,90,.4);}
+  .b-cand{background:rgba(123,129,150,.15);color:#aab0c4;border:1px solid rgba(123,129,150,.4);}
+  .b-ret{background:rgba(255,194,75,.13);color:#ffd278;border:1px solid rgba(255,194,75,.4);}
+  .b-dual{background:rgba(180,102,255,.15);color:#caa0ff;border:1px solid rgba(180,102,255,.4);}
+
+  /* 섹션 */
+  .section{margin:34px 0 12px;display:flex;align-items:center;gap:12px;}
+  .section h2{font-size:18px;margin:0;}
+  .section .axis{font-size:12px;color:var(--dim);background:var(--panel2);
+    border:1px solid var(--line);padding:2px 10px;border-radius:6px;}
+  .section .ln{flex:1;height:1px;background:var(--line);}
+
+  /* 카드 그리드 */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:14px 15px 13px;position:relative;overflow:hidden;}
+  .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent,#555);}
+  .card.dim{opacity:.62;}
+  .chead{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:2px;}
+  .cname{font-size:16px;font-weight:700;}
+  .ctag{font-size:11px;color:var(--dim);margin-bottom:9px;}
+  .lv{display:flex;gap:8px;font-size:12.5px;padding:3px 0;border-top:1px dashed var(--line);}
+  .lv:first-of-type{border-top:none;}
+  .lvn{flex:0 0 30px;color:var(--faint);font-weight:700;}
+  .lvd{flex:1;color:var(--txt);}
+  .cost{color:#ff9b9b;}
+  .evo{margin-top:9px;padding:8px 10px;background:rgba(180,102,255,.08);
+    border:1px solid rgba(180,102,255,.25);border-radius:8px;font-size:11.5px;color:#cdb4ff;}
+  .evo b{color:#e3d2ff;}
+  .flavor{margin-top:8px;font-size:11.5px;color:var(--faint);font-style:italic;}
+  .badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;}
+
+  /* accent per category */
+  .acc-weapon{--accent:var(--weapon);} .acc-survive{--accent:var(--survive);}
+  .acc-noise{--accent:var(--noise);} .acc-kill{--accent:var(--kill);}
+  .acc-clock{--accent:var(--clock);} .acc-dist{--accent:var(--dist);}
+  .acc-sig{--accent:var(--sig);} .acc-fall{--accent:var(--fall);}
+
+  .note{background:var(--panel2);border:1px solid var(--line);border-left:4px solid var(--dist);
+    border-radius:10px;padding:14px 16px;margin:30px 0 0;font-size:13.5px;color:var(--dim);}
+  .note h3{margin:0 0 6px;color:#fff;font-size:14px;}
+  .note b{color:#ffd278;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ZombieCrush — 레벨업 카드 카탈로그</h1>
+  <div class="sub">권위 출처: <b>docs/2026-05-31-levelup-cards-catalog.md</b> · 감염=타임어택 둠클락 개정 반영 (감염축→시계축) · 수치는 시작값(튜닝 전제)</div>
+
+  <div class="summary">
+    <div class="stat"><b>~23</b>전체 카드</div>
+    <div class="stat"><b>~14</b>MVP 즉시 구현</div>
+    <div class="stat"><b>5</b>방망이 동결(무기 미구현)</div>
+    <div class="stat"><b>2</b>후보</div>
+    <div class="stat"><b>3</b>자원축 (소음·시계·킬) + 거리</div>
+  </div>
+
+  <div class="legend">
+    <span class="badge b-ok">✅ MVP 구현가능</span>
+    <span class="badge b-bat">🔨 방망이 미구현 (동결)</span>
+    <span class="badge b-cand">🕯️ 후보 (초반 충분 시 후순위)</span>
+    <span class="badge b-ret">🔁 귀환 루프 도입 후</span>
+    <span class="badge b-dual">⚖️ 양날검</span>
+  </div>
+
+  <!-- ============ 기본 — 권총 ============ -->
+  <div class="section"><h2>기본 카드 — 무기 (권총)</h2><span class="axis">무기 · 현재 유일 구현 무기</span><div class="ln"></div></div>
+  <div class="grid">
+    <div class="card acc-weapon">
+      <div class="chead"><span class="cname">속사</span></div>
+      <div class="ctag">권총 · 무기 · 진화 없음</div>
+      <div class="lv"><span class="lvn">Lv1</span><span class="lvd">연사 속도 +25% (쿨 0.35s→0.26s)</span></div>
+      <div class="lv"><span class="lvn">Lv2</span><span class="lvd">연사 속도 +40% (→0.21s)</span></div>
+      <div class="lv"><span class="lvn">Lv3</span><span class="lvd">연사 속도 +55% (→0.16s)</span></div>
+      <div class="badges"><span class="badge b-ok">✅ MVP</span></div>
+    </div>
+    <div class="card acc-weapon">
+      <div class="chead"><span class="cname">강선</span></div>
+      <div class="ctag">권총 · 무기 · 진화 없음</div>
+      <div class="lv"><span class="lvn">Lv1</span><span class="lvd">사격 피해 +1 (2→3, General 2발→1발)</span></div>
+      <div class="lv"><span class="lvn">Lv2</span><span class="lvd">사격 피해 +2 (→4)</span></div>
+      <div class="lv"><span class="lvn">Lv3</span><span class="lvd">사격 피해 +3 (→5)</span></div>
+      <div class="badges"><span class="badge b-ok">✅ MVP</span></div>
+    </div>
+    <div class="card acc-weapon dim">
+      <div class="chead"><span class="cname">명중 관용</span></div>
+      <div class="ctag">권총 · 무기 · 후보</div>
+      <div class="lv"><span class="lvn">Lv1</span><span class="lvd">명중 반경 +0.15 (0.4→0.55), 사거리 +2 (18→20)</span></div>
+      <div class="lv"><span class="lvn">Lv2</span><span class="lvd">반경 +0.3 / 사거리 +4</span></div>
+      <div class="lv"><span class="lvn">Lv3</span><span class="lvd">반경 +0.5 / 사거리 +6</span></div>
+      <div class="badges"><span class="badge b-cand">🕯️ 후보</span></div>
+    </div>
+  </div>
+
+  <!-- ============ 기본 — 방망이 ============ -->
+  <div class="section"><h2>기본 카드 — 무기 (야구방망이)</h2><span class="axis">⚠️ 무기 자체 미구현 — 전부 동결</span><div class="ln"></div></div>
+  <div class="grid">
+    <div class="card acc-weapon dim">
+      <div class="chead"><span class="cname">묵직한 스윙</span></div>
+      <div class="ctag">방망이 · 무기 · 진화 없음</div>
+      <div class="lv"><span class="lvn">Lv1</span><span class="lvd">스윙 속도 +25%</span></div>
+      <div class="lv"><span class="lvn">Lv2</span><span class="lvd">+40%</span></div>
+      <div class="lv"><span class="lvn">Lv3</span><span class="lvd">+55%</span></div>
+      <div class="badges"><span class="badge b-bat">🔨 방망이 미구현</span></div>
+    </div>
+    <div class="card acc-weapon dim">
+      <div class="chead"><span class="cname">긴 리치</span></div>
+      <div class="ctag">방망이 · 무기 · 진화 없음</div>
+      <div class="lv"><span class="lvn">Lv1</span><span class="lvd">근접 사거리 +30%</span></div>
+      <div class="lv"><span class="lvn">Lv2</span><span class="lvd">+45%</span></div>
+      <div class="lv"><span class="lvn">Lv3</span><span class="lvd">+60%</span></div>
+      <div class="badges"><span class="badge b-bat">🔨 방망이 미구현</span></div>
+    </div>
+    <div class="card acc-weapon dim">
+      <div class="chead"><span class="cname">강타</span></div>
+      <div class="ctag">방망이 · 무기 · 후보</div>
+      <div class="lv"><span class="lvn">Lv1</span><span class="lvd">근접 피해 +2</span></div>
+      <div class="lv"><span class="lvn">Lv2</span><span class="lvd">+3</span></div>
+      <div class="lv"><span class="lvn">Lv3</span><span class="lvd">+4 + 처치 시 작은 넉백</span></div>
+      <div class="badges"><span class="badge b-bat">🔨 방망이 미구현</span><span class="badge b-cand">🕯️ 후보</span></div>
+    </div>
+  </div>
+
+  <!-- ============ 기본 — 생존/이동/유틸 ============ -->
+  <div class="section"><h2>기본 카드 — 생존 / 이동 / 유틸</h2><span class="axis">무기 무관</span><div class="ln"></div></div>
+  <div class="grid">
+    <div class="card acc-survive">
+      <div class="chead"><span class="cname">강화 골격</span></div>
+      <div class="ctag">생존 · 진화 없음</div>
+      <div class="lv"><span class="lvn">Lv1</span><span class="lvd">최대 체력 +30% (100→130)</span></div>
+      <div class="lv"><span class="lvn">Lv2</span><span class="lvd">+50% (→150)</span></div>
+      <div class="lv"><span class="lvn">Lv3</span><span class="lvd">+75% (→175)</span></div>
+      <div class="badges"><span class="badge b-ok">✅ MVP</span></div>
+    </div>
+    <div class="card acc-survive">
+      <div class="chead"><span class="cname">경량화</span></div>
+      <div class="ctag">이동 · 진화 없음 · 소음 불변</div>
+      <div class="lv"><span class="lvn">Lv1</span><span class="lvd">이동 속도 +15% (5→5.75)</span></div>
+      <div class="lv"><span class="lvn">Lv2</span><span class="lvd">+25% (→6.25)</span></div>
+      <div class="lv"><span class="lvn">Lv3</span><span class="lvd">+35% (→6.75)</span></div>
+      <div class="badges"><span class="badge b-ok">✅ MVP</span></div>
+    </div>
+    <div class="card acc-survive">
+      <div class="chead"><span class="cname">자력 채집</span></div>
+      <div class="ctag">유틸 · 진화 없음</div>
+      <div class="lv"><span class="lvn">Lv1</span><span class="lvd">부품·XP 흡수 반경 +40%</span></div>
+      <div class="lv"><span class="lvn">Lv2</span><span class="lvd">+65%</span></div>
+      <div class="lv"><span class="lvn">Lv3</span><span class="lvd">+90%</span></div>
+      <div class="badges"><span class="badge b-ok">✅ MVP</span></div>
+    </div>
+    <div class="card acc-survive">
+      <div class="chead"><span class="cname">효율 흡수</span></div>
+      <div class="ctag">유틸 · 진화 없음 · 비중↓</div>
+      <div class="lv"><span class="lvn">Lv1</span><span class="lvd">XP 획득량 +25%</span></div>
+      <div class="lv"><span class="lvn">Lv2</span><span class="lvd">+40%</span></div>
+      <div class="lv"><span class="lvn">Lv3</span><span class="lvd">+60%</span></div>
+      <div class="badges"><span class="badge b-ok">✅ MVP</span></div>
+    </div>
+  </div>
+
+  <!-- ============ 동사 — 소음축 ============ -->
+  <div class="section"><h2>동사 카드 — 소음축</h2><span class="axis">스텔스 · 자원축: 소음</span><div class="ln"></div></div>
+  <div class="grid">
+    <div class="card acc-noise">
+      <div class="chead"><span class="cname">무음 보행</span></div>
+      <div class="ctag">스텔스 · 소음축 · ⚙️ 인에이블러</div>
+      <div class="lv"><span class="lvn">Lv1</span><span class="lvd">웅크려 이동 시 소음 0 (2→0)</span></div>
+      <div class="lv"><span class="lvn">Lv2</span><span class="lvd">웅크림 해제 후 1.5초 소음 억제 유지</span></div>
+      <div class="lv"><span class="lvn">Lv3</span><span class="lvd">웅크림 이동 속도 +30% (0.5→0.65)</span></div>
+      <div class="evo"><b>★진화 「유령 보행」</b> (만렙+소음축 동사 2) : 웅크림 중 좀비 탐지 반경 −50%</div>
+      <div class="flavor">"발밑의 정적이 무기가 된다."</div>
+      <div class="badges"><span class="badge b-ok">✅ MVP</span></div>
+    </div>
+    <div class="card acc-noise">
+      <div class="chead"><span class="cname">소음 미끼</span></div>
+      <div class="ctag">스텔스 · 소음축 · 🟢 생산자</div>
+      <div class="lv"><span class="lvn">Lv1</span><span class="lvd">액션키(쿨 15s) → 5m 밖 소음 펄스 30, 좀비 유인</span></div>
+      <div class="lv"><span class="lvn">Lv2</span><span class="lvd">쿨 12s · 펄스 40 · 유인 반경↑</span></div>
+      <div class="lv"><span class="lvn">Lv3</span><span class="lvd">쿨 10s · 2회 충전</span></div>
+      <div class="evo"><b>★진화 「유령의 소문」</b> : 펄스 지점에 5초 지속 소음원</div>
+      <div class="badges"><span class="badge b-ok">✅ MVP</span></div>
+    </div>
+    <div class="card acc-noise">
+      <div class="chead"><span class="cname">반향암살</span></div>
+      <div class="ctag">스텔스 · 소음축 · 🟢 · 신규</div>
+      <div class="lv"><span class="lvn">Lv1</span><span class="lvd">암살(무경계 처치) 시 소음 0 + 1.5초 억제</span></div>
+      <div class="lv"><span class="lvn">Lv2</span><span class="lvd">억제 2.5초 + 암살 후 이동 +20%</span></div>
+      <div class="lv"><span class="lvn">Lv3</span><span class="lvd">억제 중 재암살 시 시계 충전율 잠시 둔화</span></div>
+      <div class="evo"><b>★진화 「그림자 사슬」</b> (만렙+소음축 동사 2) : 암살 후 다음 암살 사거리/판정 +50%</div>
+      <div class="flavor">"한 번의 침묵이 다음 침묵을 부른다."</div>
+      <div class="badges"><span class="badge b-ok">✅ MVP</span></div>
+    </div>
+    <div class="card acc-noise">
+      <div class="chead"><span class="cname">소음 폭주</span></div>
+      <div class="ctag">전투 · 소음축 · ⚖️ 양날검</div>
+      <div class="lv"><span class="lvn">Lv1</span><span class="lvd">소음 50↑ → 피해 +25%, <span class="cost">소음 자연감쇠 정지</span></span></div>
+      <div class="lv"><span class="lvn">Lv2</span><span class="lvd">임계 40 완화 + 피해 +35%</span></div>
+      <div class="lv"><span class="lvn">Lv3</span><span class="lvd">소음 70↑ → 추가 공속 +20%</span></div>
+      <div class="evo"><b>★진화 「과부하」</b> : 쌓인 소음을 3m 광역 피해로 방출 (리셋, 쿨 20s)</div>
+      <div class="flavor">"귀를 막아라. 곧 터진다."</div>
+      <div class="badges"><span class="badge b-ok">✅ MVP</span><span class="badge b-dual">⚖️</span></div>
+    </div>
+  </div>
+
+  <!-- ============ 동사 — 킬축 ============ -->
+  <div class="section"><h2>동사 카드 — 킬축</h2><span class="axis">전투 · 자원축: 킬(연속·on-kill)</span><div class="ln"></div></div>
+  <div class="grid">
+    <div class="card acc-kill">
+      <div class="chead"><span class="cname">연속 처치</span></div>
+      <div class="ctag">전투 · 킬축 · 🔵 소비자</div>
+      <div class="lv"><span class="lvn">Lv1</span><span class="lvd">5연속 처치 → 다음 공격 ×2 + 그 공격 소음 0</span></div>
+      <div class="lv"><span class="lvn">Lv2</span><span class="lvd">4연속 완화 + 강화 공격 1체 관통</span></div>
+      <div class="lv"><span class="lvn">Lv3</span><span class="lvd">3연속 완화 + 발동 시 이동 +30% 2초</span></div>
+      <div class="evo"><b>★진화 「학살의 박자」</b> (만렙+킬축 동사 2) : 강화 공격이 주변 1.5m 저HP 좀비 처형</div>
+      <div class="flavor">"리듬을 타면 죽음이 춤춘다."</div>
+      <div class="badges"><span class="badge b-ok">✅ MVP</span></div>
+    </div>
+  </div>
+
+  <!-- ============ 동사 — 시계축 ============ -->
+  <div class="section"><h2>동사 카드 — 시계축 (신규)</h2><span class="axis">자원축: 시계 · 목줄을 태워 힘을 얻는 도박</span><div class="ln"></div></div>
+  <div class="grid">
+    <div class="card acc-clock">
+      <div class="chead"><span class="cname">소각전술</span></div>
+      <div class="ctag">전투 · 시계축 · ⚖️ · 신규</div>
+      <div class="lv"><span class="lvn">Lv1</span><span class="lvd">피해 +35%, 연사 +20% / <span class="cost">충전율 +40%</span></span></div>
+      <div class="lv"><span class="lvn">Lv2</span><span class="lvd">피해 +50% / <span class="cost">페널티 +35%</span></span></div>
+      <div class="lv"><span class="lvn">Lv3</span><span class="lvd">피해 +65% / <span class="cost">페널티 +30%</span></span></div>
+      <div class="evo"><b>★진화 「초연소」</b> (만렙+시계축 동사 2) : 천장 초과(DoT 진입) 중 피해 +30% 추가</div>
+      <div class="flavor">"목줄을 태워 총구를 달군다."</div>
+      <div class="badges"><span class="badge b-ok">✅ MVP</span><span class="badge b-dual">⚖️</span></div>
+    </div>
+    <div class="card acc-clock">
+      <div class="chead"><span class="cname">막장투자</span></div>
+      <div class="ctag">전투 · 시계축 · ⚖️ · 신규 · 즉발형</div>
+      <div class="lv"><span class="lvn">Lv1</span><span class="lvd">픽 시 현재 시계% ×2 영구 공격력 / <span class="cost">기본 충전율 +25%</span></span></div>
+      <div class="lv"><span class="lvn">Lv2</span><span class="lvd">환급 ×2.5 / <span class="cost">충전율 +20%</span></span></div>
+      <div class="lv"><span class="lvn">Lv3</span><span class="lvd">환급 ×3 / <span class="cost">충전율 +18%</span></span></div>
+      <div class="flavor">"위험을 팔아 힘을 산다. 단, 시계는 영영 빨라진다."</div>
+      <div class="badges"><span class="badge b-ok">✅ MVP</span><span class="badge b-dual">⚖️</span></div>
+    </div>
+    <div class="card acc-clock">
+      <div class="chead"><span class="cname">사채계약</span></div>
+      <div class="ctag">유틸 · 시계축 · ⚖️ · 신규</div>
+      <div class="lv"><span class="lvn">Lv1</span><span class="lvd">재료 드롭 +40% / <span class="cost">충전율 +15%</span></span></div>
+      <div class="lv"><span class="lvn">Lv2</span><span class="lvd">드롭 +55% / <span class="cost">충전율 +12%</span></span></div>
+      <div class="lv"><span class="lvn">Lv3</span><span class="lvd">드롭 +70% / <span class="cost">충전율 +10%</span></span></div>
+      <div class="flavor">"빚으로 사는 풍요. 시계가 이자를 받는다."</div>
+      <div class="badges"><span class="badge b-ok">✅ MVP</span><span class="badge b-dual">⚖️</span></div>
+    </div>
+    <div class="card acc-clock">
+      <div class="chead"><span class="cname">귀환호흡</span></div>
+      <div class="ctag">유틸 · 시계축 · 🔵 · 신규</div>
+      <div class="lv"><span class="lvn">Lv1</span><span class="lvd">집 방향 이동 중 시계 충전율 ×0.5</span></div>
+      <div class="lv"><span class="lvn">Lv2</span><span class="lvd">×0.35 + 귀환 중 이동 +15%</span></div>
+      <div class="lv"><span class="lvn">Lv3</span><span class="lvd">집 진입 시 다음 출발 10초 둔화 유지</span></div>
+      <div class="flavor">"둥지로 향하면 숨이 트인다."</div>
+      <div class="badges"><span class="badge b-ret">🔁 귀환 루프 후</span></div>
+    </div>
+  </div>
+
+  <!-- ============ 동사 — 거리축 ============ -->
+  <div class="section"><h2>동사 카드 — 거리축 (신규)</h2><span class="axis">유틸 · 멀리 갈수록 보상</span><div class="ln"></div></div>
+  <div class="grid">
+    <div class="card acc-dist">
+      <div class="chead"><span class="cname">원정대원</span></div>
+      <div class="ctag">유틸 · 거리축 · 🔵 · 신규</div>
+      <div class="lv"><span class="lvn">Lv1</span><span class="lvd">집에서 100m+ → 피해 +15%, 재료 드롭 +25%</span></div>
+      <div class="lv"><span class="lvn">Lv2</span><span class="lvd">임계 80m + 피해 +25% / 드롭 +35%</span></div>
+      <div class="lv"><span class="lvn">Lv3</span><span class="lvd">200m+ 추가 보너스 (피해 +10% 더)</span></div>
+      <div class="flavor">"멀리 갈수록 손이 매워진다."</div>
+      <div class="badges"><span class="badge b-ok">✅ MVP</span></div>
+    </div>
+  </div>
+
+  <!-- ============ 시그니처 — 권총 ============ -->
+  <div class="section"><h2>무기 시그니처 — 권총</h2><span class="axis">선택 무기 장착 시에만 드로우</span><div class="ln"></div></div>
+  <div class="grid">
+    <div class="card acc-sig">
+      <div class="chead"><span class="cname">관통탄</span></div>
+      <div class="ctag">권총 · 시그니처 · 소음축</div>
+      <div class="lv"><span class="lvn">Lv1</span><span class="lvd">사격이 좀비 1체 관통</span></div>
+      <div class="lv"><span class="lvn">Lv2</span><span class="lvd">2체 관통 + 관통마다 소음 −5</span></div>
+      <div class="lv"><span class="lvn">Lv3</span><span class="lvd">3체 관통 + 마지막 대상 넉백</span></div>
+      <div class="evo"><b>★진화 「레일샷」</b> (만렙+소음축 동사 2) : 직선상 전부 관통 + 벽 1회 관통</div>
+      <div class="flavor">"한 발에 한 줄을 비운다."</div>
+      <div class="badges"><span class="badge b-ok">✅ MVP</span></div>
+    </div>
+    <div class="card acc-sig">
+      <div class="chead"><span class="cname">메아리</span></div>
+      <div class="ctag">권총 · 시그니처 · 소음축</div>
+      <div class="lv"><span class="lvn">Lv1</span><span class="lvd">총성 소음 절반을 5m 밖 분산 (−50%)</span></div>
+      <div class="lv"><span class="lvn">Lv2</span><span class="lvd">−65% + 분산점 좀비 유인</span></div>
+      <div class="lv"><span class="lvn">Lv3</span><span class="lvd">−80%</span></div>
+      <div class="evo"><b>★진화 「복화술」</b> : 분산점을 조준 지점으로 지정 가능</div>
+      <div class="flavor">"총구는 여기, 소리는 저기."</div>
+      <div class="badges"><span class="badge b-ok">✅ MVP</span></div>
+    </div>
+  </div>
+
+  <!-- ============ 시그니처 — 방망이 ============ -->
+  <div class="section"><h2>무기 시그니처 — 야구방망이</h2><span class="axis">⚠️ 무기 미구현 — 동결</span><div class="ln"></div></div>
+  <div class="grid">
+    <div class="card acc-sig dim">
+      <div class="chead"><span class="cname">풀스윙</span></div>
+      <div class="ctag">방망이 · 시그니처 · 킬축</div>
+      <div class="lv"><span class="lvn">Lv1</span><span class="lvd">넉백 반경 +30% + 넉백 거리↑</span></div>
+      <div class="lv"><span class="lvn">Lv2</span><span class="lvd">반경 +50% + 넉백 좀비끼리 충돌 피해</span></div>
+      <div class="lv"><span class="lvn">Lv3</span><span class="lvd">반경 +75%</span></div>
+      <div class="evo"><b>★진화 「철퇴」</b> (만렙+킬축 동사 2) : 차지 스윙(0.5s) 광역 강타 + 다운</div>
+      <div class="badges"><span class="badge b-bat">🔨 방망이 미구현</span></div>
+    </div>
+    <div class="card acc-sig dim">
+      <div class="chead"><span class="cname">무음 타격</span></div>
+      <div class="ctag">방망이 · 시그니처 · 소음축</div>
+      <div class="lv"><span class="lvn">Lv1</span><span class="lvd">스윙 소음 −50%</span></div>
+      <div class="lv"><span class="lvn">Lv2</span><span class="lvd">−70% + 무경계 처치 시 소음 0</span></div>
+      <div class="lv"><span class="lvn">Lv3</span><span class="lvd">−85%</span></div>
+      <div class="evo"><b>★진화 「그림자 타격」</b> (만렙+소음축 동사 2) : 스텔스 중 첫 스윙 = 즉사</div>
+      <div class="badges"><span class="badge b-bat">🔨 방망이 미구현</span></div>
+    </div>
+  </div>
+
+  <!-- ============ 폴백 ============ -->
+  <div class="section"><h2>폴백</h2><span class="axis">풀 고갈 / 만렙 과다 시 드물게</span><div class="ln"></div></div>
+  <div class="grid">
+    <div class="card acc-fall">
+      <div class="chead"><span class="cname">응급 처치</span></div>
+      <div class="ctag">유틸 · 폴백 · 반복 픽 가능</div>
+      <div class="lv"><span class="lvn">효과</span><span class="lvd">즉시 체력 +25 회복, 또는 감염 −0.1 정화</span></div>
+      <div class="badges"><span class="badge b-ok">✅ MVP (Heal/ReduceSync 구현됨)</span></div>
+    </div>
+  </div>
+
+  <!-- ============ 검토 포인트 ============ -->
+  <div class="note">
+    <h3>⚠️ 검토 포인트 — 무기 ↔ 카드 매핑 불균형</h3>
+    현재 구현 무기는 <b>권총 / 소총 / 산탄총</b> 3종인데 카탈로그의 무기 카드는
+    <b>권총 2장(+후보1) · 방망이 5장</b>뿐. <b>소총·산탄총 전용 카드는 0장</b>이고,
+    방망이는 무기 자체가 미구현인데 카드만 5장 잡혀 있음. → 다음 설계 결정:
+    소총·산탄총 라인을 신설할지, 아니면 지금 풀로 충분하다 보고 구현으로 넘어갈지.
+  </div>
+</div>
+</body>
+</html>

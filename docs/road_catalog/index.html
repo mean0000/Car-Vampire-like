@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZombieCrush — Synty Generic 도로 키트 카탈로그</title>
+<style>
+  :root{
+    --bg:#13161b; --panel:#1c2129; --panel2:#232a34; --line:#323b48;
+    --txt:#e6ebf2; --dim:#9aa6b6; --accent:#5ec8ff; --warn:#ffcf5e; --bad:#ff7a7a; --good:#7ee08a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:"Segoe UI","Malgun Gothic",sans-serif;line-height:1.55;font-size:15px}
+  header{padding:32px 40px 18px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#1a1f27,#13161b)}
+  header h1{margin:0 0 6px;font-size:26px;letter-spacing:.3px}
+  header p{margin:2px 0;color:var(--dim);font-size:13px}
+  main{max-width:1180px;margin:0 auto;padding:28px 40px 80px}
+  h2{margin:42px 0 6px;font-size:20px;border-left:4px solid var(--accent);padding-left:12px}
+  h2 small{color:var(--dim);font-weight:400;font-size:13px;margin-left:8px}
+  .note{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .crit{border-color:#7a4a00;background:#241c10}
+  .crit h3{margin:0 0 8px;color:var(--warn);font-size:17px}
+  code{background:#0d0f13;padding:2px 6px;border-radius:5px;color:#ffd9a0;font-size:13px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:14px;margin-top:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+  .card .thumb{background:#0c0e12;display:flex;align-items:center;justify-content:center;height:150px;border-bottom:1px solid var(--line)}
+  .card .thumb img{width:128px;height:128px;image-rendering:auto}
+  .card .body{padding:10px 12px 12px}
+  .card h4{margin:0 0 4px;font-size:14px;color:var(--accent);word-break:break-all}
+  .card .dim{color:var(--dim);font-size:12px;margin:1px 0}
+  .card .desc{font-size:12.5px;margin:7px 0 0;color:#d2dae5}
+  .badge{display:inline-block;font-size:11px;padding:1px 8px;border-radius:20px;font-weight:600;margin-top:8px}
+  .b-high{background:#15331b;color:var(--good);border:1px solid #2c6b39}
+  .b-med{background:#34290f;color:var(--warn);border:1px solid #6b551c}
+  .b-low{background:#331515;color:var(--bad);border:1px solid #6b2c2c}
+  table{width:100%;border-collapse:collapse;margin-top:14px;font-size:13px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--accent)}
+  tr:nth-child(even) td{background:#171b22}
+  .use-yes{color:var(--good);font-weight:600}
+  .use-no{color:var(--bad)}
+  .use-maybe{color:var(--warn)}
+  ul{margin:8px 0 0;padding-left:20px}
+  li{margin:3px 0}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:12.5px;color:var(--dim)}
+  .legend span{display:flex;align-items:center;gap:6px}
+  .dot{width:10px;height:10px;border-radius:50%}
+</style>
+</head>
+<body>
+<header>
+  <h1>Synty Generic — 도로/보도/지면 키트 정밀 카탈로그</h1>
+  <p>출처: <code>PolygonGeneric/Prefabs/Environment/</code> · 도심 코어(Greybox_City) 손제작 기준</p>
+  <p>썸네일 = 실제 프리팹 탑다운 렌더(직교 카메라, 위에서 봄). 측정값 = 메시 월드 바운드. 작성 2026-05-31.</p>
+  <div class="legend">
+    <span><span class="dot" style="background:#7ee08a"></span>HIGH = 렌더로 명확히 확인</span>
+    <span><span class="dot" style="background:#ffcf5e"></span>MED = 추정(에디터 실측 권장)</span>
+    <span><span class="dot" style="background:#ff7a7a"></span>UNKNOWN = 미확인/미렌더</span>
+  </div>
+</header>
+<main>
+
+  <div class="note crit">
+    <h3>★ 핵심 발견 — 도로가 건물과 따로 노는 진짜 원인 2가지</h3>
+    <p><b>1) 피벗이 코너에 있다 (center 아님).</b> Generic 도로/보도 전 조각의 피벗은 타일 <b>+X/−Z 모서리</b>에 있고, 메시는 −X/+Z 방향으로 채워진다. 건물은 밑면-중앙 피벗 → 같은 좌표에 놓으면 도로만 반 타일(5m) 어긋난다. 이게 "도로 따로 건물 따로"의 1차 원인.</p>
+    <p style="margin-top:8px">셀 <code>[X0..X0+W] × [Z0..Z0+D]</code> 을 덮으려면 → <code>transform.position = (X0+W, 0, Z0)</code> 로 놓아야 정확히 칸을 채운다.</p>
+    <p style="margin-top:8px"><b>2) 모든 포장 타일에 "둥근 연석 코너"가 박혀 있다.</b> Road_01·Small·Crossing·Warning 등 거의 모든 5×5/10×10 포장 조각의 피벗 코너(우하단)에 <b>1/4원 둥근 연석 컷아웃</b>이 있다. 즉 단순 정사각 타일처럼 막 이어붙이면 직선 차로 안으로 둥근 연석이 파고든다. 이 둥근 코너는 <b>교차로/모서리를 향하게</b> 회전시켜 2~4장이 모여 둥근 연석 반경을 이루도록 설계된 것으로 보인다(MED — 에디터 조립 테스트 필요).</p>
+    <p style="margin-top:8px;color:var(--warn)"><b>결론:</b> 도로는 "코너 피벗 + 둥근코너 방향"을 맞춰 깔아야 건물 그리드와 정렬된다. 다음 작업에서 씬 도로를 이 규칙으로 재배치 예정.</p>
+  </div>
+
+  <!-- ============ 포장 도로 ============ -->
+  <h2>1. 포장 도로 (Paved Road) <small>도심 코어 전용 · 평탄 H≈0 · 코너 피벗 + 둥근연석</small></h2>
+  <div class="grid">
+
+    <div class="card"><div class="thumb"><img src="img/Road_01.png" alt="Road_01"></div><div class="body">
+      <h4>Road_01</h4><p class="dim">10 × 10 m · H 0</p>
+      <p class="desc">2차선 직선 간선. 점선 차선 X축, 장변 양쪽 연석, 피벗코너 둥근연석. <b>도심 간선 기본 타일.</b></p>
+      <span class="badge b-high">HIGH</span></div></div>
+
+    <div class="card"><div class="thumb"><img src="img/Road_Half_01.png" alt="Road_Half_01"></div><div class="body">
+      <h4>Road_Half_01</h4><p class="dim">5 × 10 m · H 0</p>
+      <p class="desc">반-폭 직선. 차선 Z축(긴축), 상단 연석+하단 스텁, 둥근코너. 좁은 1차로/차로 절반.</p>
+      <span class="badge b-high">HIGH</span></div></div>
+
+    <div class="card"><div class="thumb"><img src="img/Road_Half_02.png" alt="Road_Half_02"></div><div class="body">
+      <h4>Road_Half_02</h4><p class="dim">10 × 5 m · H 0</p>
+      <p class="desc">반-길이 직선. 차선 X축, 상하 연석, 우측 둥근코너. 짧은 연결/전이 구간.</p>
+      <span class="badge b-high">HIGH</span></div></div>
+
+    <div class="card"><div class="thumb"><img src="img/Road_Small_01.png" alt="Road_Small_01"></div><div class="body">
+      <h4>Road_Small_01</h4><p class="dim">5 × 5 m · H 0</p>
+      <p class="desc"><b>연석·마킹 없는</b> 민무늬 아스팔트 + 우하단 둥근컷. 순수 지면 채움용. <span style="color:var(--bad)">(이전에 골목 직선으로 잘못 사용함)</span></p>
+      <span class="badge b-high">HIGH</span></div></div>
+
+    <div class="card"><div class="thumb"><img src="img/Road_Small_02.png" alt="Road_Small_02"></div><div class="body">
+      <h4>Road_Small_02</h4><p class="dim">2.5 × 2.5 m · H 0</p>
+      <p class="desc">미세 아스팔트 코너 삼각 조각만. 둥근코너 채움/이음 슬리버.</p>
+      <span class="badge b-med">MED</span></div></div>
+
+    <div class="card"><div class="thumb"><img src="img/Road_Small_03.png" alt="Road_Small_03"></div><div class="body">
+      <h4>Road_Small_03</h4><p class="dim">5 × 5 m · H 0</p>
+      <p class="desc">상하 연석 + 둥근코너 짧은 아스팔트. <b>골목 직선 후보</b>(마킹 없이 연석만).</p>
+      <span class="badge b-high">HIGH</span></div></div>
+
+    <div class="card"><div class="thumb"><img src="img/Road_Intersection_01.png" alt="Road_Intersection_01"></div><div class="body">
+      <h4>Road_Intersection_01</h4><p class="dim">5 × 10 m · H 0</p>
+      <p class="desc">상단 직선 차로 + 하단 분기 아스팔트(우측 이중 흰선=측로 연석) + 둥근코너. <b>T자/측로 진입 커넥터.</b></p>
+      <span class="badge b-med">MED-HIGH</span></div></div>
+
+    <div class="card"><div class="thumb"><img src="img/Road_Intersection_02.png" alt="Road_Intersection_02"></div><div class="body">
+      <h4>Road_Intersection_02</h4><p class="dim">5 × 5 m · H 0</p>
+      <p class="desc">상단+우측 연석(우측 이중흰선), 우하단 둥근컷. <b>90° 코너/엘보</b> — 도로가 모서리를 돈다.</p>
+      <span class="badge b-med">MED-HIGH</span></div></div>
+
+    <div class="card"><div class="thumb"><img src="img/Road_Crossing_01.png" alt="Road_Crossing_01"></div><div class="body">
+      <h4>Road_Crossing_01</h4><p class="dim">5 × 5 m · H 0</p>
+      <p class="desc">횡단보도(흰 줄무늬 4개) + 둥근코너. <b>게이트 광장 진입/교차로 보행로.</b></p>
+      <span class="badge b-high">HIGH</span></div></div>
+
+    <div class="card"><div class="thumb"><img src="img/Road_Warning_01.png" alt="Road_Warning_01"></div><div class="body">
+      <h4>Road_Warning_01</h4><p class="dim">5 × 5 m · H 0</p>
+      <p class="desc">노란 X 대각 해저드 마킹 + 둥근코너. <b>교차로 양보/킵클리어 박스</b>(노란 박스).</p>
+      <span class="badge b-high">HIGH</span></div></div>
+
+    <div class="card"><div class="thumb"><img src="img/Road_Ramp_01.png" alt="Road_Ramp_01"></div><div class="body">
+      <h4>Road_Ramp_01</h4><p class="dim">5 × 10 × <b>3</b> m</p>
+      <p class="desc">3m 높이 경사 램프(고가/지하 진입). 평지 도심엔 부적합 — 입체 구간 한정.</p>
+      <span class="badge b-med">MED</span></div></div>
+
+    <div class="card"><div class="thumb"><img src="img/Road_Ramp_02.png" alt="Road_Ramp_02"></div><div class="body">
+      <h4>Road_Ramp_02</h4><p class="dim">5 × 10 × <b>3</b> m</p>
+      <p class="desc">램프 변형(반대 경사/미러 추정). 입체 구간 한정.</p>
+      <span class="badge b-med">MED</span></div></div>
+  </div>
+
+  <!-- ============ 주차장 ============ -->
+  <h2>2. 주차장 (Parking) <small>10×10 / 10×5 · 코너 피벗 · 폐차 군집 엄폐 거점</small></h2>
+  <div class="grid">
+    <div class="card"><div class="thumb"><img src="img/Road_Parking_01.png" alt=""></div><div class="body"><h4>Road_Parking_01</h4><p class="dim">10 × 10 m</p><p class="desc">주차 구획선 풀타일.</p><span class="badge b-high">HIGH</span></div></div>
+    <div class="card"><div class="thumb"><img src="img/Road_Parking_02.png" alt=""></div><div class="body"><h4>Road_Parking_02</h4><p class="dim">10 × 10 m</p><p class="desc">구획선 패턴 변형.</p><span class="badge b-high">HIGH</span></div></div>
+    <div class="card"><div class="thumb"><img src="img/Road_Parking_03.png" alt=""></div><div class="body"><h4>Road_Parking_03</h4><p class="dim">10 × 10 m</p><p class="desc">구획선 패턴 변형.</p><span class="badge b-high">HIGH</span></div></div>
+    <div class="card"><div class="thumb"><img src="img/Road_Parking_04.png" alt=""></div><div class="body"><h4>Road_Parking_04</h4><p class="dim">10 × 10 m</p><p class="desc">구획선 패턴 변형.</p><span class="badge b-high">HIGH</span></div></div>
+    <div class="card"><div class="thumb"><img src="img/Road_Parking_05.png" alt=""></div><div class="body"><h4>Road_Parking_05</h4><p class="dim">10 × 5 m</p><p class="desc">주차 반-타일.</p><span class="badge b-high">HIGH</span></div></div>
+    <div class="card"><div class="thumb"><img src="img/Road_Parking_06.png" alt=""></div><div class="body"><h4>Road_Parking_06</h4><p class="dim">10 × 5 m</p><p class="desc">주차 반-타일 변형.</p><span class="badge b-high">HIGH</span></div></div>
+  </div>
+
+  <!-- ============ 보도 ============ -->
+  <h2>3. 보도 (Sidewalk) <small>2.5m 모듈 · 다운타운 블록 가장자리</small></h2>
+  <div class="grid">
+    <div class="card"><div class="thumb"><img src="img/Sidewalk_01.png" alt=""></div><div class="body"><h4>Sidewalk_01</h4><p class="dim">2.5 × 2.5 · H 0.01</p><p class="desc">평평한 보도 포장 타일. <b>블록 가장자리 인도 기본.</b></p><span class="badge b-high">HIGH</span></div></div>
+    <div class="card"><div class="thumb"><img src="img/Sidewalk_Corner_01.png" alt=""></div><div class="body"><h4>Sidewalk_Corner_01</h4><p class="dim">2.5 × 2.5 · H 0.15</p><p class="desc">융기 보도 코너(2변 연석). 블록 모서리.</p><span class="badge b-med">MED</span></div></div>
+    <div class="card"><div class="thumb"><img src="img/Sidewalk_Corner_02.png" alt=""></div><div class="body"><h4>Sidewalk_Corner_02</h4><p class="dim">2.5 × 2.5 · H 0.15</p><p class="desc">보도 코너 미러 변형.</p><span class="badge b-med">MED</span></div></div>
+    <div class="card"><div class="thumb"><img src="img/Sidewalk_Edge_01.png" alt=""></div><div class="body"><h4>Sidewalk_Edge_01</h4><p class="dim">2.5 × 2.5 · H 0.18</p><p class="desc">한 변 연석 보도(도로 면). 직선 인도 가장자리.</p><span class="badge b-med">MED</span></div></div>
+    <div class="card"><div class="thumb"><img src="img/Sidewalk_Half_01.png" alt=""></div><div class="body"><h4>Sidewalk_Half_01</h4><p class="dim">2.5 × 1.25</p><p class="desc">반-보도 채움 슬리버.</p><span class="badge b-med">MED</span></div></div>
+  </div>
+
+  <!-- ============ 지면 트림 ============ -->
+  <h2>4. 지면 경계 트림 (Ground Edge) <small>도로↔공터 전이 연석 · 코스메틱 저우선</small></h2>
+  <div class="grid">
+    <div class="card"><div class="thumb"><img src="img/Ground_Edge_01.png" alt=""></div><div class="body"><h4>Ground_Edge_01</h4><p class="dim">1.53 × 0.49 · H 0.22</p><p class="desc">작은 연석/트림 띠. 포장↔흙 전이.</p><span class="badge b-med">MED</span></div></div>
+    <div class="card"><div class="thumb"><img src="img/Ground_Edge_02.png" alt=""></div><div class="body"><h4>Ground_Edge_02</h4><p class="dim">~2.74 × 0.5 · H ~0.3</p><p class="desc">트림 띠 변형.</p><span class="badge b-med">MED</span></div></div>
+    <div class="card"><div class="thumb"><img src="img/Ground_Edge_03.png" alt=""></div><div class="body"><h4>Ground_Edge_03</h4><p class="dim">~2.74 × ~0.8 · H ~0.3</p><p class="desc">트림 띠 변형.</p><span class="badge b-med">MED</span></div></div>
+    <div class="card"><div class="thumb"><img src="img/Ground_Edge_04.png" alt=""></div><div class="body"><h4>Ground_Edge_04</h4><p class="dim">~2.74 × ~1.0 · H ~0.35</p><p class="desc">트림 띠 변형.</p><span class="badge b-med">MED</span></div></div>
+    <div class="card"><div class="thumb"><img src="img/Ground_Edge_05.png" alt=""></div><div class="body"><h4>Ground_Edge_05</h4><p class="dim">~2.74 × ~1.1 · H ~0.37</p><p class="desc">트림 띠 변형.</p><span class="badge b-med">MED</span></div></div>
+  </div>
+
+  <!-- ============ 자갈 (시골 보류) ============ -->
+  <h2>5. 자갈/흙길 (Gravel) <small>★ 도심 제외 — 시골/사막 바이옴 보류 · 유기적 center-ish 피벗</small></h2>
+  <div class="note">이 그룹은 피벗이 코너가 아니라 <b>중앙 근처(유기적)</b>로 다르고, 톤도 비포장이라 도심 코어엔 안 쓴다. 나중 평원/사막/숲 바이옴 흙길용으로 보관.</div>
+  <div class="grid">
+    <div class="card"><div class="thumb"><img src="img/Road_Gravel_Straight_01.png" alt=""></div><div class="body"><h4>Gravel_Straight_01</h4><p class="dim">3.2 × 3.95</p><p class="desc">좁은 흙길 직선(짧음).</p><span class="badge b-high">HIGH</span></div></div>
+    <div class="card"><div class="thumb"><img src="img/Road_Gravel_Straight_02.png" alt=""></div><div class="body"><h4>Gravel_Straight_02</h4><p class="dim">3.15 × 6.17</p><p class="desc">흙길 직선(중).</p><span class="badge b-high">HIGH</span></div></div>
+    <div class="card"><div class="thumb"><img src="img/Road_Gravel_Straight_03.png" alt=""></div><div class="body"><h4>Gravel_Straight_03</h4><p class="dim">3.34 × 8.39</p><p class="desc">흙길 직선(장).</p><span class="badge b-high">HIGH</span></div></div>
+    <div class="card"><div class="thumb"><img src="img/Road_Gravel_Corner_Large_01.png" alt=""></div><div class="body"><h4>Gravel_Corner_Large_01</h4><p class="dim">8.04 × 8.12</p><p class="desc">완만한 흙길 곡선(대).</p><span class="badge b-high">HIGH</span></div></div>
+    <div class="card"><div class="thumb"><img src="img/Road_Gravel_Corner_Large_02.png" alt=""></div><div class="body"><h4>Gravel_Corner_Large_02</h4><p class="dim">5.55 × 5.41</p><p class="desc">흙길 곡선(중).</p><span class="badge b-high">HIGH</span></div></div>
+    <div class="card"><div class="thumb"><img src="img/Road_Gravel_Corner_Small_01.png" alt=""></div><div class="body"><h4>Gravel_Corner_Small_01</h4><p class="dim">3.0 × 3.08</p><p class="desc">급한 흙길 곡선(소).</p><span class="badge b-high">HIGH</span></div></div>
+    <div class="card"><div class="thumb"><img src="img/Road_Gravel_Corner_Small_02.png" alt=""></div><div class="body"><h4>Gravel_Corner_Small_02</h4><p class="dim">3.74 × 4.08</p><p class="desc">흙길 곡선(소) 변형.</p><span class="badge b-high">HIGH</span></div></div>
+    <div class="card"><div class="thumb"><img src="img/Road_Gravel_End_01.png" alt=""></div><div class="body"><h4>Gravel_End_01</h4><p class="dim">9.25 × 10.66</p><p class="desc">흙길 종단/광장 확장.</p><span class="badge b-med">MED</span></div></div>
+  </div>
+
+  <!-- ============ 슬로프 ============ -->
+  <h2>6. 지형 경사 (Ground Slope) <small>대형 고도 램프 · 바이옴 입체용</small></h2>
+  <div class="grid">
+    <div class="card"><div class="thumb"><img src="img/Ground_Slope_Dirt_01.png" alt=""></div><div class="body"><h4>Slope_Dirt_01</h4><p class="dim">12.51 × 24.97 × <b>4.98</b></p><p class="desc">흙 대형 고도 램프(좁음).</p><span class="badge b-high">HIGH</span></div></div>
+    <div class="card"><div class="thumb"><img src="img/Ground_Slope_Dirt_02.png" alt=""></div><div class="body"><h4>Slope_Dirt_02</h4><p class="dim">23.52 × 24.95 × <b>4.93</b></p><p class="desc">흙 대형 고도 램프(넓음).</p><span class="badge b-high">HIGH</span></div></div>
+    <div class="card"><div class="thumb"><img src="img/Ground_Slope_Grass_01.png" alt=""></div><div class="body"><h4>Slope_Grass_01</h4><p class="dim">12.51 × 24.97 × <b>4.98</b></p><p class="desc">잔디 고도 램프(좁음).</p><span class="badge b-high">HIGH</span></div></div>
+    <div class="card"><div class="thumb"><img src="img/Ground_Slope_Grass_02.png" alt=""></div><div class="body"><h4>Slope_Grass_02</h4><p class="dim">23.52 × 24.95 × <b>4.93</b></p><p class="desc">잔디 고도 램프(넓음).</p><span class="badge b-high">HIGH</span></div></div>
+  </div>
+
+  <!-- ============ 미렌더 지형 ============ -->
+  <h2>7. 지형 바닥/강/산 <small style="color:var(--bad)">UNKNOWN — 미렌더 · 도심 코어 범위 밖 (평원/사막/숲 바이옴)</small></h2>
+  <div class="note">아래는 도심 코어에 안 쓰는 자연 지형 타일이라 개별 렌더를 생략했다. <b>존재/이름만 정직하게 기록</b>하고, 실제 사용 시 측정·렌더를 다시 한다. 모르는 것은 모른다고 표기.</div>
+  <table>
+    <tr><th>그룹</th><th>프리팹</th><th>추정 용도</th><th>상태</th></tr>
+    <tr><td>흙 바닥</td><td>Ground_Dirt_01~04, Ground_Dirt_Large_01~03</td><td>비포장 흙 지면 타일(소/대)</td><td class="use-no">미렌더</td></tr>
+    <tr><td>잔디 바닥</td><td>Ground_Grass_01~04, Ground_Grass_Large_01~03</td><td>잔디 지면 타일(소/대)</td><td class="use-no">미렌더</td></tr>
+    <tr><td>강-흙</td><td>Ground_River_Dirt_01~07, _Large_01~03</td><td>흙 강바닥/물길 세그먼트</td><td class="use-no">미렌더</td></tr>
+    <tr><td>강-잔디</td><td>Ground_River_Grass_01~07, _Large_01~03</td><td>잔디 강바닥/물길 세그먼트</td><td class="use-no">미렌더</td></tr>
+    <tr><td>원경 산</td><td>Background_Mountain_01~03</td><td>스카이라인 배경 산(원경 전용)</td><td class="use-no">미렌더</td></tr>
+  </table>
+  <p class="dim" style="margin-top:8px">참고: <code>SM_Gen_Bld_Background_01~11</code> 은 <b>도로가 아니라 배경 빌딩</b>이다 — 건물 키트 문서에서 다룸. 여기 도로 카탈로그 범위에선 제외.</p>
+
+  <!-- ============ 도심 코어 팔레트 결론 ============ -->
+  <h2>8. 도심 코어 팔레트 — 무엇을 어디에</h2>
+  <table>
+    <tr><th>역할</th><th>프리팹</th><th>도심코어</th><th>비고</th></tr>
+    <tr><td>간선(2차로)</td><td>Road_01 (10×10)</td><td class="use-yes">사용</td><td>dogleg 간선 척추</td></tr>
+    <tr><td>골목/뒷길 직선</td><td><b>Road_Small_03</b> (5×5, 연석有)</td><td class="use-yes">사용</td><td>이전 Small_01 오용 → 03으로 교체</td></tr>
+    <tr><td>지면 채움(민무늬)</td><td>Road_Small_01 / 02</td><td class="use-maybe">보조</td><td>마킹 없는 아스팔트 패치</td></tr>
+    <tr><td>T자/측로 진입</td><td>Road_Intersection_01</td><td class="use-yes">사용</td><td>간선→골목 분기</td></tr>
+    <tr><td>90° 코너</td><td>Road_Intersection_02</td><td class="use-yes">사용</td><td>dogleg 꺾임부</td></tr>
+    <tr><td>횡단보도</td><td>Road_Crossing_01</td><td class="use-yes">사용</td><td>게이트 광장 진입</td></tr>
+    <tr><td>해저드 박스</td><td>Road_Warning_01</td><td class="use-maybe">악센트</td><td>교차로/위험구간 데코</td></tr>
+    <tr><td>인도</td><td>Sidewalk_01 (+Corner/Edge)</td><td class="use-yes">사용</td><td>다운타운 블록 가장자리</td></tr>
+    <tr><td>주차장(폐차 엄폐)</td><td>Road_Parking_01~04</td><td class="use-yes">사용</td><td>폐차 군집 거점</td></tr>
+    <tr><td>램프(입체)</td><td>Road_Ramp_01/02</td><td class="use-maybe">한정</td><td>평지 도심엔 기본 미사용</td></tr>
+    <tr><td>자갈/흙길</td><td>Gravel_*</td><td class="use-no">제외</td><td>시골/사막 바이옴 보류</td></tr>
+    <tr><td>지형 슬로프/바닥/강</td><td>Slope_* / Dirt_* / Grass_* / River_*</td><td class="use-no">제외</td><td>오픈 바이옴 전용</td></tr>
+    <tr><td>BattleRoyale 도로킷</td><td>(별도 킷)</td><td class="use-no">제외</td><td>연석 돌출 H0.7~1.0·20m → 높이/모듈 충돌</td></tr>
+  </table>
+
+  <!-- ============ 미해결/검증필요 ============ -->
+  <h2>9. 아직 모르는 것 (정직한 UNKNOWN)</h2>
+  <ul>
+    <li><b>둥근 연석 코너의 정확한 조립법</b> — 교차로를 향해 회전시켜 2~4장이 둥근 반경을 만드는 게 맞는지, 아니면 공터 진입로(드라이브웨이) 컷인지 에디터 실조립으로 확정 필요. (현재 MED)</li>
+    <li><b>Road_Intersection_01/02의 정확한 연결 변</b> — 어느 변이 차로 입구이고 어느 변이 측로/막힘인지 회전 0/90/180/270 각각 실측 필요.</li>
+    <li><b>Road_Ramp_01 vs 02 차이</b> — 경사 방향(미러)인지 시작/끝 캡인지 미확정.</li>
+    <li><b>Sidewalk_Corner_01 vs 02, Ground_Edge_02~05</b> — 미러/높이 변형으로 추정하나 픽셀 단위 차이라 렌더만으로 단정 어려움.</li>
+    <li><b>섹션 7 자연 지형 46종</b> — 전부 미렌더. 도심 작업엔 불필요하나 바이옴 확장 시 다시 측정.</li>
+  </ul>
+
+</main>
+</body>
+</html>
