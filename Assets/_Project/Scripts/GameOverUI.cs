@@ -30,6 +30,8 @@ public class GameOverUI : MonoBehaviour
     {
         if (SyncRateManager.Instance != null)
             SyncRateManager.Instance.OnSyncMaxed += Show;
+        if (PlayerController.Instance != null)
+            PlayerController.Instance.OnPlayerDied += Show;
         if (HullManager.Instance != null)
             HullManager.Instance.OnHullDepleted += Show;
     }
@@ -38,6 +40,8 @@ public class GameOverUI : MonoBehaviour
     {
         if (SyncRateManager.Instance != null)
             SyncRateManager.Instance.OnSyncMaxed -= Show;
+        if (PlayerController.Instance != null)
+            PlayerController.Instance.OnPlayerDied -= Show;
         if (HullManager.Instance != null)
             HullManager.Instance.OnHullDepleted -= Show;
     }
@@ -47,6 +51,8 @@ public class GameOverUI : MonoBehaviour
         if (Instance == this) Instance = null;
         if (SyncRateManager.Instance != null)
             SyncRateManager.Instance.OnSyncMaxed -= Show;
+        if (PlayerController.Instance != null)
+            PlayerController.Instance.OnPlayerDied -= Show;
         if (HullManager.Instance != null)
             HullManager.Instance.OnHullDepleted -= Show;
     }

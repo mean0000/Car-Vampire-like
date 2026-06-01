@@ -6,7 +6,7 @@ public class ChunkManager : MonoBehaviour
     [SerializeField] private Transform playerTransform;
     [SerializeField, Min(0)] private int viewRadius = 3;
     [SerializeField, Min(0.01f)] private float chunkSize = 80f;
-    [SerializeField] private GameObject chunkPrefab;
+    [SerializeField] private GameObject[] blockPalette;
 
     private Dictionary<Vector2Int, GameObject> _activeChunks = new Dictionary<Vector2Int, GameObject>();
     private Vector2Int _lastPlayerChunk = new Vector2Int(int.MaxValue, int.MaxValue);
@@ -18,7 +18,7 @@ public class ChunkManager : MonoBehaviour
 
     private void Update()
     {
-        if (playerTransform == null || chunkPrefab == null)
+        if (playerTransform == null || blockPalette == null || blockPalette.Length == 0)
             return;
 
         Vector2Int currentChunk = WorldToChunkCoord(playerTransform.position);
@@ -62,16 +62,25 @@ public class ChunkManager : MonoBehaviour
             if (_activeChunks.ContainsKey(coord))
                 continue;
 
-            GameObject go = Instantiate(chunkPrefab, transform);
-            var chunk = go.GetComponent<TerrainChunk>();
-            if (chunk != null)
-                chunk.Init(coord, chunkSize);
-            else
+            // coord로 시드된 결정론적 선택 — 같은 coord는 항상 같은 블록+회전 → 되돌아가도 도시가 그대로.
+            // unchecked: 좌표가 극단으로 커져도 오버플로가 플랫폼 무관하게 wrap되어 결정론 유지.
+            int seed;
+            unchecked { seed = coord.x * 1000003 + coord.y * 999983; }
+            var rng = new System.Random(seed);
+            int idx = rng.Next(blockPalette.Length);
+            int rot = rng.Next(4) * 90;
+
+            GameObject prefab = blockPalette[idx];
+            if (prefab == null)
             {
-                Debug.LogError($"[ChunkManager] chunkPrefab '{chunkPrefab.name}' has no TerrainChunk component.", go);
-                Destroy(go);
+                Debug.LogError($"[ChunkManager] blockPalette[{idx}] is null — Inspector 슬롯을 확인하세요.", this);
                 continue;
             }
+
+            GameObject go = Instantiate(prefab, transform);
+            // 블록 로컬 원점=타일 중심. 기존 TerrainChunk와 동일하게 coord*chunkSize에 배치 → 경계 무이음.
+            go.transform.position = new Vector3(coord.x * chunkSize, 0f, coord.y * chunkSize);
+            go.transform.rotation = Quaternion.Euler(0f, rot, 0f);
 
             _activeChunks[coord] = go;
         }

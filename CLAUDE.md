@@ -83,26 +83,33 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 **Do not ask the user which model to use. Decide and switch proactively.**
 
-Use the `Agent` tool with `model: opus` automatically when the task involves:
+**진짜 기준선은 "설계 vs 구현"이 아니라 "불확실성·레버리지가 높은가 vs 기계적인가"다.**
+게임 개발에선 게임감(주스, 물리, 핸들링, 드리프트 보상 등)이 코드 단계에서 만들어지므로, 설계와 구현이 자주 섞인다. 빌드→느껴보고→수치 조정하는 반복 루프에선 의도를 보존하기 위해 **설계한 모델이 구현까지 끝까지** 잡는다.
+
+기본 세션 모델은 Opus(`claude-opus-4-8`)다. 따라서 메인 대화에서의 판단·설계는 이미 Opus로 이뤄지며, 별도 Plan 에이전트 스폰 빈도는 줄여도 된다. **기계적 구현만 Sonnet 에이전트로 내려보낸다.**
+
+**Opus로 처리 (메인 세션 직접, 또는 `model: opus` 에이전트):**
 - Physics or movement system design (force curves, handling model, collision response)
 - Architecture decisions across 3+ interacting scripts
 - Game-feel tradeoffs with no clear right answer (arcade vs. sim, responsiveness vs. stability)
 - Designing a new feature end-to-end (data flow, component responsibilities, API shape)
 - Non-obvious bug root-cause analysis spanning multiple systems
+- **게임감 튜닝이 포함된 구현** — 설계한 모델이 그대로 손까지 잡아 의도 보존
 
-Handle directly as Sonnet (no agent spawn needed) when:
-- Implementing from an already-decided design
-- Editing specific files — code changes, value tuning, field additions
+**Sonnet으로 처리 (Gameplay 에이전트에 위임, 빠르게):**
+- Implementing from an already-decided, fully-specified design
+- Editing specific files — 명시된 수치로 값 조정, 필드 추가
 - Codebase search and exploration
 - Single-system bug fixes
 
 **Protocol:**
-1. On receiving a request, silently classify it: design/analysis vs. implementation.
-2. If design/analysis → spawn `Agent(subagent_type="Plan", model="opus")` first, get the spec.
-3. Then implement the spec directly as Sonnet (or via Gameplay agent per Agent Workflow).
-4. If the request is ambiguous, lean toward Opus — the cost of under-thinking a design is higher than the latency.
+1. On receiving a request, silently classify it: 게임감·불확실성이 걸렸나 vs. 기계적인가.
+2. 게임감·설계·다중 시스템이 걸렸으면 → Opus(메인 세션 직접)로 설계+구현을 끝까지 잡는다.
+3. 스펙이 완전히 동결된 기계적 구현이면 → Gameplay 에이전트(Sonnet)로 위임.
+4. If the request is ambiguous, lean toward Opus — under-thinking a design costs more than latency.
+5. **작은 편집·자잘한 값 조정엔 3단 에이전트 춤(Plan→구현→리뷰)을 생략한다. 순수 오버헤드다.**
 
-> Always announce the switch briefly before acting. Example: "설계 판단이 필요해서 Opus로 처리합니다." or "구현 작업이라 Sonnet으로 바로 진행합니다."
+> Always announce the switch briefly before acting. Example: "게임감이 걸려서 Opus로 끝까지 잡습니다." or "스펙 동결된 기계적 구현이라 Sonnet으로 위임합니다."
 
 ## Agent Workflow (코드 작업 시 필수)
 

@@ -53,8 +53,8 @@ public class XPOrb : MonoBehaviour
         // Init 없이 씬에 직접 배치된 경우 fallback
         if (_carTransform == null)
         {
-            CarController car = FindFirstObjectByType<CarController>();
-            if (car != null) _carTransform = car.transform;
+            PlayerController player = FindFirstObjectByType<PlayerController>();
+            if (player != null) _carTransform = player.transform;
         }
     }
 
@@ -113,7 +113,7 @@ public class XPOrb : MonoBehaviour
         {
             Vector3 tocar = _carTransform.position - transform.position;
             tocar.y = 0f;
-            if (tocar.magnitude < attractRadius)
+            if (tocar.magnitude < attractRadius * PlayerStats.PickupRadiusMult)   // 자력 채집 카드
             {
                 _attractOrigin = transform.position;
                 Vector3 tocarDir = tocar;

@@ -36,7 +36,8 @@ public class XPManager : MonoBehaviour
     /// <summary>XP를 추가하고 레벨업 여부를 확인.</summary>
     public void AddXP(int amount)
     {
-        CurrentXP += Mathf.Max(0, amount + bonusXP);
+        // 효율 흡수 카드: 획득량 배수 적용.
+        CurrentXP += Mathf.Max(0, Mathf.RoundToInt((amount + bonusXP) * PlayerStats.XPGainMult));
 
         while (true)
         {

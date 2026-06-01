@@ -159,61 +159,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 703c4720febf4954b9b37177b7ec1d43, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ZombieController
-  minMoveSpeed: 20
-  maxMoveSpeed: 35
-  speedPenalty: 2
-  stopDistance: 1.5
+  _config: {fileID: 11400000, guid: fd18e027fed269048a437f5f104d9056, type: 2}
   groundLayer:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 64
   separationRadius: 2
   separationStrength: 1
   zombieLayer:
     serializedVersion: 2
     m_Bits: 128
-  carAvoidRadius: 1
-  carAvoidStrength: 8
-  velocitySmoothing: 8
-  flankOffset: 4
-  blockDistance: 12
+  obstacleMask:
+    serializedVersion: 2
+    m_Bits: 256
   killParticlePrefab: {fileID: 0}
   killSound: {fileID: 0}
   xpOrbPrefab: {fileID: 8825522051726462968, guid: b5ac3fb5a891a8e4382dcdcd7de85ba8, type: 3}
-  orbCountMin: 1
-  orbCountMax: 1
-  killFuelAmount: 15
-  spreadCount: 3
-  spreadAngle: 30
-  spreadDifficultyThreshold: 0.5
-  projectilePrefab: {fileID: 8225348193498871022, guid: 82eb086016a1c2d4cb21e996813a11cc, type: 3}
-  indicatorPrefab: {fileID: 2931107239805535412, guid: 94b7aea7b1230984bbf38e2550cbb2f6, type: 3}
-  fireRange: 30
-  fireInterval: 2
-  searchTime: 0.6
-  lockTime: 0.4
-  flightDuration: 0.8
-  projectileDamage: 4
-  blastRadius: 2
-  zombieType: 0
-  chargeSpeedMultiplier: 1.8
-  chargeTriggerRange: 12
-  chargeDamage: 8
-  chargePositionTime: 1.2
-  chargeRecoverTime: 2
-  turnDetectThreshold: 1.5
-  innerArcOffset: 6
-  chargePredictAhead: 8
-  laserRange: 30
-  laserAimTime: 2
-  laserFireDuration: 0.3
-  laserDamage: 6
-  laserCooldown: 2.5
-  laserAimColor: {r: 1, g: 0, b: 0, a: 0.3}
-  laserFireColor: {r: 1, g: 0.2, b: 0, a: 1}
-  maxChainKills: 3
-  chainKillRadius: 1.8
-  homingRadius: 8
-  homingStrength: 3
 --- !u!114 &2016351443866646649
 MonoBehaviour:
   m_ObjectHideFlags: 0

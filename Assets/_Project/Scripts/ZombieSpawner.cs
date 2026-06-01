@@ -1,416 +1,160 @@
 using System.Collections.Generic;
-using DistantLands.Cozy;
 using UnityEngine;
 
 public class ZombieSpawner : MonoBehaviour
 {
-    [Header("Zombie Prefabs")]
-    [SerializeField] GameObject[] rangedPrefabs;
-    [SerializeField] GameObject[] chargerPrefabs;
-    [SerializeField] GameObject[] laserPrefabs;
-    [SerializeField] Transform carTransform;
-    [SerializeField] float spawnInterval = 1.5f;
-    [SerializeField] float minSpawnInterval = 0.3f;
-    [SerializeField] float minSpawnRadius = 15f;
-    [SerializeField] float maxSpawnRadius = 25f;
-    [SerializeField] float despawnDistance = 100f;
+    [Header("Prefabs")]
+    [SerializeField] GameObject generalZombiePrefab;
+    [SerializeField] GameObject signalZombiePrefab;
+
+    [Header("Player")]
+    [SerializeField] Transform playerTransform;
+
+    [Header("Population")]
+    [SerializeField] int minZombies = 15;
+    [SerializeField] int maxZombies = 25;
+    [SerializeField] float spawnInterval = 2f;
+    [SerializeField] float backfillInterval = 0.3f;   // ★ 최소인구 미달 시 빠른 보충 간격
+
+    [Header("Spawn Radius")]
+    [SerializeField] float minSpawnRadius = 20f;
+    [SerializeField] float maxSpawnRadius = 35f;
+    [SerializeField] float despawnDistance = 60f;
+
+    [Header("Signal Zombie")]
+    [SerializeField, Range(0f, 1f)] float signalSpawnChance = 0.08f;
+
+    [Header("Ground")]
     [SerializeField] LayerMask groundLayer = -1;
-    [SerializeField, Range(0f, 1f)] float forwardBias = 0.6f;
-    [SerializeField, Range(0f, 1f)] float frontSpawnChance = 0.45f;
 
-    [Header("Horde")]
-    [SerializeField] float hordeInterval = 15f;
-    [SerializeField] float hordeSpread = 4f;
+    [Header("Obstacle Avoidance")]
+    [SerializeField] LayerMask obstacleMask = 1 << 8;   // Obstacle(8) — 건물 안에 스폰 금지
+    [SerializeField] float obstacleClearance = 1.2f;    // 후보 지점에서 이 반경 안에 건물이 있으면 기각
 
-    [Header("Front Density")]
-    [SerializeField] float frontCheckInterval = 3f;
-    [SerializeField] float frontCheckDistance = 80f;
-    [SerializeField] float frontCheckAngle = 50f;
-    [SerializeField] int frontHordeThreshold = 5;
-
-    [Header("Day/Night")]
-    [SerializeField] float nightSpawnRateMultiplier = 0.7f;
-    [SerializeField] float nightSpeedBonus = 1.5f;
-    [SerializeField] float cozyTimeSpeed = 1f;
-
-    [Header("Difficulty")]
-    [SerializeField] float maxDifficultyTime = 600f;
-    [SerializeField] float maxDifficultyDist = 5000f;
-    [SerializeField] int minMaxZombies = 50;
-    [SerializeField] int maxMaxZombies = 120;
-    [SerializeField] int minHordeSize = 12;
-    [SerializeField] int maxHordeSize = 25;
-    [SerializeField] float surgeDistInterval = 500f;
-    [SerializeField] float surgeTimeInterval = 60f;
-    [SerializeField] float surgeCooldown = 3f;
-
-    float _timer;
-    float _hordeTimer;
-    float _frontCheckTimer;
-    float _elapsedTime;
-    float _totalDistance;
-    float _nextSurgeDist;
-    float _nextSurgeTime;
-    float _surgeCooldownTimer;
-    Vector3 _prevCarPos;
-    CarController _car;
     List<ZombieController> _activeZombies = new List<ZombieController>();
-    CozyWeather _cozy;
-    CozyTimeModule _timeModule;
-    bool _isNight;
-    float _prevCozyTimeSpeed;
+    float _timer;
+    float _backfillTimer;   // ★ 최소인구 보충용 별도 타이머
 
     void Start()
     {
-        if (carTransform == null)
+        if (playerTransform == null)
         {
-            var found = FindFirstObjectByType<CarController>();
-            if (found != null) carTransform = found.transform;
-        }
-        if (carTransform != null)
-        {
-            _car = carTransform.GetComponent<CarController>();
-            _prevCarPos = carTransform.position;
-        }
-
-        _nextSurgeDist = surgeDistInterval;
-        _nextSurgeTime = surgeTimeInterval;
-        _cozy = CozyWeather.instance;
-        if (_cozy != null)
-        {
-            _timeModule = _cozy.timeModule;
-            if (_timeModule?.perennialProfile != null)
-            {
-                _timeModule.perennialProfile.timeMovementSpeed = cozyTimeSpeed;
-                _prevCozyTimeSpeed = cozyTimeSpeed;
-            }
-        }
-        else
-        {
-            Debug.LogWarning("[ZombieSpawner] CozyWeather not found — day/night disabled.");
+            var pc = FindFirstObjectByType<PlayerController>();
+            if (pc != null) playerTransform = pc.transform;
         }
     }
 
     void Update()
     {
-        if (carTransform == null) return;
+        if (playerTransform == null) return;
 
-        if (_timeModule != null)
-        {
-            // Inspector에서 값 변경 시에만 적용
-            if (!Mathf.Approximately(_prevCozyTimeSpeed, cozyTimeSpeed) && _timeModule.perennialProfile != null)
-            {
-                _timeModule.perennialProfile.timeMovementSpeed = cozyTimeSpeed;
-                _prevCozyTimeSpeed = cozyTimeSpeed;
-            }
-            float t = _timeModule.currentTime;
-            _isNight = t < new MeridiemTime(5, 30) || t >= new MeridiemTime(21, 0);
-        }
-
-        _elapsedTime += Time.deltaTime;
-
-        Vector3 carPos = carTransform.position;
-        _totalDistance += Vector3.Distance(carPos, _prevCarPos);
-        _prevCarPos = carPos;
-
-        float timeFactor = Mathf.Clamp01(_elapsedTime / maxDifficultyTime);
-        float distFactor = Mathf.Clamp01(_totalDistance / maxDifficultyDist);
-        float difficulty = Mathf.Max(timeFactor, distFactor);
-
-        int maxZombies = Mathf.RoundToInt(Mathf.Lerp(minMaxZombies, maxMaxZombies, difficulty));
-        int hordeSize  = Mathf.RoundToInt(Mathf.Lerp(minHordeSize,  maxHordeSize,  difficulty));
-
-        // 거리 초과 좀비 삭제 + 전방 활성 수 카운트
-        int frontCount = 0;
-        Vector3 carFwd = GetCarForward();
-
-        for (int i = _activeZombies.Count - 1; i >= 0; i--)
-        {
-            if (_activeZombies[i] == null) { _activeZombies.RemoveAt(i); continue; }
-
-            ZombieController z = _activeZombies[i];
-            float dist = Vector3.Distance(z.transform.position, carPos);
-            if (dist > despawnDistance)
-            {
-                Destroy(z.gameObject);
-                _activeZombies.RemoveAt(i);
-                continue;
-            }
-
-            if (dist <= frontCheckDistance)
-            {
-                Vector3 toZombie = z.transform.position - carPos;
-                toZombie.y = 0f;
-                if (toZombie.sqrMagnitude > 0.001f &&
-                    Vector3.Angle(carFwd, toZombie.normalized) <= frontCheckAngle)
-                    frontCount++;
-            }
-        }
-
-        int activeCount = _activeZombies.Count;
-
-        float dynamicInterval = Mathf.Lerp(spawnInterval, minSpawnInterval, difficulty);
-        if (_isNight) dynamicInterval *= nightSpawnRateMultiplier;
-
-        float speedBonus = _isNight ? nightSpeedBonus : 0f;
+        CleanupDead();
+        DespawnFar();
 
         _timer += Time.deltaTime;
-        if (_timer >= dynamicInterval && activeCount < maxZombies)
+        if (_timer >= spawnInterval && _activeZombies.Count < maxZombies)
         {
             _timer = 0f;
-            SpawnSingle(difficulty, speedBonus);
+            SpawnOne();
         }
 
-        bool hordeSpawnedThisFrame = false;
-
-        _hordeTimer += Time.deltaTime;
-        if (_hordeTimer >= hordeInterval)
+        // ★ 최소 인구 보충 — 프레임당 무제한이 아니라 backfillInterval로 레이트 제한
+        //   (기존엔 0→15까지 매 프레임 SpawnOne 호출되어 시작 시 버스트)
+        if (_activeZombies.Count < minZombies && _activeZombies.Count < maxZombies)
         {
-            _hordeTimer = 0f;
-            hordeSpawnedThisFrame = SpawnHorde(activeCount, hordeSize, difficulty, SpawnAnimation.RiseFromGround, speedBonus);
-        }
-
-        _frontCheckTimer += Time.deltaTime;
-        if (_frontCheckTimer >= frontCheckInterval)
-        {
-            _frontCheckTimer = 0f;
-            if (frontCount < frontHordeThreshold && !hordeSpawnedThisFrame)
-                hordeSpawnedThisFrame = SpawnHorde(activeCount, hordeSize, difficulty, SpawnAnimation.RiseFromGround, speedBonus);
-        }
-
-        // 서지 이벤트 (거리 또는 시간 트리거)
-        _surgeCooldownTimer -= Time.deltaTime;
-        if (_surgeCooldownTimer <= 0f && !hordeSpawnedThisFrame)
-        {
-            bool surgeTriggered = _totalDistance >= _nextSurgeDist || _elapsedTime >= _nextSurgeTime;
-            if (surgeTriggered)
+            _backfillTimer += Time.deltaTime;
+            if (_backfillTimer >= backfillInterval)
             {
-                int surgeSize = Mathf.RoundToInt(hordeSize * 1.5f);
-                if (SpawnHorde(_activeZombies.Count, surgeSize, difficulty, SpawnAnimation.RushFromSide, speedBonus))
-                {
-                    _nextSurgeDist = _totalDistance + surgeDistInterval;
-                    _nextSurgeTime = _elapsedTime + surgeTimeInterval;
-                    _surgeCooldownTimer = surgeCooldown;
-                }
+                _backfillTimer = 0f;
+                SpawnOne();
             }
         }
-    }
-
-    ZombieType RollZombieType(float difficulty)
-    {
-        if (difficulty < 0.15f) return ZombieType.Ranged;
-
-        float r = Random.value;
-        if (difficulty < 0.35f)
+        else
         {
-            // 0.15~0.35: Laser 조기 등장
-            if (r < 0.70f) return ZombieType.Ranged;
-            if (r < 0.90f) return ZombieType.Charger;
-            return ZombieType.Laser;
+            _backfillTimer = 0f;
         }
-        if (difficulty < 0.6f)
-        {
-            if (r < 0.50f) return ZombieType.Ranged;
-            if (r < 0.75f) return ZombieType.Charger;
-            return ZombieType.Laser;
-        }
-        // 0.6+
-        if (r < 0.40f) return ZombieType.Ranged;
-        if (r < 0.70f) return ZombieType.Charger;
-        return ZombieType.Laser;
     }
 
-    // Inspector 배열에서 null 슬롯을 건너뛰고 유효한 프리팹을 랜덤 반환. 없으면 null.
-    GameObject PickFromPool(GameObject[] pool)
+    void SpawnOne()
     {
-        if (pool == null || pool.Length == 0) return null;
-        // 셔플된 인덱스 순서로 순회해 null 슬롯 회피
-        int start = Random.Range(0, pool.Length);
-        for (int i = 0; i < pool.Length; i++)
-        {
-            GameObject prefab = pool[(start + i) % pool.Length];
-            if (prefab != null) return prefab;
-        }
-        return null;
-    }
+        Vector3 pos = FindSpawnPosition();
+        if (pos == Vector3.zero) return;
 
-    GameObject GetPrefabForType(ZombieType type)
-    {
-        // 해당 타입 배열에서 랜덤 선택, 비어있으면 다른 배열로 폴백
-        GameObject[] pool = type switch
-        {
-            ZombieType.Charger => chargerPrefabs,
-            ZombieType.Laser   => laserPrefabs,
-            _                  => rangedPrefabs,
-        };
+        bool isSignal = Random.value < signalSpawnChance;
+        GameObject prefab = isSignal && signalZombiePrefab != null
+            ? signalZombiePrefab
+            : generalZombiePrefab;
 
-        return PickFromPool(pool)
-            ?? PickFromPool(rangedPrefabs)
-            ?? PickFromPool(chargerPrefabs)
-            ?? PickFromPool(laserPrefabs);
-    }
+        if (prefab == null) return;
 
-    bool AllPrefabsEmpty()
-    {
-        return (rangedPrefabs  == null || rangedPrefabs.Length  == 0) &&
-               (chargerPrefabs == null || chargerPrefabs.Length == 0) &&
-               (laserPrefabs   == null || laserPrefabs.Length   == 0);
-    }
-
-    void SpawnSingle(float difficulty, float speedBonus = 0f)
-    {
-        if (AllPrefabsEmpty())
-        {
-            Debug.LogWarning("[ZombieSpawner] 프리팹 배열이 모두 비어있습니다.");
-            return;
-        }
-
-        Vector3 center = FindSpawnCenter();
-        if (center == Vector3.zero) return;
-
-        ZombieType type = RollZombieType(difficulty);
-        GameObject prefab = GetPrefabForType(type);
-        GameObject obj = Instantiate(prefab, center, Quaternion.identity);
+        GameObject obj = Instantiate(prefab, pos, Quaternion.identity);
         ZombieController zombie = obj.GetComponent<ZombieController>();
         if (zombie != null)
         {
-            zombie.Init(carTransform, difficulty, speedBonus);
-            zombie.SetZombieType(type);
+            zombie.Init(playerTransform, pos);
             zombie.PlaySpawnAnimation(SpawnAnimation.RiseFromGround);
             _activeZombies.Add(zombie);
         }
     }
 
-    bool SpawnHorde(int currentActive, int hordeSize, float difficulty, SpawnAnimation anim, float speedBonus = 0f)
+    Vector3 FindSpawnPosition()
     {
-        if (AllPrefabsEmpty() || carTransform == null) return false;
-
-        Vector3 center = GetFrontEdgePosition();
-        if (center == Vector3.zero) return false;
-
-        int maxZombies = Mathf.RoundToInt(Mathf.Lerp(minMaxZombies, maxMaxZombies, difficulty));
-        int spawnCount = Mathf.Min(hordeSize, maxZombies - currentActive);
-        if (spawnCount <= 0) return false;
-
-        float hordeSpreadVal = hordeSpread;
-
-        for (int i = 0; i < spawnCount; i++)
-        {
-            Vector2 offset = Random.insideUnitCircle * hordeSpreadVal;
-            Vector3 targetPos = center + new Vector3(offset.x, 0f, offset.y);
-            targetPos.y = SampleTerrainHeight(targetPos);
-
-            Vector3 spawnPos = targetPos;
-            if (anim == SpawnAnimation.RushFromSide)
-            {
-                // 측면 8-12m 오프셋에서 시작
-                Vector3 lateral = carTransform.right * (Random.value > 0.5f ? 1f : -1f);
-                float sideDist = Random.Range(8f, 12f);
-                spawnPos = targetPos + lateral * sideDist;
-                spawnPos.y = SampleTerrainHeight(spawnPos);
-            }
-
-            ZombieType type = RollZombieType(difficulty);
-            GameObject prefab = GetPrefabForType(type);
-            GameObject obj = Instantiate(prefab, spawnPos, Quaternion.identity);
-            ZombieController zombie = obj.GetComponent<ZombieController>();
-            if (zombie != null)
-            {
-                zombie.Init(carTransform, difficulty, speedBonus);
-                zombie.SetZombieType(type);
-                zombie.PlaySpawnAnimation(anim, targetPos, anim == SpawnAnimation.RushFromSide);
-                _activeZombies.Add(zombie);
-            }
-        }
-        return true;
-    }
-
-    Vector3 FindSpawnCenter()
-    {
-        if (Random.value < frontSpawnChance)
-        {
-            Vector3 frontPos = GetFrontEdgePosition();
-            if (frontPos != Vector3.zero) return frontPos;
-        }
-
-        Vector3 flatVel = _car != null ? _car.FlatVelocity : Vector3.zero;
-        Vector2 biasedDir;
-        if (flatVel.sqrMagnitude > 0.5f)
-        {
-            Vector2 forward2D = new Vector2(flatVel.x, flatVel.z).normalized;
-            Vector2 randomDir = Random.insideUnitCircle.normalized;
-            biasedDir = Vector2.Lerp(randomDir, forward2D, forwardBias).normalized;
-        }
-        else
-        {
-            float a = Random.Range(0f, Mathf.PI * 2f);
-            biasedDir = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
-        }
-
         Camera cam = Camera.main;
-        float dist = Random.Range(minSpawnRadius, maxSpawnRadius);
-
         for (int i = 0; i < 10; i++)
         {
-            Vector2 dir = i == 0 ? biasedDir : Random.insideUnitCircle.normalized;
-            Vector3 candidate = carTransform.position + new Vector3(dir.x * dist, 0f, dir.y * dist);
+            Vector2 dir = Random.insideUnitCircle.normalized;
+            float dist = Random.Range(minSpawnRadius, maxSpawnRadius);
+            Vector3 candidate = playerTransform.position + new Vector3(dir.x * dist, 0f, dir.y * dist);
             candidate.y = SampleTerrainHeight(candidate);
 
-            if (cam == null || IsOutsideViewport(cam, candidate))
+            // 화면 밖 + 건물 안이 아닐 때만 채택. 둘 중 하나라도 실패하면 다음 시도로.
+            bool offscreen = cam == null || IsOutsideViewport(cam, candidate);
+            if (offscreen && !OverlapsObstacle(candidate))
                 return candidate;
         }
-
         return Vector3.zero;
     }
 
-    Vector3 GetFrontEdgePosition()
+    // 도심 그리드 도입 후: 후보 지점이 건물 footprint 안이면 좀비가 벽에 끼므로 기각한다.
+    bool OverlapsObstacle(Vector3 pos)
     {
-        if (_car == null) return Vector3.zero;
+        return Physics.CheckSphere(pos + Vector3.up * 0.5f, obstacleClearance,
+                                   obstacleMask, QueryTriggerInteraction.Ignore);
+    }
 
-        float speedRatio = _car.MaxSpeed > 0f
-            ? Mathf.Clamp01(_car.CurrentSpeed / _car.MaxSpeed) : 0f;
-
-        Vector3 flatVel = _car.FlatVelocity;
-        Vector3 dir;
-        if (flatVel.sqrMagnitude > 0.1f)
-            dir = new Vector3(flatVel.x, 0f, flatVel.z).normalized;
-        else
+    void CleanupDead()
+    {
+        for (int i = _activeZombies.Count - 1; i >= 0; i--)
         {
-            float a = Random.Range(0f, Mathf.PI * 2f);
-            dir = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a));
+            if (_activeZombies[i] == null)
+                _activeZombies.RemoveAt(i);
         }
-
-        float lookAheadTime = Mathf.Lerp(2f, 6f, speedRatio);
-        float predictDist = Mathf.Max(flatVel.magnitude * lookAheadTime, minSpawnRadius);
-
-        Vector3 predicted = carTransform.position + dir * predictDist;
-        Vector2 spread = Random.insideUnitCircle * 6f;
-        predicted += new Vector3(spread.x, 0f, spread.y);
-        predicted.y = SampleTerrainHeight(predicted);
-
-        return predicted;
     }
 
-    Vector3 GetCarForward()
+    void DespawnFar()
     {
-        if (_car != null && _car.FlatVelocity.sqrMagnitude > 0.1f)
-            return _car.FlatVelocity.normalized;
-        Vector3 fwd = carTransform.forward;
-        fwd.y = 0f;
-        return fwd.sqrMagnitude > 0.001f ? fwd.normalized : Vector3.forward;
+        Vector3 playerPos = playerTransform.position;
+        for (int i = _activeZombies.Count - 1; i >= 0; i--)
+        {
+            if (_activeZombies[i] == null) { _activeZombies.RemoveAt(i); continue; }
+            if (Vector3.Distance(_activeZombies[i].transform.position, playerPos) > despawnDistance)
+            {
+                Destroy(_activeZombies[i].gameObject);
+                _activeZombies.RemoveAt(i);
+            }
+        }
     }
 
-    /// <summary>월드 좌표에서 지형 높이를 Raycast로 샘플링. 실패 시 차량 높이 폴백.</summary>
     float SampleTerrainHeight(Vector3 worldPos)
     {
         Vector3 origin = new Vector3(worldPos.x, 200f, worldPos.z);
         if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, 400f,
                             groundLayer, QueryTriggerInteraction.Ignore))
             return hit.point.y;
-        return carTransform != null ? carTransform.position.y : 0f;
+        return playerTransform != null ? playerTransform.position.y : 0f;
     }
 
-    bool IsOutsideViewport(Camera cam, Vector3 worldPos)
+    static bool IsOutsideViewport(Camera cam, Vector3 worldPos)
     {
         Vector3 vp = cam.WorldToViewportPoint(worldPos);
         if (vp.z < 0f) return true;
