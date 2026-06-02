@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZombieCrush — 도시 세분화 청사진 (2026-06-02)</title>
+<style>
+  :root{--bg:#121319;--panel:#1b1e26;--panel2:#232733;--line:#333a4a;--txt:#e2e6ee;--dim:#98a2b3;--accent:#e0683c;--green:#5fb87a;--yellow:#d8b14a;--blue:#5a9ad8;--red:#d8584f}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:"Segoe UI","Malgun Gothic",sans-serif;line-height:1.6;font-size:15px}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 80px}
+  h1{font-size:27px;margin:0 0 4px}
+  h2{font-size:22px;margin:38px 0 10px;padding-bottom:7px;border-bottom:3px solid var(--accent)}
+  h3{font-size:15px;color:var(--blue);margin:14px 0 4px;text-transform:uppercase;letter-spacing:.4px}
+  .sub{color:var(--dim);font-size:14px}
+  code{background:#0e1014;padding:2px 6px;border-radius:5px;font-size:12.5px;color:#e6c07b;font-family:Consolas,monospace}
+  /* beat flow */
+  .flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:0;margin:16px 0;font-size:12.5px}
+  .beat{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:7px 10px;display:flex;flex-direction:column;justify-content:center;min-width:74px;text-align:center}
+  .beat b{font-size:12px}
+  .arr{display:flex;align-items:center;color:var(--accent);font-weight:700;padding:0 5px}
+  .gate{border-color:var(--red);background:#2a1d1d}
+  .cp{border-color:var(--green);background:#1a2a20}
+  .home{border-color:var(--yellow);background:#2a2618}
+  .zone{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin:18px 0}
+  .za{border-top:4px solid #6b7042}.zb{border-top:4px solid #b5642a}.zc{border-top:4px solid #a83a5e}.zh{border-top:4px solid var(--yellow)}
+  table{width:100%;border-collapse:collapse;margin:8px 0;font-size:13.5px}
+  th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:#fff;width:130px}
+  .flag{background:#2a2018;border-left:3px solid var(--accent);border-radius:0 7px 7px 0;padding:8px 12px;margin:8px 0;font-size:13.5px}
+  .flag b{color:var(--accent)}
+  ul{margin:4px 0;padding-left:19px}li{margin:2px 0}
+  .small{font-size:12.5px;color:var(--dim)}
+  .deck{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:16px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🧩 도시 세분화 청사진</h1>
+  <div class="sub">ZombieCrush · 2026-06-02 · 매크로 비전을 <b>서브구역·랜드마크·게이트·인카운터·체크포인트·카이팅 지형·파밍</b> 단위로 분해. ★ <b>제안 + 결정필요 플래그</b> — 보고 잡아주세요. 상위: <code>city-vision.html</code>, 빌드타겟: <code>zone-reference-board.html</code>.</div>
+
+  <div class="deck">
+    <h3 style="margin-top:0">엔드투엔드 비트 흐름 (1km)</h3>
+    <div class="flow">
+      <div class="beat home"><b>🏠 집/차고</b><span class="small">회복·탈출</span></div><div class="arr">›</div>
+      <div class="beat"><b>봉쇄선</b><span class="small">진입</span></div><div class="arr">›</div>
+      <div class="beat"><b>A 파밍</b><span class="small">저밀도</span></div><div class="arr">›</div>
+      <div class="beat gate"><b>게이트①</b><span class="small">엘리트</span></div><div class="arr">›</div>
+      <div class="beat cp"><b>체크①</b></div><div class="arr">›</div>
+      <div class="beat"><b>B 파밍</b><span class="small">중밀도</span></div><div class="arr">›</div>
+      <div class="beat gate"><b>게이트②</b><span class="small">호드</span></div><div class="arr">›</div>
+      <div class="beat cp"><b>체크②</b></div><div class="arr">›</div>
+      <div class="beat"><b>C 파밍</b><span class="small">고밀도</span></div><div class="arr">›</div>
+      <div class="beat gate"><b>게이트③</b><span class="small">보스</span></div><div class="arr">›</div>
+      <div class="beat home"><b>통신차단기→탈출</b></div>
+    </div>
+    <div class="small">파밍 구역에서 머물며 레벨업→스펙 되면 게이트 돌파. 되돌이 파밍 가능(얕을수록 저보상). 빛: 따뜻(A)→차가움(C).</div>
+  </div>
+
+  <!-- HOME -->
+  <div class="zone zh">
+    <h2 style="border:0;margin:0">🏠 집 / 거점 (외곽, 0m)</h2>
+    <table>
+      <tr><th>정체</th><td><b>주인공의 구역(외곽)이 평원과 접함.</b> 차고를 낀 은신처. 평원은 차 + 통신차단 없이는 못 건넘.</td></tr>
+      <tr><th>기능</th><td>① 감염 시계 회복 ② <b>설계도로 얻은 아이템 제작(작업대)</b> ③ 탈출 준비 — 차에 <b>이동식 통신 차단 시스템</b> 장착</td></tr>
+      <tr><th>공간 / ★안전</th><td><b>집 내부만 안전. 집 밖으로 나오는 순간 안전지대 없음</b>(30m 버블 폐기). 차고 + 작업대 + 평원 출구.</td></tr>
+      <tr><th>★바리케이드</th><td>거점 주위 바리케이드로 <b>차가 도시 안으로 못 들어가게</b> 막음 — <b>평원 방향 출구만 차 통행 가능.</b> (도시는 도보 전투 공간 유지)</td></tr>
+    </table>
+    <div class="flag"><b>결정필요:</b> 집에 <b>메타 업그레이드/허브</b> 기능을 둘지(영구 강화·해금) vs 회복+제작만.</div>
+  </div>
+
+  <!-- ZONE A -->
+  <div class="zone za">
+    <h2 style="border:0;margin:0">🪖 Zone A — 군 검역 외곽 <span class="small">0–300m · 게이트① 엘리트 · 튜토리얼 구역</span></h2>
+    <table>
+      <tr><th>진입</th><td>집에서 무너진 봉쇄선(검문소 잔해)을 넘어 도시로 첫발.</td></tr>
+      <tr><th>서브구역</th><td>① <b>검문소 광장</b>(트인 시작 파밍) → ② <b>버려진 차량 도로</b>(레인 카이팅 연습) → ③ <b>게이트 접근로</b></td></tr>
+      <tr><th>랜드마크</th><td><b>무너진 군 검문소 아치</b> — 콘크리트 장벽 + 가드타워 + 좌초된 장갑차. 멀리서도 "여기가 관문".</td></tr>
+      <tr><th>카이팅 지형</th><td>바리케이드·컨테이너 줄 = 좀비 떼 유도 레인. <b>트여 있어 입문 친화</b>(시야 확보 쉬움).</td></tr>
+      <tr><th>초크포인트(게이트①)</th><td>검문소 아치 돌파구 = 좁은 통로. 엘리트가 막아섬.</td></tr>
+      <tr><th>인카운터</th><td>일반 좀비 <b>저밀도</b> + 게이트에 <b>엘리트 1</b>(HP·뎀↑). 처치 = 돌파 + 첫 시계 둔화템.</td></tr>
+      <tr><th>파밍/보상</th><td>기본 무기·재료(저등급). 첫 레벨업 2~3회 분량.</td></tr>
+      <tr><th>체크포인트①</th><td>아치 너머 전진 지점 — 회복 여부는 §결정0(안전지대 없음과 충돌).</td></tr>
+      <tr><th>무드</th><td>따뜻한 황혼 앰버 + 모래먼지. <span class="small">(가장 밝음)</span></td></tr>
+      <tr><th>에셋</th><td>BR 컨테이너·바리케이드·가드타워·장갑차 + StreetProps 콘/배리어 + Generic 도로.</td></tr>
+    </table>
+  </div>
+
+  <!-- ZONE B -->
+  <div class="zone zb">
+    <h2 style="border:0;margin:0">🏗️ Zone B — 미완성 증축지구 <span class="small">300–650m · 게이트② 호드 · 밀집 상승</span></h2>
+    <table>
+      <tr><th>진입</th><td>검문소 너머 첫 빌딩 군집 — 거리가 좁아지기 시작.</td></tr>
+      <tr><th>서브구역</th><td>① <b>골조 빌딩 거리</b>(중밀도 파밍) → ② <b>비계 미로</b>(병목 카이팅) → ③ <b>크레인 붕괴 대로</b>(게이트)</td></tr>
+      <tr><th>랜드마크</th><td><b>멈춘 거대 크레인</b> + 철근 골조 타워(붕괴 직전). 수직 실루엣.</td></tr>
+      <tr><th>카이팅 지형</th><td>좁은 골목·비계로 떼 병목 형성. <span class="small">★결정: 비계 위 2층 경로(수직 이동) 넣을지.</span></td></tr>
+      <tr><th>초크포인트(게이트②)</th><td>무너진 구조물/크레인 잔해로 막힌 대로 = 호드 점거 지점.</td></tr>
+      <tr><th>인카운터</th><td>중밀도 + 대형 좀비 등장. 게이트 = <b>호드 웨이브</b>(정면 떼전투 — 스텔스 없음). N처치 또는 T점거로 돌파.</td></tr>
+      <tr><th>파밍/보상</th><td>중급 재료 + 골조 구조물 속 전리품 포켓. 빌드 본격화.</td></tr>
+      <tr><th>체크포인트②</th><td>붕괴 대로 너머.</td></tr>
+      <tr><th>무드</th><td>먼지·식어가는 빛, 콘크리트 회색 + 녹슨 철근 주황.</td></tr>
+      <tr><th>에셋</th><td>Construction 골조·철근·크레인·비계·옹벽 + Generic Base(미완성 주거).</td></tr>
+    </table>
+  </div>
+
+  <!-- ZONE C -->
+  <div class="zone zc">
+    <h2 style="border:0;margin:0">🌃 Zone C — 죽은 환락 도심핵 <span class="small">650–1000m · 게이트③ 보스 · 정점</span></h2>
+    <table>
+      <tr><th>진입</th><td>골조지구에서 옛 도심 네온 가로로 — 가장 빽빽·어두움.</td></tr>
+      <tr><th>서브구역</th><td>① <b>죽은 네온 골목 미로</b>(고밀도 파밍) → ② <b>화재대피계단 수직 구간</b> → ③ <b>네온 광장</b>(보스 아레나)</td></tr>
+      <tr><th>랜드마크</th><td><b>죽은 네온 광장</b> + 머리 위 <b>닿지 못하는 거대 타워(원경)</b>. 높이감은 배경이 담당.</td></tr>
+      <tr><th>카이팅 지형</th><td>가장 폐소. 골목 병목 + 화재대피계단 수직. 실수 = 포위.</td></tr>
+      <tr><th>초크포인트(게이트③)</th><td>무너진 대로/네온 광장 = <b>보스 아레나</b>.</td></tr>
+      <tr><th>인카운터</th><td>최고 밀도 + <b>보스</b>. 처치 → <b>이동식 통신 차단 시스템 드롭</b>(움직이며 AI 통신 교란).</td></tr>
+      <tr><th>파밍/보상</th><td>고급 재료. 최종 빌드 완성 구간.</td></tr>
+      <tr><th>이후</th><td>집 귀환 → 차에 통신차단기 장착 → 평원 탈출(이동 중 AI 통신 교란으로 돌파).</td></tr>
+      <tr><th>무드</th><td>차갑게 죽은 적자홍 네온 + 짙은 헤이즈. <span class="small">(가장 어두움 — 온도 아크 끝)</span></td></tr>
+      <tr><th>에셋</th><td>Nightclubs 셸·네온·화재대피계단·쇠창살 + Generic 도로 + <span class="small">볼륨 보강용 Synty 추가팩</span>.</td></tr>
+    </table>
+  </div>
+
+  <h2>★ 결정 필요 목록 (세분화하며 정할 것)</h2>
+  <div class="flag"><b>0. ★회복/생존 모델 (최우선)</b> — "집 밖 안전지대 없음"이 기존 "게이트=전진 체크포인트(회복)"와 충돌. 1km를 어떻게 버티나? (a) 회복은 집에서만(난도↑·도달거리↓) (b) 체크포인트는 회복하되 안전하진 않음(좀비 계속, 압박 속 회복) (c) <b>이동식 통신 차단기 = 일시 좀비 흩어짐</b>(이동식 숨돌리기, 정적 안전지대 대체) (d) 휴대 소모품 회복.</div>
+  <div class="flag"><b>1. 집 허브 기능</b> — 메타 업그레이드/해금 둘지 vs 회복+제작만.</div>
+  <div class="flag"><b>2. 수직 이동</b> — 비계·화재대피계단으로 2층/옥상 경로(수직 카이팅)를 게임플레이에 넣을지. (넣으면 카메라·이동 설계 영향)</div>
+  <div class="flag"><b>3. 파밍 재료 (부분 확정)</b> — 설계도 + 제작 재료를 주워 집 작업대에서 제작. 구체 재료군·설계도 종류는 <code>crafting-design.md</code>와 연동해 확정.</div>
+  <div class="flag"><b>4. 되돌이 파밍 보상 곡선</b> — 얕은 구역 저보상 정도(전진 유도 강도). 수치는 플레이테스트.</div>
+  <div class="flag"><b>5. 특수 좀비</b> — 옛 "신호 좀비"를 전투용(예: 죽이면 떼 유인하는 엘리트 트리거)으로 살릴지 폐기할지.</div>
+  <div class="flag"><b>6. 사이드 포켓</b> — 병원·지하철 등 짧은 탈선 보상 구간을 둘지(정체성 희석 주의). 곁가지로만.</div>
+  <div class="flag"><b>7. 서브구역 개수/크기</b> — 각 구역을 3비트로 잡았는데, 더 잘게/크게?</div>
+
+  <div class="sub" style="margin-top:18px">※ 모든 인카운터 수치(밀도·엘리트 HP·호드 N/T)는 <code>2026-05-31-level-design-authority.md</code> 시작값 기반 — 단 감염 시계 시간은 미정(보류).</div>
+</div>
+</body>
+</html>

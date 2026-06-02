@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZombieCrush — 도시 배치용 원자재 카탈로그 (2026-06-02)</title>
+<style>
+  :root{
+    --bg:#13151a; --panel:#1c1f27; --panel2:#232733; --line:#323847;
+    --txt:#dfe3ea; --dim:#9aa3b2; --accent:#e0683c; --green:#5fb87a;
+    --yellow:#d8b14a; --blue:#5a9ad8; --red:#d8584f; --purple:#9a78d0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:"Segoe UI","Malgun Gothic",sans-serif;line-height:1.65;font-size:15px}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 22px 80px}
+  h1{font-size:30px;margin:0 0 4px;letter-spacing:-.5px}
+  h2{font-size:23px;margin:46px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+  h3{font-size:18px;margin:26px 0 8px;color:#fff}
+  .sub{color:var(--dim);font-size:14px;margin-bottom:8px}
+  .tldr{background:linear-gradient(135deg,#241c18,#1c1f27);border:1px solid var(--accent);border-radius:12px;padding:18px 22px;margin:22px 0}
+  .tldr h2{border:0;margin:0 0 8px;font-size:19px;color:var(--accent)}
+  code{background:#0e1014;padding:2px 6px;border-radius:5px;font-size:13px;color:#e6c07b;font-family:Consolas,monospace}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#191c23}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin:20px 0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  figure{margin:0}
+  figure img{width:100%;border-radius:9px;border:1px solid var(--line);display:block}
+  figcaption{color:var(--dim);font-size:12.5px;margin-top:5px}
+  .tag{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:20px;margin-right:5px;vertical-align:middle}
+  .t-core{background:#1d3a28;color:var(--green);border:1px solid #2f6043}
+  .t-part{background:#3a341a;color:var(--yellow);border:1px solid #6b5e2c}
+  .t-skip{background:#3a1f1d;color:var(--red);border:1px solid #6b322c}
+  .t-toon{background:#2a2440;color:var(--purple);border:1px solid #4a3f70}
+  ul{margin:6px 0 6px 0;padding-left:20px}
+  li{margin:3px 0}
+  .warn{color:var(--red);font-weight:600}
+  .ok{color:var(--green);font-weight:600}
+  .key{color:var(--yellow)}
+  .pill{font-size:12px;color:var(--dim);border:1px solid var(--line);border-radius:6px;padding:1px 7px}
+  .modrule{background:#0f1318;border-left:3px solid var(--blue);padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0;font-size:14px}
+  .nav{position:sticky;top:0;background:rgba(19,21,26,.94);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:10px 0;margin:-32px -22px 0;z-index:5}
+  .nav .wrap{padding:0 22px;display:flex;flex-wrap:wrap;gap:6px}
+  .nav a{font-size:12.5px;color:var(--dim);text-decoration:none;padding:3px 9px;border-radius:6px;border:1px solid transparent}
+  .nav a:hover{color:#fff;border-color:var(--line);background:var(--panel)}
+  .small{font-size:13px;color:var(--dim)}
+  .verdict{border-top:1px dashed var(--line);margin-top:14px;padding-top:10px}
+</style>
+</head>
+<body>
+<div class="nav"><div class="wrap">
+  <a href="#tldr">TL;DR</a>
+  <a href="#fork">핵심 분기</a>
+  <a href="#journey">여정 구조</a>
+  <a href="#grid">그리드/스케일</a>
+  <a href="#gaps">갭(주의)</a>
+  <a href="#toon">Toon City</a>
+  <a href="#generic">Generic</a>
+  <a href="#br">Battle Royale</a>
+  <a href="#con">Construction</a>
+  <a href="#night">Nightclubs</a>
+  <a href="#west">Western</a>
+  <a href="#street">Street Props</a>
+  <a href="#nature">Nature</a>
+  <a href="#next">다음 단계</a>
+</div></div>
+
+<div class="wrap">
+  <h1>도시 배치용 원자재 카탈로그</h1>
+  <div class="sub">ZombieCrush · 작성 2026-06-02 · 목적: <b>Claude+Codex가 이 문서만 보고 도시를 자율 조립</b>할 수 있게 하는 참조. "무엇이 있고 / 어떻게 쓰고 / 어떻게 붙이나".</div>
+  <div class="sub">이미지 = 각 팩 내장 데모 씬을 제작자 쇼케이스 카메라로 캡처(<code>docs/city_catalog/img/</code>). 수치는 에이전트가 프리팹 YAML/FBX 정점 직접 검증, 미검증은 <span class="pill">추정</span> 표기.</div>
+
+  <div class="tldr" id="tldr">
+    <h2>TL;DR — 먼저 알아야 할 3가지</h2>
+    <ol>
+      <li><b>두 에셋 군은 못 섞는다.</b> <b>Synty 계열</b>(플랫셰이딩·아웃라인 없음·2.5m 약수 그리드) vs <b>Toon City</b>(아웃라인+셀셰이딩·12m 그리드). 한 화면에 섞으면 아웃라인 유무로 즉시 튄다 → <b>주력 1개 선택 필요</b>.</li>
+      <li><b>완성 외벽 건물이 귀하다.</b> Synty 쪽은 Battle Royale 12채(통짜), Construction=골조뿐, Nightclubs=실내편향 셸 36, Generic=Base 키트. <span class="warn">Construction의 "도시 데모"는 우리가 안 가진 POLYGON City/Town 프리팹을 잔뜩 참조</span>(미싱 프리팹 다수) → <b>멀쩡한 고밀도 도심</b>을 원하면 가진 것만으론 부족, "공사중단/폐허/외곽" 컨셉으로 가야 자재가 맞는다.</li>
+      <li><b>실제 Light가 없다.</b> 네온·조명은 전부 에밋시브 메시 → "빛=텔레그래프" 무드는 우리가 URP Light + Bloom을 직접 얹어야 함.</li>
+    </ol>
+  </div>
+
+  <!-- ============ FORK ============ -->
+  <h2 id="fork">핵심 분기 — Synty 군 vs Toon City 군</h2>
+  <p>조사 결과 도시 주력 스타일이 갈린다. 이게 블록 크기·코드(<code>chunkSize</code>)·캡처 방향까지 좌우한다.</p>
+  <table>
+    <tr><th></th><th>Synty 군 <span class="tag t-core">추천 후보</span></th><th>Toon City 군 <span class="tag t-toon">대안</span></th></tr>
+    <tr><td><b>구성</b></td><td>Generic(토대) + BattleRoyale/Construction/Nightclubs/Western + StreetProps</td><td>Toon City 단독(도로키트+건물+소품 일체)</td></tr>
+    <tr><td><b>블록 크기</b></td><td class="ok">80m 그대로 (2.5×32 / 10×8 정수 정합) — 코드 변경 0</td><td class="warn">84m로 변경 (12×7) — chunkSize 수정 필요</td></tr>
+    <tr><td><b>아트</b></td><td>플랫셰이딩(아웃라인 없음) — <b>우리 좀비/무기와 동일 계열</b></td><td>툰(아웃라인+셀) — 좀비/다크무드와 <span class="warn">충돌</span></td></tr>
+    <tr><td><b>무드 정합</b></td><td>Darkwood 다크 스텔스에 맞음</td><td>밝은 만화풍 (재라이팅 없이는 상충)</td></tr>
+    <tr><td><b>모듈러 조립 난이도</b></td><td>분산(3종 그리드, 완성건물 부족)</td><td class="ok">최고(도로키트+소품+문서 일체, 자율조립 쉬움)</td></tr>
+    <tr><td><b>거리 시설</b></td><td>StreetProps로 보충(소규모)</td><td>가로등·표지판·차량 내장</td></tr>
+  </table>
+  <p class="small"><b>권고:</b> 우리 플레이어/좀비가 이미 플랫셰이딩 로우폴리고 무드가 다크 스텔스라 <b>Synty 군</b>이 배우·톤과 정합. Toon의 "조립 쉬움"은 매력적이나 아웃라인이 배우와 싸운다(2026-06-01 §6-2 "두 게임 붙인 충돌"). <b>단, 최종 결정은 아래 이미지들을 보고.</b></p>
+
+  <div class="grid2">
+    <figure><img src="city_catalog/img/toon_city_demo1.png" alt="Toon City"><figcaption>Toon City — 밝은 주간 툰 도시(아웃라인+셀). 중앙 광장·중층 빌딩·곡선 도로. 모듈러 완성도 최고지만 다크 스텔스엔 재라이팅 필요.</figcaption></figure>
+    <figure><img src="city_catalog/img/battleroyale_demo.png" alt="Battle Royale"><figcaption>Synty Battle Royale — 플랫셰이딩(아웃라인 없음). 외곽 군용/산업 톤. 우리 좀비와 같은 계열.</figcaption></figure>
+  </div>
+
+  <!-- ============ JOURNEY ============ -->
+  <h2 id="journey">여정 구조 (2026-06-02 확정)</h2>
+  <div class="card">
+    <p style="margin-top:0"><b>외곽(집/차고, 평원 옆) → 중심으로 돌파 → 보스가 차 부품 드롭 → 집 귀환 후 차 타고 평원 탈출</b></p>
+    <ul>
+      <li><b>평원은 차 전용</b> — 도보로 못 건넌다. 그래서 "그냥 평원으로 도망가면 되잖아?"가 막힌다.</li>
+      <li><b>차(부품)는 도시 심장부에 있다</b> → 탈출하려면 <b>일부러 가장 위험한 중심으로</b> 파고들 수밖에 없음 (자발적 위험 감수의 동기).</li>
+      <li>권위 문서(2026-05-31) 대비 <b>난이도 그라데이션만 뒤집음</b>: 중심=원점=최난도=보스. 집(외곽)=시작=최저난도=회복거점=최종 탈출구.</li>
+    </ul>
+    <p class="small">→ 따라서 도시는 "무한 격자 스트리밍"이 아니라 <b>경계 있는(~반경) 여정 = 장소들의 도시</b>로 설계. 모듈 조각은 레고로 쓰되 <b>격자로 깔지 말고 불규칙·붕괴 형태로</b> 조립.</p>
+  </div>
+
+  <!-- ============ GRID ============ -->
+  <h2 id="grid">그리드 & 스케일 정합</h2>
+  <table>
+    <tr><th>소스</th><th>핵심 그리드(검증)</th><th>80m 블록 정합</th></tr>
+    <tr><td>Generic 차도</td><td>10m (Half 5m, Small 5m)</td><td class="ok">80=10×8 ✓</td></tr>
+    <tr><td>Generic 보도</td><td>2.5m</td><td class="ok">80=2.5×32 ✓</td></tr>
+    <tr><td>Generic/Nightclubs Base 건물</td><td>2.5m 평면 / 3.0m 층고</td><td class="ok">2.5 약수 ✓</td></tr>
+    <tr><td>Construction House</td><td>2.5m / 3.0m 층고</td><td class="ok">✓</td></tr>
+    <tr><td>Construction Concrete Frame</td><td>≈3.13m <span class="pill">House와 불일치</span></td><td>한 건물=한 시스템 통일</td></tr>
+    <tr><td>Construction 보도/Driveway</td><td>5m</td><td class="ok">✓</td></tr>
+    <tr><td>Battle Royale 도로</td><td>직선 20×5 등(실측됨)</td><td>피벗·타일 간격 미검증 — 실측 필요</td></tr>
+    <tr><td>Nightclubs 벽</td><td>4m <span class="pill">추정</span>(실측 권장)</td><td>실측 후 확정</td></tr>
+    <tr><td><b>Toon City</b></td><td><b>12m</b> (보도 1/2/4/8m)</td><td class="warn">80÷12=6.67 → 84m 권장</td></tr>
+  </table>
+  <div class="modrule"><b>공통:</b> Synty 계열은 전부 <b>1u=1m</b>, 피벗이 <b>타일 모서리(원점)</b> → 위치를 모듈 간격만큼 더하면 자동 스냅. <b>2.5m를 마스터 그리드</b>로 잡으면 차도(10m)·보도(2.5m)·건물(2.5m)이 전부 정합.</div>
+
+  <!-- ============ GAPS ============ -->
+  <h2 id="gaps">갭 — 가진 것만으론 안 되는 것 (주의)</h2>
+  <ul>
+    <li><span class="warn">완성 외벽 고밀도 도심</span> — Synty 쪽 완성 건물이 부족. <b>Construction_City_Demo는 우리가 없는 POLYGON City/Town 프리팹</b>(SM_Bld_Apartment, SM_Env_SubwayEntrance, SM_Veh_Firetruck 등)을 대량 참조 → 미싱. 우리 자재로는 <b>"공사중단·폐허·외곽 산업"</b> 톤이 자연스럽다.</li>
+    <li><span class="warn">실제 조명 0개</span> — 네온/사인/조명기구 전부 에밋시브 메시. 빛 번짐·동적 텔레그래프는 URP Light + Bloom을 직접 부착.</li>
+    <li><span class="warn">거리 가구 빈약</span> — Synty엔 가로등·신호등·소화전·펜스가 거의 없음. StreetProps(23) + Nightclubs/Western 소품으로 보충.</li>
+    <li><span class="key">탑다운 천장 컬링</span> — 모듈 건물의 천장은 3/4 시점에서 실내를 가림 → 빌더가 천장 생략/컬링.</li>
+  </ul>
+
+  <!-- ============ TOON ============ -->
+  <h2 id="toon">Toon City <span class="tag t-toon">목적형 도시 · 모듈러 최고</span></h2>
+  <div class="grid2">
+    <figure><img src="city_catalog/img/toon_city_demo1.png" alt="Toon City 1"><figcaption>중앙 광장(분수·동상·노점)+호텔/상점 중층, 곡선도로·횡단보도.</figcaption></figure>
+    <figure><img src="city_catalog/img/toon_city_demo2.png" alt="Toon City 2"><figcaption>Demo 2 — 도시 블록 다양성.</figcaption></figure>
+  </div>
+  <p class="sub"><b>스타일</b>: Toon/CustomToon 셰이더(다크 아웃라인 <code>_OutlineWidth 0.0065</code> + 셀 음영 램프). URP. <b>스케일</b>: 1:1, 핵심 모듈 <b>12m</b>. 프리팹 555 (Roads 111 / Buildings 93 / Props 91 / Industrial 71 / Vegetation 61 / Pavement 57 / Advertising 35 / Vehicles 29).</p>
+  <div class="modrule">
+    <b>★ 모듈러 결합 규칙</b><br>
+    • <b>Roads = 진짜 12m 모듈러 도로 키트</b>: 12×12m 타일, XZ중앙 바닥 피벗, 90° 회전으로 직선/코너/T/교차/곡선 결합. 변형 <code>Road_1x/2x/3x/_Squared/+2/+4/-2</code>, <code>Highway</code>(20×80m), <code>Roundabout</code>(28m).<br>
+    • <b>Pavement</b> = 1/2/4/8m 보도 타일(<code>_1x1</code>만 코너 피벗) → 가변폭 인도.<br>
+    • <b>Buildings = 통짜 프리셋</b>(모듈러 아님), 단 footprint가 12m 그리드 정렬(12·24·28m). Skyscraper는 야간 발광 창 메시 분리.
+  </div>
+  <div class="verdict"><b>판정:</b> 도로 모듈러 완성도·문서화가 자율조립에 최적. <span class="warn">단 ① 12m라 80m 블록은 84m로 재정의, ② Synty와 비혼용(아웃라인 충돌). 다크 스텔스로 쓰려면 재라이팅/포스트로 아웃라인·채도 제어 필요.</span></div>
+
+  <!-- ============ GENERIC ============ -->
+  <h2 id="generic">Generic <span class="tag t-core">도시 토대 (도로·보도·Base건물)</span></h2>
+  <figure><img src="city_catalog/img/generic_overview.png" alt="Generic"><figcaption>Generic Overview 씬 — 지형·원경 스카이라인(배경 통짜 빌딩) + 산. 도로/보도/Base 키트는 프롭이라 별도 캡처 권장.</figcaption></figure>
+  <p class="sub"><b>스타일</b>: URP ShaderGraph 플랫셰이딩(<code>Generic_Basic</code>, <code>Bloody</code> 변종=좀비향). 1u=1m. 프리팹 490 (Environment 220 / Props 107 / Base 72 / Building 25).</p>
+  <div class="modrule">
+    <b>★ 모듈러 결합 규칙 (검증된 수치)</b><br>
+    • <b>차도 10m 그리드</b>: <code>Road_01</code>(10×10), <code>Half</code>(5×10), <code>Small</code>(5×5), <code>Intersection</code>, <code>Crossing</code>(횡단보도), <code>Parking</code>, <code>Ramp</code>(+3m 입체). 코너 피벗, Y축 90° 회전. ⚠ <code>Road_Gravel</code>은 비정형 → 정형 도심 금지.<br>
+    • <b>보도 2.5m 그리드</b>: <code>Sidewalk_01</code>(2.5²), <code>Corner</code>(연석 0.15m), <code>Edge</code>(0.18m). 차도와 4:1 정합.<br>
+    • <b>Base 건물 키트 2.5m / 3.0m 층고</b>: Floor/Wall/Wall_Door/Wall_Window/Pillar/Stairs/Ceiling/Roof. 변형 <code>_Half/_Quarter/_45/_Corner_In/Out/_Destroyed</code>. 벽=1층=3m, 코너 라인 피벗.
+  </div>
+  <div class="verdict"><b>판정:</b> <span class="ok">도심 "바닥·경계·토대"를 정확한 2.5m 약수 그리드로 완벽 커버.</span> <code>_Destroyed</code> 벽·<code>Bloody</code> 셰이더로 폐허 직결. 단 <b>거리 소품·차량·식생은 없음</b> → 타 팩 보충.</div>
+
+  <!-- ============ BR ============ -->
+  <h2 id="br">Battle Royale <span class="tag t-core">스텔스 차폐물 · 외곽 건물</span></h2>
+  <figure><img src="city_catalog/img/battleroyale_demo.png" alt="Battle Royale"><figcaption>외곽 군용/항만 캠프 — 판잣집·창고·컨테이너·펜스·버려진 차량. 외곽/산업지구 톤.</figcaption></figure>
+  <p class="sub"><b>스타일</b>: 플랫셰이딩 단일 아틀라스, 1u=1m, URP. 프리팹 373 (Props 91 / Environments 43 / Vehicles 22 / Buildings 12).</p>
+  <div class="modrule">
+    <b>★ 모듈러 결합 규칙</b><br>
+    • <b>도로만 진짜 모듈러</b>: <code>Road_Straight/Corner/T/Cross/Damaged</code> + <code>DirtRoad</code>. 직선 20×5 등(정사각 아님), 피벗·타일 간격 미검증.<br>
+    • <b>펜스/벽 선형 모듈</b>: <code>WireFence</code>, <code>Cinderblock_Wall</code>, <code>BaseWall+Post+Broken</code>, <code>Range_Wall(+Half/Door/Window)</code>.<br>
+    • <b>건물 12채 = 통짜</b>(House/Warehouse/SmallBuilding/Shack/Tent) — 모듈 조립 X, 빈칸에 통째 배치.
+  </div>
+  <div class="verdict"><b>판정:</b> <span class="ok">Props 91(컨테이너·펜스·드럼·변압기·버려진 차량)이 탑다운 스텔스 엄폐·시야차단의 1급 자재.</span> 군용 편향이라 도심엔 선별 사용, 건물은 외곽/산업지구에 적합.</div>
+
+  <!-- ============ CONSTRUCTION ============ -->
+  <h2 id="con">Construction <span class="tag t-part">공사중단/폐허 무드</span></h2>
+  <div class="grid2">
+    <figure><img src="city_catalog/img/construction_house.png" alt="Construction House"><figcaption>House 시스템 조립 예 (2.5m 그리드).</figcaption></figure>
+    <figure><img src="city_catalog/img/construction_city.png" alt="Construction City (partial)"><figcaption><span class="warn">미싱 프리팹 다수</span> — 이 도시 데모는 우리가 없는 POLYGON City/Town 에셋 참조. 우리 자재(골조·크레인)만 렌더됨.</figcaption></figure>
+  </div>
+  <p class="sub"><b>스타일</b>: 플랫셰이딩 단일 머티리얼, 1u=1m, URP. 프리팹 584 (Props ~300 / Buildings 74 / Environments 36). <b>완성 외벽 없음 = 골조 키트.</b></p>
+  <div class="modrule">
+    <b>★ 모듈러 결합 규칙 (2개 시스템, 그리드 다름)</b><br>
+    • <b>House 2.5m / 3.0m층</b>: <code>House_Wall(/Window/Door)</code>, <code>Corner</code> 포스트, <code>Ceiling</code>(y=3 내장), <code>Truss</code>.<br>
+    • <b>Concrete Frame ≈3.13m</b>: <code>ConcreteFrame_Wall/Pillar</code>, <code>ConcreteRebar_Wall</code>(노출 철근=공사중 룩), <code>Concrete_Floor</code>. <span class="warn">House와 그리드 불일치 → 한 건물=한 시스템.</span><br>
+    • <b>옹벽</b> <code>Retainer_Wall</code>(Corner/Angled/End 변형) = 블록 경계/단차. 랜드마크: WaterTower/Crane/SmokeStack.<br>
+    • 완성 예시는 <code>Scenes/Construction_House_Demo</code>.
+  </div>
+  <div class="verdict"><b>판정:</b> <span class="key">"공사중단 도시·폐허" 컨셉이면 강력</span>(철근 골조+크레인+타프). "멀쩡한 도심"이면 부족. Props 펜스/배리어/스캐폴드/floodlight = 스텔스 차폐.</div>
+
+  <!-- ============ NIGHTCLUBS ============ -->
+  <h2 id="night">Nightclubs <span class="tag t-part">네온·밤도시 외관 · 모듈 셸</span></h2>
+  <div class="grid2">
+    <figure><img src="city_catalog/img/nightclubs_rooftop.png" alt="Nightclubs Rooftop"><figcaption>RooftopBar — 야외 밤 도시 무드(옥상·네온·화재대피계단). 우리 다크 도심에 가장 근접.</figcaption></figure>
+    <figure><img src="city_catalog/img/nightclubs_nightclub.png" alt="Nightclubs Interior"><figcaption>NightClub 실내 — Props/Modular(124)는 대부분 실내 가구.</figcaption></figure>
+  </div>
+  <p class="sub"><b>스타일</b>: 플랫셰이딩, 1u=1m, URP. 프리팹 837. <span class="warn">"모듈러 140"의 실체</span>: <code>Props/Modular</code>(124)는 <b>실내 가구</b>, 진짜 건물 모듈은 <code>Base_Buildings</code>(36).</p>
+  <div class="modrule">
+    <b>★ 모듈러 결합 규칙</b><br>
+    • <b>Base_Buildings(36) = 외벽 셸</b>: <code>Wall(/Glass/Window/Door)</code> + <code>Half/Quarter</code> + <code>Pillar</code> + <code>Floor/Ceiling</code> + <code>Stairs</code>. 벽 4m<span class="pill">추정</span>/층고 3m<span class="pill">추정</span>, 90° 회전.<br>
+    • <b>Buildings(104) = 외관 디테일</b>: <code>FireEscape</code>(밤 골목 최강), <code>Awning</code>, <code>Railing</code>, <code>Steps</code>, <code>Window_Bars</code>(쇠창살=서바이벌).<br>
+    • <b>네온/조명</b>: <code>Neon_Shape×8</code>, 클럽사인 다수, <code>Light_String/Strip/Tube</code>, FX <code>Laser/Fog/Spotlight</code>. <span class="warn">전부 에밋시브 — 실제 Light 0개.</span>
+  </div>
+  <div class="verdict"><b>판정:</b> <span class="ok">"빛=텔레그래프" 무드의 최강 보급원</span>(네온30+/조명30+/FX20). 단 실내 편향 + 셸 36개라 외벽 다양성 제한 → 외부 디테일·조명 위주 차용. 빨강 에밋시브 펄스(DOTween)로 위험 텔레그래프.</div>
+
+  <!-- ============ WESTERN ============ -->
+  <h2 id="west">Western <span class="tag t-skip">80% 폐기 · 소품만</span></h2>
+  <figure><img src="city_catalog/img/western_demo.png" alt="Western"><figcaption>서부 상점가 — 살룬/마차 등 대부분 서부 전용. 건질 건 범용 소품·바위·잔해뿐.</figcaption></figure>
+  <p class="sub"><b>스타일</b>: 플랫셰이딩, 1u=1m, URP 변환 완료, Synty 호환(단 사막 세피아 팔레트 — Alt 머티리얼로 채도 조정).</p>
+  <ul>
+    <li><span class="ok">건질 것:</span> 배럴/상자/자루/목재더미/사다리·로프, 바위/먼지더미/<b>죽은 나무</b>(아포칼립스), 목제 가구, 랜턴(광원 소품), <b>FX_BloodSplat</b>(좀비물 직접).</li>
+    <li><span class="warn">버릴 것:</span> 살룬/감옥/교회/기차역 건물, 카우보이/총잡이, 마차·증기기관차, 선인장·간판·교수대 등 서부 전용.</li>
+  </ul>
+  <div class="verdict"><b>판정:</b> "소품 라이브러리 보충용"으로만 등록. 건물/캐릭터/차량/간판은 조립 후보에서 제외.</div>
+
+  <!-- ============ STREET PROPS ============ -->
+  <h2 id="street">Simple Street Props <span class="tag t-core">가로 시설 (Synty 갭 보충)</span></h2>
+  <p class="sub">프리팹 23 — Synty가 빠뜨린 <b>교통 가로시설</b>을 채움.</p>
+  <ul>
+    <li><b>차단/유도</b>: Concrete barrier(+End), Long/Short/Red/White barrier, Traffic cone 1/2, Traffic barrel.</li>
+    <li><b>쓰레기</b>: Green Big Dumpster, Blue/Green waste bin, Water barrel 1~3.</li>
+    <li><b>노면 표지</b>: Stop, Slow, U turn, Right turn, Speed breaker 1~4.</li>
+  </ul>
+  <div class="verdict"><b>판정:</b> 버려진 거리 동선 차단·검문소·바리케이드 연출에 즉시 유용. <span class="pill">스타일 단순 — Synty와 톤 일치 1회 육안 확인 권장.</span></div>
+
+  <!-- ============ NATURE ============ -->
+  <h2 id="nature">Low Poly Nature Bundle <span class="tag t-part">외곽·평원 드레싱 (거친 단위)</span></h2>
+  <div class="grid2">
+    <figure><img src="city_catalog/img/nature_terrain1.png" alt="Nature Terrain"><figcaption>Modular Terrain — 지형/산. 도시 외곽→평원 전환.</figcaption></figure>
+    <figure><img src="city_catalog/img/nature_demo1.png" alt="Nature Demo"><figcaption>자연 데모 — 나무·바위·식생.</figcaption></figure>
+  </div>
+  <p class="sub">프리팹 10,817 (대부분 색·크기·계절 변형). <b>도시 조립 자재가 아니라 주변 바이옴 드레싱.</b></p>
+  <table>
+    <tr><th>타입</th><th>수</th><th>역할</th></tr>
+    <tr><td>Trees</td><td>5,315</td><td>가로수, 도시 틈새, 평원 전환부</td></tr>
+    <tr><td>Modular Terrain</td><td>3,337</td><td>도시 외곽 지형, 평원 바닥/산</td></tr>
+    <tr><td>Rocks</td><td>1,496</td><td>경계·붕괴지형·잔해</td></tr>
+    <tr><td>Vegetation</td><td>661</td><td>덤불(시야 차단)·풀·꽃</td></tr>
+  </table>
+  <div class="verdict"><b>판정:</b> 도심 내부엔 최소(가로수·틈새 잡초·덤불). 진가는 <b>"도시 끝 → 평원" 전환부</b>에서 도시가 자연에 잡아먹히는 연출.</div>
+
+  <!-- ============ NEXT ============ -->
+  <h2 id="next">다음 단계 — 장소 → 에셋 → 그림 판정</h2>
+  <p>이 카탈로그로 이제 "어떤 도시인가 / 각 장소에 무엇을 / 그 장소의 그림은" 판정에 들어간다. 흐름:</p>
+  <ol>
+    <li><b>주력 스타일 확정</b> (위 §핵심분기) — Synty 군(80m) vs Toon(84m). → 블록 크기·코드 확정.</li>
+    <li><b>도시 정체성 한 줄</b> — 이미지들을 보고 "이 재료로는 이런 도시"를 판정.</li>
+    <li><b>장소(district) 배정</b> — 여정(외곽→중심)에 장소를 배치하고, 각 장소에 위 에셋을 매핑.</li>
+    <li><b>장소별 그림</b> — 레퍼런스(Darkwood/Hell Express 보드) × 우리 에셋 × 지배색·라이팅 판정.</li>
+  </ol>
+  <p class="small">참고: 동선·게이트 권위 = <code>docs/2026-05-31-level-design-authority.md</code> / 그래픽 전략 = <code>docs/2026-06-01-hell-express-reference.md</code> §6 + <code>references/README.md</code>.</p>
+</div>
+</body>
+</html>

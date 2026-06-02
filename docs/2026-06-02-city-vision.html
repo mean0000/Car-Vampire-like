@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZombieCrush — 도시 비전 보드 (2026-06-02)</title>
+<style>
+  :root{--bg:#121319;--panel:#1b1e26;--panel2:#232733;--line:#333a4a;--txt:#e2e6ee;--dim:#98a2b3;--accent:#e0683c}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:"Segoe UI","Malgun Gothic",sans-serif;line-height:1.6;font-size:15px}
+  .wrap{max-width:1080px;margin:0 auto;padding:30px 22px 80px}
+  h1{font-size:29px;margin:0 0 4px}
+  h2{font-size:22px;margin:42px 0 12px;padding-bottom:7px;border-bottom:2px solid var(--line)}
+  h3{font-size:17px;margin:18px 0 6px;color:#fff}
+  .sub{color:var(--dim);font-size:14px;margin-bottom:6px}
+  code{background:#0e1014;padding:2px 6px;border-radius:5px;font-size:13px;color:#e6c07b;font-family:Consolas,monospace}
+  .oneliner{background:linear-gradient(135deg,#2a1f17,#1b1e26);border:1px solid var(--accent);border-radius:12px;padding:18px 22px;margin:18px 0;font-size:17px;line-height:1.7}
+  /* journey band */
+  .band{margin:24px 0}
+  .sky{background:linear-gradient(180deg,#3a4252,#2a2f3d);border:1px dashed #4a5468;border-radius:9px;padding:8px 14px;color:#aeb8c8;font-size:13px;text-align:center;margin-bottom:6px}
+  .road{display:flex;gap:4px;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+  .seg{flex:1;padding:14px 12px;color:#fff;min-height:148px;position:relative;display:flex;flex-direction:column}
+  .seg .dist{font-size:11px;opacity:.85;letter-spacing:.5px}
+  .seg .zt{font-size:15px;font-weight:700;margin:4px 0}
+  .seg .pack{font-size:11.5px;opacity:.9;margin-top:auto}
+  .seg .gate{display:inline-block;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.3);border-radius:20px;font-size:10.5px;padding:1px 8px;margin-top:5px;width:fit-content}
+  .s-home{background:linear-gradient(135deg,#7a6038,#5c4a2e)}
+  .s-a{background:linear-gradient(135deg,#5d6342,#454a2e)}
+  .s-b{background:linear-gradient(135deg,#5a5550,#403a36)}
+  .s-c{background:linear-gradient(135deg,#5a2740,#3a1828)}
+  .plains{background:linear-gradient(90deg,#4a5a3a,#3a4a2e);border:1px solid #4a5a3a;border-radius:9px;padding:7px 14px;color:#cfe0c0;font-size:12.5px;text-align:center;margin-top:6px}
+  .dread{display:flex;font-size:11px;color:var(--dim);margin-top:5px}
+  .dread span{flex:1;text-align:center}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:#fff}
+  tr:nth-child(even) td{background:#181b22}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:16px 20px;margin:14px 0}
+  .swatch{display:inline-block;width:13px;height:13px;border-radius:3px;vertical-align:middle;margin-right:5px;border:1px solid rgba(255,255,255,.2)}
+  ul{margin:5px 0;padding-left:20px}li{margin:2px 0}
+  .road-steps{counter-reset:s}
+  .step{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 9px 9px 0;padding:11px 16px;margin:8px 0}
+  .step b{color:#fff}
+  .done{border-left-color:#5fb87a}.now{border-left-color:#d8b14a}.next{border-left-color:#5a9ad8;opacity:.85}
+  .stat{font-size:11px;font-weight:700;padding:1px 8px;border-radius:20px;margin-left:6px}
+  .st-done{background:#1d3a28;color:#5fb87a}.st-now{background:#3a341a;color:#d8b14a}.st-next{background:#1c2c3a;color:#5a9ad8}
+  .small{font-size:13px;color:var(--dim)}
+  .note{background:#0f1318;border-left:3px solid #5a9ad8;padding:9px 13px;border-radius:0 8px 8px 0;margin:9px 0;font-size:13.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🏙️ 도시 비전 보드</h1>
+  <div class="sub">ZombieCrush · 2026-06-02 · <b>정렬용 구상 문서</b> — 이걸 합의하고 순차 작업. 근거: <code>city-asset-catalog.html</code> + <code>city-scale-decisions.md</code> + Hell Express 레퍼런스.</div>
+
+  <h2>1. 도시 정체성</h2>
+  <div class="oneliner">
+    <b>"봉쇄된 미완성 대도시"</b><br>
+    폭발적으로 성장하던 첨단 도시가 발병과 함께 통째로 봉쇄됐다. 뚫린 군 검문소, 멈춰버린 크레인과 미완성 골조, 꺼진 네온의 죽은 도심 — 좀비 떼를 갈아버리며 한복판으로 뚫고 든다. <b>탈출할 차가 거기 있으니까.</b>
+  </div>
+  <div class="small">톤 = <b>"황혼의 적막 (Twilight Desolation)"</b> — 따뜻한데 곧 식어버릴 것 같은 적막(§4). 시점 = 3/4 부감. 아트 = Synty 플랫셰이딩 로우폴리. <b>장르 = 뱀서식 전투 파워판타지 — 구역은 스텔스 회피가 아니라 전투로 돌파.</b></div>
+
+  <h2>2. 도시 구조 — 게이트로 나뉜 파밍 구역 (외곽→중심, 깊이 1km)</h2>
+  <div class="band">
+    <div class="sky">☁️ 배경: <b>닿지 못하는 거대 첨단 스카이라인</b> (원경, 안개 속) — "최첨단 도시" 체감. 플레이 영역 위로 항상 보임</div>
+    <div class="road">
+      <div class="seg s-home">
+        <div class="dist">0m · 외곽</div>
+        <div class="zt">🏠 집 / 차고</div>
+        <div class="small" style="color:#f0e0c0">은신처. 회복·귀환·최종 탈출. 평원 옆.</div>
+        <div class="pack">Generic Base 실내 + 소품</div>
+      </div>
+      <div class="seg s-a">
+        <div class="dist">0–300m</div>
+        <div class="zt">🪖 군 검역 외곽</div>
+        <div class="small" style="color:#e8edd0">뚫린 봉쇄선·검문소·장벽</div>
+        <div class="gate">게이트① 엘리트</div>
+        <div class="pack">★ Battle Royale (컨테이너·바리케이드·가드타워·군용차)</div>
+      </div>
+      <div class="seg s-b">
+        <div class="dist">300–650m</div>
+        <div class="zt">🏗️ 미완성 증축지구</div>
+        <div class="small" style="color:#e5ddd0">멈춘 크레인·철근 골조·미로</div>
+        <div class="gate">게이트② 호드</div>
+        <div class="pack">★ Construction (골조·비계·크레인) + Generic 주거</div>
+      </div>
+      <div class="seg s-c">
+        <div class="dist">650–1000m · 중심</div>
+        <div class="zt">🌃 죽은 환락 도심핵</div>
+        <div class="small" style="color:#f0c8d8">꺼진 네온·쇠창살·좁은 골목·최고밀도</div>
+        <div class="gate">게이트③ 보스 → 차 부품</div>
+        <div class="pack">★ Nightclubs (네온·화재대피계단·셸)</div>
+      </div>
+    </div>
+    <div class="dread"><span>← 얕음: 저밀도·저보상·안전</span><span>밀도·보상·공포 ↑</span><span>시계 압박 ↑</span><span>깊음: 고밀도·고보상·보스 →</span></div>
+    <div class="plains">🌾 평원 (거점 구역과 접함) — <b>차 + 통신차단 없이는 도보로 못 건넘.</b> 보스의 <b>이동식 통신 차단기</b>를 얻어야 탈출(이동 중 AI 통신 교란) → "왜 위험한 중심으로 파고드는가"의 답</div>
+  </div>
+  <div class="note">
+    <b>★ 핵심: "통과하는 길"이 아니라 "머물며 파밍하는 도시 구역"이다 (뱀서류).</b><br>
+    • <b>도시 형태</b>(공터 아님) — 거리·골목·건물. 좀비는 거리로 쏟아지고, 건물은 <b>카이팅 동선·떼몰이 초크·전리품</b>. 몰입 우선. (스텔스 엄폐 아님 — 전투 지형)<br>
+    • <b>파밍 루프</b> — 구역 내 지속 스폰(깊이+시간 가중) → 처치 → XP/레벨업(카드) + 재료 수확. 감염 시계 압박 받으며.<br>
+    • <b>게이트 = 초크포인트</b>(무너진 대로·검문소·다리) — 충분히 강해지면 엘리트/호드/보스를 뚫어 다음 구역 개방 + 전진 체크포인트(부분 회복) 갱신.<br>
+    • <b>되돌이 파밍 OK</b>(뱀서 필수) — 뚫은 구역 재방문 가능. <span class="small">⚠ 단 "안전 그라인드" 함정 방지: 얕은 구역은 거리 가중으로 저밀도·저보상이라 효율이 낮음 → 보상·시계가 항상 전진을 유도(authority §3).</span>
+  </div>
+
+  <h2>3. 구역별 상세 (장소 → 에셋 → 그림)</h2>
+  <table>
+    <tr><th>구역</th><th>정체성</th><th>주력 에셋</th><th>지배색</th><th>레퍼런스</th></tr>
+    <tr>
+      <td><b>🪖 A. 군 검역 외곽</b><br>0–300m</td>
+      <td>뚫린 검역 봉쇄선. 군이 막다 실패한 흔적. 트인 교전 공간 + 검문소·바리케이드 전투 지형.</td>
+      <td>Battle Royale(컨테이너·철망·바리케이드·가드타워·군용차·천막) + Street Props(콘·배리어)</td>
+      <td><span class="swatch" style="background:#6b7042"></span>군용 올리브 + 모래먼지 + <span class="swatch" style="background:#d88a2a"></span>경고 주황</td>
+      <td>TLOU 격리구역, The Division(NYC 봉쇄)</td>
+    </tr>
+    <tr>
+      <td><b>🏗️ B. 미완성 증축지구</b><br>300–650m</td>
+      <td>성장하다 멈춘 도시. 철근 골조·비계의 수직 미로. 좁은 동선으로 좀비 떼를 몰고 카이팅 — 돌파 스펙 요구.</td>
+      <td>Construction(골조·철근·크레인·비계·옹벽) + Generic Base(미완성 주거)</td>
+      <td><span class="swatch" style="background:#8a8580"></span>콘크리트 회색 + <span class="swatch" style="background:#b5642a"></span>녹슨 철근</td>
+      <td>구룡성채(멈춘 증축), 방치된 공사장</td>
+    </tr>
+    <tr>
+      <td><b>🌃 C. 죽은 환락 도심핵</b><br>650–1000m (보스)</td>
+      <td>가장 높고 빽빽한 옛 도심. 깜빡이는 네온 잔해, 좁은 골목, 최고 공포. 보스 = 정점.</td>
+      <td>Nightclubs(네온·사인·화재대피계단·셸·쇠창살) + Generic 도로/보도</td>
+      <td><span class="swatch" style="background:#a83a5e"></span>죽은 네온 적자홍 + <span class="swatch" style="background:#3a2838"></span>짙은 헤이즈</td>
+      <td>★ Hell Express(핵심), Stray, 구룡성채</td>
+    </tr>
+  </table>
+  <div class="small">공통 깔개: Generic 도로(10m)·보도(2.5m) + 버려진 차량 + Western 잔해/혈흔 + Nature 틈새 잡초 — 단 <b>막힌 길·붕괴 구간</b>으로 불규칙하게(격자감 제거).</div>
+
+  <h2>4. 톤 — "황혼의 적막 (Twilight Desolation)"</h2>
+  <div class="oneliner" style="font-size:15px;line-height:1.6">
+    <b>공식 톤 네임 = 황혼의 적막.</b> 모노노아와레(物の哀れ) — 활기가 빠져나간 고밀도 폐도시에 따뜻한 황혼빛만 남은 적막. <b>"산뜻하지만 곧 식어버릴 것 같은 쓸쓸함."</b> 모든 라이팅·색·구도 판단 기준 한 마디: <i>"이거 황혼의 적막에 맞아?"</i>
+  </div>
+  <h3>★ 온도 아크 — 무드가 곧 레벨 진행</h3>
+  <div class="note" style="border-left-color:#e0683c">빛이 안으로 갈수록 <b>따뜻함 → 차가움</b>으로 식어간다: Zone A 따뜻한 황혼 앰버 → B 먼지·식어가는 빛 → C 차갑게 죽은 네온. "곧 식을 것 같은" 예감을 플레이어가 진행하며 실제로 겪게 만든다.</div>
+  <h3>재현 5요소</h3>
+  <ul>
+    <li><b>① 골든아워/황혼 키라이트</b> — 낮은 태양·따뜻한 앰버 ("산뜻함"의 출처)</li>
+    <li><b>② 두꺼운 대기 원근(haze)</b> — COZY Height Fog, 멀수록 흐려져 사라짐 (깊이 + 쓸쓸함)</li>
+    <li><b>③ 틸트시프트 디오라마 부감</b> — 3/4 미니어처 시점 (우리 카메라 그대로)</li>
+    <li><b>④ 고밀도 생활 클러터</b> — 안테나·위성·간판·에어컨·전선·비계 = "살았던 흔적" (Nightclubs 옥상 + 데칼 + 소품)</li>
+    <li><b>⑤ 부재(空)</b> — ★적적함의 진짜 정체. 활기찬 무대 + 텅 빔</li>
+  </ul>
+  <h3>라이팅·그릿 원칙</h3>
+  <ul>
+    <li><b>빛 = 텔레그래프</b> — 어둠은 균일이 아니라 대비. 발광/림라이트는 엘리트·출구·상호작용물에만. <span class="small">(네온은 에밋시브뿐 → URP Light + Bloom 직접 부착)</span></li>
+    <li><b>그릿 레이어</b> — 데칼(핏·녹·때) + 필름그레인·컬러그레이딩 + 먼지·잔불 파티클 (2026-06-01 §6-2).</li>
+  </ul>
+
+  <h2>5. 순차 작업 로드맵</h2>
+  <div class="road-steps">
+    <div class="step done"><b>① 에셋 카탈로그 + 스케일·동선 확정</b><span class="stat st-done">완료</span><br><span class="small">보유 도시 에셋 전수 정리 / 1km·속도6·게이트체크포인트·Synty군·따뜻톤 확정.</span></div>
+    <div class="step now"><b>② 도시 비전 정렬 (이 문서)</b><span class="stat st-now">지금</span><br><span class="small">정체성·여정·구역·톤 합의. ← 여기 동의하면 다음으로.</span></div>
+    <div class="step next"><b>③ 레퍼런스 보드 보강</b><span class="stat st-next">다음</span><br><span class="small">구역별 레퍼런스 이미지 수집(구룡성채·TLOU QZ·Division·Stray) → 구역=그림 매칭 고정.</span></div>
+    <div class="step next"><b>④ MVP 슬라이스: A구역(집~게이트①, ~300m) 그레이박스</b><span class="stat st-next">다음</span><br><span class="small">군 검역 외곽 1구역만 실제 배치(BR+StreetProps). Unity MCP 캡처로 유저 룩 판정.</span></div>
+    <div class="step next"><b>⑤ 라이팅·톤 1패스</b><span class="stat st-next">다음</span><br><span class="small">A구역에 따뜻 헤이즈+빛텔레그래프+그릿 적용 → 캡처 판정.</span></div>
+    <div class="step next"><b>⑥ 루프 검증 → B·C 확장</b><span class="stat st-next">다음</span><br><span class="small">A구역에서 전투·파밍·레벨업·감염시계·게이트 루프 재미 판정 통과 후 나머지 구역 확장.</span></div>
+  </div>
+
+  <div class="note">참고 문서: <code>2026-06-02-city-asset-catalog.html</code> (원자재) · <code>2026-06-02-city-scale-decisions.md</code> (스케일/동선) · <code>2026-06-01-hell-express-reference.md</code> + <code>references/</code> (톤).</div>
+</div>
+</body>
+</html>

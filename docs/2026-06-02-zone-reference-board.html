@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZombieCrush — 구역별 레퍼런스 & 빌드 보드 (2026-06-02)</title>
+<style>
+  :root{--bg:#121319;--panel:#1b1e26;--panel2:#232733;--line:#333a4a;--txt:#e2e6ee;--dim:#98a2b3;--accent:#e0683c;--green:#5fb87a;--yellow:#d8b14a;--blue:#5a9ad8}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:"Segoe UI","Malgun Gothic",sans-serif;line-height:1.6;font-size:15px}
+  .wrap{max-width:1120px;margin:0 auto;padding:30px 22px 80px}
+  h1{font-size:28px;margin:0 0 4px}
+  h2{font-size:23px;margin:40px 0 6px;padding-bottom:7px;border-bottom:3px solid var(--accent)}
+  h3{font-size:16px;margin:18px 0 7px;color:#fff;text-transform:uppercase;letter-spacing:.5px;font-size:13px;color:var(--blue)}
+  .sub{color:var(--dim);font-size:14px;margin-bottom:6px}
+  code{background:#0e1014;padding:2px 6px;border-radius:5px;font-size:12.5px;color:#e6c07b;font-family:Consolas,monospace}
+  .zone{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:20px 22px;margin:20px 0}
+  .za{border-top:4px solid #6b7042}.zb{border-top:4px solid #b5642a}.zc{border-top:4px solid #a83a5e}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0}
+  figure{margin:0}
+  figure img{width:100%;border-radius:8px;border:1px solid var(--line);display:block;aspect-ratio:16/9;object-fit:cover}
+  figcaption{font-size:12px;margin-top:4px;color:var(--dim)}
+  .lbl{font-size:11px;font-weight:700;letter-spacing:.5px;padding:1px 8px;border-radius:4px;margin-right:5px}
+  .l-ref{background:#2a2440;color:#b6a4e0}.l-ours{background:#1d3a28;color:var(--green)}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:10px}
+  ul{margin:5px 0;padding-left:19px}li{margin:3px 0;font-size:14px}
+  .recipe{background:#0f1318;border-left:3px solid var(--green);border-radius:0 8px 8px 0;padding:10px 14px;margin:8px 0}
+  .impl{background:#0f1318;border-left:3px solid var(--yellow);border-radius:0 8px 8px 0;padding:10px 14px;margin:8px 0}
+  .steal{background:#0f1318;border-left:3px solid #b6a4e0;border-radius:0 8px 8px 0;padding:10px 14px;margin:8px 0}
+  .swatch{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:middle;margin-right:4px;border:1px solid rgba(255,255,255,.2)}
+  .small{font-size:12.5px;color:var(--dim)}
+  .todo{background:#2a2018;border:1px dashed var(--accent);border-radius:9px;padding:12px 16px;margin:14px 0;font-size:13.5px}
+  .common{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:16px 20px;margin:18px 0}
+  table{width:100%;border-collapse:collapse;margin:8px 0;font-size:13px}
+  th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+  th{background:#2a2f3a}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎯 구역별 레퍼런스 & 빌드 보드</h1>
+  <div class="sub">ZombieCrush · 2026-06-02 · <b>목표 그림(레퍼런스) ↔ 우리 에셋(재료) ↔ 빌드 레시피 ↔ 구현 체크</b>. 구역마다 "무엇을 보고 / 무엇으로 / 어떻게" 만드는지 고정. 근거: <code>city-vision.html</code>, <code>city-asset-catalog.html</code>.</div>
+  <div class="sub">장르 = 뱀서식 전투 파워판타지(스텔스 회피 아님, 전투 돌파). 톤 = 따뜻한 먼지 헤이즈. 시점 = 3/4 부감.</div>
+
+  <!-- COMMON TONE -->
+  <div class="common">
+    <h2 style="margin-top:0;border:0">공통 톤·라이팅 북극성</h2>
+    <div class="pair">
+      <figure><img src="references/hellexpress_header.jpg" alt="Hell Express"><figcaption><span class="lbl l-ref">REF</span>Hell Express — <b>따뜻한 먼지 헤이즈 + 밀집 + 옥상 클러터</b>. 전 구역 톤 기준.</figcaption></figure>
+      <figure><img src="references/darkwood_01.jpg" alt="Darkwood"><figcaption><span class="lbl l-ref">REF</span>Darkwood — <b>빛=정보, 어둠은 대비</b>. 연출 문법(룩 아님).</figcaption></figure>
+    </div>
+    <div class="small">+ <code>lethalcompany_01.jpg</code> = 로우폴리도 안개+대비로 분위기 폭발(도달 가능성 실증). 라이팅 원칙: ① COZY Height Fog 대기원근 ② 황혼 색온도 ③ 발광/림라이트는 엘리트·출구·상호작용물에만 ④ 그릿 레이어(데칼·그레인·그레이딩·먼지 파티클).</div>
+  </div>
+
+  <!-- ZONE A -->
+  <div class="zone za">
+    <h2>🪖 Zone A — 군 검역 외곽 <span class="small">(0–300m · 게이트① 엘리트)</span></h2>
+    <div class="pair">
+      <figure><img src="references/division_02.jpg" alt="The Division"><figcaption><span class="lbl l-ref">REF</span>★ The Division (NYC 격리) — 버려진 현대 도시·바리케이드·검문소·버려진 차량. <span class="small">(⚠ 설빙 톤 → 우리 따뜻 헤이즈로 치환)</span></figcaption></figure>
+      <figure><img src="city_catalog/img/battleroyale_demo.png" alt="Battle Royale ours"><figcaption><span class="lbl l-ours">OURS</span>Battle Royale 데모 — 우리 군용/외곽 재료(컨테이너·판잣집·펜스·차량).</figcaption></figure>
+    </div>
+    <div class="cols">
+      <div>
+        <div class="steal"><h3>훔칠 것</h3><ul>
+          <li>군 검문소·콘크리트 장벽·철조망이 만든 <b>뚫린 봉쇄선</b> 실루엣</li>
+          <li>버려진 군용 차량·천막·모래주머니 = 전투 지형(카이팅 엄폐)</li>
+          <li>트인 외곽 + 먼지 황혼빛(가장 밝은 구역)</li>
+        </ul></div>
+        <div class="steal" style="border-left-color:#6b7042"><h3>지배색</h3><span class="swatch" style="background:#6b7042"></span>군용 올리브 + <span class="swatch" style="background:#c9a86a"></span>모래먼지 + <span class="swatch" style="background:#d88a2a"></span>경고 주황(스폿)</div>
+      </div>
+      <div>
+        <div class="recipe"><h3>빌드 레시피 (보유 에셋)</h3><ul>
+          <li><b>구조물</b>: BR 컨테이너·바리케이드·가드타워·체크포인트 + 모래주머니</li>
+          <li><b>차량</b>: BR 군용차·트럭(정상+파괴) 흩뿌림</li>
+          <li><b>가로</b>: Generic 도로(10m)/보도(2.5m) + Street Props(콘·배리어·드럼)</li>
+          <li><b>지면</b>: 균열·먼지 데칼, Western 잔해/먼지더미</li>
+        </ul></div>
+        <div class="impl"><h3>구현 체크 (그레이박스)</h3><ul>
+          <li>2.5m 스냅 위 도로/지면 → 건물·장벽 <b>불규칙 배치</b>(격자감 X)</li>
+          <li><b>게이트① 초크포인트</b> = 무너진 검문소 게이트(트리거 GO) — 엘리트 처치 시 돌파</li>
+          <li>바리케이드로 <b>카이팅 레인</b> 형성(떼몰이 동선)</li>
+          <li>거리 가중 스폰(저밀도, 일반90/엘리트) + 전진 체크포인트(부분 회복)</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ZONE B -->
+  <div class="zone zb">
+    <h2>🏗️ Zone B — 미완성 증축지구 <span class="small">(300–650m · 게이트② 호드)</span></h2>
+    <div class="pair">
+      <figure><img src="references/kowloon_aerial.jpg" alt="Kowloon Walled City"><figcaption><span class="lbl l-ref">REF</span>★ 구룡성채 — 멈춘 증축·유기적 초밀집 메가블록. B의 수직 미완성 밀집 DNA.</figcaption></figure>
+      <figure><img src="city_catalog/img/construction_city.png" alt="Construction ours"><figcaption><span class="lbl l-ours">OURS</span>Construction — 골조·크레인(공사중단 핵심 재료). <span class="small">※미싱 프리팹 일부</span></figcaption></figure>
+    </div>
+    <div class="cols">
+      <div>
+        <div class="steal"><h3>훔칠 것</h3><ul>
+          <li>멈춘 크레인 + 철근 노출 골조의 <b>수직 미완성 실루엣</b></li>
+          <li>비계·발판이 만든 다층 동선(떼몰이/카이팅 지형)</li>
+          <li>층층이 겹쳐 흐려지는 밀집감(대기원근)</li>
+        </ul></div>
+        <div class="steal" style="border-left-color:#b5642a"><h3>지배색</h3><span class="swatch" style="background:#8a8580"></span>콘크리트 회색 + <span class="swatch" style="background:#b5642a"></span>녹슨 철근 주황</div>
+      </div>
+      <div>
+        <div class="recipe"><h3>빌드 레시피 (보유 에셋)</h3><ul>
+          <li><b>골조</b>: Construction ConcreteFrame/Rebar 벽·기둥·슬래브(한 건물=한 시스템 통일)</li>
+          <li><b>랜드마크</b>: 크레인·물탱크·스모크스택 + 비계·옹벽</li>
+          <li><b>미완성 주거</b>: Generic Base 키트(_Destroyed 벽 섞기)</li>
+          <li><b>바닥 충진</b>: Construction 자재 적치·콘·배리어(<span class="small">⚠ 하단 비어보임 방지 — 충진재 확인 필요</span>)</li>
+        </ul></div>
+        <div class="impl"><h3>구현 체크 (그레이박스)</h3><ul>
+          <li>2.5m/3m층 그리드로 골조 적층(미완성 = 윗층 Rebar)</li>
+          <li><b>게이트② 초크포인트</b> = 무너진 구조물/크레인 붕괴 통로 — 호드 정리/점거로 돌파</li>
+          <li>좁은 비계 동선 = 호드 몰이 카이팅 공간</li>
+          <li>스폰 +30% 밀도 + 호드 버스트 트리거(게이트)</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ZONE C -->
+  <div class="zone zc">
+    <h2>🌃 Zone C — 죽은 환락 도심핵 <span class="small">(650–1000m · 게이트③ 보스 → 차 부품)</span></h2>
+    <div class="pair">
+      <figure><img src="references/stray_city.jpg" alt="Stray"><figcaption><span class="lbl l-ref">REF</span>★ Stray — 죽은 네온 골목·간판·에어컨 클러터·따뜻 적색광. Hell Express와 같은 핵심 그림.</figcaption></figure>
+      <figure><img src="city_catalog/img/nightclubs_rooftop.png" alt="Nightclubs ours"><figcaption><span class="lbl l-ours">OURS</span>Nightclubs RooftopBar — 야간 네온·화재대피계단(도심핵 재료).</figcaption></figure>
+    </div>
+    <div class="cols">
+      <div>
+        <div class="steal"><h3>훔칠 것</h3><ul>
+          <li>꺼진/깜빡이는 <b>네온 잔재</b> + 옥상 안테나·위성·간판 클러터</li>
+          <li>화재대피계단·쇠창살·좁은 골목 = 최고 밀집</li>
+          <li>발치의 골목 + 머리 위 <b>닿지 못하는 거대 타워(원경)</b> → 높이감은 배경이 담당</li>
+        </ul></div>
+        <div class="steal" style="border-left-color:#a83a5e"><h3>지배색</h3><span class="swatch" style="background:#a83a5e"></span>죽은 네온 적자홍 + <span class="swatch" style="background:#3a2838"></span>짙은 헤이즈(가장 어두움)</div>
+      </div>
+      <div>
+        <div class="recipe"><h3>빌드 레시피 (보유 + 추가)</h3><ul>
+          <li><b>외관</b>: Nightclubs Base 셸 + 네온·사인·화재대피계단·쇠창살·차양</li>
+          <li><b>가로</b>: Generic 도로/보도, 좁은 골목 레이아웃</li>
+          <li><b>볼륨(높이)</b>: <span class="small">★ Synty 계열 도시/아포칼립스 팩 추가로 보강(완성 건물 매스) — 또는 골목 밀집+원경 타워로 대체</span></li>
+          <li><b>조명</b>: 네온 에밋시브 + URP Light/Bloom 직접 부착(빨강 펄스=위험)</li>
+        </ul></div>
+        <div class="impl"><h3>구현 체크 (그레이박스)</h3><ul>
+          <li>좁은 골목망(2.5m 스냅) + 원경 배경 빌딩(통짜)으로 스카이라인</li>
+          <li><b>게이트③ 초크포인트</b> = 무너진 대로/광장 = 보스 아레나 → 차 부품 드롭</li>
+          <li>최고 밀도 스폰 + 보스 + 죽은 네온 깜빡임(에밋시브 트윈)</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TODO refs -->
+  <div class="todo">
+    <b>✅ 레퍼런스 이미지 추가됨 (2026-06-02 · 당신 확인 요청):</b>
+    <table>
+      <tr><th>레퍼런스</th><th>파일 (<code>docs/references/</code>)</th><th>구역</th></tr>
+      <tr><td>구룡성채 (항공+거리)</td><td>kowloon_aerial.jpg · kowloon_street.jpg</td><td>B, C</td></tr>
+      <tr><td>Stray</td><td>stray_city.jpg</td><td>C</td></tr>
+      <tr><td>The Division</td><td>division_02.jpg(버려진 거리·택시) · division_01.jpg(바리케이드 교전)</td><td>A</td></tr>
+    </table>
+    <span class="small">TLOU 격리구역은 The Division이 "현대 도시 검역"을 더 정확히 커버해 생략(원하면 추가). ⚠ Division은 설빙 톤 → 우리 따뜻 헤이즈로 치환 전제. 출처: Wikimedia Commons(구룡성채), Steam(Stray/Division).</span>
+  </div>
+
+  <div class="small" style="margin-top:18px">다음(④): 이 보드를 빌드 타겟으로 <b>Zone A 그레이박스</b> 착수 — 군 검역 외곽 ~300m를 BR+StreetProps로 실제 배치 → Unity MCP 캡처로 "레퍼런스 대비" 룩 판정.</div>
+</div>
+</body>
+</html>

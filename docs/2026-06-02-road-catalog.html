@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZombieCrush — 도로/길 카탈로그 (2026-06-02)</title>
+<style>
+  :root{--bg:#121319;--panel:#1b1e26;--panel2:#232733;--line:#333a4a;--txt:#e2e6ee;--dim:#98a2b3;--accent:#e0683c;--green:#5fb87a;--red:#d8584f;--yellow:#d8b14a}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:"Segoe UI","Malgun Gothic",sans-serif;line-height:1.6;font-size:15px}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 80px}
+  h1{font-size:27px;margin:0 0 4px}
+  h2{font-size:22px;margin:36px 0 8px;padding-bottom:7px;border-bottom:3px solid var(--accent)}
+  h3{font-size:16px;color:#fff;margin:14px 0 4px}
+  .sub{color:var(--dim);font-size:14px}
+  code{background:#0e1014;padding:2px 6px;border-radius:5px;font-size:12.5px;color:#e6c07b;font-family:Consolas,monospace}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:#fff}
+  tr:nth-child(even) td{background:#181b22}
+  figure{margin:12px 0 4px}figure img{width:100%;border-radius:8px;border:1px solid var(--line);display:block}
+  .cap{font-size:12.5px;color:var(--dim);margin-top:4px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin:16px 0}
+  .ba{border-top:4px solid #6b7042}.bb{border-top:4px solid #7a7f88}
+  .rule{background:#0f1318;border-left:3px solid var(--green);border-radius:0 8px 8px 0;padding:10px 14px;margin:8px 0;font-size:14px}
+  .warn{background:#2a1d1d;border-left:3px solid var(--red);border-radius:0 8px 8px 0;padding:10px 14px;margin:8px 0;font-size:14px}
+  .swatch{font-size:11.5px;font-weight:700;padding:1px 8px;border-radius:20px;margin-left:6px}
+  .za{background:#1d3a28;color:var(--green)}.zbc{background:#23303a;color:#8fc0e8}
+  ul{margin:5px 0;padding-left:19px}li{margin:2px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🛣️ 도로 / 길 카탈로그</h1>
+  <div class="sub">ZombieCrush · 2026-06-02 · 보유 도로·길 프리팹 전수 확인 + 치수(실측) + 모듈러 결합 규칙 + 구역 매핑. 배치 시 도로는 이 문서 기준. 시트: <code>contact_roads_*.png</code> / 치수: <code>contact_roads_*.txt</code>.</div>
+
+  <div class="warn"><b>핵심: 도로가 두 시스템으로 갈린다 (못 섞음, 룩 충돌).</b> <b>Battle Royale</b>=흙 갓길 일체 군사/시골 도로(풀 모듈러+손상) → <b>Zone A 외곽</b>. <b>Generic</b>=깨끗한 회색 아스팔트 도시 도로(코너 없음, 직선+교차로) → <b>Zone B/C 도시</b>. ※ 2026-06-02 첫 빌드에서 Zone A에 Generic Road_01을 쓴 건 오류 — BR 도로로 교체.</div>
+
+  <!-- BR -->
+  <div class="card ba">
+    <h2 style="border:0;margin:0">① Battle Royale 도로 <span class="swatch za">Zone A 외곽/군사</span></h2>
+    <figure><img src="city_catalog/img/contact_roads_battleroyale.png"><figcaption class="cap">흙·모래 갓길 + 덤불 일체형. 군사/시골 톤. 손상 버전 = 폐허에 직결. (좌상 2개는 DirtRoad 대형 지형편)</figcaption></figure>
+    <h3>치수 & 종류 (실측)</h3>
+    <table>
+      <tr><th>프리팹</th><th>치수(W×D m)</th><th>역할</th></tr>
+      <tr><td>SM_Env_Road_Straight_01/02/03</td><td>20 × 5</td><td>직선 (도로폭 ~5m, 길이 20m)</td></tr>
+      <tr><td>SM_Env_Road_Straight_Damaged_01/02/03</td><td>20 × 5</td><td>★손상 직선 (폐허 무드)</td></tr>
+      <tr><td>SM_Env_Road_Corner_01 / _02</td><td>20×20 / 15.6×15.4</td><td>90° 코너 (대/소)</td></tr>
+      <tr><td>SM_Env_Road_T_01</td><td>10 × 15.3</td><td>T 분기</td></tr>
+      <tr><td>SM_Env_Road_Cross_01</td><td>10 × 10</td><td>십자 교차</td></tr>
+      <tr><td>SM_Env_Road_Straight_End_01</td><td>20 × 10.6</td><td>막다른 끝</td></tr>
+      <tr><td>SM_Env_DirtRoad_Straight_01 / End_01</td><td>18×52 / 21.6×35.9</td><td>대형 흙길 (시골 진입)</td></tr>
+    </table>
+    <div class="rule"><b>결합 규칙:</b> 직선(20m) 잇고 → Corner로 꺾고 → T/Cross로 분기 → End로 막음. <b>갓길·지면 일체</b>라 별도 바닥 불필요. 그리드 = ~20m 직선 / 10m 교차로 (불규칙 = 유기적 시골 도로, Zone A 외곽에 적합). <b>손상 직선을 섞어</b> 봉쇄 후 방치된 도로 연출.</div>
+    <div class="rule" style="border-left-color:#d8b14a">
+      <b>★ 실측 정정 (2026-06-02, 유저 수정 씬 기준 — 일부 확인 대기):</b><br>
+      Battle Royale 직선 = <b>"5m 폭 *차선 한 줄* × 20m 길이"</b> (내가 처음 가정한 20×20 통짜 타일 ❌). 유저가 정정한 씬의 실측 transform 패턴:<br>
+      • <b>도로 폭</b> = 차선을 <b>~5m 간격 평행</b>으로 여러 줄 깔아 만듦 (2줄=10m, 4줄=20m). 예: rotY=90 차선 4줄을 x=0 / 4.8 / 9.55 / 14.4 에 → ~19m 폭 도로(Z 진행, 20m 길이).<br>
+      • <b>진행 방향 = rotY</b> (0 = X축 진행 / 90 = Z축 진행).<br>
+      • junction 폭: Cross·T = 10m, End = 10.6m → <b>표준 도로 ≈ 2차선(10m)</b>이 정합(추정).<br>
+      • 각 도로 프리팹 = 부모(아스팔트) + <code>_Dirt</code>(흙 갓길) + <code>_Edge</code> 자식.<br>
+      <span style="color:#d8584f"><b>⚠ 확인 대기(유저 답변 전):</b> ① 직선=5m 차선 한 줄이 맞는지 ② 표준 폭(2차선 10m? 4차선?) ③ 길이 방향 flush 간격(~20m?).</span>
+    </div>
+  </div>
+
+  <!-- GENERIC -->
+  <div class="card bb">
+    <h2 style="border:0;margin:0">② Generic 도로 <span class="swatch zbc">Zone B/C 도시 격자</span></h2>
+    <figure><img src="city_catalog/img/contact_roads_generic.png"><figcaption class="cap">아래쪽 회색 = 도시 아스팔트(차선·교차로·횡단보도·주차·화살표). 위쪽 흙/녹색 = <b>자연 지면(도로 아님)</b> — 외곽 공터 필러용 보너스.</figcaption></figure>
+    <h3>차도 타일 (코너피벗, 1u=1m)</h3>
+    <table>
+      <tr><th>프리팹</th><th>치수</th><th>역할</th></tr>
+      <tr><td>SM_Gen_Env_Road_01</td><td>10 × 10</td><td>★2차선 직진 — 차선이 <b>X축으로 흐름</b>. Z방향 거리는 <b>90° 회전 필수</b></td></tr>
+      <tr><td>SM_Gen_Env_Road_Half_01 / _02</td><td>5×10 / 10×5</td><td>반폭/반길이</td></tr>
+      <tr><td>SM_Gen_Env_Road_Small_01/03 / _02</td><td>5×5 / 2.5×2.5</td><td><b>무지(마킹 없음)</b> — 교차점·자투리 채움</td></tr>
+      <tr><td>SM_Gen_Env_Road_Intersection_01 / _02</td><td>5×10 / 5×5</td><td><b>합류·코너 마킹(L자)</b> — 4-way 교차점은 무지 타일로</td></tr>
+      <tr><td>SM_Gen_Env_Road_Crossing_01</td><td>5×5</td><td>횡단보도</td></tr>
+      <tr><td>SM_Gen_Env_Road_Warning_01</td><td>5×5</td><td>경고 노면(노랑 X)</td></tr>
+      <tr><td>SM_Gen_Env_Road_Parking_01~04 / 05~06</td><td>10×10 / 10×5</td><td>주차 노면</td></tr>
+      <tr><td>SM_Gen_Env_Road_Ramp_01 / _02</td><td>5×10 (+높이)</td><td>입체 경사로</td></tr>
+    </table>
+    <div class="warn"><b>⚠️ 직각 격자 전용 (곡선·90° 커브 타일 없음).</b> ① <b>Road_01은 방향성</b> — 차선이 한 축(X)으로 흐름 → 거리 방향에 맞춰 <b>90° 회전 필수</b>(안 돌리면 차선 어긋남). ② <b>4-way 교차점 = 무지 타일</b>(Road_01/Small_01), Intersection은 합류 마킹용. ③ "직선이 교차점에서 만나는" 실제 도시 격자 방식. (곡선은 Gravel뿐 — 3m 시골 자갈길.)</div>
+    <h3>보도 (2.5m 코너피벗) — 도로↔건물 경계</h3>
+    <table>
+      <tr><td>SM_Gen_Env_Sidewalk_01</td><td>2.5×2.5</td><td><b>연석 없는 인도 바닥</b> — 건물 쪽 채움(도로 옆 ❌)</td></tr>
+      <tr><td>SM_Gen_Env_Sidewalk_Half_01</td><td>2.5×1.3</td><td>반폭</td></tr>
+      <tr><td>SM_Gen_Env_Sidewalk_Corner_01 / _02</td><td>2.5×2.5</td><td>연석 코너</td></tr>
+      <tr><td>SM_Gen_Env_Sidewalk_Edge_01</td><td>2.5×2.5</td><td>★<b>연석 있는 인도 = 도로 바로 옆</b>(연석이 도로 향함) — 도로↔인도 경계 핵심</td></tr>
+    </table>
+    <div class="rule"><b>★ 올바른 거리 조립 (순서):</b> 가운데 <b>Road</b>(흐름 방향에 맞춰 회전) → 양옆 <b>Sidewalk_Edge</b>(연석이 도로 향함) → 그 뒤 <b>Sidewalk_01</b>로 건물 앞까지 채움 → <b>건물은 인도 뒤로 set-back</b>. 교차점 = 무지 타일 + 모서리 <b>Sidewalk_Corner</b>. 2.5m 마스터 그리드(차도 10·5 정합), 차도는 평평 타일이라 <b>별도 지면 위에</b>. 80m=10×8/2.5×32.</div>
+  </div>
+
+  <!-- CONSTRUCTION + TERRAIN -->
+  <h2>③ 보조 — Construction 흙길 & Generic 자연 지면</h2>
+  <figure><img src="city_catalog/img/contact_roads_construction.png"><figcaption class="cap">Construction: DirtRoad(Corner/Driveway/End) + Sidewalk_Driveway(5m) + 공사장 흙 지면. Zone B 공사장 진입로용.</figcaption></figure>
+  <ul>
+    <li><b>Construction 흙길</b>: <code>SM_Env_DirtRoad_Corner/Driveway/Straight/End</code>, <code>SM_Env_Sidewalk_Driveway_01/02</code>(5m), <code>SM_Env_Dirt_Edge_Ramp_Road</code> — Zone B 미완성/공사장 진입로.</li>
+    <li><b>Generic 자연 지면(도로 아님, 보너스)</b>: <code>Dirt_Cliff</code>×8, <code>Ground_Dirt</code>(4~42m), <code>Ground_River_Dirt</code>, <code>Ground_Slope_Dirt</code> — 외곽 공터·붕괴지·평원 전환부 지면 필러.</li>
+  </ul>
+
+  <!-- BUILD RULES -->
+  <h2>★ 빌드 규칙 (도로 깔 때)</h2>
+  <div class="rule">
+    1. <b>Zone A 외곽</b> = <b>BR 도로</b>(흙 갓길 일체 + 손상 섞기). 별도 지면 불필요. ~20m 세그먼트로 유기적 배치.<br>
+    2. <b>Zone B/C 도시</b> = <b>Generic 도로</b>(직선+교차로 격자, 코너 없음) + <b>Sidewalk</b> + <b>별도 평지 지면</b>. 2.5m 스냅.<br>
+    3. <b>두 시스템 비혼용</b> — 룩 충돌(흙 군사 ↔ 깨끗 도시). 구역 경계(초크포인트)에서 전환.<br>
+    4. 자투리·공터·전환부 = Generic 자연 지면(Dirt/Ground) 활용.
+  </div>
+
+  <!-- BUILD ALGORITHM -->
+  <h2>★ 도로-그래프 빌드 알고리즘 <span class="sub" style="font-size:13px">(Claude + Codex gpt-5.4 검증)</span></h2>
+  <div class="warn"><b>핵심 원칙: "타일 먼저"가 아니라 "그래프 먼저".</b> 빌더 계약 = <code>그래프 역할 → 통행성(traversability) → 키트 실현</code> (위에서 아래로). 타일 모양에서 그래프를 추론하지 말 것 — Generic은 코너가 없어 "그래프는 맞는데 도로 조립 불가" 실패가 생김.</div>
+
+  <h3>타일당 최소 데이터</h3>
+  <table>
+    <tr><th>필드</th><th>값</th></tr>
+    <tr><td><code>kit</code></td><td>BR / Generic / Dirt</td></tr>
+    <tr><td><code>connection_shape</code></td><td>straight / corner / T / cross / end <span class="sub">(junction은 중복 — 비직각/오프셋 아니면 제거)</span></td></tr>
+    <tr><td><code>traversable</code></td><td>bool</td></tr>
+    <tr><td><code>is_critical_path</code></td><td>bool (1등급 플래그, access_tier와 별개)</td></tr>
+    <tr><td><code>initially_blocked</code> / <code>gate_id</code></td><td>게이트 전용 (돌파 전 차단)</td></tr>
+    <tr><td><code>access_tier</code></td><td>1 간선-척추 / 2 곁길 / 3 막다른·드레싱</td></tr>
+    <tr><td>빌더레벨 <code>rupture</code></td><td>통행불가 균열(잔해) — ★없으면 손상이 "가짜 도로"로 욱여넣어져 안 부서져 보임</td></tr>
+    <tr><td>구역레벨 <code>street_profile</code></td><td>A=유기적 시골/군용(~20m, 코너 자유) · B/C=직각 격자(직선+교차, 곡선 불가)</td></tr>
+  </table>
+
+  <h3>is_critical_path 계약</h3>
+  <ul>
+    <li>막는 오브젝트 배치 금지 · 양방향 통행 항상 보장 · 게이트 외 협착 금지.</li>
+    <li>게이트 = <code>is_critical_path=true + initially_blocked=true</code> (돌파 전까지 의도적 차단).</li>
+  </ul>
+
+  <h3>구역별 그래프 불변식</h3>
+  <ul>
+    <li><b>지배 흐름방향 1개 + 보조 연결 1~2개</b> — 없으면 1km가 "분리된 아레나"로 느껴짐.</li>
+    <li><b>존 스케일 루프 1개 + 게이트 주변 국소 우회로</b> (단순 ≥1루프는 약함 — 나무형 복도로 전락).</li>
+    <li><b>막다른길 비율 A 40% / B 25% / C 15%</b> — 단 <b>분기 말단에만</b> 적용(교차점 제외, 지표 왜곡 방지).</li>
+    <li><b>일방통행 금지</b> — 막혔다고 느낌. 안쪽 당김은 <b>보상 밀도</b>로(드롭율↑).</li>
+  </ul>
+
+  <h3>빌드 5단계 순서 (그래프 우선, 파괴는 외형)</h3>
+  <div class="rule">
+    <b>1.</b> 구역 외곽 + 진출입 앵커를 A→B→C 순서로, <b>모든 게이트를 지나는 척추 경로 1개</b> 확정.<br>
+    <b>2.</b> 구역별 그래프 생성 — 위 불변식 적용. 게이트 후보는 <b>척추 엣지에만</b>.<br>
+    <b>3.</b> <b>게이트 edge-cut 검증</b> — 게이트 막힌 엣지 제거 시 그 너머가 연결 끊겨야(우회로 있으면 게이트 무의미) + 그 존 다른 곳에 우회 루프 존재.<br>
+    <b>4.</b> 파괴/노이즈·<code>rupture</code> 레이어를 얹되 <b>연결성 계약 유지</b>하며 국소 조정(파괴는 외형/맥락이지 통행 권위 아님).<br>
+    <b>5.</b> 그래프를 키트 타일로 실현 → <b>배치 후 연결성 재검증</b>(Generic 기하가 추상 그래프를 깰 수 있어 B/C 특히).
+  </div>
+  <div class="sub" style="margin-bottom:10px">⚠ 가장 큰 맹점(Codex): 파괴를 먼저 깔면 "도시"가 아니라 "미로 긁기"처럼 보임 → 그래프(연결성 보장)를 먼저, 파괴는 나중·재검증.</div>
+
+  <div class="sub" style="margin-top:16px">상위: <code>2026-06-02-city-asset-catalog.html</code> · 프리팹 전수: <code>2026-06-02-prefab-contact-index.html</code> · 빌드 청사진: <code>2026-06-02-city-blueprint.html</code></div>
+</div>
+</body>
+</html>
