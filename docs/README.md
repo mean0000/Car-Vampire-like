@@ -23,7 +23,6 @@
 | `2026-05-31-levelup-cards-catalog.md` | 레벨업 카드 전체 명세 (~23장) | 카드 권위 |
 | `2026-06-02-city-scale-decisions.md` | 도시 스케일/맵 결정 | |
 | `2026-05-29-infection-noise-design.md` | 감염도·소음 수치 곡선 | §1 소음 = **현재 빌드 구현 확정값** |
-| `2026-05-24-uiux-design.md` | UI/UX 설계 (HUD, 라벨, 세계관) | ⚠️ **피벗 이전 작성 — 차량 HUD 전제. 현행 방향과 일치하는지 확인 필요** |
 
 ## 01_handoffs — 핸드오프
 
@@ -51,6 +50,7 @@ brainstorming / session·session2 / upgrade-system-log / game-direction-pivot / 
 | `2026-05-25-weapon-system.md` | 피벗 이전 무기 설계 |
 | `2026-05-29-crafting-design.md` | 소비형 레시피 구조 폐기 → progression-system이 권위 |
 | `2026-05-25-design-doc.html` | 피벗 이전 종합 설계 HTML |
+| `2026-05-24-uiux-design.md` | 차량 HUD(HULL·SUPPRESS) 전제 — 차량 방향 보류로 일단 내림. **추후 재검토 예정** |
 
 ---
 
