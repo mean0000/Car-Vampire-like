@@ -53,7 +53,10 @@
       "Bash(cmd.exe /c start \"\" \"docs\\\\\\\\road_catalog\\\\\\\\index.html\")",
       "Bash(git check-ignore:*)",
       "Bash(kill %1)",
-      "Bash(pkill -f \"stat -c%s\")"
+      "Bash(pkill -f \"stat -c%s\")",
+      "Bash(wc -l *.md)",
+      "Bash(git mv:*)",
+      "Bash(python -c ':*)"
     ]
   },
   "model": "claude-opus-4-8"
