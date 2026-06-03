@@ -90,6 +90,61 @@
     <div class="rule"><b>★ 올바른 거리 조립 (순서):</b> 가운데 <b>Road</b>(흐름 방향에 맞춰 회전) → 양옆 <b>Sidewalk_Edge</b>(연석이 도로 향함) → 그 뒤 <b>Sidewalk_01</b>로 건물 앞까지 채움 → <b>건물은 인도 뒤로 set-back</b>. 교차점 = 무지 타일 + 모서리 <b>Sidewalk_Corner</b>. 2.5m 마스터 그리드(차도 10·5 정합), 차도는 평평 타일이라 <b>별도 지면 위에</b>. 80m=10×8/2.5×32.</div>
   </div>
 
+  <!-- TOON CITY (후보) -->
+  <div class="card" style="border-top:4px solid #5fb87a">
+    <h2 style="border:0;margin:0">②-B Toon City 도로 <span class="swatch zbc">도시 후보 (채택 검토중)</span></h2>
+    <div class="sub">경로: <code>Assets/Toon Series/Toon City/Prefabs/Roads/</code> · ~100종. Generic과 달리 <b>곡선·로터리·축소·막다른길</b>이 모두 있어 유기적 도시 가능. 2026-06-03 인식 테스트에서 유저가 한 조각씩 교정·검증.</div>
+
+    <div class="warn"><b>폭(차선 수) 사다리 시스템.</b> 2m 단위 폭(10/12/14/16/18/20/26/28/46), 접미사 <code>+2/+4/-2</code>(예: Road_3A=12, Road_3A+2=14, Road_3A+4=16). <b>같은 폭 패밀리끼리만 깔끔히 연결</b> — 왕복2차선(Road_3E 곡선)을 왕복4차선(Road_3T)에 직접 붙이면 안 됨.</div>
+
+    <h3>실측 치수 (주요)</h3>
+    <table>
+      <tr><th>프리팹</th><th>치수 bbox</th><th>역할 / 비고</th></tr>
+      <tr><td>Road_1A / 3A</td><td>12×12</td><td>왕복 2차선 직선 (1=N/S 열림, 3=E/W 열림 — 회전으로 맞춤)</td></tr>
+      <tr><td>Road_3E</td><td>26×26 (pivot off-center)</td><td>★왕복 2차선 <b>90° 코너</b>. 로컬 bbox min(-14,-14)/max(+12,+12)</td></tr>
+      <tr><td>Road_3T / 3N</td><td>20×24</td><td>3T=왕복4차선 직선 / 3N=축소(4→2차선)</td></tr>
+      <tr><td>Road_3I</td><td>12×8</td><td>막다른 길 (3면 막힘, 1면 열림)</td></tr>
+      <tr><td>Roundabout_1A</td><td>28.2×28.2</td><td>4방향 로터리(중앙섬). 4 cardinal 나팔 개구부, 팔=Road_3A+4(12폭) N/S rot90·E/W rot0 flush ✓</td></tr>
+      <tr><td>Road_3H</td><td>14×16</td><td>T자 교차로(혼합폭). 통과 N-S=14폭·분기 W=12폭·동쪽 막힘. 통과=DBG_Road_3D 14폭곡선 또는 12폭 직선(동쪽-flush)·분기=Road_3A+4 ✓</td></tr>
+      <tr><td>Road_1D</td><td>14×14</td><td>"1"패밀리(노란선) <b>90° 코너</b> (rot0 = S→W). 짝: Road_1A</td></tr>
+      <tr><td>Road_2B</td><td>8×24</td><td>8폭 골목(차선 없음). 같은 조각끼리 24 간격 체이닝</td></tr>
+      <tr><td>Road_1C</td><td>~15×12.5</td><td>횡단보도 인서트(~12폭 차도). Road_1A 사이에 끼움</td></tr>
+      <tr><td>Road_3G</td><td>16×16</td><td>4-way 사거리(개구부 12폭). 팔=Road_3A+4, <b>N/S팔 rot90·E/W팔 rot0</b></td></tr>
+      <tr><td>Road_3A+4</td><td>차도12 × 길이16</td><td>2차선 세그먼트("+4"=폭 아닌 길이). 인도 양쪽. 4차로용 초석</td></tr>
+      <tr><td>Highway_1B</td><td>20×80</td><td>왕복4차선 고속도로(노란 더블라인). 짝: Road_3T(20폭)</td></tr>
+    </table>
+
+    <div class="rule" style="border-left-color:#d8b14a"><b>★ 코너(Road_3E 등) — 차도 중심선 ✕, "bbox 모서리 맞대기" ○ (유저 검증):</b><br>
+      곡선의 차도(검정)는 bbox 중앙이 아니라 <b>바깥쪽 모서리에 붙어 있음</b>. 중심 정렬하면 어긋나고 연석 단차가 생김. <b>곡선 bbox의 바깥 모서리를 이웃 직선의 모서리에 일치</b>시키면 차도+연석이 동시에 맞물림.<br>
+      검증 예 (rot0 S→E 곡선 + 12폭 직선 Road_1A, 직선 bbox x[664,676]/z[-6,6]): <code>3E.bbox.minZ ≈ 직선.maxZ(6)</code>(세로 맞댐) + <code>3E.bbox.maxX == 직선.maxX(676)</code>(바깥=오른쪽 모서리). → pivot(664, 19.9).<br>
+      pivot 공식(3E 기준): <code>pivot_x = 이웃_바깥모서리X − 12</code>, <code>pivot_z = 이웃_윗변Z + 14</code>. 회전 시 "바깥 모서리"도 회전.</div>
+
+    <div class="rule"><b>★ 그 외 검증 규칙:</b>
+      <ul>
+        <li><b>도로 축소</b>: Road_3T(4차선) → <b>Road_3N</b>(축소) → 줄어든 끝은 작은 도로(<code>Road_3A / 3J / Roundabout_1A / 3K</code>)에만 연결.</li>
+        <li><b>작은 직선(Road_3A) 회전</b>: 베이지=인도/외곽, 검정=차도. <b>검정끼리 물리게</b> 회전. N-S 연결엔 <code>rotY=90</code>(rot0은 E-W로 열려 인도가 연결부 향함=오답).</li>
+        <li><b>막다른 길 Road_3I</b>: bbox-flush는 틈 생김 → 연결 방향으로 <b>+6.2</b> 더 붙여야 연결.</li>
+        <li><b>패밀리(차선 마킹) 일치 (2026-06-03)</b>: "1"패밀리(<code>Road_1A/1C/1D</code>)=<b>노란 중앙선</b>, "3"패밀리(<code>Road_3A/3E/3G/3T</code>)=<b>흰 점선</b>. 곡선도 같은 패밀리 직선과 짝지을 것 — <code>Road_1D(노란 곡선)→Road_1A(노란 직선)</code>.</li>
+        <li><b>rot0 기본 열린축이 패밀리마다 다름</b>: <code>Road_1A</code>는 rot0에서 <b>N-S 열림</b>(세로 연결 회전 불필요), <code>Road_3A</code>는 rot0에서 <b>E-W 열림</b>(세로 연결 rot90). 새 조각은 캡처로 확인.</li>
+        <li><b>2026-06-03 신규 검증</b>: <code>Road_2B</code> 8폭 골목=같은 조각끼리 24 간격 체이닝 · <code>Highway_1B</code> 20폭4차선=Road_3T(20폭) flush · <code>Road_1C</code> 횡단보도=Road_1A 사이에 끼움(이웃을 0.5씩 더 붙일 것 — bbox에 신호등 프롭 포함돼 실제 아스팔트보다 큼).</li>
+        <li><b>★ Road_3G 사거리 — 팔 회전 (유저 교정)</b>: 팔(Road_3A+4)의 <b>인도(베이지) 끝이 교차로를 향하면 차도를 막음</b>. "3"패밀리 회전대로 <b>N/S팔=rot90, E/W팔=rot0</b>으로 놔야 인도가 가장자리를 따라 모서리를 감싼다. Road_3A+4=차도12·길이16 2차선 세그먼트(개구부 12폭과 일치).</li>
+        <li><b>★ Road_3H T자 — 혼합폭 (2026-06-03 유저 손배치 정답 예시 3개로 최종 확정)</b>: rot0에서 통과=N-S(14폭)·분기=서쪽(12폭→Road_3A+4)·동쪽=막힘(연속 스파인). <b>통과(14폭) 캡 방법 2가지 모두 정답</b>: <b>(A) 12폭 직선 팔도 OK — 단 동쪽(스파인) 변에 flush 정렬</b>(예시 TJ_Road_3H(1): 팔 X모서리를 동쪽 258.4에 맞추고 2폭 차이를 서쪽으로 흘림 → 스파인·인도 연속). <b>(B) DBG_Road_3D 14폭 곡선</b>(예시 TJ_Road_3H@Z147·(2)@Z258: N·S 대칭 캡, "D"형 동쪽 루프, 14=14 완벽). <b>★정정</b>: 이전 "12폭 팔 쓰지 말라"는 오답이었음 — 실제 원인은 폭이 아니라 <b>서쪽-flush 정렬 실수</b>(서쪽에 맞추면 동쪽 스파인에 2단위 단차). <b>폭 패밀리</b>: Road_3A 직선은 전부 12폭("+N"=길이), <b>14폭 직선은 없음</b>(14폭=곡선3D/3U·정션3H뿐).</li>
+        <li><b>★ 중첩 금지 (유저 교정)</b>: 이미 연결된 면에 조각을 또 얹지 말 것(로터리 남쪽 Road_3N 위에 팔을 겹쳐 놓은 오답). 새 팔 놓기 전 기존 연결 먼저 확인.</li>
+        <li><b>★ Roundabout_1A 4방향 (2026-06-03 검증)</b>: 28.2×28.2 중앙섬, 4 cardinal 나팔 개구부. 팔=Road_3A+4(12폭) bbox-flush, N/S=rot90·E/W=rot0. 나팔이 12폭 팔과 자연 합류.</li>
+        <li><b>★ Highway 패밀리 1A~1I (2026-06-03 식별·검증)</b>: 20폭 왕복4차선 <b>노란 더블 점선</b> 대형 인터체인지 세트(일반도로와 별개 대축척 80~120). 1A·1B=직선 · 1C=고속T자 · 1D=출구곡선램프 · 1E=출구테이퍼 · <b>1F=90°곡선</b> · 1G=4방향인터체인지 · 1H=진입합류 · 1I=진입테이퍼. 1F곡선↔1B직선 연결 검증: 곡선 bbox.minZ=직선.maxZ, pivot_x=직선중심(곡선 세로끝 차도는 bbox −X 가장자리 20폭 중앙) → 전부 연속 ✓. 도심 격자엔 과대 — 외곽 순환/고가 후보.</li>
+      </ul>
+    </div>
+
+    <div class="rule" style="border-left-color:#5aa84a"><b>★ 전수 분류 — 도로표면 프리팹 60+개 (2026-06-03 bbox 실측 + 컨택트시트):</b>
+      <ul>
+        <li><b>"1"패밀리(노란선) ↔ "3"패밀리(흰점선) = 치수·지오메트리 1:1 쌍둥이.</b> 마킹색만 다름 → "3" 토폴로지 검증 시 같은 치수 "1"도 동일. 미검증 절반 자동 커버. (1-패밀리 일부 h≈8=연석/프롭, 3-패밀리 h≈0.3=평평, 토폴로지 동일.)</li>
+        <li><b>남은 미손검증 = 전부 기존 4규칙의 변형, 새 연결 물리 없음</b>: 3B/3C=횡단보도 인서트 · 3F=직선변형 · 3O=20×24 4차선직선 · <b>3K/3L=레인시프트(치케인, 미러쌍, 어긋난 평행도로 연결)</b> · 3J=버스베이 · 3S=버스정류장/대로(16×48) · <b>3P/3Q(미러쌍)·3V·3R(46×46)=대반경 90°코너</b>(3E 바깥모서리규칙) · <b>1X/1Y=24×24 4방향 교차로</b>(신호/단순) · 2A/2C/2D="길"(좁은 골목/보도, 2B계열) · Roundabout_2A/2B/2C=1A동일 토폴로지(중앙섬만 다름) · Parking_1A/1B/2A=주차장/타워(한 변 진입) · Toll_Booth=톨게이트 프롭.</li>
+        <li><b>결론</b>: 직선/길이변형/코너(소·대반경)/곡선/4-way(소·대)/T자/로터리/축소/<b>치케인</b>/버스베이/막다른길/횡단보도/<b>골목길</b>/주차장/고속도로 전부 보유 → <b>최대한 다양한 도로망 손배치 가능.</b></li>
+        <li><b>★ 폭패밀리 트랩 2건 손검증 완료 (2026-06-03)</b>: ① <b>24×24 4방향 교차로(1X/1Y)</b> = 개구부 12폭 중앙(바깥 6+6 연석), 12폭 Road_1A 4팔 flush로 4면 깔끔 — 트랩 없음. ② <b>26×26 대반경 코너(3P 등)</b> = Road_3E "바깥모서리 bbox 맞대기" 규칙 그대로 성립(3P는 N↔E 코너, 북차도=bbox西모서리·동차도=南모서리, 12폭 Road_3A 팔을 외모서리 flush → 차도·흰점선·인도 전부 연속).</li>
+      </ul>
+    </div>
+  </div>
+
   <!-- CONSTRUCTION + TERRAIN -->
   <h2>③ 보조 — Construction 흙길 & Generic 자연 지면</h2>
   <figure><img src="city_catalog/img/contact_roads_construction.png"><figcaption class="cap">Construction: DirtRoad(Corner/Driveway/End) + Sidewalk_Driveway(5m) + 공사장 흙 지면. Zone B 공사장 진입로용.</figcaption></figure>

@@ -526,13 +526,13 @@
 <div class="hero">
   <div class="genre-badges">
     <span class="badge badge-green">Slow-paced Horde Survival</span>
-    <span class="badge badge-red">Stealth</span>
+    <span class="badge badge-red">Infection Doom-Clock</span>
     <span class="badge badge-blue">Real-time Crafting</span>
     <span class="badge badge-purple">Infection Risk</span>
   </div>
   <h1 class="hero-title">ZOMBIECRUSH</h1>
   <p class="hero-tagline">
-    나노봇으로 <em>숨고</em>, 제작하고, <em>감염</em>되며<br>
+    <em>감염 시계</em>와 싸우며 제작하고, 강해지며<br>
     AI 센터를 향해 나아가는 느린 뱀서라이크
   </p>
   <p class="hero-quote">
@@ -643,13 +643,6 @@
         </div>
       </div>
       <div class="loop-step">
-        <div class="loop-icon" style="background:rgba(170,85,255,0.15); border: 2px solid var(--accent-purple);">&#128065;</div>
-        <div class="loop-content">
-          <strong>HIDE &mdash; 잠입</strong>
-          <span>나노봇 주파수를 동조시켜 좀비인 척. 위기 탈출 + 제작 안전 확보.</span>
-        </div>
-      </div>
-      <div class="loop-step">
         <div class="loop-icon" style="background:rgba(68,136,255,0.15); border: 2px solid var(--accent-blue);">&#128295;</div>
         <div class="loop-content">
           <strong>CRAFT &mdash; 제작</strong>
@@ -660,7 +653,7 @@
         <div class="loop-icon" style="background:rgba(0,255,136,0.15); border: 2px solid var(--accent-green);">&#9889;</div>
         <div class="loop-content">
           <strong>GROW &mdash; 성장</strong>
-          <span>강해진다. 동시에 감염도가 오른다. 레벨업은 도박이다.</span>
+          <span>강해진다. 그 사이에도 감염 시계는 계속 차오른다. 얼마나 더 버틸지가 도박이다.</span>
         </div>
       </div>
     </div>
@@ -671,9 +664,9 @@
       <tr><td>빠른 템포, 자동사격</td><td>느린 템포, 매 판단이 무겁다</td></tr>
       <tr><td>XP 자동 수집 &rarr; 메뉴 선택</td><td>재료 파밍 &rarr; 실시간 3~5초 제작</td></tr>
       <tr><td>레벨업 시 게임 일시정지</td><td>제작 중에도 세계가 돌아감</td></tr>
-      <tr><td>성장 = 안전</td><td>성장 = 감염 리스크</td></tr>
+      <tr><td>성장 = 안전</td><td>성장 = 감염 시계와의 경주</td></tr>
       <tr><td>맵 = 평지, 변화 없음</td><td>바이옴 진행, 도시&rarr;평원&rarr;빙하&rarr;숲</td></tr>
-      <tr><td>적 = 장애물</td><td>적 = 자원이자 위장 수단</td></tr>
+      <tr><td>적 = 장애물</td><td>적 = 자원이자 성장 재료</td></tr>
     </table>
   </div>
 </section>
@@ -682,21 +675,15 @@
 <section>
   <div class="container">
     <div class="section-label">Mechanics</div>
-    <h2>5가지 핵심 메커니즘</h2>
+    <h2>4가지 핵심 메커니즘</h2>
     <p>장르의 "당연한 것"을 뒤집어 만든 고유 시스템.</p>
 
     <div class="mechanic-grid">
       <div class="mechanic-card">
-        <div class="card-tag badge-purple" style="border:1px solid var(--accent-purple); color:var(--accent-purple); background:rgba(170,85,255,0.1);">STEALTH</div>
-        <div class="card-icon">&#128065;</div>
-        <h4>나노봇 잠입</h4>
-        <p>나노봇 주파수를 좀비와 동조시켜 일시적으로 좀비인 척한다. 감염도를 소모해서 발동 &mdash; 강해지려고 올린 감염도가 위기 탈출 자원이 된다.</p>
-      </div>
-      <div class="mechanic-card">
         <div class="card-tag badge-red" style="border:1px solid var(--accent-red); color:var(--accent-red); background:rgba(255,51,85,0.1);">RISK</div>
         <div class="card-icon">&#9763;</div>
-        <h4>감염도 시스템</h4>
-        <p>나노봇을 사용할수록 감염도 상승. 강해질수록 화면이 글리치하고, 조작이 흐트러진다. MAX 도달 시 좀비화 &mdash; 런 종료.</p>
+        <h4>감염도 시계 (둠클락)</h4>
+        <p>감염도는 밖에 머문 시간만큼 자동으로 차오른다. 멀리·오래 나갈수록 시계가 빡빡해지고, MAX 도달 시 좀비화 &mdash; 런 종료. 게이트를 넘으면 천장이 상향된다.</p>
       </div>
       <div class="mechanic-card">
         <div class="card-tag badge-green" style="border:1px solid var(--accent-green); color:var(--accent-green); background:rgba(0,255,136,0.1);">LEGACY</div>
@@ -737,7 +724,7 @@
       <div class="world-node">
         <div class="node-icon" style="border-color: var(--text-dim); background: rgba(136,136,170,0.1);">&#127961;</div>
         <div class="node-label">시작 대도시</div>
-        <div class="node-desc">도보 스텔스</div>
+        <div class="node-desc">도보 생존</div>
       </div>
       <div class="world-arrow">&rarr;</div>
       <div class="world-node">
@@ -774,7 +761,7 @@
     <h3>두 가지 플레이 모드의 교차</h3>
     <table class="comparison-table">
       <tr><th>구간</th><th>모드</th><th>특징</th></tr>
-      <tr><td>도시 (대/소)</td><td>&#128694; 도보 스텔스</td><td>핵심 루프: 사냥, 잠입, 제작, 성장</td></tr>
+      <tr><td>도시 (대/소)</td><td>&#128694; 도보 생존</td><td>핵심 루프: 사냥, 제작, 성장</td></tr>
       <tr><td>바이옴 이동</td><td>&#128663; 차량 액션</td><td>빠른 템포, 변종 좀비, 스토리 떡밥</td></tr>
     </table>
 
@@ -799,14 +786,14 @@
     <div class="market-highlight">
       <div class="big-number">0</div>
       <div class="big-label">직접 경쟁작</div>
-      <div class="big-desc">"느린 뱀서 + 스텔스 + 실시간 크래프팅 + 감염도 리스크" 조합을 가진 게임 = 시장에 없음</div>
+      <div class="big-desc">"느린 뱀서 + 실시간 크래프팅 + 감염 둠클락 리스크" 조합을 가진 게임 = 시장에 없음</div>
     </div>
 
     <p>각 요소는 개별적으로 검증 완료:</p>
     <table class="comparison-table">
       <tr><th>요소</th><th>검증된 게임</th><th>Steam 평가</th></tr>
       <tr><td>느린 뱀서류</td><td>Halls of Torment, Brotato</td><td>96% 긍정</td></tr>
-      <tr><td>스텔스 + 좀비 호드</td><td>Darkwood, Project Zomboid</td><td>94% 긍정</td></tr>
+      <tr><td>도보 생존 + 좀비 호드</td><td>Darkwood, Project Zomboid</td><td>94% 긍정</td></tr>
       <tr><td>실시간 크래프팅</td><td>The Last of Us, 7 Days to Die</td><td>검증됨</td></tr>
       <tr><td>감염/변이 리스크</td><td>Darkest Dungeon, RAD</td><td>93% 긍정</td></tr>
     </table>
@@ -821,7 +808,7 @@
     <div class="ref-grid">
       <div class="ref-card">
         <div class="ref-name">Darkwood</div>
-        <div class="ref-take">탑다운 스텔스 + 호드 방어 리듬</div>
+        <div class="ref-take">탑다운 호드 방어 리듬 + 공포 분위기</div>
       </div>
       <div class="ref-card">
         <div class="ref-name">Darkest Dungeon</div>
@@ -830,10 +817,6 @@
       <div class="ref-card">
         <div class="ref-name">Brotato</div>
         <div class="ref-take">1인 개발 뱀서 성공 사례</div>
-      </div>
-      <div class="ref-card">
-        <div class="ref-name">Prototype</div>
-        <div class="ref-take">적 흡수 + 위장 액션</div>
       </div>
       <div class="ref-card">
         <div class="ref-name">Hades</div>

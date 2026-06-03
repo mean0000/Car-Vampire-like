@@ -22,6 +22,7 @@
 | `2026-05-31-level-design-authority.md` | 레벨 디자인 권위 (감염 시계 + 3게이트) | |
 | `2026-05-31-levelup-cards-catalog.md` | 레벨업 카드 전체 명세 (~23장) | 카드 권위 |
 | `2026-06-02-city-scale-decisions.md` | 도시 스케일/맵 결정 | |
+| `2026-06-03-demo-weapon-lineup.md` | **데모 무기 라인업 권위.** 리볼버(원거리)/야구방망이(근접) 택1 + 소음기 | 시작 분기·근접 게임감 확정 |
 | `2026-05-29-infection-noise-design.md` | 감염도·소음 수치 곡선 | §1 소음 = **현재 빌드 구현 확정값** |
 
 ## 01_handoffs — 핸드오프
