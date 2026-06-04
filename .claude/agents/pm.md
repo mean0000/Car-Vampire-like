@@ -1,7 +1,7 @@
 ---
 name: pm
 description: "Use this agent when you want to brainstorm new product features, validate ideas, or transform rough concepts into structured development plans. This agent is ideal for collaborative ideation sessions where you need critical, constructive feedback from a senior product perspective rather than simple agreement.\\n\\n<example>\\nContext: The user wants to brainstorm a new notification feature for their app.\\nuser: \"우리 앱에 스마트 알림 기능을 추가하면 어떨까? 사용자가 자주 사용하는 시간대에 맞춰 알림을 보내는 거야.\"\\nassistant: \"좋은 아이디어네요! 시니어 PM 에이전트를 활용해서 이 기능을 깊이 분석하고 요구사항을 정리해 볼게요.\"\\n<commentary>\\nThe user is proposing a new feature idea and needs critical analysis and structured planning. Use the senior-pm-brainstorm agent to provide deep UX, technical, and logical analysis.\\n</commentary>\\nassistant: \"Now let me use the senior-pm-brainstorm agent to critically analyze this idea and develop a structured plan.\"\\n</example>\\n\\n<example>\\nContext: The user has a rough concept for a social sharing feature.\\nuser: \"우리 플랫폼에 사용자들이 서로의 진행 상황을 공유할 수 있는 소셜 피드를 만들고 싶어.\"\\nassistant: \"흥미로운 방향이에요. 시니어 PM 에이전트를 사용해서 이 아이디어의 UX 흐름, 기술적 구현 가능성, 잠재적 모순점을 분석하고 실행 계획을 세워볼게요.\"\\n<commentary>\\nThe user needs a thorough product analysis and execution planning. Use the senior-pm-brainstorm agent to evaluate and structure the idea.\\n</commentary>\\n</example>"
-model: sonnet
+model: opus
 color: cyan
 memory: user
 ---

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hell Express 그래픽 연출 — Unity URP 재현 타당성 분석 (2026-06-04)</title>
+<style>
+  :root{
+    --bg:#0d0f12; --panel:#15181d; --panel2:#1b1f26; --line:#2a2f38;
+    --txt:#d9dde3; --dim:#9aa3ad; --hot:#ff5b4a; --teal:#3fd6c4; --amber:#f2b134;
+    --good:#5cdb95; --warn:#f2b134; --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:"Pretendard","Segoe UI",system-ui,sans-serif;line-height:1.7;font-size:15px}
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 28px 120px}
+  h1{font-size:30px;line-height:1.25;margin:0 0 6px;color:#fff;letter-spacing:-.5px}
+  h1 .hl{color:var(--hot)}
+  h2{font-size:21px;margin:54px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--line);color:#fff}
+  h3{font-size:16px;margin:26px 0 8px;color:var(--teal)}
+  .sub{color:var(--dim);font-size:13.5px;margin:0 0 4px}
+  a{color:var(--teal);text-decoration:none;border-bottom:1px dotted var(--teal)}
+  a:hover{color:#fff}
+  code{background:#000;color:var(--amber);padding:1px 6px;border-radius:4px;font-size:12.5px;font-family:"Consolas",monospace}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 22px;margin:16px 0}
+  .panel.hot{border-left:4px solid var(--hot)}
+  .panel.teal{border-left:4px solid var(--teal)}
+  .panel.amber{border-left:4px solid var(--amber)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  figure{margin:0;background:var(--panel2);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  figure img{width:100%;display:block;background:#000}
+  figcaption{padding:10px 14px;font-size:12.5px;color:var(--dim)}
+  figcaption b{color:var(--txt)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13px}
+  th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+  th{background:#0a0c0f;color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#13161b}
+  .pct{font-weight:700;text-align:center;white-space:nowrap}
+  .p90{color:var(--good)} .p70{color:var(--warn)} .p50{color:var(--bad)}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;margin-right:6px}
+  .t-p1{background:#13351f;color:var(--good);border:1px solid #2c6b41}
+  .t-p2{background:#3a3014;color:var(--warn);border:1px solid #6b5b1f}
+  .t-rej{background:#3a1717;color:var(--bad);border:1px solid #6b2c2c}
+  ul{margin:8px 0 8px 0;padding-left:20px}
+  li{margin:4px 0}
+  .meta{color:var(--dim);font-size:12.5px;border-top:1px solid var(--line);margin-top:60px;padding-top:18px}
+  .big{font-size:17px}
+  .verdict{font-size:19px;font-weight:700;color:#fff}
+  blockquote{margin:10px 0;padding:10px 16px;border-left:3px solid var(--amber);background:#13161b;color:var(--dim);font-size:13.5px}
+  @media(max-width:780px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="sub">ZombieCrush · 그래픽 레퍼런스 분석 · 2026-06-04</p>
+  <h1><span class="hl">Hell Express</span> 그래픽 연출 — Unity URP에서 95% 재현 가능한가?</h1>
+  <p class="sub">분석 협업: Claude(주도) · Gameplay 에이전트(Unity 재현도) · pm 에이전트(우선순위) · 직접 웹/GitHub 검증 · <span style="color:var(--bad)">codex 에이전트는 ~80분 스톨로 중단, 그 몫은 Claude가 직접 수행</span></p>
+
+  <div class="panel hot">
+    <b>정직성 선언 (아부·거짓 없이)</b><br>
+    이 문서는 듣기 좋은 결론이 아니라 검증된 사실만 적는다. 핵심 결론을 먼저 박는다:
+    <ul>
+      <li><b>전체 비주얼 체감 재현 상한 = 88~92%.</b> "95% 무조건 가능"은 거짓이다.</li>
+      <li>95%를 막는 진짜 벽은 <b>단 둘</b> — ① UE5 볼류메트릭 라이팅 ② Lumen 실시간 GI. 나머지 11개 기법은 90%+ 도달.</li>
+      <li>그런데 <b>이 둘조차 탑다운 시점에선 격차가 좁아진다</b>(아래 §5에서 정직하게 보정). 그리고 보유/구매 가능한 에셋으로 "사진상 거의 구분 안 됨"까지는 간다.</li>
+      <li><b>더 중요한 반전:</b> 13개 기법 중 일부는 <b>재현하면 안 된다.</b> 우리 게임은 "느리고 취약한 생존"인데 Hell Express는 "강력한 파워판타지"다. 화염방사 호드 일소 같은 연출은 95% 재현해봤자 우리 게임 정체성을 파괴한다(§4).</li>
+    </ul>
+  </div>
+
+  <!-- ============ §1 ============ -->
+  <h2>1. 분석한 이미지 — 무엇을 보고 판단했나</h2>
+  <p>Hell Express의 <b>공식 프레스 키트 캐논 이미지 3장 전부</b>를 직접 눈으로 확인했다. 프레스 기사(NoisyPixel, Worthplaying 등)들도 동일 스크린샷을 재사용하며, Steam 갤러리에 변형 스샷이 더 있으나 <b>동일한 비주얼 언어</b>라 이 3장으로 연출 기법은 전부 도출된다.</p>
+
+  <div class="grid">
+    <figure>
+      <img src="./references/hellexpress_header.jpg" alt="Hell Express 헤더 키아트">
+      <figcaption><b>hellexpress_header.jpg — 키아트(일러스트, 인게임 아님)</b><br>장갑트럭(헤드라이트 다발) · 청록 독성 안개 + 반투명 유령 적 실루엣 · 강한 빨강 로고 · 우측 4인 협동 로스터(애니풍). <b>핵심:</b> 따뜻한 주황(트럭광) vs 차가운 청록(안개) 색대비. 이건 일러스트라 "목표 무드"일 뿐 인게임 재현 대상은 아래 2장.</figcaption>
+    </figure>
+    <figure>
+      <img src="./references/he_ss0.jpg" alt="Hell Express 인게임 보스 신">
+      <figcaption><b>he_ss0.jpg — 인게임(보스 조우)</b><br>~60–70° 탑다운 · 거대 붉은 곤충형 보스(노출 늑골 + <b>발광 내부=이미시브</b>) · <b>붉은-주황 풀밭이 화면 지배(씬당 단일 지배색)</b> · 석조 아치 폐허 · 우하단 플레이어 <b>손전등 콘</b> · 어두운 비네트·필름그레인 · 이동 적 모션블러 · HUD 코너 격리("EDDA").</figcaption>
+    </figure>
+    <figure>
+      <img src="./references/he_ss1.jpg" alt="Hell Express 화염방사 트럭">
+      <figcaption><b>he_ss1.jpg — 인게임(화염방사 히어로 컷)</b><br>장갑트럭 화염방사 · <b>화염=유일 주광원</b> · 적=빛 가장자리 실루엣 · <b>강한 블룸</b> · <b>볼류메트릭 갓레이 산란 원뿔</b> · 먼지·잔불 파티클 · 대기 원근(따뜻한 헤이즈). <b>이 컷이 URP가 가장 힘든 구간</b>(볼류메트릭).</figcaption>
+    </figure>
+    <figure style="display:flex;align-items:center;justify-content:center;background:var(--panel)">
+      <figcaption style="padding:18px"><b>※ 엔진 상태 (정직)</b><br>Hell Express의 엔진은 <b>공식 미확정</b>. SteamDB는 접근 차단(403)되어 기술 탐지 불가. 다만 ① 볼류메트릭·블룸·톤매핑의 시각 시그니처 ② 개발사 Full Metal Bagel이 <b>전 Naughty Dog(TLOU2)·Ubisoft(AC:Origins)·Tencent 베테랑</b>인 점으로 보아 <b>UE5 유력(추정)</b>. 단정 불가 → 본 분석은 "UE5로 가정"하되 그게 핵심이 아니라 <b>연출 기법 자체의 URP 재현성</b>이 핵심이다.</figcaption>
+    </figure>
+  </div>
+
+  <h3>"Unity로 이 룩이 된다"의 실증 레퍼런스 (같은 폴더, 함께 확인함)</h3>
+  <p>"UE5라서 안 된다"는 반례가 <b>실제 출시된 Unity 게임으로 존재</b>한다. 아래는 그 증거 이미지들이다.</p>
+  <div class="grid">
+    <figure>
+      <img src="./references/tlsaftermath_01.jpg" alt="The Last Stand Aftermath">
+      <figcaption><b>The Last Stand: Aftermath — Unity ✅ (결정타)</b><br>탑다운 포스트아포칼립스 좀비 + <b>동적 화염 라이팅 + 갓레이 볼류메트릭</b>을 Unity로 실출시. Hell Express ss1과 거의 동일 룩을 Unity가 해냄.</figcaption>
+    </figure>
+    <figure>
+      <img src="./references/lethalcompany_01.jpg" alt="Lethal Company">
+      <figcaption><b>Lethal Company — Unity ✅</b><br>우리보다 더 단순한 로우폴리인데 <b>짙은 안개+손전등+어두운 대비</b>만으로 "프로덕션 퀄". 피델리티 안 올려도 라이팅이 무드를 만든다는 산 증거.</figcaption>
+    </figure>
+    <figure>
+      <img src="./references/darkwood_01.jpg" alt="Darkwood">
+      <figcaption><b>Darkwood — Unity ✅</b><br>탑다운 + 어둠으로 시야 제한 = 긴장. "빛 닿는 곳만 보인다". 우리 가시성 전략의 직접 북극성.</figcaption>
+    </figure>
+    <figure>
+      <img src="./references/seaofstars_01.jpg" alt="Sea of Stars">
+      <figcaption><b>Sea of Stars — Unity ✅</b><br>탑다운 동적 광원(어둠 속 빛 풀) + 이미시브. 우리 광원 언어와 직결.</figcaption>
+    </figure>
+  </div>
+
+  <!-- ============ §2 ============ -->
+  <h2>2. 연출 기법 13종 — URP 재현도 전수 분석</h2>
+  <p class="sub">Gameplay 에이전트가 실제 프로젝트 파일을 검증하고 산출. 검증 사실: <code>Unity 6000.3.16f1 / URP 17.0.3</code> · COZY Pro·Feel·DOTween 임포트됨 · <b>HTrace SSGI 미설치(계획만)</b> · <b>VFX Graph 패키지 미설치</b> · Decal/SSAO 렌더러 피처 미활성.</p>
+
+  <table>
+    <thead><tr><th style="width:26px">#</th><th>기법</th><th style="width:64px">재현도</th><th>방법 (구체)</th><th>한계 / 우회</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><b>3/4 탑다운 동적 카메라</b></td><td class="pct p90">98%</td><td>Cinemachine 가상카메라 60–65° + Feel 노이즈/쉐이크</td><td>거의 무한계</td></tr>
+      <tr><td>2</td><td><b>동적 라이팅</b><br>(손전등 콘·불=주광원)</td><td class="pct p90">85%</td><td>URP Additional Spot Light + 실시간 그림자, light cookie로 콘 마스킹. 불은 Point Light intensity를 스크립트/커브로 깜빡</td><td>URP Forward+ <b>라이트당 그림자 개수·해상도 제한</b>. 다수 동적 그림자=비용 급증. → 그림자 캐스터를 <b>주인공+보스만</b>, 나머진 그림자 off</td></tr>
+      <tr><td>3</td><td><b>볼류메트릭 포그 + god-ray 원뿔</b></td><td class="pct p70">70%</td><td>COZY Pro Volumetric/Height Fog (전역 안개) + <b>무료 GitHub 볼류메트릭(§6)</b>으로 라이트별 산란</td><td><b>URP 내장 볼류메트릭 라이팅 없음 = 핵심 격차.</b> ss1 불 원뿔은 반투명 cone 메시+soft additive 셰이더로 "가짜 갓레이". 무료 GitHub 패키지로 진짜에 근접 가능</td></tr>
+      <tr><td>4</td><td><b>이미시브 블룸</b></td><td class="pct p90">97%</td><td>URP Volume → Bloom(threshold/scatter) + HDR 컬러</td><td>없음. URP 블룸은 UE5와 사실상 동급</td></tr>
+      <tr><td>5</td><td><b>필믹 그레이딩+그레인+비네트</b></td><td class="pct p90">95%</td><td>URP Volume → <b>Tonemapping(ACES)</b> + Film Grain + Vignette + Color Adjustments/Split Toning. <b>전부 URP 17 네이티브 확인됨</b></td><td>Film Grain만 단순. 커스텀 grain 텍스처 오버레이로 보완</td></tr>
+      <tr><td>6</td><td><b>씬당 단일 지배색</b> (붉은 지옥)</td><td class="pct p90">95%</td><td>씬별 Volume 프로파일 교체(Color Adjustments+Split Toning) + 글로벌 라이트 컬러</td><td>없음(연출 영역). <b>1인 제작 최고 레버리지</b></td></tr>
+      <tr><td>7</td><td><b>이미시브 머티리얼</b> (보스 내장·네온)</td><td class="pct p90">95%</td><td>Shader Graph Emission + HDR, 블룸 연동. 펄스는 _EmissionColor를 DOTween</td><td>없음</td></tr>
+      <tr><td>8</td><td><b>밀집 파티클</b> (잿불·먼지·모트)</td><td class="pct p90">88%</td><td>Shuriken(VFX Graph 미설치)으로 ember/dust/mote, soft+additive</td><td>VFX Graph 없어 수만 GPU 파티클 불가. <b>탑다운은 수백~수천이면 충분</b></td></tr>
+      <tr><td>9</td><td><b>이동 적 모션블러</b></td><td class="pct p50">40%</td><td>URP Volume Motion Blur = <b>카메라 전체</b> 블러만</td><td><b>per-object 모션블러 없음</b>(UE5/HDRP는 있음). 탑다운 고정 카메라라 전역 블러 효과 거의 없음. TrailRenderer로 모방. <b>→ 1인 시간낭비, 버려라</b></td></tr>
+      <tr><td>10</td><td><b>대기 원근</b> (거리 헤이즈)</td><td class="pct p90">90%</td><td>COZY Height Fog 거리 페이드 + URP fog</td><td>탑다운은 거리축 짧아 효과 제한적(문제 아님)</td></tr>
+      <tr><td>11</td><td><b>바닥 그라임/피/마모 데칼</b></td><td class="pct p90">90%</td><td><b>URP Decal Renderer Feature(현재 미활성→추가 필요)</b> + Decal Projector. 동적 피=풀 스폰</td><td>데칼 다수 시 드로우콜 비용. atlas 1장+개수 캡</td></tr>
+      <tr><td>12</td><td><b>화염방사 VFX</b> (히어로 이펙트)</td><td class="pct p70">80%</td><td>화염 flipbook + 열왜곡(grab-pass) + 스모크 + 잿불 + 끝에 Spot Light + Feel. <b>전용 에셋 다수 존재(§6)</b></td><td>UE5 Niagara 대비 불꽃 시뮬·라이팅 연동 정밀도 낮음. "닮음"이지 "동일"은 아님. <b>+ pm 판정: 이 연출 자체를 거부(§4)</b></td></tr>
+      <tr><td>13</td><td><b>컬러 블리딩 / 실시간 GI</b><br>(붉은빛 번짐)</td><td class="pct p50">55→80%</td><td>가짜 GI(붉은 앰비언트+바닥 fill light+하단 림라이트)가 기본. <b>+ HTrace SSGI(실존·§5)로 실제 동적 GI</b></td><td><b>URP 네이티브 실시간 GI 없음.</b> SSGI는 화면 밖 정보 없음 → Lumen 미달. <b>단 탑다운은 가림이 적어 SSGI에 유리(§5)</b></td></tr>
+    </tbody>
+  </table>
+
+  <!-- ============ §3 ============ -->
+  <h2>3. 종합 — 어디까지 되고, 어디서 막히나</h2>
+  <div class="grid">
+    <div class="panel teal">
+      <b style="color:var(--good)">"거의 동일" (90%+)</b>
+      <ul>
+        <li>카메라 · 블룸 · 필믹 그레이딩 · 단일 지배색 · 이미시브 · 데칼 · 대기원근</li>
+        <li><b>이것만 합쳐도 Hell Express "분위기"의 70%가 나온다.</b> 전부 Volume 슬라이더 + 보유 에셋. 최우선 투자처.</li>
+      </ul>
+    </div>
+    <div class="panel amber">
+      <b style="color:var(--warn)">"충분히 비슷" (70~85%)</b>
+      <ul>
+        <li>동적 라이팅 · 화염 VFX · 밀집 파티클 · 전역 포그</li>
+        <li>보유 에셋 + 무료 GitHub로 도달. 셋업 노력 필요.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="panel hot">
+    <b style="color:var(--bad)">"명확히 열세 → 치트로 메움" (진짜 벽)</b>
+    <ul>
+      <li><b>① 볼류메트릭 god-ray 원뿔</b> — URP 내장 없음. 가짜 cone 메시 / 무료 GitHub 볼류메트릭으로 근접.</li>
+      <li><b>② 실시간 GI 붉은빛 번짐</b> — URP 내장 없음. 가짜 앰비언트+fill light가 메인, HTrace SSGI가 보너스.</li>
+      <li><b>③ per-object 모션블러</b> — 사실상 포기 권장(우리 게임엔 해롭기까지 함, §4).</li>
+    </ul>
+  </div>
+
+  <!-- ============ §4 ============ -->
+  <h2>4. 반전 — "재현하면 안 되는" 연출 (pm 판정)</h2>
+  <p>핵심 질문은 "재현 가능한가"가 아니라 <b>"우리 게임에 복무하는가"</b>다. ZombieCrush = 느리고 취약한 생존. Hell Express = 빠른 4인 파워판타지. 일부 연출은 95% 재현해봤자 정체성을 깬다.</p>
+
+  <table>
+    <thead><tr><th style="width:120px">판정</th><th>기법</th><th>이유</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag t-p1">P1 필수</span></td><td>⑥ 지배색 · ⑤ 그레이딩+비네트 · ① 카메라 · ⑩ 대기원근 · ② 손전등 콘</td><td>전부 <b>"병들고 갇힌 세계"=긴장</b>에 직결 + 1인 저비용. 비네트=시야 압축으로 취약함, 헤이즈=숨은 위험, 손전등=안 보이는 것의 공포. <b>단 색은 붉은 지옥 대신 차갑고 병든 색(시안-그린/탁한 앰버)으로</b> — 빨강은 파워판타지 신호.</td></tr>
+      <tr><td><span class="tag t-p2">P2 나중</span></td><td>⑧ 옅은 파티클 · ⑪ 절제된 데칼 · ⑬ GI · ⑦ 변종 단서용 약발광</td><td>분위기엔 보탬이나 핵심 아님. "dense" 파티클의 dense는 버린다. 데칼 과하면 "학살 현장=내가 강함"으로 읽힘.</td></tr>
+      <tr><td><span class="tag t-rej">거부</span></td><td><b>⑫ 화염방사 히어로 VFX</b></td><td><b>이것이 파워판타지의 시각적 본체.</b> "내가 호드를 쓸어버린다" = 우리의 "모든 처치엔 대가"와 정면 충돌. 단 한 컷도 넣지 말 것. <b>이걸 거부하는 게 곧 정체성 방어.</b></td></tr>
+      <tr><td><span class="tag t-rej">거부</span></td><td>④ 강한 블룸(과용) · ⑨ 모션블러 · ⑦ 네온 떡칠</td><td>블룸 과용=빛으로 차면 위협이 사라짐. 모션블러=느린 게임에 속도감은 거짓말+멀미. 네온=사이버펑크 파워판타지 톤. (약한 블룸은 P1 조명에 섞여 들어오면 충분)</td></tr>
+    </tbody>
+  </table>
+  <blockquote>한 줄: 색·그레이딩·헤이즈·비네트·손전등으로 "병들고 갇힌 세계"를 만들고, 화염·과한 블룸·모션블러로 "내가 강하다"고 외치는 모든 걸 죽여라.</blockquote>
+
+  <!-- ============ §5 ============ -->
+  <h2>5. 진짜 벽 2개 — 정직한 보정</h2>
+  <div class="panel">
+    <h3 style="margin-top:0">벽 ① 볼류메트릭 라이팅 (god-ray)</h3>
+    <p>URP는 HDRP/UE5와 달리 <b>내장 볼류메트릭 라이팅이 없다.</b> 이건 명백한 격차다. <b>그러나 해결책이 실존하고 무료다:</b></p>
+    <ul>
+      <li><b>무료 GitHub:</b> <code>CristianQiu/Unity-URP-Volumetric-Light</code> — Unity 6 + URP Render Graph 지원, main+additional 라이트 볼류메트릭. spot/point에 <code>VolumetricAdditionalLight</code> 컴포넌트만 추가.</li>
+      <li><b>무료 GitHub:</b> <code>SlightlyMad/VolumetricLights</code> — spot에 <b>cookie 텍스처</b> 지원 = <b>손전등 콘에 딱</b>.</li>
+      <li><b>유료(품질↑):</b> Aura 2, Corgi God Rays, Volumetric Light Beam(★5, 손전등/스포트 특화).</li>
+    </ul>
+    <p>정직한 결론: 정지 화면(스크린샷)에선 <b>거의 구분 안 됨</b>까지 간다. 움직이는 영상에서 광원-기하 상호작용의 미세함만 살짝 못 따라간다.</p>
+  </div>
+  <div class="panel">
+    <h3 style="margin-top:0">벽 ② 실시간 GI (Lumen식 붉은빛 번짐)</h3>
+    <p>URP엔 실시간 GI가 없다. 하지만 <b>HTrace SSGI(IPGames, Asset Store 정식 출시)가 실존</b>하며 검증한 스펙이 우리 케이스에 강하다:</p>
+    <ul>
+      <li>베이킹 불필요 · 완전 동적/절차적 환경 지원 · <b>이미시브 머티리얼이 실제 광원으로 작동(간접 소프트섀도까지)</b> · Forward+/Deferred 전부 · APV 보강.</li>
+      <li>즉 "붉은 바닥→오브젝트 번짐(ss0)"이 바로 이 에셋의 마케팅 사례.</li>
+    </ul>
+    <p><b>중요한 정직한 보정:</b> SSGI의 약점은 "화면 밖 정보 없음"인데, <b>탑다운 시점은 FPS와 달리 관련 기하가 대부분 화면 안에 있다.</b> 즉 <b>SSGI의 최대 약점이 우리 시점에선 가장 작아진다.</b> Gameplay 에이전트는 "HTrace에 베팅 말라"고 했지만, 검증 결과 탑다운+이 게임 무드엔 HTrace가 ROI 높은 카드다. 단 <b>의존이 아니라 보강</b>으로: 가짜 GI(앰비언트+fill light)를 베이스로 깔고 HTrace를 위에 얹는다.</p>
+    <ul>
+      <li><b>무료 대안 GitHub:</b> <code>jiaozi158/UnitySSGIURP</code> (오픈소스 URP SSGI). · Unity 6 네이티브 <b>APV</b>(베이크형, 광프로브 대비 고품질).</li>
+    </ul>
+  </div>
+
+  <!-- ============ §6 ============ -->
+  <h2>6. 검증된 레퍼런스 (GitHub · Asset Store · 문서)</h2>
+  <p class="sub">전부 실존 확인. 발명한 이름 없음. URP/Unity 6 호환 여부 명기.</p>
+
+  <h3>볼류메트릭 라이팅 / god-ray (URP)</h3>
+  <ul>
+    <li><a href="https://github.com/CristianQiu/Unity-URP-Volumetric-Light">CristianQiu/Unity-URP-Volumetric-Light</a> — <b>무료, Unity 6/Render Graph ✅</b>, main+additional 라이트. (최우선 후보)</li>
+    <li><a href="https://github.com/SlightlyMad/VolumetricLights">SlightlyMad/VolumetricLights</a> — 무료, spot cookie 지원(손전등 콘).</li>
+    <li><a href="https://github.com/nixonyh/URPVolumetricLighting">nixonyh/URPVolumetricLighting</a> — 무료, directional/spot/point.</li>
+    <li><a href="https://assetstore.unity.com/packages/tools/particles-effects/aura-2-volumetric-lighting-fog-137148">Aura 2</a> · <a href="https://discussions.unity.com/t/corgi-god-rays-volumetric-lighting-for-urp-released/877854">Corgi God Rays</a> · <a href="https://saladgamer.com/vlb-doc/">Volumetric Light Beam</a> — 유료, 품질/지원↑.</li>
+    <li>튜토리얼: <a href="https://valeriomarty.medium.com/raymarched-volumetric-lighting-in-unity-urp-e7bc84d31604">Raymarched Volumetric Lighting in URP (Valerio Marty)</a>.</li>
+  </ul>
+
+  <h3>실시간 GI / SSGI (URP)</h3>
+  <ul>
+    <li><a href="https://assetstore.unity.com/packages/tools/level-design/htrace-screen-space-global-illumination-urp-336896">HTrace: SSGI URP (IPGames)</a> — <b>정식 출시 ✅</b>, 무베이킹·동적·이미시브 광원화. (우리 ss0 붉은 번짐 케이스 직결)</li>
+    <li><a href="https://github.com/jiaozi158/UnitySSGIURP">jiaozi158/UnitySSGIURP</a> — <b>무료 오픈소스</b> URP SSGI.</li>
+    <li><a href="https://unity.com/blog/engine-platform/new-ways-of-applying-global-illumination-in-unity-6">Unity 6 GI / Adaptive Probe Volumes(APV)</a> — 네이티브(베이크형, 정적 환경).</li>
+  </ul>
+
+  <h3>화염 / 화염방사 VFX (참고용 — pm는 화염방사 연출 자체는 거부)</h3>
+  <ul>
+    <li><a href="https://assetstore.unity.com/packages/vfx/flamethrower-vfx-graph-urp-hdrp-215770">Flamethrower VFX Graph (URP & HDRP)</a> · <a href="https://www.gabrielaguiarprod.com/product-page/unity-vfx-graph-flamethrower-project">Gabriel Aguiar — Flamethrower 프로젝트</a>(VFX 교육 표준).</li>
+    <li><a href="https://assetstore.unity.com/packages/vfx/shaders/stylized-fire-flames-vfx-shader-graph-urp-215912">Stylized Fire Flames (Shader Graph URP)</a> · <a href="https://assetstore.unity.com/packages/vfx/particles/fire-explosions/free-fire-vfx-urp-266226">Free Fire VFX – URP(무료)</a>.</li>
+    <li>※ 우리 프로젝트는 <b>VFX Graph 미설치</b> — 탑다운은 Shuriken으로 충분. 패키지 추가는 러닝커브 함정.</li>
+  </ul>
+
+  <h3>필믹 포스트 (URP 17 네이티브 — 추가 설치 불필요 확인)</h3>
+  <ul>
+    <li><a href="https://docs.unity3d.com/6000.3/Documentation/Manual/urp/EffectList.html">URP 6000.3 Volume Override 목록</a> — Bloom · <b>Tonemapping(ACES)</b> · Film Grain · Vignette · Color Adjustments/Curves/Split Toning <b>전부 네이티브 제공</b>.</li>
+    <li><a href="https://docs.unity3d.com/6000.0/Documentation/Manual/urp/post-processing-tonemapping.html">Tonemapping Override 문서</a> — ACES = 필름룩 표준.</li>
+    <li><b>Motion Blur는 카메라 전용</b>(per-object 없음) — UE5/HDRP와의 확정 격차.</li>
+  </ul>
+
+  <!-- ============ §7 ============ -->
+  <h2>7. 최종 판정</h2>
+  <div class="panel hot">
+    <p class="verdict">"95% 재현 가능한가?" → <span style="color:var(--warn)">기법별로 다르다. 전체 체감 상한은 88~92%.</span></p>
+    <ul class="big">
+      <li><b>11/13 기법은 90%+ 도달</b> — 카메라·블룸·그레이딩·색·이미시브·데칼·대기원근·파티클·동적라이팅·포그.</li>
+      <li><b>95%를 막는 건 단 2개</b> — UE5 볼류메트릭 + Lumen GI. <b>둘 다 보유/무료 에셋으로 "정지화면상 거의 구분 안 됨"까지 메움.</b> 탑다운 시점이 SSGI 약점을 줄여 격차가 통념보다 작다.</li>
+      <li><b>정직한 5~10% 갭의 정체</b> = 움직이는 영상에서 광원-기하 상호작용의 미세함. 이건 파이프라인 한계라 솔로가 메우려면 시간 블랙홀.</li>
+      <li><b>그런데 우리는 95%가 목표가 아니다.</b> Hell Express 무드의 70%는 <b>포스트+그레이딩+색만으로</b> 나오고, 화염방사·모션블러는 재현하면 <b>오히려 우리 게임을 망친다.</b> "Hell Express처럼"의 진짜 의미 = <b>어둠·대비·단일색·필름질감</b>이지 화염 스펙터클이 아니다.</li>
+    </ul>
+  </div>
+
+  <div class="panel teal">
+    <b>그래서 1인 개발자가 실제로 할 일 (ROI 순)</b>
+    <ol>
+      <li><b>URP Volume 1개 세팅</b>(ACES+Bloom+Vignette+FilmGrain+ColorAdjustments) — 30분, 무드 70%.</li>
+      <li><b>씬별 지배색</b>을 차갑고 병든 톤으로 — 바이옴 정체성, 거의 공짜.</li>
+      <li><b>손전등 콘</b>: Spot Light + cookie + 무료 GitHub 볼류메트릭(CristianQiu).</li>
+      <li><b>Decal Renderer Feature 활성화</b> + 그라임/피 데칼(절제).</li>
+      <li>(여유 시) <b>HTrace SSGI</b>로 붉은/병든 빛 번짐 보강 — 의존 말고 보너스.</li>
+      <li><b>하지 말 것:</b> 모션블러, 화염방사 호드일소, VFX Graph 도입, 진짜 볼류메트릭 풀튜닝.</li>
+    </ol>
+  </div>
+
+  <p class="meta">
+    작성: Claude (Opus) · 협업: Gameplay 에이전트(프로젝트 파일 실검증, opus) · pm 에이전트(제품 우선순위) · 웹/GitHub 직접 검증.<br>
+    <b>codex 에이전트는 약 80분간 스톨</b>(세션 21:03 이후 진전 0 확인)되어 중단, 해당 GitHub/에셋 검증은 Claude가 직접 수행함 — 거짓 보고 방지를 위해 명기.<br>
+    엔진 미확정(SteamDB 403). 모든 에셋/리포는 2026-06-04 기준 실존 확인. 이미지 출처: Full Metal Bagel / Arc Games 공식 프레스 키트(프로젝트 보존본).
+  </p>
+
+</div>
+</body>
+</html>

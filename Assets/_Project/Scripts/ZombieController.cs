@@ -51,6 +51,11 @@ public class ZombieController : MonoBehaviour
     bool _dead;
     bool _spawning;
 
+    // 근접 피격 반응(코드 구동 — RB가 kinematic이라 물리력 대신 직접 변위)
+    Vector3 _knockbackVel;     // 넉백 잔여 속도(감쇠)
+    float _staggerTimer;       // 경직: AI 추격 일시정지
+    const float KnockbackDamping = 12f;   // 넉백 감쇠율(클수록 빨리 멈춤)
+
     MMSpringScale _springScale;
     Animator _animator;
     static readonly int SpeedHash = Animator.StringToHash("Speed");
@@ -88,6 +93,8 @@ public class ZombieController : MonoBehaviour
 
         // ★ 풀링 대비 전체 리셋 (현재 Instantiate/Destroy라 무해하지만, 풀 도입 시 오염 방지)
         _velocity = Vector3.zero;
+        _knockbackVel = Vector3.zero;
+        _staggerTimer = 0f;
         _spawning = false;
         _attackCooldownTimer = 0f;
         _investigateTimer = 0f;
@@ -139,6 +146,9 @@ public class ZombieController : MonoBehaviour
             if (_signalCooldownTimer <= 0f)
                 _hasSignaled = false;   // 쿨다운 만료 → 재소환 가능
         }
+
+        if (_staggerTimer > 0f)
+            _staggerTimer -= Time.fixedDeltaTime;
     }
 
     // ──────────── Detection ────────────
@@ -319,8 +329,11 @@ public class ZombieController : MonoBehaviour
         toTarget.y = 0f;
         float dist = toTarget.magnitude;
 
-        Vector3 desiredDir = dist > stopDist ? toTarget.normalized : Vector3.zero;
-        desiredDir += CalcSeparation() * separationStrength;
+        // 경직 중이면 추격 의지를 끊는다(넉백만 작용 → "맞고 밀려나는" 멈칫).
+        bool staggered = _staggerTimer > 0f;
+
+        Vector3 desiredDir = (!staggered && dist > stopDist) ? toTarget.normalized : Vector3.zero;
+        if (!staggered) desiredDir += CalcSeparation() * separationStrength;
         desiredDir.y = 0f;
 
         float speed = _config != null ? _config.moveSpeed : 3f;
@@ -333,9 +346,11 @@ public class ZombieController : MonoBehaviour
         _velocity = Vector3.Lerp(_velocity, desiredVel,
             1f - Mathf.Exp(-accel * Time.fixedDeltaTime));
 
-        if (_velocity.sqrMagnitude > 0.0001f)
+        // 넉백은 AI 속도와 별개로 더해지고 지수 감쇠한다(kinematic이라 물리력 대신 직접 변위).
+        Vector3 step = (_velocity + _knockbackVel) * Time.fixedDeltaTime;
+        if (step.sqrMagnitude > 0.0000001f)
         {
-            Vector3 nextPos = transform.position + _velocity * Time.fixedDeltaTime;
+            Vector3 nextPos = transform.position + step;
             nextPos.y = SampleTerrainHeight(nextPos) + _groundOffset;
             _rb.MovePosition(nextPos);
 
@@ -349,6 +364,9 @@ public class ZombieController : MonoBehaviour
                 _rb.MoveRotation(Quaternion.Slerp(transform.rotation, targetRot, 10f * Time.fixedDeltaTime));
             }
         }
+
+        _knockbackVel = Vector3.Lerp(_knockbackVel, Vector3.zero,
+            1f - Mathf.Exp(-KnockbackDamping * Time.fixedDeltaTime));
     }
 
     void UpdateAnimation()
@@ -366,11 +384,8 @@ public class ZombieController : MonoBehaviour
         // TODO: 공격 애니메이션 트리거
     }
 
-    /// <summary>
-    /// 플레이어 공격 코드에서 호출.
-    /// isAssassination = true면 소음 0 + 데미지 2배 (호출자가 처리).
-    /// </summary>
-    public void TakeDamage(int amount, bool isAssassination = false)
+    /// <summary>원거리/DoT 등 일반 피해. 기본 죽음 연출(좀비 자체 파티클/사운드) 사용.</summary>
+    public void TakeDamage(int amount)
     {
         if (_dead) return;
 
@@ -385,21 +400,38 @@ public class ZombieController : MonoBehaviour
         // 맞으면 작은 범프
         _springScale?.Bump(new Vector3(0.2f, -0.3f, 0.2f));
 
-        // Idle/Investigate 상태에서 맞으면 (암살 아닌 경우) → Chase
-        if (!isAssassination && (_state == ZombieState.Idle || _state == ZombieState.Investigate))
+        // Idle/Investigate 상태에서 맞으면 → Chase
+        if (_state == ZombieState.Idle || _state == ZombieState.Investigate)
             EnterChase();
     }
 
-    /// <summary>무경계(Idle/Investigate) 상태면 암살 가능. Chase/Attack/Dead는 불가.</summary>
-    public bool IsAssassinable => !_dead && (_state == ZombieState.Idle || _state == ZombieState.Investigate);
-
-    /// <summary>은신 암살: 무경계일 때만 무음 즉사. 성공 시 true.
-    /// Die()는 NoiseManager 소음을 내지 않으므로 별도 무음 처리 불필요.</summary>
-    public bool TryAssassinate()
+    /// <summary>
+    /// 근접 타격. 데미지 + 넉백(코드 변위) + 경직 + 어그로. 사망 시 무기별 죽음 연출.
+    /// 반환값 = 이 타격으로 죽었는지(호출자가 킬 사운드/카운트에 사용).
+    /// </summary>
+    public bool TakeMeleeHit(int damage, Vector3 attackerPos, float knockback, float stagger, WeaponLoadout.DeathStyle style)
     {
-        if (!IsAssassinable) return false;
-        Die();
-        return true;
+        if (_dead) return false;
+
+        Vector3 dir = transform.position - attackerPos;
+        dir.y = 0f;
+        dir = dir.sqrMagnitude > 0.0001f ? dir.normalized : transform.forward;
+
+        _currentHP -= damage;
+
+        if (_currentHP <= 0)
+        {
+            DieByWeapon(style, dir, knockback);
+            return true;
+        }
+
+        // 생존: 넉백 + 경직 + 범프 + 어그로
+        _knockbackVel = dir * knockback;
+        if (stagger > 0f) _staggerTimer = Mathf.Max(_staggerTimer, stagger);
+        _springScale?.Bump(new Vector3(0.25f, -0.35f, 0.25f));
+        if (_state == ZombieState.Idle || _state == ZombieState.Investigate)
+            EnterChase();
+        return false;
     }
 
     void Die()
@@ -418,6 +450,46 @@ public class ZombieController : MonoBehaviour
         SpawnXPOrbs();
         CraftingSystem.Instance?.NotifyKill(transform.position);
         Destroy(gameObject);
+    }
+
+    /// <summary>무기별 죽음 연출(형태/멈춤/런치 차등). 시체를 넉백 방향으로 날린 뒤 제거.</summary>
+    void DieByWeapon(WeaponLoadout.DeathStyle style, Vector3 launchDir, float force)
+    {
+        _dead = true;
+        _state = ZombieState.Dead;
+        _knockbackVel = Vector3.zero;   // 런치 트윈이 변위를 전담
+
+        SpawnXPOrbs();
+        CraftingSystem.Instance?.NotifyKill(transform.position);
+
+        // 히트스탑은 스윙당 1회만 내야 한다(다중킬 스택 방지) → MeleeAttacker.Swing이 소유.
+        // 여기선 형태(squash)·런치만 무기별로 차등.
+        Vector3 squash;
+        float launchDist;
+        if (style == WeaponLoadout.DeathStyle.Crunch)
+        {
+            // 쇠지렛대: 깊게 으스러지며 위로 팝 + 크게 날아감
+            squash = new Vector3(0.45f, -0.6f, 0.45f);
+            launchDist = Mathf.Max(0.6f, force * 0.12f);
+        }
+        else
+        {
+            // 방망이(Splat): 옆으로 납작하게 후려쳐 뒤로 미끄러짐
+            squash = new Vector3(0.6f, -0.45f, 0.6f);
+            launchDist = Mathf.Max(0.4f, force * 0.08f);
+        }
+
+        _springScale?.Bump(squash);
+        if (killParticlePrefab != null)
+            Instantiate(killParticlePrefab, transform.position, Quaternion.identity);
+
+        // 시체 런치 후 제거. _dead=true라 AI/재타격이 차단되어 트윈과 충돌 없음.
+        Vector3 launchTarget = transform.position + launchDir * launchDist;
+        if (style == WeaponLoadout.DeathStyle.Crunch) launchTarget += Vector3.up * 0.5f;
+        transform.DOKill();
+        transform.DOMove(launchTarget, 0.25f).SetEase(Ease.OutQuad)
+            .OnComplete(() => Destroy(gameObject));
+        Destroy(gameObject, 0.6f);   // 트윈이 끊겨도 확실히 제거되는 안전망
     }
 
     void SpawnXPOrbs()

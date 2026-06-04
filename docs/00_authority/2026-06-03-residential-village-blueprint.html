@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>주택가 마을 (1번 맵) — 레벨 블루프린트</title>
+<style>
+  body{font-family:-apple-system,'Segoe UI',sans-serif;max-width:1000px;margin:0 auto;padding:24px;line-height:1.6;color:#1a1a1a;background:#fafafa;}
+  h1{border-bottom:3px solid #c0392b;padding-bottom:8px;}
+  h2{margin-top:32px;border-left:5px solid #c0392b;padding-left:10px;}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px;}
+  th,td{border:1px solid #ccc;padding:6px 9px;text-align:left;}
+  th{background:#2c3e50;color:#fff;}
+  tr:nth-child(even){background:#f0f0f0;}
+  .note{background:#fff8e1;border-left:4px solid #f39c12;padding:10px 14px;margin:12px 0;}
+  .intent{background:#e8f5e9;border-left:4px solid #27ae60;padding:10px 14px;margin:12px 0;}
+  code{background:#eee;padding:1px 5px;border-radius:3px;font-size:13px;}
+  svg{background:#e9eef2;border:1px solid #bbb;border-radius:6px;display:block;margin:16px auto;}
+  .legend span{display:inline-block;margin:0 12px 0 0;font-size:13px;}
+  .sw{display:inline-block;width:14px;height:14px;vertical-align:middle;margin-right:4px;border:1px solid #555;}
+</style>
+</head>
+<body>
+<h1>주택가 마을 — 1번 맵 레벨 블루프린트</h1>
+<p><strong>작성:</strong> 2026-06-03 · <strong>상태:</strong> Stage 0 설계 (배치 전) · <strong>씬:</strong> <code>Assets/_Project/Scenes/RoadTest.unity</code> · <strong>에셋:</strong> Toon City (white "3" 도로 패밀리 + Brownstone 로하우스)</p>
+
+<div class="intent">
+<strong>설계 의도 (pm 비평 반영):</strong> 안전가옥은 <b>허브(중앙 교차로 옆)</b>에 둔다 — 거점은 "주머니(컬데삭)"가 아니라 "허브"여야 둠클락+호드 상황에서 함정이 되지 않는다. 컬데삭 끝엔 대신 <b>고가치 부품 캐시</b>(위험을 무릅쓰고 들어갔다 빠져나오는 욕망 공간). 맵은 <b>비대칭 십자가</b> — 짧은 3팔(동/북 주택 spur, 남 Court) + 긴 1팔(서=전진축). 교차로(호드 무대)와 엘리트 게이트(서쪽 팔 중간)를 공간적으로 분리해 "고조→게이트→숨고르기" 비트를 만든다.
+</div>
+
+<h2>1. 레퍼런스 근거 (현실/도시계획)</h2>
+<p>주택가 도로 패턴의 두 표준은 <b>그리드(grid)</b>와 <b>컬데삭/루프(cul-de-sac/loop)</b>다. 가진 에셋이 <b>브라운스톤 연립주택(12폭×24깊이 로하우스)</b>뿐이라 — 독립형 단독주택이 없음 — 브루클린형 <b>그리드 블록(로하우스 줄지어 도로변 정면)</b>을 기본으로, 막다른 <b>컬데삭 court</b>를 하이브리드로 얹는다. 뉴어버니즘 문헌이 정확히 이 grid↔cul-de-sac 트레이드오프를 다룬다(그리드=직결 보행·관통교통, 컬데삭=도로 50%↓·단독주택 밀집·관통교통 차단). 우리 안전가옥 허브 = 그리드 교차로(접근성), 부품 캐시 = 컬데삭(차단된 주머니)으로 둘의 장점을 분리 사용.</p>
+
+<h2>2. 도로 골격 (검증된 조각, white "3" 패밀리)</h2>
+<p>중심 4거리 <code>Road_3G</code>(16×16, 개구부 12폭) 기준 비대칭 십자가. 직선 = <code>Road_3A</code>(12×12, rot0 E-W 열림 / rot90 N-S 열림). 막다른 = <code>Road_3I</code>(12×8, 입구가 도로를 향하도록 회전 + 도로쪽 <b>+6.2 보정</b>). 좌표계: +X=East, −X=West(전진축), +Z=North, −Z=South. 첫 팔 타일 중심 = 교차로반(8) + 타일반(6) = <b>±14</b>, 이후 ±12 체이닝.</p>
+<table>
+<tr><th>구간</th><th>조각</th><th>중심 좌표 (X,Z)</th><th>rotY</th><th>비고</th></tr>
+<tr><td>중앙 4거리</td><td>Road_3G</td><td>(0, 0)</td><td>0</td><td>호드 무대. 4개구부 12폭</td></tr>
+<tr><td>서쪽 팔 ×7 (전진축)</td><td>Road_3A</td><td>(−14·−26·−38·−50·−62·−74·−86, 0)</td><td>0</td><td>가장 긴 팔. 서끝 X=−92 <b>열림=군부대 seam</b></td></tr>
+<tr><td>동쪽 팔 ×2</td><td>Road_3A</td><td>(14·26, 0)</td><td>0</td><td>짧은 주택 spur</td></tr>
+<tr><td>동쪽 막다른</td><td>Road_3I</td><td>(~38, 0)</td><td>입구 ←서</td><td>+6.2 보정, Stage1 캡처로 방향 확정</td></tr>
+<tr><td>북쪽 팔 ×2</td><td>Road_3A</td><td>(0, 14·26)</td><td>90</td><td>짧은 주택 spur</td></tr>
+<tr><td>북쪽 막다른</td><td>Road_3I</td><td>(0, ~38)</td><td>입구 ↓남</td><td>+6.2 보정</td></tr>
+<tr><td>남쪽 Court ×3</td><td>Road_3A</td><td>(0, −14·−26·−38)</td><td>90</td><td>컬데삭 court</td></tr>
+<tr><td>남쪽 막다른</td><td>Road_3I</td><td>(0, ~−44)</td><td>입구 ↑북</td><td>+6.2 보정. 끝에 <b>부품 캐시</b></td></tr>
+</table>
+<div class="note"><b>연결 검증 (Stage 1에서 채움):</b> 각 인접면 bbox-flush를 수치로 확인 + 탑다운 캡처로 차도/연석 연속성 육안 확인. Road_3G 4-way 개구부 12 ↔ Road_3A 12 정렬, Road_3I +6.2 방향은 캡처로 확정. <em>(결과 기입 예정)</em></p></div>
+
+<h2>3. 집 배치 (Brownstone 로하우스 12폭×24깊이)</h2>
+<p>로하우스는 좁은 정면(12)이 도로를 향하고 깊이 24가 도로 반대로 뻗는다. 보도 셋백 ~2 → 집 중심은 도로 중심선에서 ±20 (6 도로반 + 2 보도 + 12 깊이반). 12폭이라 12 간격으로 딱 맞물려 줄지음. 정면 방향(rot)은 Stage 1에서 캡처 1장으로 확정 후 행/열 미러링.</p>
+<table>
+<tr><th>위치</th><th>열 중심선</th><th>집 중심(따라가는 축)</th><th>수량(목표)</th><th>비고</th></tr>
+<tr><td>서쪽 팔 북측</td><td>Z=+20</td><td>X=−20·−32·−44·−56(·−68·−80)</td><td>4~6</td><td>서끝으로 갈수록 <b>듬성</b>(노출↑=전진 긴장)</td></tr>
+<tr><td>서쪽 팔 남측</td><td>Z=−20</td><td>X=−20·−32·−44·−56(·−68·−80)</td><td>4~6</td><td>동일 그라데이션</td></tr>
+<tr><td>동쪽 팔 양측</td><td>Z=±20</td><td>X=20·32</td><td>2~4</td><td>짧은 spur</td></tr>
+<tr><td>북쪽 팔 양측</td><td>X=±20</td><td>Z=20·32</td><td>2~4</td><td>짧은 spur</td></tr>
+<tr><td>남 Court 양측</td><td>X=±20</td><td>Z=−20·−32</td><td>2~4</td><td>컬데삭 court</td></tr>
+</table>
+
+<h2>4. 랜드마크 / 게임플레이 앵커</h2>
+<table>
+<tr><th>앵커</th><th>위치</th><th>역할</th></tr>
+<tr><td>🏠 안전가옥 (safehouse)</td><td>허브 NE 인접 ~(18, 18)</td><td>플레이어 거점/시작점. 교차로에 붙어 접근성↑. 차별화 건물 + 작은 펜스 마당</td></tr>
+<tr><td>📦 부품 캐시</td><td>남 컬데삭 끝 ~(0, −46)</td><td>고가치 루프. 막다른=리스크/리워드</td></tr>
+<tr><td>🪖 군부대 seam</td><td>서끝 X≈−92, Z=0</td><td>2번 맵 도킹. 12폭 도로 열림 + 끝에 펜스/바리케이드/군용차 실루엣 = "다음 방향"</td></tr>
+<tr><td>⚔ 엘리트 게이트(개념)</td><td>서쪽 팔 중간 ~(−50, 0)</td><td>①차저 엘리트. 교차로(호드)와 분리된 비트. <em>스폰은 후속 시스템</em></td></tr>
+</table>
+
+<h2>5. 평면도 (top-down, 북쪽 위)</h2>
+<div class="legend">
+<span><span class="sw" style="background:#555;"></span>도로</span>
+<span><span class="sw" style="background:#777;"></span>4거리</span>
+<span><span class="sw" style="background:#8d6e63;"></span>로하우스</span>
+<span><span class="sw" style="background:#c0392b;"></span>안전가옥</span>
+<span><span class="sw" style="background:#f39c12;"></span>부품캐시</span>
+<span><span class="sw" style="background:#2980b9;"></span>군부대 seam</span>
+</div>
+<svg viewBox="0 0 480 330" width="900">
+  <g transform="translate(30,30)">
+    <!-- 도로 arms (px=(X+100)*3, py=(40-Z)*3) -->
+    <rect x="24"  y="102" width="252" height="36" fill="#555"/>  <!-- West arm -->
+    <rect x="324" y="102" width="72"  height="36" fill="#555"/>  <!-- East arm -->
+    <rect x="282" y="24"  width="36"  height="72" fill="#555"/>  <!-- North arm -->
+    <rect x="282" y="144" width="36"  height="108" fill="#555"/> <!-- South Court -->
+    <rect x="276" y="96"  width="48"  height="48" fill="#777" stroke="#fff" stroke-width="2"/> <!-- 4-way -->
+    <!-- 중앙선 점선 표현 -->
+    <line x1="24" y1="120" x2="396" y2="120" stroke="#fff" stroke-dasharray="6 6" stroke-width="1"/>
+    <line x1="300" y1="24" x2="300" y2="252" stroke="#fff" stroke-dasharray="6 6" stroke-width="1"/>
+
+    <!-- 로하우스 (12w×24d). 북측 Z=+20→y[24,96]; 남측 Z=-20→y[144,216] -->
+    <!-- West arm 북측: X centers -20..-56 (-80 듬성) -->
+    <g fill="#8d6e63" stroke="#5d4037">
+      <rect x="222" y="24" width="36" height="72"/>
+      <rect x="186" y="24" width="36" height="72"/>
+      <rect x="150" y="24" width="36" height="72"/>
+      <rect x="114" y="24" width="36" height="72"/>
+      <rect x="66"  y="24" width="36" height="72" opacity="0.55"/>
+      <!-- West arm 남측 -->
+      <rect x="222" y="144" width="36" height="72"/>
+      <rect x="186" y="144" width="36" height="72"/>
+      <rect x="150" y="144" width="36" height="72"/>
+      <rect x="114" y="144" width="36" height="72"/>
+      <rect x="66"  y="144" width="36" height="72" opacity="0.55"/>
+      <!-- East arm 양측: X 20,32 -->
+      <rect x="342" y="24" width="36" height="72"/>
+      <rect x="342" y="144" width="36" height="72"/>
+      <!-- North arm 양측: Z 20,32 ; X=±20 → 북측열은 도로 좌우. 동측 X=+20→x[342],서측 X=-20→x[222] (Z 20..32 → y[24,96]는 안겹치게 도로 위쪽) -->
+      <rect x="342" y="36" width="36" height="48"/>
+      <rect x="204" y="36" width="36" height="48"/>
+      <!-- South Court 양측: Z -20,-32 → y[144,216]; X=±20 -->
+      <rect x="342" y="156" width="36" height="60"/>
+      <rect x="204" y="156" width="36" height="60"/>
+    </g>
+
+    <!-- 안전가옥 (허브 NE ~ (18,18)) px=(18+100)*3=354, py=(40-18)*3=66 -->
+    <rect x="330" y="42" width="42" height="42" fill="#c0392b" stroke="#7b241c" stroke-width="2"/>
+    <text x="351" y="67" font-size="11" fill="#fff" text-anchor="middle">🏠</text>
+    <!-- 부품 캐시 (0,-46) px=300, py=258 -->
+    <rect x="288" y="252" width="24" height="20" fill="#f39c12" stroke="#b9770e"/>
+    <text x="300" y="285" font-size="10" fill="#b9770e" text-anchor="middle">부품캐시</text>
+    <!-- 군부대 seam (서끝) -->
+    <rect x="8" y="102" width="14" height="36" fill="#2980b9"/>
+    <text x="15" y="150" font-size="10" fill="#2980b9" text-anchor="middle">군부대→</text>
+    <!-- 엘리트 게이트 개념 (-50,0) px=150 py=120 -->
+    <circle cx="150" cy="120" r="9" fill="none" stroke="#e74c3c" stroke-width="2" stroke-dasharray="3 3"/>
+    <text x="150" y="123" font-size="9" fill="#e74c3c" text-anchor="middle">⚔</text>
+    <!-- 방위 -->
+    <text x="300" y="14" font-size="12" fill="#333" text-anchor="middle">N ↑</text>
+  </g>
+</svg>
+<p style="font-size:13px;color:#666;">※ 도식은 개념 표현. 정확한 타일/집 좌표는 위 표가 권위. 정면 방향·Road_3I 방향은 Stage 1 캡처로 확정.</p>
+
+</body>
+</html>
