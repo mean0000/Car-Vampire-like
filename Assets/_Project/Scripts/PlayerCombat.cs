@@ -45,6 +45,9 @@ public class PlayerCombat : MonoBehaviour
     [SerializeField] float tracerWidth = 0.12f;
     [SerializeField] Color tracerColor = new Color(1f, 0.85f, 0.3f, 1f);
 
+    [Header("Muzzle Flash")]
+    [SerializeField] GunFlashLight gunFlashLight;
+
     Camera _cam;
     float _cooldownTimer;
     float _assassinateTimer;
@@ -210,6 +213,7 @@ public class PlayerCombat : MonoBehaviour
 
         NoiseManager.Instance?.EmitImpulse(gunshotNoise);
 
+        gunFlashLight?.Trigger();
         ShowTracer(origin, end);
     }
 

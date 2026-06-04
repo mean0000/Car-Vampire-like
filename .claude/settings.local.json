@@ -53,7 +53,19 @@
       "Bash(cmd.exe /c start \"\" \"docs\\\\\\\\road_catalog\\\\\\\\index.html\")",
       "Bash(git check-ignore:*)",
       "Bash(kill %1)",
-      "Bash(pkill -f \"stat -c%s\")"
+      "Bash(pkill -f \"stat -c%s\")",
+      "Bash(rm -f .git/index.lock)",
+      "Bash(git stash *)",
+      "Bash(Sort-Object LastWriteTime -Descending)",
+      "Bash(Select-Object -First 5 Name, LastWriteTime, Length)",
+      "Bash(Start-Sleep -Seconds 8)",
+      "Bash(Test-Path \"C:\\\\UniytProject\\\\Car-Vampire-like\\\\docs\\\\captures\\\\readable_dark_v1.png\")",
+      "Bash(ping -n 4 127.0.0.1)",
+      "Bash(ping -n 3 127.0.0.1)",
+      "Bash(ping -n 5 127.0.0.1)",
+      "Bash(ping -n 6 127.0.0.1)",
+      "Bash(awk '{print $2}')",
+      "Bash(tasklist)"
     ]
   },
   "model": "claude-opus-4-8"
