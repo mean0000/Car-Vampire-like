@@ -71,9 +71,15 @@ git reset --hard &lt;해시&gt;</div>
       </tr>
       <tr>
         <td>C2</td>
-        <td class="hashbox">(이 문서)</td>
+        <td class="hashbox">beb199800</td>
         <td>작업 로그 HTML 추가</td>
         <td><span class="tag t-done">문서</span></td>
+      </tr>
+      <tr>
+        <td>C3</td>
+        <td class="hashbox">3a714d9a0</td>
+        <td><b>읽힘 보정</b> — 어둠 속 환경 가독성 확보(앰비언트 쿨 리프트, 노출 0.65, 비네트 완화). 정찰: HTrace 렌더러피처 이미 active / SSAO 미존재</td>
+        <td><span class="tag t-done">복원점</span></td>
       </tr>
     </tbody>
   </table>
@@ -119,7 +125,9 @@ git reset --hard &lt;해시&gt;</div>
     <li><b>테스트 씬 빌드:</b> <code>Assets/_Project/Scenes/StyleLab.unity</code> — 폐허도시+좀비+플레이어+발광광원+붉은패치(색번짐 타깃)+고정 JudgeCam.</li>
     <li><b>카메라 교정(★유저 지적 반영):</b> 처음 54°/캐릭터18%(틀림) → 레퍼런스 역설계로 <b>pitch 59.5 / FOV 38 / pos(0,34,-20) / 캐릭터 ~8%</b>로 수정, 캡처 검증.</li>
     <li><b>라이팅+포스트:</b> 어둠+광원풀(차가운 모니터 3 + 따뜻한 램프) + 포스트(ACES·쿨화이트밸런스·채도-22·블룸·비네트·그레인·Gaussian DoF) 적용. 카메라 <code>renderPostProcessing</code> ON. 캡처 = Image#4 의도와 1차 수렴 확인.</li>
+    <li><b>읽힘 보정 <span class="tag t-done">C3</span>:</b> 너무 까맣던 문제 → 앰비언트 쿨 리프트 + 노출 0.65 + 비네트 완화. 차가운 달빛 그림자 속에서 건물·바닥 읽힘 확보. 렌더러 정찰로 HTrace 이미 active / SSAO 미존재 확인.</li>
   </ul>
+  <div class="panel"><b>복원점 + 라이브 문서 인프라 구축 완료.</b> 매 단계 커밋(복원점) + 이 문서 갱신 사이클 가동.</div>
 
   <!-- ============ 파이프라인 상태판 ============ -->
   <h2>5. 파이프라인 상태판 (Image #4 수렴도)</h2>
@@ -130,10 +138,10 @@ git reset --hard &lt;해시&gt;</div>
       <tr><td>어둠 + 광원 풀</td><td class="ok">✅ 완료</td><td>차가운 3 + 따뜻한 1</td></tr>
       <tr><td>쿨 그레이드 + 블룸</td><td class="ok">✅ 완료</td><td>ACES + WB-18 + 채도-22</td></tr>
       <tr><td>비네트 + 그레인</td><td class="ok">✅ 완료</td><td>비네트 0.46(살짝 과함→보정 예정)</td></tr>
-      <tr><td>읽힘 보정(환경 가독성)</td><td class="pend">⏳ 대기</td><td>현재 너무 까맘 → 앰비언트/노출 소폭↑</td></tr>
-      <tr><td>SSAO(접지 그림자)</td><td class="pend">⏳ 대기</td><td>URP SSAO 렌더러 피처 활성</td></tr>
+      <tr><td>읽힘 보정(환경 가독성)</td><td class="ok">✅ 완료</td><td>C3 — 앰비언트 쿨 리프트 + 노출 0.65 + 비네트 완화</td></tr>
+      <tr><td>SSAO(접지 그림자)</td><td class="pend">⏳ 대기</td><td>URP SSAO 렌더러 피처 <b>추가 필요</b>(현재 미존재 확인)</td></tr>
       <tr><td>틸트시프트(상·하단 블러)</td><td class="pend">⏳ 대기</td><td>현재 원경만 흐림 → 양끝 블러 필요</td></tr>
-      <tr><td>HTrace SSGI(색번짐)</td><td class="pend">⏳ 대기</td><td>붉은 바닥→오브젝트 번짐</td></tr>
+      <tr><td>HTrace SSGI(색번짐)</td><td class="pend">⏳ 튜닝</td><td>렌더러피처 <b>이미 active</b> 확인 → 볼륨 오버라이드로 색번짐 검증·조정</td></tr>
       <tr><td>대기 헤이즈(COZY)</td><td class="pend">⏳ 대기</td><td>② 축 — 날씨 프리셋과 함께</td></tr>
       <tr><td>날씨 4종 일관성 테스트</td><td class="pend">⏳ 대기</td><td>맑음·흐림·저녁·밤 동일 treatment</td></tr>
     </tbody>
