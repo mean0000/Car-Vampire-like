@@ -134,7 +134,13 @@ git reset --hard &lt;해시&gt;</div>
         <td><b>STEP10 — MIRROR 헤드라인: 젖은 바닥 웅덩이 마스크</b><br>균일 smooth0.38→절차적 웅덩이 마스크(dry0.18↔wet0.82, 커버리지~20%) + Ground 전용 M_WetAsphalt(공유 머티리얼 미접촉)</td>
         <td><span class="tag t-done">복원점</span></td>
       </tr>
-      <tr><td>C20</td><td class="hashbox">(이 커밋)</td><td>문서 갱신(STEP10 카드 + 상태판 + HTrace 보류 기록)</td><td><span class="tag t-done">문서</span></td></tr>
+      <tr><td>C20</td><td class="hashbox">86d0cae57</td><td>문서 갱신(STEP10 카드 + 상태판 + HTrace 보류 기록)</td><td><span class="tag t-done">문서</span></td></tr>
+      <tr>
+        <td>C21</td><td class="hashbox">bbf3acc7a</td>
+        <td><b>STEP11 — 필름룩 그레이드 재건</b><br>★발견: StyleLab_Post 프로파일 STEP4부터 빈 상태(컴포넌트 전부 null). 경쟁 디렉터(NATURALIST/COLORIST) 병합 → ACES+스플릿토닝(이중온도)+비네트 등 8컴포넌트 재건</td>
+        <td><span class="tag t-done">복원점</span></td>
+      </tr>
+      <tr><td>C22</td><td class="hashbox">(이 커밋)</td><td>문서 갱신(STEP11 카드 + 빈프로파일 발견 + 상태판)</td><td><span class="tag t-done">문서</span></td></tr>
     </tbody>
   </table>
 
@@ -179,7 +185,7 @@ git reset --hard &lt;해시&gt;</div>
     <div class="step-head"><span>BEFORE → NOW · 현재 누적 결과</span><span class="h">raw → C3 (3a714d9a0)</span></div>
     <div class="ba">
       <figure><img src="../captures/style/c0_before.png" alt="before"><figcaption>BEFORE — 스타일 0 (평평한 회색 주광)</figcaption></figure>
-      <figure><img src="../captures/style/s10_puddle.png" alt="now"><figcaption>NOW — MIRROR 헤드라인: 젖은 바닥 웅덩이 마스크 (STEP10)</figcaption></figure>
+      <figure><img src="../captures/style/s11_grade.png" alt="now"><figcaption>NOW — 필름룩 그레이드 재건: ACES + 이중온도 스플릿토닝 (STEP11)</figcaption></figure>
     </div>
   </div>
 
@@ -239,7 +245,13 @@ git reset --hard &lt;해시&gt;</div>
     <div class="step-body"><b>MIRROR 학파의 핵심 구현:</b> STEP8의 균일 smoothness 0.38은 "중간값이라 대비가 없다"(MIRROR 진단). → 절차적 Perlin 웅덩이 마스크로 <b>dry 0.18 ↔ wet 0.82</b> 대비를 만듦. <b>안전 설계:</b> Ground 머티리얼 path가 비어있어(기본/공유 인스턴스) 직접 수정은 타 오브젝트 오염 위험 → <b>Ground 전용 신규 M_WetAsphalt.mat 생성</b>해 할당(외과적 변경). 셰이더 그래프 없이 URP/Lit의 metallic-alpha smoothness 채널 활용 — PuddleMask.png(512, linear, alpha=smoothness). 웅덩이 커버리지 ~20%로 가독성 안전(MIRROR 방어선 35% 이내, 플레이어/적 캡슐 가독성 유지). STEP9 Box 반사와 결합돼 웅덩이가 환경을 반사. <b>관찰된 갭:</b> 우리 환경=웜 헤이즈 → 웅덩이가 웜 반사. 레퍼런스#1은 쿨 웅덩이(파란 하늘 반사). 이는 잠긴 쿨-베이스 헌장과 합치하는 별도 레버 → STEP11(앰비언트/헤이즈 쿨화)에서 "쿨 웅덩이 + 웜 손전등 포켓 = 이중온도" 완성. <i>(보류: HTrace 1주체 GI 블리드 — UseVolumes=False·파라미터 미노출로 안전 튜닝 불가, 에셋 인스펙터/문서 확보 후 진행)</i></div>
   </div>
 
-  <!-- ▼▼▼ 다음 스텝은 이 줄 아래로 계속 추가 (STEP11 앰비언트/헤이즈 쿨화→쿨웅덩이 → HTrace 1주체 블리드(보류) → 가독성검증 → 틸트시프트 → COZY 날씨4종) ▼▼▼ -->
+  <div class="step">
+    <div class="step-head"><span>STEP 11 · 필름룩 그레이드 재건 — 경쟁 디렉터 병합 (★빈 프로파일 발견)</span><span class="h">C21 · bbf3acc7a</span></div>
+    <div class="shot"><figure><img src="../captures/style/s11_grade.png" alt="step11"><figcaption>ACES 롤오프 + 스플릿토닝 이중온도 — 적=쿨 블루 실루엣, 손전등=웜 오렌지 포켓</figcaption></figure></div>
+    <div class="step-body"><b>★중대 발견(정직 기록):</b> STEP11 진입 전 색 파이프라인을 조사하다 <b>활성 포스트 프로파일 <code>StyleLab_Post</code>가 STEP4부터 줄곧 비어있었음</b>을 발견(컴포넌트 10슬롯 전부 null, guid 대조 확인). 즉 ACES 톤매핑·스플릿토닝(쿨섀도)·비네트 등 헌장 ⑤ 필름룩이 <b>통째로 부재</b>했고, 이게 (1)손전등 백색 클리핑 (2)균일하게 따뜻한 톤의 진짜 원인. 문서가 잘못 가리키고 있었음. <b>경쟁 디렉터(유저 방법론):</b> <b>NATURALIST</b>(쿨 베이스는 라이팅에서, 그레이드는 얇게) vs <b>COLORIST</b>(쿨 베이스는 그레이드가 각인). <b>판정:</b> 현 씬은 쿨 앰비언트가 웜 Sun에 압도돼 라이팅만으론 쿨 베이스 불가 + COZY 날씨 변수에도 이중온도 보장 필요 → <b>COLORIST 구조 채택</b>(빠진 그레이드 풀 재건), 단 NATURALIST 절제로 수치 완화(로우폴리 만화필터·쿨 이중적재 방지). <b>재건 8컴포넌트:</b> ACES / ColorAdj(exp+1.35로 ACES 재노출·contrast+12·sat-14) / WhiteBalance(-6,+2) / SplitToning(쿨인디고 섀도+웜앰버 하이라이트·bal-10) / LiftGammaGain(블랙리프트+0.02=가독성게이트) / Vignette0.24 / FilmGrain Thin0.10 / Bloom(thr0.9,0.35). <b>결과:</b> 이중온도가 그레이드에 각인(날씨 무관 보장), 하이라이트 필름 롤오프(백색클리핑 해결), 그림자 속 적 실루엣 가독성 유지. <i>(잔여 미세튜닝: 안뜰 중경 가독성, 웅덩이 쿨 반사 강화)</i></div>
+  </div>
+
+  <!-- ▼▼▼ 다음 스텝은 이 줄 아래로 계속 추가 (그레이드 미세튜닝 → HTrace 1주체 블리드(보류) → 틸트시프트 → COZY 날씨4종 일관성) ▼▼▼ -->
 
   <!-- ============ 파이프라인 상태판 ============ -->
   <h2>5. 파이프라인 상태판 (Image #4 수렴도)</h2>
@@ -248,7 +260,7 @@ git reset --hard &lt;해시&gt;</div>
     <tbody>
       <tr><td>카메라 각도/비율</td><td class="ok">✅ 완료</td><td>pitch 59.5 / 캐릭터 ~8% (목표 ~7%, 근접)</td></tr>
       <tr><td>라이팅 시스템(손전등+월드광)</td><td class="ok">✅ 완료</td><td>C8/C17 — ★손배치→시스템. STEP9에서 손전등 blown orb→콘(380→90,inner22,colFFAD5A) 교정, 플레이어 가독성 회복</td></tr>
-      <tr><td>따뜻-차가움 그레이드 + 블룸</td><td class="ok">✅ 완료</td><td>C6 — Split Toning(쿨섀도/웜하이라이트), WB-10, 채도-13, 대비16</td></tr>
+      <tr><td>따뜻-차가움 그레이드 + 블룸</td><td class="ok">✅ 완료</td><td>C21 — ★STEP4 그레이드는 빈 프로파일이라 실제 미적용이었음 발견 → STEP11서 8컴포넌트 재건(ACES+SplitToning+Bloom 등). 이중온도 그레이드 각인</td></tr>
       <tr><td>암부 리프트(형태 읽힘)</td><td class="ok">✅ 완료</td><td>C6 — Lift 살짝(crush 방지) + 대비로 깊이 유지</td></tr>
       <tr><td>비네트 + 그레인</td><td class="ok">✅ 완료</td><td>비네트 0.46(살짝 과함→보정 예정)</td></tr>
       <tr><td>읽힘 보정(환경 가독성)</td><td class="ok">✅ 완료</td><td>C3 — 앰비언트 쿨 리프트 + 노출 0.65 + 비네트 완화</td></tr>
@@ -257,7 +269,8 @@ git reset --hard &lt;해시&gt;</div>
       <tr><td>SSAO(접지 그림자)</td><td class="ok">✅ 완료</td><td>C16 — 렌더러피처 추가, intensity0.55/radius0.3</td></tr>
       <tr><td>Box 반사 정렬</td><td class="ok">✅ 완료</td><td>C17 — Reflection Probe Box Projection ON. 반사가 방 기하에 정렬</td></tr>
       <tr><td>젖은 바닥 웅덩이 마스크(MIRROR 헤드라인)</td><td class="ok">✅ 완료</td><td>C19 — Ground 전용 M_WetAsphalt + Perlin 마스크(dry0.18↔wet0.82, ~20%). 잔여: 쿨 반사화(STEP11), ripple 노멀</td></tr>
-      <tr><td>이중온도 완성(쿨 웅덩이+웜 손전등)</td><td class="pend">⏳ STEP11</td><td>앰비언트/헤이즈 쿨화 → 웅덩이가 쿨 반사. 잠긴 쿨-베이스 헌장과 합치</td></tr>
+      <tr><td>필름룩 그레이드(ACES+톤매핑) ★재건</td><td class="ok">✅ 완료</td><td>C21 — 빈 프로파일 발견→8컴포넌트 재건. ACES로 백색클리핑 해결</td></tr>
+      <tr><td>이중온도(쿨 섀도+웜 손전등)</td><td class="ok">✅ 완료</td><td>C21 — SplitToning(쿨인디고/웜앰버)으로 그레이드 각인. 날씨 무관 보장</td></tr>
       <tr><td>HTrace GI 1주체 색블리드(MATERIA)</td><td class="no">⏸ 보류</td><td>UseVolumes=False·파라미터 미노출. 에셋 인스펙터/문서 확보 후 안전 튜닝</td></tr>
       <tr><td>틸트시프트(상·하단 블러)</td><td class="pend">⏳ 대기</td><td>현재 원경만 흐림 → 양끝 블러 필요</td></tr>
       <tr><td>대기 헤이즈(COZY)</td><td class="pend">⏳ 대기</td><td>② 축 — 날씨 프리셋과 함께</td></tr>
