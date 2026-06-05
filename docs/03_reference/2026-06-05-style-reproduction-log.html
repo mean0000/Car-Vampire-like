@@ -97,6 +97,12 @@ git reset --hard &lt;해시&gt;</div>
         <td><b>STEP4 — 기초 라이팅 교정 + 따뜻-차가움 그레이드</b><br>광원 풀 부드럽게+암부 리프트, Split Toning(쿨섀도/웜하이라이트), 이미시브 앵커 강화</td>
         <td><span class="tag t-done">복원점</span></td>
       </tr>
+      <tr><td>C7</td><td class="hashbox">6845ec592</td><td>문서 갱신(STEP4 카드)</td><td><span class="tag t-done">문서</span></td></tr>
+      <tr>
+        <td>C8</td><td class="hashbox">e640f1353</td>
+        <td><b>STEP5 — ★라이팅을 시스템으로 재구축</b><br>손전등(상수)+월드광(변수)+젖은바닥, 손배치 가짜풀 제거. 유저 관점교정 반영</td>
+        <td><span class="tag t-done">복원점</span></td>
+      </tr>
     </tbody>
   </table>
 
@@ -141,7 +147,7 @@ git reset --hard &lt;해시&gt;</div>
     <div class="step-head"><span>BEFORE → NOW · 현재 누적 결과</span><span class="h">raw → C3 (3a714d9a0)</span></div>
     <div class="ba">
       <figure><img src="../captures/style/c0_before.png" alt="before"><figcaption>BEFORE — 스타일 0 (평평한 회색 주광)</figcaption></figure>
-      <figure><img src="../captures/style/s4_lighting_grade.png" alt="now"><figcaption>NOW — 기초라이팅 교정 + 따뜻-차가움 대비 그레이드 (STEP4)</figcaption></figure>
+      <figure><img src="../captures/style/s5_lighting_system.png" alt="now"><figcaption>NOW — 라이팅 시스템(손전등 풀 + 차가운 월드광) (STEP5)</figcaption></figure>
     </div>
   </div>
 
@@ -165,6 +171,12 @@ git reset --hard &lt;해시&gt;</div>
     <div class="step-body"><b>art 디렉터 역설계 반영 — 갭의 본질은 포스트가 아니라 기초 라이팅 2개였다:</b> ① 광원 falloff 하드→부드러운 넓은 풀 ② 암부 crush→리프트(로우폴리 형태 읽힘). + <b>핵심 그레이드 발견:</b> Hell Express는 "전면 쿨"이 아니라 <b>"차가운 베이스 + 따뜻한 액센트 대비"</b> → Split Toning으로 쿨 섀도/웜 하이라이트, 중앙 주황 앵커가 청색 베이스와 대비. <i>(1차 과다 리프트 → 그림자 깊이 회복 보정)</i></div>
   </div>
 
+  <div class="step">
+    <div class="step-head"><span>STEP 5 · ★관점 교정 — 라이팅을 "시스템"으로</span><span class="h">C8 · e640f1353</span></div>
+    <div class="shot"><figure><img src="../captures/style/s5_lighting_system.png" alt="step5"><figcaption>손전등(따뜻, 플레이어 부착) + 월드광(차가운, 변수) — 따뜻-차가움 대비가 시스템에서 발생</figcaption></figure></div>
+    <div class="step-body"><b>유저 핵심 교정:</b> 광원을 맵마다 손으로 배치하면 안 된다. Hell Express의 주황빛=플레이어 손전등(백열 스팟), 푸른빛=하늘 직사광. → <b>3레이어 시스템</b>으로 재구축: ① 손전등(상수, 플레이어 자식 Spot+소프트 쿠키 2700K) ② 월드광(변수, COZY 구동) ③ 젖은 바닥(smoothness+Reflection Probe). 손배치 가짜 풀 제거. <b>이게 "처리방식은 상수"의 정체</b> — 손전등·포스트는 고정, 월드광만 날씨/시간으로 변함. <i>(진단으로 손전등 intensity 단위 문제 42→800 해결. 잔여: 풀 강도/낮 밝기 미세조정)</i></div>
+  </div>
+
   <!-- ▼▼▼ 다음 스텝은 이 줄 아래로 계속 추가 (SSAO → 틸트시프트 → HTrace → 대기 → 날씨4종) ▼▼▼ -->
 
   <!-- ============ 파이프라인 상태판 ============ -->
@@ -173,7 +185,7 @@ git reset --hard &lt;해시&gt;</div>
     <thead><tr><th>레이어</th><th>상태</th><th>메모</th></tr></thead>
     <tbody>
       <tr><td>카메라 각도/비율</td><td class="ok">✅ 완료</td><td>pitch 59.5 / 캐릭터 ~8% (목표 ~7%, 근접)</td></tr>
-      <tr><td>어둠 + 광원 풀(부드럽게)</td><td class="ok">✅ 완료</td><td>C6 — range↑/soft falloff, 차가운 3 + 따뜻한 1</td></tr>
+      <tr><td>라이팅 시스템(손전등+월드광)</td><td class="ok">✅ 완료</td><td>C8 — ★손배치→시스템. 손전등(상수)+월드광(변수)+젖은바닥. 잔여: 강도 미세조정</td></tr>
       <tr><td>따뜻-차가움 그레이드 + 블룸</td><td class="ok">✅ 완료</td><td>C6 — Split Toning(쿨섀도/웜하이라이트), WB-10, 채도-13, 대비16</td></tr>
       <tr><td>암부 리프트(형태 읽힘)</td><td class="ok">✅ 완료</td><td>C6 — Lift 살짝(crush 방지) + 대비로 깊이 유지</td></tr>
       <tr><td>비네트 + 그레인</td><td class="ok">✅ 완료</td><td>비네트 0.46(살짝 과함→보정 예정)</td></tr>
