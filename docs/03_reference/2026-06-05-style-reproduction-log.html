@@ -90,6 +90,13 @@ git reset --hard &lt;해시&gt;</div>
         <td><b>읽힘 보정</b> — 어둠 속 환경 가독성 확보(앰비언트 쿨 리프트, 노출 0.65, 비네트 완화). 정찰: HTrace 렌더러피처 이미 active / SSAO 미존재</td>
         <td><span class="tag t-done">복원점</span></td>
       </tr>
+      <tr><td>C4</td><td class="hashbox">75f8182d2</td><td>문서 갱신(상태판)</td><td><span class="tag t-done">문서</span></td></tr>
+      <tr><td>C5</td><td class="hashbox">80b6096cf</td><td>이미지 임베드 + 스텝카드 누적 구조 재편</td><td><span class="tag t-done">문서</span></td></tr>
+      <tr>
+        <td>C6</td><td class="hashbox">33e0a09cf</td>
+        <td><b>STEP4 — 기초 라이팅 교정 + 따뜻-차가움 그레이드</b><br>광원 풀 부드럽게+암부 리프트, Split Toning(쿨섀도/웜하이라이트), 이미시브 앵커 강화</td>
+        <td><span class="tag t-done">복원점</span></td>
+      </tr>
     </tbody>
   </table>
 
@@ -134,7 +141,7 @@ git reset --hard &lt;해시&gt;</div>
     <div class="step-head"><span>BEFORE → NOW · 현재 누적 결과</span><span class="h">raw → C3 (3a714d9a0)</span></div>
     <div class="ba">
       <figure><img src="../captures/style/c0_before.png" alt="before"><figcaption>BEFORE — 스타일 0 (평평한 회색 주광)</figcaption></figure>
-      <figure><img src="../captures/style/c3_styled.png" alt="now"><figcaption>NOW — 어둠+광원풀+쿨그레이드+읽힘보정</figcaption></figure>
+      <figure><img src="../captures/style/s4_lighting_grade.png" alt="now"><figcaption>NOW — 기초라이팅 교정 + 따뜻-차가움 대비 그레이드 (STEP4)</figcaption></figure>
     </div>
   </div>
 
@@ -152,6 +159,12 @@ git reset --hard &lt;해시&gt;</div>
     <div class="step-body">너무 까맣던 문제 → 앰비언트 쿨 리프트(0.10,0.12,0.18) + 노출 0.65 + 비네트 0.40. 차가운 달빛 그림자 속에서 건물·바닥 읽힘 확보. 렌더러 정찰: HTrace 이미 active / SSAO 미존재. <i>(위 NOW 이미지가 이 결과)</i></div>
   </div>
 
+  <div class="step">
+    <div class="step-head"><span>STEP 4 · 기초 라이팅 교정 + 따뜻-차가움 그레이드</span><span class="h">C6 · 33e0a09cf</span></div>
+    <div class="shot"><figure><img src="../captures/style/s4_lighting_grade.png" alt="step4"><figcaption>광원 풀 부드럽게 + 암부 리프트 + Split Toning(쿨섀도/웜하이라이트) + 이미시브 앵커 강화</figcaption></figure></div>
+    <div class="step-body"><b>art 디렉터 역설계 반영 — 갭의 본질은 포스트가 아니라 기초 라이팅 2개였다:</b> ① 광원 falloff 하드→부드러운 넓은 풀 ② 암부 crush→리프트(로우폴리 형태 읽힘). + <b>핵심 그레이드 발견:</b> Hell Express는 "전면 쿨"이 아니라 <b>"차가운 베이스 + 따뜻한 액센트 대비"</b> → Split Toning으로 쿨 섀도/웜 하이라이트, 중앙 주황 앵커가 청색 베이스와 대비. <i>(1차 과다 리프트 → 그림자 깊이 회복 보정)</i></div>
+  </div>
+
   <!-- ▼▼▼ 다음 스텝은 이 줄 아래로 계속 추가 (SSAO → 틸트시프트 → HTrace → 대기 → 날씨4종) ▼▼▼ -->
 
   <!-- ============ 파이프라인 상태판 ============ -->
@@ -160,8 +173,9 @@ git reset --hard &lt;해시&gt;</div>
     <thead><tr><th>레이어</th><th>상태</th><th>메모</th></tr></thead>
     <tbody>
       <tr><td>카메라 각도/비율</td><td class="ok">✅ 완료</td><td>pitch 59.5 / 캐릭터 ~8% (목표 ~7%, 근접)</td></tr>
-      <tr><td>어둠 + 광원 풀</td><td class="ok">✅ 완료</td><td>차가운 3 + 따뜻한 1</td></tr>
-      <tr><td>쿨 그레이드 + 블룸</td><td class="ok">✅ 완료</td><td>ACES + WB-18 + 채도-22</td></tr>
+      <tr><td>어둠 + 광원 풀(부드럽게)</td><td class="ok">✅ 완료</td><td>C6 — range↑/soft falloff, 차가운 3 + 따뜻한 1</td></tr>
+      <tr><td>따뜻-차가움 그레이드 + 블룸</td><td class="ok">✅ 완료</td><td>C6 — Split Toning(쿨섀도/웜하이라이트), WB-10, 채도-13, 대비16</td></tr>
+      <tr><td>암부 리프트(형태 읽힘)</td><td class="ok">✅ 완료</td><td>C6 — Lift 살짝(crush 방지) + 대비로 깊이 유지</td></tr>
       <tr><td>비네트 + 그레인</td><td class="ok">✅ 완료</td><td>비네트 0.46(살짝 과함→보정 예정)</td></tr>
       <tr><td>읽힘 보정(환경 가독성)</td><td class="ok">✅ 완료</td><td>C3 — 앰비언트 쿨 리프트 + 노출 0.65 + 비네트 완화</td></tr>
       <tr><td>SSAO(접지 그림자)</td><td class="pend">⏳ 대기</td><td>URP SSAO 렌더러 피처 <b>추가 필요</b>(현재 미존재 확인)</td></tr>
