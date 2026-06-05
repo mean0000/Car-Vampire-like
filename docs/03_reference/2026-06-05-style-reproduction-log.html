@@ -103,6 +103,12 @@ git reset --hard &lt;해시&gt;</div>
         <td><b>STEP5 — ★라이팅을 시스템으로 재구축</b><br>손전등(상수)+월드광(변수)+젖은바닥, 손배치 가짜풀 제거. 유저 관점교정 반영</td>
         <td><span class="tag t-done">복원점</span></td>
       </tr>
+      <tr><td>C9</td><td class="hashbox">027e80527</td><td>문서 갱신(STEP5 카드)</td><td><span class="tag t-done">문서</span></td></tr>
+      <tr>
+        <td>C10</td><td class="hashbox">fc31b2468</td>
+        <td><b>STEP6 — 자연광 경쟁→ATMOS 백본</b><br>god-ray 그림자 띠(볼류메트릭 無) + 이중온도. Stab/Codex 채점 병합</td>
+        <td><span class="tag t-done">복원점</span></td>
+      </tr>
     </tbody>
   </table>
 
@@ -147,7 +153,7 @@ git reset --hard &lt;해시&gt;</div>
     <div class="step-head"><span>BEFORE → NOW · 현재 누적 결과</span><span class="h">raw → C3 (3a714d9a0)</span></div>
     <div class="ba">
       <figure><img src="../captures/style/c0_before.png" alt="before"><figcaption>BEFORE — 스타일 0 (평평한 회색 주광)</figcaption></figure>
-      <figure><img src="../captures/style/s5_lighting_system.png" alt="now"><figcaption>NOW — 라이팅 시스템(손전등 풀 + 차가운 월드광) (STEP5)</figcaption></figure>
+      <figure><img src="../captures/style/s6_godray.png" alt="now"><figcaption>NOW — god-ray 그림자 띠 + 이중온도 (STEP6, ATMOS 백본)</figcaption></figure>
     </div>
   </div>
 
@@ -177,7 +183,13 @@ git reset --hard &lt;해시&gt;</div>
     <div class="step-body"><b>유저 핵심 교정:</b> 광원을 맵마다 손으로 배치하면 안 된다. Hell Express의 주황빛=플레이어 손전등(백열 스팟), 푸른빛=하늘 직사광. → <b>3레이어 시스템</b>으로 재구축: ① 손전등(상수, 플레이어 자식 Spot+소프트 쿠키 2700K) ② 월드광(변수, COZY 구동) ③ 젖은 바닥(smoothness+Reflection Probe). 손배치 가짜 풀 제거. <b>이게 "처리방식은 상수"의 정체</b> — 손전등·포스트는 고정, 월드광만 날씨/시간으로 변함. <i>(진단으로 손전등 intensity 단위 문제 42→800 해결. 잔여: 풀 강도/낮 밝기 미세조정)</i></div>
   </div>
 
-  <!-- ▼▼▼ 다음 스텝은 이 줄 아래로 계속 추가 (SSAO → 틸트시프트 → HTrace → 대기 → 날씨4종) ▼▼▼ -->
+  <div class="step">
+    <div class="step-head"><span>STEP 6 · 자연광 경쟁 → ATMOS 백본 (god-ray 그림자 띠)</span><span class="h">C10 · fc31b2468</span></div>
+    <div class="shot"><figure><img src="../captures/style/s6_godray.png" alt="step6"><figcaption>차단 창살벽(뒤) 그림자가 바닥에 빛 띠를 만듦 — 볼류메트릭 없이</figcaption></figure></div>
+    <div class="step-body"><b>경쟁 구도:</b> 두 라이벌 디렉터(ATMOS=빛·대기 / MATERIA=재질·GI)가 "이미지를 따라하지 말고 *무엇을 표현*했나"로 우리 값 추출 → Stab(ATMOS 41.5 vs MATERIA 36.5) + Codex(ATMOS=상) 채점 → <b>병합: ATMOS 백본 + MATERIA 표면 종속(30% 상한).</b><br><b>구현:</b> god-ray 본체 = 볼류메트릭이 아니라 <b>차단 지오메트리 그림자 띠</b>(Codex 확인). 차단물을 off-frame(뒤쪽 창살벽)에 둬야 카메라가 빛 띠만 봄. 따뜻한 역광 + 청보라 쿨 그림자 = 이중온도. <i>(잔여: 공기 빛기둥=헤이즈/볼류메트릭, MATERIA 표면=SSAO/GI/젖은바닥)</i></div>
+  </div>
+
+  <!-- ▼▼▼ 다음 스텝은 이 줄 아래로 계속 추가 (헤이즈/볼류메트릭 → SSAO → HTrace GI → 젖은바닥 → 날씨4종) ▼▼▼ -->
 
   <!-- ============ 파이프라인 상태판 ============ -->
   <h2>5. 파이프라인 상태판 (Image #4 수렴도)</h2>
@@ -190,9 +202,12 @@ git reset --hard &lt;해시&gt;</div>
       <tr><td>암부 리프트(형태 읽힘)</td><td class="ok">✅ 완료</td><td>C6 — Lift 살짝(crush 방지) + 대비로 깊이 유지</td></tr>
       <tr><td>비네트 + 그레인</td><td class="ok">✅ 완료</td><td>비네트 0.46(살짝 과함→보정 예정)</td></tr>
       <tr><td>읽힘 보정(환경 가독성)</td><td class="ok">✅ 완료</td><td>C3 — 앰비언트 쿨 리프트 + 노출 0.65 + 비네트 완화</td></tr>
-      <tr><td>SSAO(접지 그림자)</td><td class="pend">⏳ 대기</td><td>URP SSAO 렌더러 피처 <b>추가 필요</b>(현재 미존재 확인)</td></tr>
+      <tr><td>god-ray(그림자 띠) + 이중온도</td><td class="ok">✅ 완료</td><td>C10 — ATMOS 백본, 볼류메트릭 無로 띠 구현. 잔여: 정돈</td></tr>
+      <tr><td>헤이즈/볼류메트릭 빛기둥</td><td class="pend">⏳ 대기</td><td>COZY 헤이즈 + CristianQiu 볼류메트릭(공기 중 빛기둥)</td></tr>
+      <tr><td>SSAO(접지 그림자)</td><td class="pend">⏳ 대기</td><td>MATERIA 0.4~0.6. URP SSAO 렌더러 피처 <b>추가 필요</b></td></tr>
+      <tr><td>HTrace GI 색번짐(MATERIA)</td><td class="pend">⏳ 튜닝</td><td>이미 active → 이미시브 GI indirect 튜닝(파라미터 설치본 확인)</td></tr>
+      <tr><td>젖은 바닥(도심=아스팔트)</td><td class="pend">⏳ 대기</td><td>smoothness 마스크 30% 상한(가독성)</td></tr>
       <tr><td>틸트시프트(상·하단 블러)</td><td class="pend">⏳ 대기</td><td>현재 원경만 흐림 → 양끝 블러 필요</td></tr>
-      <tr><td>HTrace SSGI(색번짐)</td><td class="pend">⏳ 튜닝</td><td>렌더러피처 <b>이미 active</b> 확인 → 볼륨 오버라이드로 색번짐 검증·조정</td></tr>
       <tr><td>대기 헤이즈(COZY)</td><td class="pend">⏳ 대기</td><td>② 축 — 날씨 프리셋과 함께</td></tr>
       <tr><td>날씨 4종 일관성 테스트</td><td class="pend">⏳ 대기</td><td>맑음·흐림·저녁·밤 동일 treatment</td></tr>
     </tbody>
