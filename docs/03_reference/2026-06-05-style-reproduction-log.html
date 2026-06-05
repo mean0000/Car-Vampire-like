@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>스타일 재현 작업 로그 — Unity URP (Live)</title>
+<style>
+  :root{
+    --bg:#0d0f12; --panel:#15181d; --panel2:#1b1f26; --line:#2a2f38;
+    --txt:#d9dde3; --dim:#9aa3ad; --hot:#ff5b4a; --teal:#3fd6c4; --amber:#f2b134;
+    --good:#5cdb95; --warn:#f2b134; --bad:#ff6b6b; --code:#7fd0ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:"Pretendard","Segoe UI",system-ui,sans-serif;line-height:1.7;font-size:15px}
+  .wrap{max-width:1080px;margin:0 auto;padding:36px 26px 120px}
+  h1{font-size:27px;margin:0 0 4px;color:#fff;letter-spacing:-.5px}
+  h1 .hl{color:var(--teal)}
+  h2{font-size:19px;margin:46px 0 12px;padding-bottom:7px;border-bottom:2px solid var(--line);color:#fff}
+  h3{font-size:15px;margin:22px 0 6px;color:var(--teal)}
+  .sub{color:var(--dim);font-size:13px;margin:0 0 4px}
+  code{background:#000;color:var(--code);padding:1px 6px;border-radius:4px;font-size:12.5px;font-family:"Consolas",monospace}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0}
+  .panel.teal{border-left:4px solid var(--teal)} .panel.amber{border-left:4px solid var(--amber)} .panel.hot{border-left:4px solid var(--hot)}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#0a0c0f;color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#13161b}
+  .ok{color:var(--good);font-weight:700} .pend{color:var(--warn);font-weight:700} .no{color:var(--bad);font-weight:700}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px}
+  .t-done{background:#13351f;color:var(--good);border:1px solid #2c6b41}
+  .t-pend{background:#3a3014;color:var(--warn);border:1px solid #6b5b1f}
+  ul{margin:6px 0 6px 0;padding-left:20px} li{margin:3px 0}
+  .meta{color:var(--dim);font-size:12px;border-top:1px solid var(--line);margin-top:50px;padding-top:16px}
+  .hashbox{font-family:"Consolas",monospace;font-size:12.5px;color:var(--amber)}
+  .cmd{background:#000;border:1px solid var(--line);border-radius:6px;padding:10px 12px;font-family:"Consolas",monospace;font-size:12.5px;color:#cfe;white-space:pre-wrap;margin:8px 0}
+  .live{display:inline-block;background:#13351f;color:var(--good);border:1px solid #2c6b41;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="sub">ZombieCrush · 그래픽 스타일 재현 · 브랜치 <code>feat/graphics</code> · <span class="live">● LIVE 로그</span></p>
+  <h1><span class="hl">스타일 재현</span> 작업 로그 — Unity URP에서 우리만의 룩 만들기</h1>
+  <p class="sub">이 문서는 작업이 진행될 때마다 갱신된다. 각 단계는 커밋으로 복원점이 박혀 있어 언제든 되돌릴 수 있다. 마지막 갱신: 2026-06-05</p>
+
+  <!-- ============ 되돌리기 안내 ============ -->
+  <div class="panel hot">
+    <b>⏪ 되돌리기(롤백) 방법</b>
+    <p style="margin:6px 0 2px">아래 커밋 로그에서 원하는 지점의 해시를 골라 실행한다. 두 가지 방식:</p>
+    <div class="cmd"># 1) 그 시점을 "구경만" (브랜치 안 건드림, 작업본 보존)
+git stash            # 현재 미저장 변경 임시 보관
+git checkout &lt;해시&gt;   # 그 커밋 상태로 이동(detached)
+git checkout feat/graphics   # 다시 최신으로 복귀
+
+# 2) 그 시점으로 "되돌려서 거기서부터 다시" (브랜치 이동, 이후 작업 버림 — 주의)
+git reset --hard &lt;해시&gt;</div>
+    <p style="margin:4px 0 0;color:var(--dim);font-size:12.5px">※ <code>reset --hard</code>는 이후 커밋을 버린다. 헷갈리면 Claude에게 "<해시>로 돌려줘"라고만 말하면 안전하게 처리한다.</p>
+  </div>
+
+  <!-- ============ 커밋 로그 ============ -->
+  <h2>1. 커밋 로그 (복원점)</h2>
+  <table>
+    <thead><tr><th style="width:40px">#</th><th style="width:90px">해시</th><th>내용</th><th>상태</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>C1</td>
+        <td class="hashbox">3d6326e7b</td>
+        <td><b>StyleLab 씬 + 카메라/포스트 베이스라인</b><br>
+          중립 테스트 무대 + 고정 JudgeCam(pitch 59.5/FOV 38) + 포스트(ACES·쿨그레이드·블룸·비네트·그레인·DoF) + 어둠+광원풀 라이팅</td>
+        <td><span class="tag t-done">복원점</span></td>
+      </tr>
+      <tr>
+        <td>C2</td>
+        <td class="hashbox">(이 문서)</td>
+        <td>작업 로그 HTML 추가</td>
+        <td><span class="tag t-done">문서</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ============ 스타일 헌장 ============ -->
+  <h2>2. 스타일 헌장 (잠긴 스펙)</h2>
+  <div class="panel teal">
+    <b>EDGE(차별점):</b> 컨텐츠 + 로우폴리로 승부. 로우폴리는 <b>의도된 정체성</b>(숨기지 않음), 게임플레이 가독성 최우선, 그래픽은 경계 있음.
+  </div>
+  <table>
+    <thead><tr><th style="width:120px">축 (상수)</th><th>잠긴 값</th></tr></thead>
+    <tbody>
+      <tr><td>① 카메라·초점</td><td>하이앵글 3/4 탑다운 ~59°, 캐릭터 ~7% 프레임, 틸트시프트는 게임플레이 밴드 제외 상·하단</td></tr>
+      <tr><td>② 대기·공기</td><td>항상 은은한 볼류메트릭 헤이즈 + 대기원근 (COZY)</td></tr>
+      <tr><td>③ 라이팅</td><td>어둠 기본 + 모티베이티드 광원 풀(차가운+따뜻한+이미시브), 부드러운 빛 + 강 AO</td></tr>
+      <tr><td>④ 팔레트</td><td>채도 낮은 통일 베이스 + 씬당 1~2 액센트색 (시그니처색=경쟁 항목)</td></tr>
+      <tr><td>⑤ 필름룩</td><td>중간 필믹(ACES + 약한 그레인 + 비네트)</td></tr>
+      <tr><td>변수</td><td>COZY 날씨/시간(맑음·흐림·저녁·밤)이 빛·색만 바꿈 → 어느 조건도 "우리 것"</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ============ 레퍼런스 분석 ============ -->
+  <h2>3. 레퍼런스 역설계 — Hell Express (Image #4, 야간 인테리어)</h2>
+  <p class="sub">이 값들이 "맞춰야 할 타깃". 측정 추정치이며 캡처 비교로 보정한다.</p>
+  <table>
+    <thead><tr><th style="width:150px">항목</th><th>레퍼런스가 말하는 값</th></tr></thead>
+    <tbody>
+      <tr><td>카메라 각도</td><td>가파른 탑다운 ~58–62°(바닥 지배, 오브젝트 윗면 보임)</td></tr>
+      <tr><td>캐릭터 비율</td><td>화면 높이의 ~7% (카메라 멀고 높음)</td></tr>
+      <tr><td>투영/FOV</td><td>퍼스펙티브, 좁은 FOV ~36–38°</td></tr>
+      <tr><td>라이팅</td><td>어둠 기본 + 광원 풀(차가운 모니터광 / 따뜻한 손전등 / 붉은 이미시브). "빛 닿는 곳만 보인다"</td></tr>
+      <tr><td>포스트</td><td>차가운 저채도 그레이드 + 이미시브 블룸 + 강한 비네트 + 그레인 + 틸트시프트 DoF(상·하단 흐림)</td></tr>
+      <tr><td>SSAO</td><td>책상·인물 접지 그림자 또렷</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ============ 진행 타임라인 ============ -->
+  <h2>4. 진행 타임라인</h2>
+
+  <h3>2026-06-05 · 세션 1 — 펀더멘털 잡기 <span class="tag t-done">C1</span></h3>
+  <ul>
+    <li><b>정찰:</b> URP_HighFidelity / HTrace SSGI <b>설치 확인</b> / COZY·Feel 보유 / Synty·POLYBOX·LMHPOLY·ithappy 로우폴리 에셋 풍부.</li>
+    <li><b>테스트 씬 빌드:</b> <code>Assets/_Project/Scenes/StyleLab.unity</code> — 폐허도시+좀비+플레이어+발광광원+붉은패치(색번짐 타깃)+고정 JudgeCam.</li>
+    <li><b>카메라 교정(★유저 지적 반영):</b> 처음 54°/캐릭터18%(틀림) → 레퍼런스 역설계로 <b>pitch 59.5 / FOV 38 / pos(0,34,-20) / 캐릭터 ~8%</b>로 수정, 캡처 검증.</li>
+    <li><b>라이팅+포스트:</b> 어둠+광원풀(차가운 모니터 3 + 따뜻한 램프) + 포스트(ACES·쿨화이트밸런스·채도-22·블룸·비네트·그레인·Gaussian DoF) 적용. 카메라 <code>renderPostProcessing</code> ON. 캡처 = Image#4 의도와 1차 수렴 확인.</li>
+  </ul>
+
+  <!-- ============ 파이프라인 상태판 ============ -->
+  <h2>5. 파이프라인 상태판 (Image #4 수렴도)</h2>
+  <table>
+    <thead><tr><th>레이어</th><th>상태</th><th>메모</th></tr></thead>
+    <tbody>
+      <tr><td>카메라 각도/비율</td><td class="ok">✅ 완료</td><td>pitch 59.5 / 캐릭터 ~8% (목표 ~7%, 근접)</td></tr>
+      <tr><td>어둠 + 광원 풀</td><td class="ok">✅ 완료</td><td>차가운 3 + 따뜻한 1</td></tr>
+      <tr><td>쿨 그레이드 + 블룸</td><td class="ok">✅ 완료</td><td>ACES + WB-18 + 채도-22</td></tr>
+      <tr><td>비네트 + 그레인</td><td class="ok">✅ 완료</td><td>비네트 0.46(살짝 과함→보정 예정)</td></tr>
+      <tr><td>읽힘 보정(환경 가독성)</td><td class="pend">⏳ 대기</td><td>현재 너무 까맘 → 앰비언트/노출 소폭↑</td></tr>
+      <tr><td>SSAO(접지 그림자)</td><td class="pend">⏳ 대기</td><td>URP SSAO 렌더러 피처 활성</td></tr>
+      <tr><td>틸트시프트(상·하단 블러)</td><td class="pend">⏳ 대기</td><td>현재 원경만 흐림 → 양끝 블러 필요</td></tr>
+      <tr><td>HTrace SSGI(색번짐)</td><td class="pend">⏳ 대기</td><td>붉은 바닥→오브젝트 번짐</td></tr>
+      <tr><td>대기 헤이즈(COZY)</td><td class="pend">⏳ 대기</td><td>② 축 — 날씨 프리셋과 함께</td></tr>
+      <tr><td>날씨 4종 일관성 테스트</td><td class="pend">⏳ 대기</td><td>맑음·흐림·저녁·밤 동일 treatment</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ============ 다음 ============ -->
+  <h2>6. 다음 단계</h2>
+  <div class="panel amber">
+    <ol>
+      <li>읽힘 보정 → SSAO → 틸트시프트(양끝) → HTrace 색번짐 순으로 입히고 매 단계 캡처 비교</li>
+      <li>각 단계마다 커밋(복원점) + 이 문서 갱신</li>
+      <li>야간(Image#4) 수렴 후 → COZY 날씨 4종으로 일관성 검증</li>
+      <li>그 다음 → 라이벌 Style Director 경쟁(시그니처색·강도) → Stab+Codex 채점 → 유저 블라인드 판정</li>
+    </ol>
+  </div>
+
+  <p class="meta">
+    작성: Claude (Opus) · 무대: <code>Assets/_Project/Scenes/StyleLab.unity</code> · 포스트: <code>Assets/_Project/Setting/StyleLab_Post.asset</code><br>
+    이 문서는 작업 진행 시 계속 갱신됩니다. 복원이 필요하면 §1 커밋 로그의 해시를 쓰거나 Claude에게 요청하세요.
+  </p>
+
+</div>
+</body>
+</html>
