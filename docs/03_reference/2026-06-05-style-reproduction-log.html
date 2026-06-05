@@ -109,6 +109,13 @@ git reset --hard &lt;해시&gt;</div>
         <td><b>STEP6 — 자연광 경쟁→ATMOS 백본</b><br>god-ray 그림자 띠(볼류메트릭 無) + 이중온도. Stab/Codex 채점 병합</td>
         <td><span class="tag t-done">복원점</span></td>
       </tr>
+      <tr><td>C11</td><td class="hashbox">d64dcc6f5</td><td>문서 갱신(STEP6 카드)</td><td><span class="tag t-done">문서</span></td></tr>
+      <tr><td>C12</td><td class="hashbox">b2e924659</td><td><b>STEP7a — 대기 헤이즈</b>(URP fog, 공기원근)</td><td><span class="tag t-done">복원점</span></td></tr>
+      <tr>
+        <td>C13</td><td class="hashbox">b4c9c21da</td>
+        <td><b>STEP7b — 볼류메트릭 포그 설치</b><br>com.cqf.urpvolumetricfog v0.5.9 git설치 + 렌더러피처/볼륨. 공기 빛기둥+손전등 산란</td>
+        <td><span class="tag t-done">복원점</span></td>
+      </tr>
     </tbody>
   </table>
 
@@ -153,7 +160,7 @@ git reset --hard &lt;해시&gt;</div>
     <div class="step-head"><span>BEFORE → NOW · 현재 누적 결과</span><span class="h">raw → C3 (3a714d9a0)</span></div>
     <div class="ba">
       <figure><img src="../captures/style/c0_before.png" alt="before"><figcaption>BEFORE — 스타일 0 (평평한 회색 주광)</figcaption></figure>
-      <figure><img src="../captures/style/s6_godray.png" alt="now"><figcaption>NOW — god-ray 그림자 띠 + 이중온도 (STEP6, ATMOS 백본)</figcaption></figure>
+      <figure><img src="../captures/style/s7b_volumetric.png" alt="now"><figcaption>NOW — 볼류메트릭 헤이즈 + 손전등 빛산란 (STEP7, 패키지 설치)</figcaption></figure>
     </div>
   </div>
 
@@ -189,7 +196,13 @@ git reset --hard &lt;해시&gt;</div>
     <div class="step-body"><b>경쟁 구도:</b> 두 라이벌 디렉터(ATMOS=빛·대기 / MATERIA=재질·GI)가 "이미지를 따라하지 말고 *무엇을 표현*했나"로 우리 값 추출 → Stab(ATMOS 41.5 vs MATERIA 36.5) + Codex(ATMOS=상) 채점 → <b>병합: ATMOS 백본 + MATERIA 표면 종속(30% 상한).</b><br><b>구현:</b> god-ray 본체 = 볼류메트릭이 아니라 <b>차단 지오메트리 그림자 띠</b>(Codex 확인). 차단물을 off-frame(뒤쪽 창살벽)에 둬야 카메라가 빛 띠만 봄. 따뜻한 역광 + 청보라 쿨 그림자 = 이중온도. <i>(잔여: 공기 빛기둥=헤이즈/볼류메트릭, MATERIA 표면=SSAO/GI/젖은바닥)</i></div>
   </div>
 
-  <!-- ▼▼▼ 다음 스텝은 이 줄 아래로 계속 추가 (헤이즈/볼류메트릭 → SSAO → HTrace GI → 젖은바닥 → 날씨4종) ▼▼▼ -->
+  <div class="step">
+    <div class="step-head"><span>STEP 7 · 공기감(A) — 헤이즈 + 볼류메트릭 빛기둥 설치</span><span class="h">C12 헤이즈 · C13 볼류메트릭</span></div>
+    <div class="shot"><figure><img src="../captures/style/s7b_volumetric.png" alt="step7"><figcaption>CristianQiu URP Volumetric Fog 설치 → 공기 산란 + 손전등 볼류메트릭 글로우</figcaption></figure></div>
+    <div class="step-body"><b>7a 헤이즈:</b> URP fog로 대기원근(공기 깊이). <b>7b 볼류메트릭:</b> 헤이즈만으론 빛기둥 안 생김(안개=균일) → 빛기둥은 <b>볼류메트릭 라이팅이 빛vs그림자 산란을 계산</b>해야 함. <code>com.cqf.urpvolumetricfog v0.5.9</code>(RenderGraph/Unity6 검증본) git 설치 → 렌더러피처+볼륨컴포넌트, main light 빛기둥 + 손전등 콘. <b>ATMOS 경고 적중:</b> density 0.35는 우유빛으로 형태 먹힘 → 0.10 + URP fog 이중 제거로 보정. <i>(잔여: 빛기둥 드라마 미세튜닝)</i></div>
+  </div>
+
+  <!-- ▼▼▼ 다음 스텝은 이 줄 아래로 계속 추가 (빛기둥 튜닝 → SSAO → HTrace GI → 젖은아스팔트 → 날씨4종) ▼▼▼ -->
 
   <!-- ============ 파이프라인 상태판 ============ -->
   <h2>5. 파이프라인 상태판 (Image #4 수렴도)</h2>
@@ -203,7 +216,7 @@ git reset --hard &lt;해시&gt;</div>
       <tr><td>비네트 + 그레인</td><td class="ok">✅ 완료</td><td>비네트 0.46(살짝 과함→보정 예정)</td></tr>
       <tr><td>읽힘 보정(환경 가독성)</td><td class="ok">✅ 완료</td><td>C3 — 앰비언트 쿨 리프트 + 노출 0.65 + 비네트 완화</td></tr>
       <tr><td>god-ray(그림자 띠) + 이중온도</td><td class="ok">✅ 완료</td><td>C10 — ATMOS 백본, 볼류메트릭 無로 띠 구현. 잔여: 정돈</td></tr>
-      <tr><td>헤이즈/볼류메트릭 빛기둥</td><td class="pend">⏳ 대기</td><td>COZY 헤이즈 + CristianQiu 볼류메트릭(공기 중 빛기둥)</td></tr>
+      <tr><td>헤이즈/볼류메트릭 빛기둥</td><td class="ok">✅ 설치</td><td>C12/C13 — CristianQiu 볼류메트릭 설치·작동. 잔여: 빛기둥 드라마 튜닝</td></tr>
       <tr><td>SSAO(접지 그림자)</td><td class="pend">⏳ 대기</td><td>MATERIA 0.4~0.6. URP SSAO 렌더러 피처 <b>추가 필요</b></td></tr>
       <tr><td>HTrace GI 색번짐(MATERIA)</td><td class="pend">⏳ 튜닝</td><td>이미 active → 이미시브 GI indirect 튜닝(파라미터 설치본 확인)</td></tr>
       <tr><td>젖은 바닥(도심=아스팔트)</td><td class="pend">⏳ 대기</td><td>smoothness 마스크 30% 상한(가독성)</td></tr>
