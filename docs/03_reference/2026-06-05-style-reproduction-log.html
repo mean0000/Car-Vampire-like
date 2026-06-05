@@ -116,6 +116,13 @@ git reset --hard &lt;해시&gt;</div>
         <td><b>STEP7b — 볼류메트릭 포그 설치</b><br>com.cqf.urpvolumetricfog v0.5.9 git설치 + 렌더러피처/볼륨. 공기 빛기둥+손전등 산란</td>
         <td><span class="tag t-done">복원점</span></td>
       </tr>
+      <tr><td>C14</td><td class="hashbox">1d2448fc3</td><td>문서 갱신(STEP7 카드)</td><td><span class="tag t-done">문서</span></td></tr>
+      <tr><td>C15</td><td class="hashbox">836714fb1</td><td>빛기둥 튜닝 + 탑다운 기하한계 확인(연출용 보류)</td><td><span class="tag t-done">복원점</span></td></tr>
+      <tr>
+        <td>C16</td><td class="hashbox">5ecfaf72c</td>
+        <td><b>STEP8 — MATERIA 표면</b><br>SSAO 렌더러피처(접지) + 젖은 아스팔트 반사</td>
+        <td><span class="tag t-done">복원점</span></td>
+      </tr>
     </tbody>
   </table>
 
@@ -160,7 +167,7 @@ git reset --hard &lt;해시&gt;</div>
     <div class="step-head"><span>BEFORE → NOW · 현재 누적 결과</span><span class="h">raw → C3 (3a714d9a0)</span></div>
     <div class="ba">
       <figure><img src="../captures/style/c0_before.png" alt="before"><figcaption>BEFORE — 스타일 0 (평평한 회색 주광)</figcaption></figure>
-      <figure><img src="../captures/style/s7b_volumetric.png" alt="now"><figcaption>NOW — 볼류메트릭 헤이즈 + 손전등 빛산란 (STEP7, 패키지 설치)</figcaption></figure>
+      <figure><img src="../captures/style/s8_surface.png" alt="now"><figcaption>NOW — MATERIA 표면: SSAO + 젖은 아스팔트 반사 (STEP8)</figcaption></figure>
     </div>
   </div>
 
@@ -202,7 +209,13 @@ git reset --hard &lt;해시&gt;</div>
     <div class="step-body"><b>7a 헤이즈:</b> URP fog로 대기원근(공기 깊이). <b>7b 볼류메트릭:</b> 헤이즈만으론 빛기둥 안 생김(안개=균일) → 빛기둥은 <b>볼류메트릭 라이팅이 빛vs그림자 산란을 계산</b>해야 함. <code>com.cqf.urpvolumetricfog v0.5.9</code>(RenderGraph/Unity6 검증본) git 설치 → 렌더러피처+볼륨컴포넌트, main light 빛기둥 + 손전등 콘. <b>ATMOS 경고 적중:</b> density 0.35는 우유빛으로 형태 먹힘 → 0.10 + URP fog 이중 제거로 보정. <i>(잔여: 빛기둥 드라마 미세튜닝)</i></div>
   </div>
 
-  <!-- ▼▼▼ 다음 스텝은 이 줄 아래로 계속 추가 (빛기둥 튜닝 → SSAO → HTrace GI → 젖은아스팔트 → 날씨4종) ▼▼▼ -->
+  <div class="step">
+    <div class="step-head"><span>STEP 8 · MATERIA 표면 — SSAO + 젖은 아스팔트</span><span class="h">C16 · 5ecfaf72c</span></div>
+    <div class="shot"><figure><img src="../captures/style/s8_surface.png" alt="step8"><figcaption>젖은 아스팔트가 빛/건물 반사 + SSAO 접지 → 표면 풍부함</figcaption></figure></div>
+    <div class="step-body"><b>빛기둥 결정(유저):</b> 비스듬한 god-ray 빛기둥은 탑다운 기하상 제한 → <b>연출(컷신)용 도구로 보류</b>, 게임플레이는 표면 풍부함으로. <b>MATERIA 표면 구현:</b> SSAO 렌더러피처(접지 그림자, 로우폴리를 바닥에 앉힘) + 젖은 아스팔트(smoothness0.38 + Reflection Probe로 빛/건물 반사 = "빛 정보 2배", 로우폴리 승부 핵심). 가독성 위해 풀 미러 아닌 적당 sheen. <i>(잔여: HTrace GI 색번짐 튜닝, 가독성 게이트 검증)</i></div>
+  </div>
+
+  <!-- ▼▼▼ 다음 스텝은 이 줄 아래로 계속 추가 (HTrace GI 색번짐 → 가독성검증 → 틸트시프트 → COZY 날씨4종) ▼▼▼ -->
 
   <!-- ============ 파이프라인 상태판 ============ -->
   <h2>5. 파이프라인 상태판 (Image #4 수렴도)</h2>
@@ -217,9 +230,9 @@ git reset --hard &lt;해시&gt;</div>
       <tr><td>읽힘 보정(환경 가독성)</td><td class="ok">✅ 완료</td><td>C3 — 앰비언트 쿨 리프트 + 노출 0.65 + 비네트 완화</td></tr>
       <tr><td>god-ray(그림자 띠) + 이중온도</td><td class="ok">✅ 완료</td><td>C10 — ATMOS 백본, 볼류메트릭 無로 띠 구현. 잔여: 정돈</td></tr>
       <tr><td>헤이즈/볼류메트릭 빛기둥</td><td class="ok">✅ 설치</td><td>C12/C13 — CristianQiu 볼류메트릭 설치·작동. 잔여: 빛기둥 드라마 튜닝</td></tr>
-      <tr><td>SSAO(접지 그림자)</td><td class="pend">⏳ 대기</td><td>MATERIA 0.4~0.6. URP SSAO 렌더러 피처 <b>추가 필요</b></td></tr>
-      <tr><td>HTrace GI 색번짐(MATERIA)</td><td class="pend">⏳ 튜닝</td><td>이미 active → 이미시브 GI indirect 튜닝(파라미터 설치본 확인)</td></tr>
-      <tr><td>젖은 바닥(도심=아스팔트)</td><td class="pend">⏳ 대기</td><td>smoothness 마스크 30% 상한(가독성)</td></tr>
+      <tr><td>SSAO(접지 그림자)</td><td class="ok">✅ 완료</td><td>C16 — 렌더러피처 추가, intensity0.55/radius0.3</td></tr>
+      <tr><td>HTrace GI 색번짐(MATERIA)</td><td class="pend">⏳ 튜닝</td><td>이미 active → 이미시브 GI 색번짐 튜닝(다음)</td></tr>
+      <tr><td>젖은 바닥(도심=아스팔트)</td><td class="ok">✅ 완료</td><td>C16 — smoothness0.38 + Probe 반사. 잔여: 웅덩이 마스크</td></tr>
       <tr><td>틸트시프트(상·하단 블러)</td><td class="pend">⏳ 대기</td><td>현재 원경만 흐림 → 양끝 블러 필요</td></tr>
       <tr><td>대기 헤이즈(COZY)</td><td class="pend">⏳ 대기</td><td>② 축 — 날씨 프리셋과 함께</td></tr>
       <tr><td>날씨 4종 일관성 테스트</td><td class="pend">⏳ 대기</td><td>맑음·흐림·저녁·밤 동일 treatment</td></tr>
