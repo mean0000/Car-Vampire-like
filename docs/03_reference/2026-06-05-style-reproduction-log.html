@@ -34,6 +34,15 @@
   .hashbox{font-family:"Consolas",monospace;font-size:12.5px;color:var(--amber)}
   .cmd{background:#000;border:1px solid var(--line);border-radius:6px;padding:10px 12px;font-family:"Consolas",monospace;font-size:12.5px;color:#cfe;white-space:pre-wrap;margin:8px 0}
   .live{display:inline-block;background:#13351f;color:var(--good);border:1px solid #2c6b41;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px}
+  .step{background:var(--panel2);border:1px solid var(--line);border-radius:10px;margin:18px 0;overflow:hidden}
+  .step-head{background:#0a0c0f;padding:10px 16px;font-weight:700;color:#fff;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);gap:10px;flex-wrap:wrap}
+  .step-head .h{font-family:Consolas,monospace;font-size:12px;color:var(--amber);font-weight:400}
+  .step-body{padding:14px 18px}
+  .ba{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:#000}
+  .ba figure{margin:0} .ba img{width:100%;display:block}
+  .ba figcaption{padding:6px 10px;font-size:11.5px;color:var(--dim);background:#0a0c0f;text-align:center}
+  .shot img{width:100%;display:block}
+  .shot figcaption{padding:6px 10px;font-size:11.5px;color:var(--dim);background:#0a0c0f;text-align:center}
 </style>
 </head>
 <body>
@@ -117,17 +126,33 @@ git reset --hard &lt;해시&gt;</div>
   </table>
 
   <!-- ============ 진행 타임라인 ============ -->
-  <h2>4. 진행 타임라인</h2>
+  <h2>4. 진행 스텝 로그 (이미지 + 커밋)</h2>
+  <p class="sub">한 스텝 = 작업 + 커밋(복원점) + 캡처. 새 스텝은 아래로 계속 append 한다.</p>
 
-  <h3>2026-06-05 · 세션 1 — 펀더멘털 잡기 <span class="tag t-done">C1</span></h3>
-  <ul>
-    <li><b>정찰:</b> URP_HighFidelity / HTrace SSGI <b>설치 확인</b> / COZY·Feel 보유 / Synty·POLYBOX·LMHPOLY·ithappy 로우폴리 에셋 풍부.</li>
-    <li><b>테스트 씬 빌드:</b> <code>Assets/_Project/Scenes/StyleLab.unity</code> — 폐허도시+좀비+플레이어+발광광원+붉은패치(색번짐 타깃)+고정 JudgeCam.</li>
-    <li><b>카메라 교정(★유저 지적 반영):</b> 처음 54°/캐릭터18%(틀림) → 레퍼런스 역설계로 <b>pitch 59.5 / FOV 38 / pos(0,34,-20) / 캐릭터 ~8%</b>로 수정, 캡처 검증.</li>
-    <li><b>라이팅+포스트:</b> 어둠+광원풀(차가운 모니터 3 + 따뜻한 램프) + 포스트(ACES·쿨화이트밸런스·채도-22·블룸·비네트·그레인·Gaussian DoF) 적용. 카메라 <code>renderPostProcessing</code> ON. 캡처 = Image#4 의도와 1차 수렴 확인.</li>
-    <li><b>읽힘 보정 <span class="tag t-done">C3</span>:</b> 너무 까맣던 문제 → 앰비언트 쿨 리프트 + 노출 0.65 + 비네트 완화. 차가운 달빛 그림자 속에서 건물·바닥 읽힘 확보. 렌더러 정찰로 HTrace 이미 active / SSAO 미존재 확인.</li>
-  </ul>
-  <div class="panel"><b>복원점 + 라이브 문서 인프라 구축 완료.</b> 매 단계 커밋(복원점) + 이 문서 갱신 사이클 가동.</div>
+  <!-- ===== BEFORE / NOW hero ===== -->
+  <div class="step">
+    <div class="step-head"><span>BEFORE → NOW · 현재 누적 결과</span><span class="h">raw → C3 (3a714d9a0)</span></div>
+    <div class="ba">
+      <figure><img src="../captures/style/c0_before.png" alt="before"><figcaption>BEFORE — 스타일 0 (평평한 회색 주광)</figcaption></figure>
+      <figure><img src="../captures/style/c3_styled.png" alt="now"><figcaption>NOW — 어둠+광원풀+쿨그레이드+읽힘보정</figcaption></figure>
+    </div>
+  </div>
+
+  <!-- ===== STEP CARDS (append below) ===== -->
+  <div class="step">
+    <div class="step-head"><span>STEP 1 · 씬 빌드 + 카메라 역설계</span><span class="h">C1 · 3d6326e7b</span></div>
+    <div class="step-body">정찰(HTrace SSGI 설치 확인) → StyleLab 중립 무대(폐허도시+좀비+플레이어+발광광원+붉은패치) 빌드 → <b>카메라 교정(★유저 지적):</b> 54°/캐릭터18%(틀림) → 레퍼런스 역설계 <b>pitch 59.5 / FOV 38 / 캐릭터 ~8%</b>.</div>
+  </div>
+  <div class="step">
+    <div class="step-head"><span>STEP 2 · 라이팅 + 포스트</span><span class="h">C1 · 3d6326e7b</span></div>
+    <div class="step-body">어둠 기본 + 모티베이티드 광원 풀(차가운 모니터 3 + 따뜻한 램프) + 포스트(ACES · 쿨 화이트밸런스 · 채도-22 · 블룸 · 비네트 · 그레인 · Gaussian DoF). 카메라 <code>renderPostProcessing</code> ON.</div>
+  </div>
+  <div class="step">
+    <div class="step-head"><span>STEP 3 · 읽힘 보정</span><span class="h">C3 · 3a714d9a0</span></div>
+    <div class="step-body">너무 까맣던 문제 → 앰비언트 쿨 리프트(0.10,0.12,0.18) + 노출 0.65 + 비네트 0.40. 차가운 달빛 그림자 속에서 건물·바닥 읽힘 확보. 렌더러 정찰: HTrace 이미 active / SSAO 미존재. <i>(위 NOW 이미지가 이 결과)</i></div>
+  </div>
+
+  <!-- ▼▼▼ 다음 스텝은 이 줄 아래로 계속 추가 (SSAO → 틸트시프트 → HTrace → 대기 → 날씨4종) ▼▼▼ -->
 
   <!-- ============ 파이프라인 상태판 ============ -->
   <h2>5. 파이프라인 상태판 (Image #4 수렴도)</h2>
