@@ -128,7 +128,13 @@ git reset --hard &lt;해시&gt;</div>
         <td><b>STEP9 — 표면 빛수신 기초</b><br>경쟁 디렉터(MIRROR/ABSORB) 병합 → 손전등 blown orb→콘(380→90,inner22) + Reflection Probe Box Projection ON</td>
         <td><span class="tag t-done">복원점</span></td>
       </tr>
-      <tr><td>C18</td><td class="hashbox">(이 커밋)</td><td>문서 갱신(STEP9 카드 + 경쟁판정 + 상태판)</td><td><span class="tag t-done">문서</span></td></tr>
+      <tr><td>C18</td><td class="hashbox">5d73cbc4b</td><td>문서 갱신(STEP9 카드 + 경쟁판정 + 상태판)</td><td><span class="tag t-done">문서</span></td></tr>
+      <tr>
+        <td>C19</td><td class="hashbox">ffb0afe04</td>
+        <td><b>STEP10 — MIRROR 헤드라인: 젖은 바닥 웅덩이 마스크</b><br>균일 smooth0.38→절차적 웅덩이 마스크(dry0.18↔wet0.82, 커버리지~20%) + Ground 전용 M_WetAsphalt(공유 머티리얼 미접촉)</td>
+        <td><span class="tag t-done">복원점</span></td>
+      </tr>
+      <tr><td>C20</td><td class="hashbox">(이 커밋)</td><td>문서 갱신(STEP10 카드 + 상태판 + HTrace 보류 기록)</td><td><span class="tag t-done">문서</span></td></tr>
     </tbody>
   </table>
 
@@ -173,7 +179,7 @@ git reset --hard &lt;해시&gt;</div>
     <div class="step-head"><span>BEFORE → NOW · 현재 누적 결과</span><span class="h">raw → C3 (3a714d9a0)</span></div>
     <div class="ba">
       <figure><img src="../captures/style/c0_before.png" alt="before"><figcaption>BEFORE — 스타일 0 (평평한 회색 주광)</figcaption></figure>
-      <figure><img src="../captures/style/s9_lightbase.png" alt="now"><figcaption>NOW — 표면 빛수신 기초: 손전등 콘 교정 + Box 반사 (STEP9)</figcaption></figure>
+      <figure><img src="../captures/style/s10_puddle.png" alt="now"><figcaption>NOW — MIRROR 헤드라인: 젖은 바닥 웅덩이 마스크 (STEP10)</figcaption></figure>
     </div>
   </div>
 
@@ -227,7 +233,13 @@ git reset --hard &lt;해시&gt;</div>
     <div class="step-body"><b>★경쟁 디렉터 방법론(유저 지시):</b> 레퍼런스를 따라 그리지 말고 *왜 그렇게 표현했나*를 역설계 — 두 라이벌 학파를 세움. <b>MIRROR(반사·부재, Screenshot#1 젖은 아스팔트)</b> = "젖은 바닥은 떠난 자를 비춘다, 바닥이 제2의 광원" vs <b>ABSORB(머금기·생명, Screenshot#2 풀)</b> = "표면이 온기를 머금고 돌려준다, 매트 가독성 우선". <b>디렉터 판정:</b> 잠긴 헌장(쿨 베이스+웜 액센트=이중온도)이 답의 절반 — 베이스 색=MIRROR(쿨, ABSORB의 전면 amber 전환은 잠긴 쿨 베이스를 깨므로 기각), 따뜻함은 <b>손전등 1주체 GI 블리드(ABSORB)</b>가 담당. 둘 다 동의한 무위험 기초만 STEP9로 선반영: <b>①손전등 blown orb 교정</b>(intensity 380→90, range 16→12, outer 62→50, inner 28→22, color FFB86B→FFAD5A) — 떠있는 흰 구슬이 사라지고 바닥에 앉은 콘 + 가려졌던 플레이어 캡슐이 읽힘. <b>②Reflection Probe Box Projection ON</b> — 반사가 씬 기하에 정렬(웅덩이 반사 기술적 전제). <i>(분리 복원점: STEP10 HTrace 1주체 GI 블리드, STEP11 웅덩이 마스크 Voronoi — 각각 캡처/커밋)</i></div>
   </div>
 
-  <!-- ▼▼▼ 다음 스텝은 이 줄 아래로 계속 추가 (STEP10 HTrace 1주체 블리드 → STEP11 웅덩이 마스크 → 가독성검증 → 틸트시프트 → COZY 날씨4종) ▼▼▼ -->
+  <div class="step">
+    <div class="step-head"><span>STEP 10 · MIRROR 헤드라인 — 젖은 바닥 웅덩이 마스크</span><span class="h">C19 · ffb0afe04</span></div>
+    <div class="shot"><figure><img src="../captures/style/s10_puddle.png" alt="step10"><figcaption>균일 sheen → 유기적 wet/dry 패치. 바닥이 공간적으로 "빛 정보"를 운반하기 시작</figcaption></figure></div>
+    <div class="step-body"><b>MIRROR 학파의 핵심 구현:</b> STEP8의 균일 smoothness 0.38은 "중간값이라 대비가 없다"(MIRROR 진단). → 절차적 Perlin 웅덩이 마스크로 <b>dry 0.18 ↔ wet 0.82</b> 대비를 만듦. <b>안전 설계:</b> Ground 머티리얼 path가 비어있어(기본/공유 인스턴스) 직접 수정은 타 오브젝트 오염 위험 → <b>Ground 전용 신규 M_WetAsphalt.mat 생성</b>해 할당(외과적 변경). 셰이더 그래프 없이 URP/Lit의 metallic-alpha smoothness 채널 활용 — PuddleMask.png(512, linear, alpha=smoothness). 웅덩이 커버리지 ~20%로 가독성 안전(MIRROR 방어선 35% 이내, 플레이어/적 캡슐 가독성 유지). STEP9 Box 반사와 결합돼 웅덩이가 환경을 반사. <b>관찰된 갭:</b> 우리 환경=웜 헤이즈 → 웅덩이가 웜 반사. 레퍼런스#1은 쿨 웅덩이(파란 하늘 반사). 이는 잠긴 쿨-베이스 헌장과 합치하는 별도 레버 → STEP11(앰비언트/헤이즈 쿨화)에서 "쿨 웅덩이 + 웜 손전등 포켓 = 이중온도" 완성. <i>(보류: HTrace 1주체 GI 블리드 — UseVolumes=False·파라미터 미노출로 안전 튜닝 불가, 에셋 인스펙터/문서 확보 후 진행)</i></div>
+  </div>
+
+  <!-- ▼▼▼ 다음 스텝은 이 줄 아래로 계속 추가 (STEP11 앰비언트/헤이즈 쿨화→쿨웅덩이 → HTrace 1주체 블리드(보류) → 가독성검증 → 틸트시프트 → COZY 날씨4종) ▼▼▼ -->
 
   <!-- ============ 파이프라인 상태판 ============ -->
   <h2>5. 파이프라인 상태판 (Image #4 수렴도)</h2>
@@ -243,9 +255,10 @@ git reset --hard &lt;해시&gt;</div>
       <tr><td>god-ray(그림자 띠) + 이중온도</td><td class="ok">✅ 완료</td><td>C10 — ATMOS 백본, 볼류메트릭 無로 띠 구현. 잔여: 정돈</td></tr>
       <tr><td>헤이즈/볼류메트릭 빛기둥</td><td class="ok">✅ 설치</td><td>C12/C13 — CristianQiu 볼류메트릭 설치·작동. 잔여: 빛기둥 드라마 튜닝</td></tr>
       <tr><td>SSAO(접지 그림자)</td><td class="ok">✅ 완료</td><td>C16 — 렌더러피처 추가, intensity0.55/radius0.3</td></tr>
-      <tr><td>HTrace GI 1주체 색블리드(MATERIA)</td><td class="pend">⏳ STEP10</td><td>렌더러피처에 설정(볼륨X 확인). 손전등=1주체 웜 블리드 → 이중온도 웜축. 다음 복원점</td></tr>
       <tr><td>Box 반사 정렬</td><td class="ok">✅ 완료</td><td>C17 — Reflection Probe Box Projection ON. 반사가 방 기하에 정렬</td></tr>
-      <tr><td>젖은 바닥 웅덩이 마스크(MIRROR 헤드라인)</td><td class="pend">⏳ STEP11</td><td>C16 균일 smooth0.38 → Voronoi 마스크 30~40%(dry0.2↔wet0.82+ripple). 가독성 게이트(플레이어 반경 금지·밝기상한)</td></tr>
+      <tr><td>젖은 바닥 웅덩이 마스크(MIRROR 헤드라인)</td><td class="ok">✅ 완료</td><td>C19 — Ground 전용 M_WetAsphalt + Perlin 마스크(dry0.18↔wet0.82, ~20%). 잔여: 쿨 반사화(STEP11), ripple 노멀</td></tr>
+      <tr><td>이중온도 완성(쿨 웅덩이+웜 손전등)</td><td class="pend">⏳ STEP11</td><td>앰비언트/헤이즈 쿨화 → 웅덩이가 쿨 반사. 잠긴 쿨-베이스 헌장과 합치</td></tr>
+      <tr><td>HTrace GI 1주체 색블리드(MATERIA)</td><td class="no">⏸ 보류</td><td>UseVolumes=False·파라미터 미노출. 에셋 인스펙터/문서 확보 후 안전 튜닝</td></tr>
       <tr><td>틸트시프트(상·하단 블러)</td><td class="pend">⏳ 대기</td><td>현재 원경만 흐림 → 양끝 블러 필요</td></tr>
       <tr><td>대기 헤이즈(COZY)</td><td class="pend">⏳ 대기</td><td>② 축 — 날씨 프리셋과 함께</td></tr>
       <tr><td>날씨 4종 일관성 테스트</td><td class="pend">⏳ 대기</td><td>맑음·흐림·저녁·밤 동일 treatment</td></tr>
