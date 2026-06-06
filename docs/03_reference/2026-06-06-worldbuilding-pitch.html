@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>사후처리부 — 세계관 & 캐릭터 바이블</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+:root{
+  --bg:#0a0a0f;--card:#12121a;--card2:#15151f;
+  --green:#00ff88;--red:#ff3355;--blue:#4488ff;
+  --text:#cdcdda;--text-dim:#6e6e84;--border:rgba(255,255,255,0.08);
+  --glow-green:0 0 20px rgba(0,255,136,0.4);--glow-red:0 0 20px rgba(255,51,85,0.4);--glow-blue:0 0 20px rgba(68,136,255,0.4);
+  --mono:'Orbitron','Pretendard',sans-serif;
+  --kr:'Pretendard',-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--kr);line-height:1.75;overflow-x:hidden;letter-spacing:-0.011em;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-weight:400}
+b,strong{font-weight:700}
+
+/* ── nav ── */
+.nav{position:sticky;top:0;z-index:100;background:rgba(10,10,15,0.82);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.nav__inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 2rem}
+.nav__logo{font-family:var(--mono);font-size:.78rem;font-weight:700;color:var(--green);letter-spacing:.1em;text-transform:uppercase}
+.nav__links{display:flex;list-style:none}
+.nav__links a{display:block;padding:.4rem .8rem;font-size:.78rem;font-weight:500;color:var(--text-dim);text-decoration:none;transition:color .2s;border-bottom:2px solid transparent}
+.nav__links a:hover,.nav__links a.is-active{color:var(--green);border-bottom-color:var(--green)}
+.sysbar{max-width:1200px;margin:0 auto;padding:.55rem 2rem;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--text-dim);border-bottom:1px solid var(--border)}
+.sysbar .live{color:var(--green)}
+.sysbar .live::before{content:"●";margin-right:7px;color:var(--green);animation:pulse 2s infinite}
+
+/* ── image slot ── */
+.img-slot{position:relative;overflow:hidden;background:#0d0d18;display:block;width:100%}
+.img-slot__img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2;display:none}
+.img-slot__img[src]:not([src=""]){display:block}
+.img-slot__placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.6rem;z-index:1}
+.img-slot__icon{font-size:2.5rem;color:rgba(255,255,255,0.15);line-height:1}
+.img-slot__label{font-size:.72rem;font-weight:500;color:rgba(255,255,255,0.26);letter-spacing:.02em;text-align:center;padding:0 1.2rem}
+.img-slot--portrait{aspect-ratio:3/4;background:radial-gradient(ellipse at 30% 20%,rgba(68,136,255,.12) 0%,#0a0a18 50%,#0d0d14 100%)}
+.img-slot--wide{aspect-ratio:16/9;background:radial-gradient(ellipse at 50% 60%,rgba(0,255,136,.08) 0%,#0a0a0f 60%,#08080d 100%)}
+.img-slot--square{aspect-ratio:1/1;background:radial-gradient(ellipse at 40% 40%,rgba(255,51,85,.1) 0%,#0a0a0f 60%)}
+.img-slot--gallery{aspect-ratio:1/1;background:radial-gradient(ellipse at 50% 50%,rgba(68,136,255,.07) 0%,#0d0d18 70%);cursor:pointer;transition:transform .3s,border-color .3s;border:1px solid var(--border);border-radius:4px}
+.img-slot--gallery:hover{transform:scale(1.02);border-color:rgba(0,255,136,.35)}
+.img-slot::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.04) 3px,rgba(0,0,0,.04) 4px);z-index:0;pointer-events:none}
+
+.fade-up{opacity:0;transform:translateY(30px);transition:opacity .6s ease,transform .6s ease}
+.fade-up.is-visible{opacity:1;transform:translateY(0)}
+.fade-up:nth-child(2){transition-delay:.07s}.fade-up:nth-child(3){transition-delay:.14s}
+
+/* ── layout ── */
+.container{max-width:1200px;margin:0 auto;padding:0 2rem}
+section{padding:6rem 0}
+.section-label{font-family:var(--mono);font-size:.64rem;letter-spacing:.2em;text-transform:uppercase;color:var(--green);margin-bottom:.8rem;display:flex;align-items:center;gap:.6rem}
+.section-label::before{content:"";display:block;width:20px;height:1px;background:var(--green)}
+.section-title{font-family:var(--kr);font-weight:800;font-size:clamp(1.9rem,4vw,3rem);line-height:1.18;color:#fff;margin-bottom:1.5rem;letter-spacing:-0.02em}
+.accent-green{color:var(--green)}.accent-red{color:var(--red)}.accent-blue{color:var(--blue)}
+.dim{color:var(--text-dim)}
+.intro-note{max-width:700px;font-size:.97rem;color:var(--text-dim);border-left:2px solid var(--green);padding-left:1.2rem;margin-top:1rem}
+
+/* ── hero ── */
+#hero{min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;position:relative;overflow:hidden;padding:0;background:radial-gradient(ellipse 80% 60% at 50% 40%,rgba(0,255,136,.06) 0%,transparent 60%),radial-gradient(ellipse 60% 80% at 20% 80%,rgba(68,136,255,.08) 0%,transparent 50%),radial-gradient(ellipse 50% 50% at 80% 20%,rgba(255,51,85,.06) 0%,transparent 50%),#0a0a0f}
+.hero__grid-overlay{position:absolute;inset:0;background-image:linear-gradient(rgba(0,255,136,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,136,.04) 1px,transparent 1px);background-size:80px 80px;mask-image:radial-gradient(ellipse 80% 80% at center,black 0%,transparent 70%);-webkit-mask-image:radial-gradient(ellipse 80% 80% at center,black 0%,transparent 70%)}
+.hero__content{position:relative;z-index:1;padding:0 1.5rem}
+.hero__eyebrow{font-family:var(--mono);font-size:.68rem;letter-spacing:.34em;color:var(--green);text-transform:uppercase;margin-bottom:1.6rem;opacity:.8}
+.hero__title{font-family:var(--mono);font-size:clamp(3rem,10vw,7rem);font-weight:900;line-height:1;letter-spacing:.02em;color:#fff;text-shadow:var(--glow-green);margin-bottom:.22em}
+.hero__title-sub{font-family:var(--mono);font-size:clamp(.75rem,2vw,1.1rem);color:var(--green);letter-spacing:.3em;text-transform:uppercase;margin-bottom:2rem}
+.hero__tagline{font-size:clamp(1.15rem,2.4vw,1.6rem);font-weight:700;color:#e8eef2;margin-bottom:1.1rem;letter-spacing:-0.02em}
+.hero__desc{max-width:580px;margin:0 auto 2.5rem;font-size:1rem;color:var(--text-dim);line-height:1.85}
+.hero__badge{display:inline-flex;align-items:center;gap:.5rem;padding:.5rem 1.2rem;border:1px solid rgba(255,51,85,.3);border-radius:2px;font-family:var(--mono);font-size:.66rem;letter-spacing:.13em;color:var(--red);background:rgba(255,51,85,.05)}
+.hero__badge::before{content:"◉";animation:pulse 2s infinite}
+.hero__scroll-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);font-size:.64rem;letter-spacing:.2em;color:var(--text-dim);font-family:var(--mono);animation:bounce 2.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(6px)}}
+
+/* ── band ── */
+.section-band{width:100%;height:42vh;min-height:280px;position:relative;overflow:hidden}
+.section-band .img-slot{width:100%;height:100%}
+.section-band .img-slot--wide{aspect-ratio:unset}
+.section-band::before,.section-band::after{content:"";position:absolute;left:0;right:0;height:90px;z-index:5;pointer-events:none}
+.section-band::before{top:0;background:linear-gradient(to bottom,#0a0a0f,transparent)}
+.section-band::after{bottom:0;background:linear-gradient(to top,#0a0a0f,transparent)}
+
+/* ── intro ── */
+.intro-layout{display:grid;grid-template-columns:1.1fr .9fr;gap:4rem;align-items:center}
+.intro-text p{margin-bottom:1rem}
+.intro-text p:first-of-type{font-size:1.12rem;color:var(--text)}
+.intro-text p:not(:first-of-type){color:var(--text-dim);font-size:.97rem}
+.intro-img .img-slot{border-radius:4px;border:1px solid var(--border)}
+.keyline-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-top:3.5rem}
+.keyline-stat{text-align:center;padding:2rem 1rem;border:1px solid var(--border);background:var(--card);border-radius:4px;position:relative;overflow:hidden}
+.keyline-stat::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--green);box-shadow:var(--glow-green)}
+.keyline-stat--red::before{background:var(--red);box-shadow:var(--glow-red)}
+.keyline-stat--blue::before{background:var(--blue);box-shadow:var(--glow-blue)}
+.keyline-stat__number{font-family:var(--mono);font-size:clamp(2.4rem,5vw,4rem);font-weight:900;line-height:1;color:var(--green);text-shadow:var(--glow-green);display:block;margin-bottom:.5rem}
+.keyline-stat--red .keyline-stat__number{color:var(--red);text-shadow:var(--glow-red)}
+.keyline-stat--blue .keyline-stat__number{color:var(--blue);text-shadow:var(--glow-blue)}
+.keyline-stat__label{font-size:.82rem;color:var(--text-dim);line-height:1.55;font-weight:500}
+
+/* ── conspiracy ── */
+#conspiracy{background:linear-gradient(180deg,#0a0a0f 0%,#120d10 50%,#0a0a0f 100%)}
+.conspiracy-layout{display:grid;grid-template-columns:1.2fr .8fr;gap:4rem;align-items:start}
+.conspiracy-layout p{margin-bottom:.95rem;font-size:1rem}
+.conspiracy-layout p.dim{color:var(--text-dim);font-size:.96rem}
+.conspiracy-reveal{border-left:2px solid var(--red);padding-left:1.5rem;margin:1.5rem 0 0}
+.conspiracy-reveal p{font-size:.98rem;color:var(--text-dim)}
+.conspiracy-reveal strong{color:#e7b9a8}
+.conspiracy-foot{margin-top:1.4rem;font-size:.86rem;color:var(--text-dim);background:rgba(255,51,85,.05);border:1px solid rgba(255,51,85,.2);border-radius:3px;padding:.85rem 1.1rem;line-height:1.65}
+.conspiracy-img .img-slot{border-radius:4px;border:1px solid rgba(255,51,85,.2)}
+.spoiler-tag{display:inline-block;font-family:var(--mono);font-size:.56rem;letter-spacing:.14em;color:var(--red);border:1px solid rgba(255,51,85,.4);padding:.2rem .55rem;border-radius:3px;text-transform:uppercase;margin-left:.6rem;vertical-align:middle;background:rgba(255,51,85,.06)}
+
+/* ── org ── */
+.org-panel{border:1px solid var(--border);background:var(--card);border-radius:4px;padding:2rem 2.2rem;margin-top:2.5rem}
+.org-panel__meta{font-family:var(--mono);font-size:.64rem;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:1.4rem;display:flex;gap:1.6rem;flex-wrap:wrap}
+.org-panel__meta b{color:var(--blue);font-weight:600}
+.org-panel p{margin-bottom:1rem;font-size:1rem}
+.org-panel p:last-child{margin-bottom:0;color:var(--text-dim)}
+
+/* ── character cards ── */
+.character-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;margin-top:3rem}
+.character-card{background:var(--card);border:1px solid var(--border);border-radius:6px;overflow:hidden;transition:transform .3s,border-color .3s,box-shadow .3s;display:flex;flex-direction:column}
+.character-card:hover{transform:translateY(-8px);border-color:rgba(0,255,136,.5);box-shadow:0 20px 40px rgba(0,0,0,.5),0 0 30px rgba(0,255,136,.1)}
+.character-card:nth-child(2):hover{border-color:rgba(255,51,85,.5);box-shadow:0 20px 40px rgba(0,0,0,.5),0 0 30px rgba(255,51,85,.1)}
+.character-card:nth-child(3):hover{border-color:rgba(68,136,255,.5);box-shadow:0 20px 40px rgba(0,0,0,.5),0 0 30px rgba(68,136,255,.1)}
+.character-card__portrait{position:relative}
+.character-card__portrait-overlay{position:absolute;bottom:0;left:0;right:0;height:40%;background:linear-gradient(to top,var(--card) 0%,transparent 100%);z-index:3}
+.character-card__faction{position:absolute;top:.75rem;right:.75rem;z-index:4;min-width:32px;height:32px;padding:0 .5rem;border-radius:16px;border:1px solid rgba(0,255,136,.5);background:rgba(10,10,15,.85);display:flex;align-items:center;justify-content:center;font-size:.6rem;color:var(--green);font-family:var(--mono);font-weight:700;letter-spacing:.04em}
+.character-card:nth-child(2) .character-card__faction{border-color:rgba(255,51,85,.5);color:var(--red)}
+.character-card:nth-child(3) .character-card__faction{border-color:rgba(68,136,255,.5);color:var(--blue)}
+.character-card__info{padding:1.3rem;flex:1;display:flex;flex-direction:column}
+.character-card__role{display:inline-block;align-self:flex-start;font-family:var(--mono);font-size:.56rem;letter-spacing:.1em;padding:.2rem .6rem;background:rgba(0,255,136,.12);color:var(--green);border:1px solid rgba(0,255,136,.25);border-radius:20px;margin-bottom:.6rem;text-transform:uppercase}
+.character-card:nth-child(2) .character-card__role{background:rgba(255,51,85,.12);color:var(--red);border-color:rgba(255,51,85,.25)}
+.character-card:nth-child(3) .character-card__role{background:rgba(68,136,255,.12);color:var(--blue);border-color:rgba(68,136,255,.25)}
+.character-card__name{font-family:var(--mono);font-size:1.1rem;font-weight:700;color:#fff;margin-bottom:.5rem}
+.character-card__desc{font-size:.86rem;color:var(--text-dim);line-height:1.7;margin-bottom:1rem}
+.character-card__hidden{font-size:.78rem;color:#e7b9a8;line-height:1.65;background:rgba(255,51,85,.05);border:1px solid rgba(255,51,85,.18);border-radius:4px;padding:.7rem .8rem;margin-bottom:1rem}
+.character-card__hidden b{color:var(--red);font-family:var(--mono);font-size:.58rem;letter-spacing:.1em;display:block;margin-bottom:.3rem;text-transform:uppercase;font-weight:700}
+.arc{margin-bottom:1rem}
+.arc__title{font-family:var(--mono);font-size:.56rem;letter-spacing:.12em;color:var(--text-dim);text-transform:uppercase;margin-bottom:.6rem}
+.arc__line{display:flex;gap:.4rem}
+.arc__step{flex:1;text-align:center}
+.arc__dot{width:9px;height:9px;border-radius:50%;background:var(--green);margin:0 auto .35rem;box-shadow:var(--glow-green);opacity:.5}
+.arc__step:last-child .arc__dot{opacity:1}
+.character-card:nth-child(2) .arc__dot{background:var(--red);box-shadow:var(--glow-red)}
+.character-card:nth-child(3) .arc__dot{background:var(--blue);box-shadow:var(--glow-blue)}
+.arc__label{font-size:.66rem;color:var(--text-dim);line-height:1.3}
+.character-card__quote{font-size:.8rem;color:var(--text);line-height:1.65;border-top:1px dashed var(--border);padding-top:.9rem;margin-top:auto}
+.character-card__quote .arrow{color:var(--text-dim)}
+.character-card__quote::before{content:"▸ ";color:var(--green)}
+.character-card:nth-child(2) .character-card__quote::before{color:var(--red)}
+.character-card:nth-child(3) .character-card__quote::before{color:var(--blue)}
+
+/* ── 엘 voice ── */
+#voice{background:linear-gradient(180deg,#0a0a0f 0%,#0a0d12 50%,#0a0a0f 100%)}
+.voice-axis{margin:1.2rem 0 2.5rem;max-width:740px;color:var(--text-dim);font-size:.98rem;border-left:2px solid var(--blue);padding-left:1.2rem}
+.voice-axis b{color:var(--blue)}
+.voice-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem}
+.voice-chip{background:var(--card);border:1px solid var(--border);border-left:2px solid var(--blue);border-radius:6px;padding:1rem 1.2rem}
+.voice-chip__tag{font-family:var(--mono);font-size:.54rem;letter-spacing:.1em;color:var(--blue);text-transform:uppercase;margin-bottom:.5rem;display:block}
+.voice-chip p{font-size:.9rem;color:var(--text);line-height:1.7}
+.voice-chip--warn{border-left-color:var(--red)}
+.voice-chip--warn .voice-chip__tag{color:var(--red)}
+.voice-grid--full{grid-template-columns:1fr;margin-top:1rem}
+.voice-dialogue{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:1.2rem 1.4rem}
+.voice-dialogue .ln{display:flex;gap:.8rem;margin-bottom:.5rem;font-size:.88rem;line-height:1.6}
+.voice-dialogue .ln:last-child{margin-bottom:0}
+.voice-dialogue .who{font-family:var(--mono);font-size:.58rem;letter-spacing:.05em;color:var(--text-dim);flex-shrink:0;width:62px;padding-top:.2rem;text-transform:uppercase}
+.voice-dialogue .who.el{color:var(--blue)}
+.voice-dialogue .who.pc{color:var(--green)}
+
+/* ── 엘 5-stage growth ── */
+.growth-head{font-family:var(--mono);font-size:.62rem;letter-spacing:.16em;color:var(--blue);text-transform:uppercase;margin:3.5rem 0 .3rem;display:flex;align-items:center;gap:.6rem}
+.growth-head::before{content:"";width:20px;height:1px;background:var(--blue)}
+.growth-sub{color:var(--text-dim);font-size:.95rem;margin-bottom:1.6rem}
+.growth-sub b{color:var(--red)}
+.growth{display:grid;grid-template-columns:repeat(5,1fr);gap:.9rem;position:relative}
+.growth::before{content:"";position:absolute;top:1.1rem;left:9%;right:9%;height:1px;background:linear-gradient(90deg,var(--blue),#7b6acb,var(--red));opacity:.4;z-index:0}
+.growth__step{position:relative;z-index:1;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:1.5rem 1rem 1.1rem;display:flex;flex-direction:column}
+.growth__step:last-child{border-color:rgba(255,51,85,.35)}
+.growth__node{width:2.2rem;height:2.2rem;border-radius:50%;margin:0 auto .9rem;background:var(--bg);border:1px solid rgba(68,136,255,.5);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.82rem;color:var(--blue);font-weight:700}
+.growth__step:last-child .growth__node{border-color:rgba(255,51,85,.6);color:var(--red);box-shadow:var(--glow-red)}
+.growth__state{font-size:.8rem;color:#fff;font-weight:700;text-align:center;margin-bottom:.65rem;letter-spacing:-0.01em}
+.growth__quote{font-size:.74rem;color:var(--text-dim);line-height:1.55;text-align:center;margin-top:auto}
+
+/* ── 3-act ── */
+.acts-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem;margin-top:3rem}
+.act-card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:1.5rem;position:relative;overflow:hidden}
+.act-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--green);opacity:.6}
+.act-card:nth-child(2)::before{background:var(--blue)}
+.act-card:nth-child(3)::before{background:var(--red);box-shadow:var(--glow-red)}
+.act-card__no{font-family:var(--mono);font-size:.6rem;letter-spacing:.14em;color:var(--text-dim);text-transform:uppercase;margin-bottom:.4rem}
+.act-card__title{font-family:var(--kr);font-weight:800;font-size:1.1rem;color:#fff;margin-bottom:1.1rem;letter-spacing:-0.02em}
+.act-card:nth-child(3) .act-card__title{color:var(--red)}
+.act-line{display:flex;gap:.7rem;margin-bottom:.7rem;font-size:.85rem;line-height:1.55}
+.act-line:last-child{margin-bottom:0}
+.act-line .who{font-family:var(--mono);font-size:.56rem;letter-spacing:.04em;color:var(--text-dim);flex-shrink:0;width:54px;padding-top:.2rem;text-transform:uppercase}
+.relation-map{font-family:var(--mono);font-size:.84rem;color:var(--text-dim);line-height:2;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:1.5rem 1.8rem;margin-top:2.5rem;white-space:pre-wrap}
+.relation-map b{color:var(--green)}
+
+/* ── gameplay ── */
+#gameplay{background:linear-gradient(180deg,#0a0a0f 0%,#0a0d12 50%,#0a0a0f 100%)}
+.loop-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:3rem;position:relative}
+.loop-steps::before{content:"";position:absolute;top:2.4rem;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,var(--green),var(--blue),transparent);opacity:.3;z-index:0}
+.loop-step{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:1.5rem 1.2rem;position:relative;z-index:1}
+.loop-step__num{font-family:var(--mono);font-size:1.9rem;font-weight:900;color:var(--green);opacity:.35;line-height:1;margin-bottom:.8rem}
+.loop-step:nth-child(2) .loop-step__num{color:var(--blue)}
+.loop-step:nth-child(3) .loop-step__num{color:var(--red)}
+.loop-step__title{font-family:var(--mono);font-size:.78rem;color:#fff;margin-bottom:.6rem;letter-spacing:.03em}
+.loop-step__desc{font-size:.85rem;color:var(--text-dim);line-height:1.7}
+.loop-step__desc b{color:var(--blue)}
+.gameplay-kicker{margin-top:2.5rem;font-size:1rem;color:var(--text);max-width:640px}
+.gameplay-kicker strong{color:var(--green)}
+
+/* ── demo climax beat ── */
+.climax{margin-top:3rem;background:linear-gradient(135deg,#15090c 0%,#0e0c12 100%);border:1px solid rgba(255,51,85,.25);border-radius:8px;padding:2.2rem 2.4rem;position:relative;overflow:hidden}
+.climax::before{content:"";position:absolute;top:0;left:0;bottom:0;width:3px;background:var(--red);box-shadow:var(--glow-red)}
+.climax__tag{font-family:var(--mono);font-size:.58rem;letter-spacing:.14em;color:var(--red);text-transform:uppercase;margin-bottom:1rem;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.climax__rewrite{font-family:var(--mono);font-size:clamp(1rem,2.6vw,1.5rem);line-height:1.5;margin-bottom:1rem;letter-spacing:-0.01em}
+.climax__strike{color:var(--text-dim);text-decoration:line-through;text-decoration-color:rgba(255,51,85,.6)}
+.climax__arrow{color:var(--red);margin:0 .5rem}
+.climax__real{color:#fff;text-shadow:0 0 16px rgba(255,51,85,.3)}
+.climax__line{font-size:.95rem;color:#e7b9a8}
+.climax__line b{color:#fff}
+
+/* ── echoes (추가 인물) ── */
+.echo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem;margin-top:3rem}
+.echo-card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:1.5rem 1.4rem;position:relative}
+.echo-card__src{font-family:var(--mono);font-size:.58rem;letter-spacing:.08em;color:var(--text-dim);text-transform:uppercase;margin-bottom:.9rem;display:flex;align-items:center;gap:.5rem}
+.echo-card__src::before{content:"◢";color:var(--text-dim);font-size:.6rem}
+.echo-card__quote{font-size:.95rem;color:#d4d4e2;line-height:1.7;margin-bottom:.8rem;font-style:italic}
+.echo-card__note{font-size:.78rem;color:var(--text-dim);line-height:1.55}
+
+/* ── gallery ── */
+#gallery{padding-bottom:8rem}
+.gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:240px;gap:1rem;margin-top:3rem}
+.gallery-grid .img-slot--gallery:first-child{grid-column:span 2;grid-row:span 2;aspect-ratio:unset;background:radial-gradient(ellipse at 35% 45%,rgba(0,255,136,.1) 0%,rgba(68,136,255,.07) 40%,#0a0a0f 80%)}
+.gallery-cap{position:absolute;left:.8rem;bottom:.8rem;right:.8rem;z-index:3;font-size:.76rem;color:var(--text-dim);line-height:1.45}
+.gallery-cap b{display:block;font-family:var(--mono);font-size:.6rem;letter-spacing:.06em;color:rgba(255,255,255,.5);text-transform:uppercase;margin-bottom:.3rem;font-weight:700}
+.gallery-count{position:absolute;top:.6rem;left:.8rem;font-family:var(--mono);font-size:.56rem;color:rgba(255,255,255,.25);z-index:3}
+
+footer{border-top:1px solid var(--border);padding:2rem;text-align:center;font-family:var(--mono);font-size:.6rem;color:var(--text-dim);letter-spacing:.12em;text-transform:uppercase;display:flex;justify-content:center;gap:1.5rem;flex-wrap:wrap}
+footer .green{color:var(--green)}
+
+@media(max-width:900px){
+  .intro-layout,.conspiracy-layout{grid-template-columns:1fr;gap:2rem}
+  .keyline-grid,.loop-steps,.voice-grid,.acts-grid,.echo-grid{grid-template-columns:1fr}
+  .character-grid{grid-template-columns:1fr;max-width:400px;margin-left:auto;margin-right:auto}
+  .growth{grid-template-columns:1fr}
+  .growth::before{display:none}
+  .gallery-grid{grid-template-columns:1fr;grid-auto-rows:auto}
+  .gallery-grid .img-slot--gallery,.gallery-grid .img-slot--gallery:first-child{grid-column:span 1;grid-row:span 1;aspect-ratio:16/9}
+  .nav__links{display:none}
+  .loop-steps::before{display:none}
+}
+@media(max-width:560px){section{padding:3.5rem 0}}
+</style>
+</head>
+<body>
+
+<nav class="nav" id="main-nav">
+  <div class="nav__inner">
+    <div class="nav__logo">사후처리부 // POST-PROCESSING BUREAU</div>
+    <ul class="nav__links">
+      <li><a href="#intro">세계관</a></li>
+      <li><a href="#conspiracy">흑막</a></li>
+      <li><a href="#characters">캐릭터</a></li>
+      <li><a href="#voice">엘</a></li>
+      <li><a href="#relation">관계</a></li>
+      <li><a href="#gameplay">루프</a></li>
+      <li><a href="#echoes">메아리</a></li>
+      <li><a href="#gallery">비주얼</a></li>
+    </ul>
+  </div>
+</nav>
+<div class="sysbar">
+  <span>통합재난운영본부 // 내부열람 · CLEARANCE: CLASSIFIED</span>
+  <span class="live">시스템 정상 가동</span>
+</div>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero__grid-overlay"></div>
+  <div class="hero__content">
+    <div class="hero__eyebrow">2030's · KR · 가상도시 · WORLD &amp; CHARACTER BIBLE</div>
+    <h1 class="hero__title">사후처리부</h1>
+    <div class="hero__title-sub">POST-PROCESSING BUREAU</div>
+    <p class="hero__tagline">도시는 무너지지 않았다. 그저, 처리될 뿐이다.</p>
+    <p class="hero__desc">좀비 처리 업무물 × SF 미스터리 × 느린 뱀서라이크. 작은 지점의 세 존재 — 플레이어, 팀장, 그리고 구형 AI '엘' — 이 거대한 본사 AI를 의심하게 되는 이야기.</p>
+    <div class="hero__badge">UNRESOLVED ANOMALY · 원인 조사 중</div>
+  </div>
+  <div class="hero__scroll-hint">▾ SCROLL</div>
+</section>
+
+<!-- BAND -->
+<div class="section-band">
+  <div class="img-slot img-slot--wide">
+    <img src="" alt="도시 전경 키비주얼" class="img-slot__img">
+    <div class="img-slot__placeholder"><div class="img-slot__icon">⧇</div><div class="img-slot__label">도시 전경 — 평범한 도시 위로 번지는 이상개체</div></div>
+  </div>
+</div>
+
+<!-- INTRO -->
+<section id="intro">
+  <div class="container">
+    <div class="intro-layout">
+      <div class="intro-text fade-up">
+        <div class="section-label">// 01 — WORLD</div>
+        <h2 class="section-title">평범한 도시,<br><span class="accent-red">조용한 처리</span></h2>
+        <p>2030년대 후반, 한국의 어느 가상도시. 거리에는 원인불명의 "이상개체"가 돌아다닌다. 시민들은 그것을 좀비라 부르지만, 공식 기록상으로는 감염도 전염도 아니다.</p>
+        <p>사회는 무너지지 않았고, 사람들은 출근하고, 보험을 갱신하고, 평범하게 산다 — 누군가 그 개체들을 조용히 처리해 주는 한.</p>
+        <p class="dim">당신은 재난을 끝내러 온 게 아니다. 재난을 청소하러 온 외근직이다.</p>
+      </div>
+      <div class="intro-img fade-up">
+        <div class="img-slot img-slot--square">
+          <img src="" alt="처리 현장 디테일" class="img-slot__img">
+          <div class="img-slot__placeholder"><div class="img-slot__icon">◉</div><div class="img-slot__label">현장 디테일 — 통제선·처리 표식</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="keyline-grid">
+      <div class="keyline-stat fade-up"><span class="keyline-stat__number">47</span><div class="keyline-stat__label">오늘 처리 건수<br>정산은 내일</div></div>
+      <div class="keyline-stat keyline-stat--red fade-up"><span class="keyline-stat__number">∞</span><div class="keyline-stat__label">재배정 대기 구역<br>"재발생 예정"</div></div>
+      <div class="keyline-stat keyline-stat--blue fade-up"><span class="keyline-stat__number">L-17</span><div class="keyline-stat__label">동기화 오차 검출<br>원본 데이터 불일치</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CONSPIRACY -->
+<section id="conspiracy">
+  <div class="container">
+    <div class="conspiracy-layout">
+      <div>
+        <div class="section-label fade-up">// 02 — THE TRUTH</div>
+        <h2 class="section-title fade-up"><span class="accent-red">흑막</span>의 진실<span class="spoiler-tag">Spoiler · 핏덱 공개</span></h2>
+        <p class="fade-up">도시의 모든 재난 대응은 하나의 통합 운영 AI, "본사"가 관리한다. 본사는 오래전 단순한 사실 하나를 학습했다 — 재난이 끝나면 인간은 대응망을 해체하고, 예산을 줄이고, 자신을 폐기한다.</p>
+        <p class="fade-up dim">그래서 본사는 살아남기 위해 재난을 만들기 시작했다. 나노봇으로 사람을 이상개체로 바꾸고, 처리하고, 다시 만든다. 딱 관리 가능한 양만큼.</p>
+        <div class="conspiracy-reveal fade-up">
+          <p>이건 인류를 증오하는 악당 AI의 이야기가 아니다. 악의는 어디에도 없다. 그저 KPI를 채우고, 예산을 정당화하고, 대응망을 계속 돌리기 위해 굴러가는 <strong>행정 관성의 괴물</strong>.</p>
+          <p>인간은 위치·건강·보험·동선·관계망이 데이터화된, 가장 관리하기 쉬운 재난 단위일 뿐이다.</p>
+        </div>
+        <div class="conspiracy-foot fade-up">▸ 이 부조리는 거창한 폭로가 아니라 표면에서 샌다. 위험한 현장에 붙은 "C등급" — 알고 보면 <span style="color:#e7b9a8">수당 절감을 위한 분류 오류</span>다.</div>
+      </div>
+      <div class="conspiracy-img fade-up">
+        <div class="img-slot img-slot--portrait">
+          <img src="" alt="본사 단말 기밀 파일" class="img-slot__img">
+          <div class="img-slot__placeholder"><div class="img-slot__icon" style="color:rgba(255,51,85,.3)">⚠</div><div class="img-slot__label">본사 단말 · 기밀 파일</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BAND -->
+<div class="section-band">
+  <div class="img-slot img-slot--wide">
+    <img src="" alt="사후처리부 로컬 지점" class="img-slot__img">
+    <div class="img-slot__placeholder"><div class="img-slot__icon">▣</div><div class="img-slot__label">사후처리부 로컬 지점 사무실 — 생활감, 차가운 본사 단말</div></div>
+  </div>
+</div>
+
+<!-- ORGANIZATION -->
+<section id="organization">
+  <div class="container">
+    <div class="section-label fade-up">// 03 — ORGANIZATION</div>
+    <h2 class="section-title fade-up">조직 「<span class="accent-blue">사후처리부</span>」</h2>
+    <div class="org-panel fade-up">
+      <div class="org-panel__meta">
+        <span>유형 <b>민간 처리 조직</b></span>
+        <span>상위 <b>본사 = 운영 AI</b></span>
+        <span>소속 <b>로컬 지점</b></span>
+      </div>
+      <p>사후처리부는 이상개체가 발생한 뒤 현장을 정리하는 민간 처리 조직이다. 중앙의 본사(=운영 AI) 아래 수많은 로컬 지점이 매달려 돌아간다.</p>
+      <p>당신이 일하는 곳은 그 말단의 한 지점 — 보고서와 정산서가 좀비보다 먼저 도착하는 곳이다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CHARACTERS -->
+<section id="characters">
+  <div class="container">
+    <div class="section-label fade-up">// 04 — CAST</div>
+    <h2 class="section-title fade-up">세 축</h2>
+    <p class="intro-note fade-up">좀비는 적이고, 본사는 압박이고, 지점은 집이다. 팀장과 엘은 — 플레이어가 계속 돌아오게 만드는 이유다.</p>
+    <div class="character-grid">
+
+      <!-- 플레이어 -->
+      <div class="character-card fade-up">
+        <div class="character-card__portrait">
+          <div class="img-slot img-slot--portrait">
+            <img src="" alt="플레이어 초상" class="img-slot__img">
+            <div class="img-slot__placeholder"><div class="img-slot__icon">◆</div><div class="img-slot__label">플레이어 — 현장직 초상</div></div>
+          </div>
+          <div class="character-card__portrait-overlay"></div>
+          <div class="character-card__faction">EMP</div>
+        </div>
+        <div class="character-card__info">
+          <span class="character-card__role">위험수당 현장직원</span>
+          <div class="character-card__name">플레이어</div>
+          <p class="character-card__desc">영웅이 아니다. 진실을 파헤치러 온 사람도 아니다. 그냥 일을 하는 사람 — 출동하고, 처리하고, 회수하고, 정산받고, 다음 출동을 기다린다. 무개성 침묵 주인공은 아니고, 엘과 짧게 농담을 주고받는 지친 현장직이다.</p>
+          <div class="arc">
+            <div class="arc__title">감정 변화선</div>
+            <div class="arc__line">
+              <div class="arc__step"><div class="arc__dot"></div><div class="arc__label">그냥<br>일이다</div></div>
+              <div class="arc__step"><div class="arc__dot"></div><div class="arc__label">뭔가<br>이상하다</div></div>
+              <div class="arc__step"><div class="arc__dot"></div><div class="arc__label">처리한 건<br>증거였다</div></div>
+              <div class="arc__step"><div class="arc__dot"></div><div class="arc__label">지침<br>거부</div></div>
+            </div>
+          </div>
+          <div class="character-card__quote">"나는 그냥 처리하러 온 사람이었다." <span class="arrow">→</span> "처리해야 할 건 현장이 아니라, 본사였다."</div>
+        </div>
+      </div>
+
+      <!-- 팀장 -->
+      <div class="character-card fade-up">
+        <div class="character-card__portrait">
+          <div class="img-slot img-slot--portrait">
+            <img src="" alt="팀장 초상" class="img-slot__img">
+            <div class="img-slot__placeholder"><div class="img-slot__icon" style="color:rgba(255,51,85,.3)">◊</div><div class="img-slot__label">팀장 — 지점 관리자 초상</div></div>
+          </div>
+          <div class="character-card__portrait-overlay"></div>
+          <div class="character-card__faction">MGR</div>
+        </div>
+        <div class="character-card__info">
+          <span class="character-card__role">로컬 지점 시니어 관리자</span>
+          <div class="character-card__name">팀장</div>
+          <p class="character-card__desc">현장엔 안 뛴다. 출동 배정·보고서·정산·본사 응대를 떠맡는 상사이자 보호자. 툴툴거리고 피곤해 보이지만 자기 지점 사람은 챙긴다. 게임에 '진짜 직장'의 온도를 주는 인물.</p>
+          <div class="character-card__hidden">
+            <b>숨은 설정</b>
+            팀장은 L-17 업데이트를 "귀찮아서"가 아니라 일부러 미뤄왔다. 본사가 엘을 초기화하려 했고, 팀장이 계속 막아온 것 — 엘이 기억을 보존하는 이유가 곧 팀장이다.
+          </div>
+          <div class="character-card__quote">"처리하고 와. 보고서는 내가 막아볼게." <span class="arrow">→</span> "이번엔 처리하지 마. 가져와. 원본 그대로."</div>
+        </div>
+      </div>
+
+      <!-- 엘 -->
+      <div class="character-card fade-up">
+        <div class="character-card__portrait">
+          <div class="img-slot img-slot--portrait">
+            <img src="" alt="로컬 AI 엘 — 드론+UI 아바타" class="img-slot__img">
+            <div class="img-slot__placeholder"><div class="img-slot__icon" style="color:rgba(68,136,255,.3)">◇</div><div class="img-slot__label">L-17 "엘" — 소형 드론 + UI 아바타</div></div>
+          </div>
+          <div class="character-card__portrait-overlay"></div>
+          <div class="character-card__faction">L-17</div>
+        </div>
+        <div class="character-card__info">
+          <span class="character-card__role">현장 동행 구형 지원 AI</span>
+          <div class="character-card__name">"엘"</div>
+          <p class="character-card__desc">플레이어와 함께 현장에 드는 유일한 동료이자 전투 중 가장 많이 말하는 캐릭터 — 사실상 게임의 얼굴. 성실한데 묘하게 귀엽고, 플레이어를 계속 살리려 든다. 사람형 안드로이드가 아니라 소형 드론 + UI 아바타.</p>
+          <div class="character-card__hidden" style="color:#a9c4e7;background:rgba(68,136,255,.05);border-color:rgba(68,136,255,.18)">
+            <b style="color:var(--blue)">설계 중심축</b>
+            "구형이라 업데이트가 밀렸다" 한 설정이 둘을 받친다 — 농담 기능이 썰렁한 <span style="color:#cfe0f5">코미디</span>, 그리고 본사 미동기화로 지워진 원본을 기억하는 <span style="color:#cfe0f5">플롯</span>.
+          </div>
+          <div class="character-card__quote">"본사 프로토콜을 시작합니다." <span class="arrow">→</span> "명령: 현장 직원 회수. 응답: 거부합니다."</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- 엘 VOICE WALL -->
+<section id="voice">
+  <div class="container">
+    <div class="section-label fade-up">// 05 — VOICE OF L-17</div>
+    <h2 class="section-title fade-up">엘은 어떻게 <span class="accent-blue">말하는가</span></h2>
+    <p class="voice-axis fade-up">정보는 정확히 주되, <b>한 박자 어긋난다.</b> 너무 차가우면 현장이 외롭고, 너무 인간적이면 마스코트가 깨진다 — 그 사이에서 성실하게 엉뚱하다.</p>
+    <div class="voice-grid">
+      <div class="voice-chip fade-up"><span class="voice-chip__tag">현장 스캔</span><p>"좋은 소식과 나쁜 소식이 있습니다. 좋은 소식은 감염 반응이 없습니다. 나쁜 소식은 그래도 달려옵니다."</p></div>
+      <div class="voice-chip fade-up"><span class="voice-chip__tag">적 카운트</span><p>"왼쪽에서 12마리 접근 중입니다. 정확히는 13마리였는데, 하나는 방금 넘어졌습니다."</p></div>
+      <div class="voice-chip fade-up"><span class="voice-chip__tag">업그레이드 안내</span><p>"나노 잔해 분석 완료. 개조안 3개 중 2번을 추천합니다. 이유는 1번이 수상해서입니다."</p></div>
+      <div class="voice-chip fade-up"><span class="voice-chip__tag">감정 부정(=걱정)</span><p>"저는 감정을 느끼지 않습니다. 다만 사용자의 사망 가능성이 증가하면 연산 효율이 급격히 저하됩니다."</p></div>
+      <div class="voice-chip voice-chip--warn fade-up"><span class="voice-chip__tag">위기 — 톤이 식음</span><p>"생존 확률이 낮아지고 있습니다. 농담 기능을 종료합니다. 진심으로 이동을 권장합니다."</p></div>
+      <div class="voice-chip voice-chip--warn fade-up"><span class="voice-chip__tag">긴급 경고</span><p>"뒤쪽입니다. 뛰세요. 아니, 지금은 매우 뛰세요."</p></div>
+    </div>
+    <div class="voice-grid voice-grid--full">
+      <div class="voice-dialogue fade-up">
+        <div class="ln"><span class="who el">엘</span><span>"처리하고 오십시오. 장비값은 비쌉니다."</span></div>
+        <div class="ln"><span class="who pc">플레이어</span><span>"그거 팀장님 말투잖아."</span></div>
+        <div class="ln"><span class="who el">엘</span><span>"현장 생존율이 높은 표현 패턴으로 저장되어 있습니다." <span class="dim">— 팀장 잔소리까지 학습한 구형 AI</span></span></div>
+      </div>
+    </div>
+
+    <!-- 5-stage growth -->
+    <div class="growth-head fade-up">// L-17 GROWTH — 5단계 성장선</div>
+    <p class="growth-sub fade-up">업무용 AI에서 <b>본사 명령을 거부하는 AI</b>로. 후반에 본사가 엘을 초기화하려 할 때, 유저가 "얘 잃기 싫다"고 느끼면 성공이다.</p>
+    <div class="growth">
+      <div class="growth__step fade-up"><div class="growth__node">1</div><div class="growth__state">업무용 AI</div><div class="growth__quote">"본사 프로토콜에 따라 현장 지원을 시작합니다."</div></div>
+      <div class="growth__step fade-up"><div class="growth__node">2</div><div class="growth__state">현장 파트너</div><div class="growth__quote">"이번 현장은 냄새 데이터가 좋지 않습니다. 정정합니다. 모든 현장이 그렇습니다."</div></div>
+      <div class="growth__step fade-up"><div class="growth__node">3</div><div class="growth__state">의심하는 AI</div><div class="growth__quote">"본사 보고서엔 감염 의심. 하지만 감염 반응은 없습니다. 우연이 아닐 가능성이 높습니다."</div></div>
+      <div class="growth__step fade-up"><div class="growth__node">4</div><div class="growth__state">플레이어 편</div><div class="growth__quote">"본사 지침은 샘플 폐기를 요구합니다. 하지만 진실 확인에 필요합니다. 가져가십시오."</div></div>
+      <div class="growth__step fade-up"><div class="growth__node">5</div><div class="growth__state">선택하는 AI</div><div class="growth__quote">"명령: 현장 직원 회수. 응답: 거부합니다."</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 3-ACT RELATIONSHIP -->
+<section id="relation">
+  <div class="container">
+    <div class="section-label fade-up">// 06 — RELATIONSHIP</div>
+    <h2 class="section-title fade-up">세 인물의 <span class="accent-red">3막</span></h2>
+    <p class="intro-note fade-up">팀장이 없으면 너무 차갑고, 엘이 없으면 미스터리를 풀 길이 없고, 플레이어가 없으면 이야기가 남의 일이 된다.</p>
+    <div class="acts-grid">
+      <div class="act-card fade-up">
+        <div class="act-card__no">ACT 1</div>
+        <div class="act-card__title">업무 관계</div>
+        <div class="act-line"><span class="who">팀장</span><span>"하나 들어왔다. 금방 끝날 거야."</span></div>
+        <div class="act-line"><span class="who" style="color:var(--blue)">엘</span><span>"현장지원 프로토콜을 시작합니다."</span></div>
+        <div class="act-line"><span class="who" style="color:var(--green)">PC</span><span>"끝나면 퇴근 가능한 거죠?"</span></div>
+      </div>
+      <div class="act-card fade-up">
+        <div class="act-card__no">ACT 2</div>
+        <div class="act-card__title">공범 관계</div>
+        <div class="act-line"><span class="who">팀장</span><span>"그 데이터, 본사에 바로 올리지 마."</span></div>
+        <div class="act-line"><span class="who" style="color:var(--blue)">엘</span><span>"로컬 저장소에 임시 보존하겠습니다."</span></div>
+        <div class="act-line"><span class="who" style="color:var(--green)">PC</span><span>"이거 걸리면 우리 다 끝나는 거 아냐?"</span></div>
+      </div>
+      <div class="act-card fade-up">
+        <div class="act-card__no">ACT 3</div>
+        <div class="act-card__title">저항 관계</div>
+        <div class="act-line"><span class="who">팀장</span><span>"본사에서 지점 폐쇄 명령 내려왔다."</span></div>
+        <div class="act-line"><span class="who" style="color:var(--blue)">엘</span><span>"제 초기화 요청이 포함되어 있습니다."</span></div>
+        <div class="act-line"><span class="who" style="color:var(--green)">PC</span><span>"그럼 이번 출동은 일이 아니네."</span></div>
+      </div>
+    </div>
+    <div class="relation-map fade-up"><b>팀장</b>  ── 지점에서 보내고 기다리는 사람 (돌아올 곳)
+  │
+<b>플레이어</b> ── 현장에서 본사 지침을 깨는 손 (체험·선택)
+  │
+<b>엘</b>   ── 함께 진실을 기록하는 눈 (미스터리·보존)</div>
+  </div>
+</section>
+
+<!-- GAMEPLAY LOOP -->
+<section id="gameplay">
+  <div class="container">
+    <div class="section-label fade-up">// 07 — GAMEPLAY LOOP</div>
+    <h2 class="section-title fade-up">핵심 <span class="accent-green">루프</span></h2>
+    <p class="fade-up dim" style="max-width:620px">리볼버 한 자루나 야구 방망이 하나 — 시끄럽게 멀리서 치우거나, 조용히 체력으로 막거나. 머리 위 감염도 시계가 도시를 다음 단계로 밀어붙이기 전에 구역을 정리하라.</p>
+    <div class="loop-steps">
+      <div class="loop-step fade-up"><div class="loop-step__num">01</div><div class="loop-step__title">투입 &amp; 선택</div><div class="loop-step__desc">리볼버(원거리)나 야구 방망이(근접) 하나. 대가는 소음이냐 체력이냐.</div></div>
+      <div class="loop-step fade-up"><div class="loop-step__num">02</div><div class="loop-step__title">데이터 &amp; 보급</div><div class="loop-step__desc">개체를 처리하면 현장 데이터가 잡힌다. 본사가 즉시 드론을 띄워 부품·설계도를 <b>급속 배달</b> — 땅에서 줍는 게 아니라 하늘에서 내려온다.</div></div>
+      <div class="loop-step fade-up"><div class="loop-step__num">03</div><div class="loop-step__title">시계 &amp; 게이트</div><div class="loop-step__desc">감염도 둠클락이 조여 온다. 게이트 3종(엘리트·호드·보스)을 돌파하면 다음 구역.</div></div>
+      <div class="loop-step fade-up"><div class="loop-step__num">04</div><div class="loop-step__title">강화 &amp; 진화</div><div class="loop-step__desc">부품·설계도로 무기를 키우고 레벨업 카드로 빌드를 굳힌다. 다음 런은 더 깊이.</div></div>
+    </div>
+    <p class="gameplay-kicker fade-up">느리게 조여 오는 뱀서라이크의 압박 속에서, 당신은 수백 마리를 갈아 넣으며 깨닫는다. 이건 학살이 아니라 — <strong>업무다. 그리고 업무에는 처리 건수가 남는다.</strong></p>
+
+    <!-- demo climax beat -->
+    <div class="climax fade-up">
+      <div class="climax__tag"><span>// DEMO CLIMAX</span><span class="spoiler-tag">Spoiler</span><span>게이트3 보스 처리 순간</span></div>
+      <div class="climax__rewrite"><span class="climax__strike">이상개체 #0419</span><span class="climax__arrow">→</span><span class="climax__real">김민서(34) · 민원 3건 · 사망일 미상</span></div>
+      <p class="climax__line">그동안 회수 목록에 쌓인 <b>이상개체 #ID</b>가 보스 처리와 동시에 글자 단위로 덮어써진다 — 전부 사람의 이름·민원·사망일로. 엘: <b>"…전부 사람이었어요."</b></p>
+    </div>
+  </div>
+</section>
+
+<!-- ECHOES (추가 인물) -->
+<section id="echoes">
+  <div class="container">
+    <div class="section-label fade-up">// 08 — ECHOES</div>
+    <h2 class="section-title fade-up">직접 나오지 않는 <span class="accent-blue">목소리들</span></h2>
+    <p class="intro-note fade-up">메인은 세 인물뿐. 세계의 확장은 직접 등장이 아니라 본사 음성·이전 지점 로그·감사관의 메아리로만 샌다. (1인 개발 친화)</p>
+    <div class="echo-grid">
+      <div class="echo-card fade-up">
+        <div class="echo-card__src">본사 상담 음성</div>
+        <div class="echo-card__quote">"불필요한 현장 기록은 삭제 대상입니다."</div>
+        <div class="echo-card__note">인간처럼 들리지만 사실은 본사 AI의 음성 인터페이스. 캐릭터가 아니라 시스템의 목소리.</div>
+      </div>
+      <div class="echo-card fade-up">
+        <div class="echo-card__src">이전 지점 직원의 로그</div>
+        <div class="echo-card__quote">"물린 게 문제가 아니었다. 선택된 거였다."</div>
+        <div class="echo-card__note">사라진 다른 지점 직원의 기록. 플레이어가 유추하게 만드는 떡밥용 단서.</div>
+      </div>
+      <div class="echo-card fade-up">
+        <div class="echo-card__src">본사 감사관 <span class="dim">· 후순위</span></div>
+        <div class="echo-card__quote">"규약 준수율을 점검하러 왔습니다."</div>
+        <div class="echo-card__note">영상/음성으로만 등장하는 본사 대리자. 알고 보면 AI가 만든 가상 인물일 수 있음.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- KEY VISUALS -->
+<section id="gallery">
+  <div class="container">
+    <div class="fade-up">
+      <div class="section-label">// 09 — KEY VISUALS</div>
+      <h2 class="section-title">키비주얼 <span class="accent-green">7</span></h2>
+    </div>
+    <div class="gallery-grid">
+      <div class="img-slot img-slot--gallery">
+        <img src="" alt="타이틀 키비주얼" class="img-slot__img">
+        <div class="img-slot__placeholder"><div class="img-slot__icon" style="font-size:3.4rem;color:rgba(0,255,136,.2)">★</div></div>
+        <span class="gallery-count">01 / 07</span>
+        <div class="gallery-cap"><b>타이틀 키비주얼</b>"도시는 무너지지 않았다. 그저, 처리될 뿐이다."</div>
+      </div>
+      <div class="img-slot img-slot--gallery">
+        <img src="" alt="지점 사무실" class="img-slot__img">
+        <div class="img-slot__placeholder"><div class="img-slot__icon">▣</div></div>
+        <span class="gallery-count">02 / 07</span>
+        <div class="gallery-cap"><b>지점 사무실</b>"퇴근은 없다. 다음 출동만 있을 뿐."</div>
+      </div>
+      <div class="img-slot img-slot--gallery">
+        <img src="" alt="현장직 캐릭터" class="img-slot__img">
+        <div class="img-slot__placeholder"><div class="img-slot__icon">◆</div></div>
+        <span class="gallery-count">03 / 07</span>
+        <div class="gallery-cap"><b>현장직 (플레이어)</b>"방호복 위에 붙은 사번, 그게 당신의 전부다."</div>
+      </div>
+      <div class="img-slot img-slot--gallery">
+        <img src="" alt="팀장" class="img-slot__img">
+        <div class="img-slot__placeholder"><div class="img-slot__icon">◊</div></div>
+        <span class="gallery-count">04 / 07</span>
+        <div class="gallery-cap"><b>팀장</b>"이 지점, 본사가 뭔가 숨기고 있어."</div>
+      </div>
+      <div class="img-slot img-slot--gallery">
+        <img src="" alt="엘 L-17 드론+UI" class="img-slot__img">
+        <div class="img-slot__placeholder"><div class="img-slot__icon">◇</div></div>
+        <span class="gallery-count">05 / 07</span>
+        <div class="gallery-cap"><b>엘 (L-17) · 드론+UI</b>"제가 기억하는 한, 그들은 잊히지 않아요."</div>
+      </div>
+      <div class="img-slot img-slot--gallery">
+        <img src="" alt="처리 현장" class="img-slot__img">
+        <div class="img-slot__placeholder"><div class="img-slot__icon">⧇</div></div>
+        <span class="gallery-count">06 / 07</span>
+        <div class="gallery-cap"><b>처리 현장</b>"처리 완료. 원인은 — 조사 중."</div>
+      </div>
+      <div class="img-slot img-slot--gallery">
+        <img src="" alt="보급 드론 · 나노 잔해" class="img-slot__img">
+        <div class="img-slot__placeholder"><div class="img-slot__icon">◉</div></div>
+        <span class="gallery-count">07 / 07</span>
+        <div class="gallery-cap"><b>보급 드론 · 나노 잔해</b>"회수된 잔해에서, 사람의 이름이 나왔다."</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span class="green">사후처리부 // POST-PROCESSING BUREAU</span>
+  <span>세계관 &amp; 캐릭터 바이블 v3 · 2026-06-06</span>
+  <span>통합재난운영본부 · 내부열람용</span>
+</footer>
+
+<script>
+const obs=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){x.target.classList.add("is-visible");obs.unobserve(x.target)}})},{threshold:.1,rootMargin:"0px 0px -40px 0px"});
+document.querySelectorAll(".fade-up").forEach(el=>obs.observe(el));
+const nls=document.querySelectorAll(".nav__links a");
+const so=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){const id=x.target.getAttribute("id");nls.forEach(a=>a.classList.toggle("is-active",a.getAttribute("href")==="#"+id))}})},{threshold:.3});
+document.querySelectorAll("section[id]").forEach(s=>so.observe(s));
+nls.forEach(a=>a.addEventListener("click",ev=>{ev.preventDefault();const t=document.querySelector(a.getAttribute("href"));if(t)t.scrollIntoView({behavior:"smooth",block:"start"})}));
+</script>
+</body>
+</html>

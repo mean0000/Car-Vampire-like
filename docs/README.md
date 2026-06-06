@@ -13,16 +13,30 @@
 
 ---
 
+## 🟢 현행 권위 빠른 지도 (스토리 · 전투)
+
+> **스토리·배경·캐릭터를 알고 싶으면 딱 한 문서만 읽는다 — 나머지는 읽지 말 것.**
+
+| 주제 | 지금 읽을 단 하나 | 폐기되어 읽지 말 것 |
+|---|---|---|
+| **스토리·배경·캐릭터** | `03_reference/2026-06-06-worldbuilding-pitch.md` (+`.html`)<br>— 게임명 "사후처리부", 흑막 = 행정 관성의 괴물, 세 인물(플레이어·팀장·엘) | GDD §4 세계관·§6-4 AI 센터 추적, 옛 HUD 목업, 2026-05-24 핸드오프, 04_archive 일체 (*감염 기술자·SYNC RATE=정신오염·차량 서사 전부 무효*) |
+| **전투 방식** | `00_authority/2026-06-03-demo-weapon-lineup.md`<br>— 리볼버(원거리)/야구방망이(근접) 택1 + 소음기 | GDD §무기체계(근접 기본), 04_archive/weapon-system, 옛 차량 전투 |
+| **감염 시계·둠클락** | `00_authority/2026-05-31-level-design-authority.md` + `2026-05-29-infection-noise-design.md` | — |
+
+※ 2026-06-06 대개정으로 스토리가 통째로 교체됨. GDD는 **시스템/메카닉(시계·제작·진행·바이옴) 권위로만** 살아있고, **서사 레이어는 worldbuilding-pitch가 대체**한다.
+
+---
+
 ## 00_authority — 지금 믿을 문서
 
 | 문서 | 무엇 | 비고 |
 |---|---|---|
-| `2026-05-27-new-direction-gdd.md` (+`.html`) | **현행 GDD (v2.0).** 게임 전체 설계의 최상위 | |
+| `2026-05-27-new-direction-gdd.md` (+`.html`) | **현행 GDD.** 시스템/메카닉(시계·제작·진행·바이옴) 권위 | ⚠️ 스토리/세계관 레이어 폐기 → worldbuilding-pitch |
 | `2026-05-29-progression-system.md` | **진행/크래프팅 권위.** 줍는 것=무기강화 설계도/부품 | 구 `crafting-design`(90_archive) 대체 |
 | `2026-05-31-level-design-authority.md` | 레벨 디자인 권위 (감염 시계 + 3게이트) | |
 | `2026-05-31-levelup-cards-catalog.md` | 레벨업 카드 전체 명세 (~23장) | 카드 권위 |
 | `2026-06-02-city-scale-decisions.md` | 도시 스케일/맵 결정 | |
-| `2026-06-03-demo-weapon-lineup.md` | **데모 무기 라인업 권위.** 리볼버(원거리)/야구방망이(근접) 택1 + 소음기 | 시작 분기·근접 게임감 확정 |
+| `2026-06-03-demo-weapon-lineup.md` | **전투 방식·데모 무기 권위.** 리볼버(원거리)/야구방망이(근접) 택1 + 소음기 | GDD §무기체계(근접 기본)는 구버전 |
 | `2026-05-29-infection-noise-design.md` | 감염도·소음 수치 곡선 | §1 소음 = **현재 빌드 구현 확정값** |
 
 ## 01_handoffs — 핸드오프
@@ -35,8 +49,9 @@ brainstorming / session·session2 / upgrade-system-log / game-direction-pivot / 
 
 ## 03_reference — 레퍼런스/시각자료
 
+- **`2026-06-06-worldbuilding-pitch.md` (+`.html`) — 스토리·배경·캐릭터 단일 권위 (위 🟢 빠른 지도 참조)**
 - `hell-express-reference.md`(광원분석)
-- HTML 뷰: game-overview / levelup-cards-view / city-blueprint / city-vision / hud-mockup / session / **city-asset-catalog · prefab-contact-index · zone-reference-board**
+- HTML 뷰: game-overview / levelup-cards-view / city-blueprint / city-vision / session / **city-asset-catalog · prefab-contact-index · zone-reference-board** (※ 옛 차량 `hud-mockup`은 04_archive로 내림)
 - `images/`(무드보드), `references/`(외부 게임 스크린샷 레퍼런스)
 - ※ city-asset-catalog·prefab-contact-index·zone-reference-board 는 루트 `city_catalog/`를 `../city_catalog/`로 참조한다 (city_catalog는 도로 세션 공유라 루트 유지).
 
@@ -52,6 +67,8 @@ brainstorming / session·session2 / upgrade-system-log / game-direction-pivot / 
 | `2026-05-29-crafting-design.md` | 소비형 레시피 구조 폐기 → progression-system이 권위 |
 | `2026-05-25-design-doc.html` | 피벗 이전 종합 설계 HTML |
 | `2026-05-24-uiux-design.md` | 차량 HUD(HULL·SUPPRESS) 전제 — 차량 방향 보류로 일단 내림. **추후 재검토 예정** |
+| `2026-05-25-hud-mockup-car.html` | 옛 차량 HUD 목업(SYNC RATE=정신오염·HULL·SUPPRESS) — 사후처리부 피벗으로 무효 |
+| `2026-05-24-handoff-car.md` | 피벗 이전 차량/SYNC RATE/드리프트 핸드오프 — 스토리·전투 전부 구버전 |
 
 ---
 
