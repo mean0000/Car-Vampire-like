@@ -78,26 +78,19 @@ JudgeCam(pos 0,34,-20 / pitch59.5 / FOV38)으로 같은 처리를 태양만 바�
 > `audit(style) STEP12: 틸트시프트 3에이전트 감사 + 2D모드/비교캡처`
 > COZY는 바로 다음 커밋 `fb7d5f1a`("COZY 연결 후 라이팅 화해")에서 처음 들어옴. 즉 `7d485b1f` = **COZY 직전 상태**.
 
-**⚠️ 오늘 처리 작업은 아직 커밋 안 됨(working tree).** 그냥 checkout하면 충돌/손실 위험. 안전 절차:
+**✅ 오늘 처리 작업은 커밋 완료 = `2d196c2e`** (`feat(style): 처리 레이어 — 그레이드 재작업 + 헤이즈 + 액터 프레넬 림`). 그레이드/림셰이더/Color.mat/핸드오프 6파일. 이건 안전하게 history에 들어갔으니 잃을 일 없음.
 
-**방법 A — 오늘 작업 먼저 커밋하고 자유롭게 왕복(권장):**
+> ⚠️ 단, working tree에 **잔여 비-처리 WIP**가 남아있음(StyleLab.unity + 라이트베이크 byproduct, COZY Fog.mat, ProjectSettings, sln 등 COZY/APV기 잔여 + Unity 부산물). 이게 있으면 **맨몸 `git checkout 7d485b1f`는 거부됨**(덮어쓰기 안전장치). 그래서 stash로 잠깐 치워야 함.
+
+**pre-COZY 확인 절차 (언제든):**
 ```bash
-git add Assets/_Project/Shaders/ActorRimLit.shader Assets/_Project/Setting/StyleLab_Post.asset Assets/ithappy/Zombies_Pack/Materials/Color.mat Assets/ithappy/Zombies_Pack/Meshes/Base_Mesh.fbx.meta
-git commit -m "feat(style): 처리 레이어 — 그레이드 재작업 + 헤이즈 + 액터 프레넬 림(조건무관)"
-# pre-COZY 보러 가기:
-git checkout 7d485b1f      # detached HEAD로 그 시점 씬 확인
-# 돌아오기:
+git stash push -u -m "park-before-precozy"  # 잔여 WIP+untracked PNG 잠깐 치움
+git checkout 7d485b1f                        # detached HEAD로 COZY 직전 씬 확인
+# 다 봤으면 복귀:
 git checkout feat/graphics
+git stash pop                                # 치워둔 잔여 WIP 복구
 ```
-
-**방법 B — 커밋 없이 잠깐만 확인(stash):**
-```bash
-git stash push -u -m "treatment-WIP"   # 오늘 작업 임시 보관
-git checkout 7d485b1f                   # pre-COZY 확인
-git checkout feat/graphics
-git stash pop                           # 오늘 작업 복구
-```
-
+> 오늘 처리(2d196c2e)는 커밋돼 있으니 위 stash는 잔여 WIP만 다룸 — 처리 결과물은 feat/graphics에 그대로 있음.
 > Unity 열린 상태에서 checkout 시 씬/머티리얼이 디스크에서 바뀌므로, Unity가 리임포트/리로드하게 두고 확인할 것.
 
 ### 기존 안전망 stash (이미 존재)
