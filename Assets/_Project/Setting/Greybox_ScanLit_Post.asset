@@ -105,10 +105,10 @@ MonoBehaviour:
   active: 1
   postExposure:
     m_OverrideState: 1
-    m_Value: 1.35
+    m_Value: 1.1
   contrast:
     m_OverrideState: 1
-    m_Value: 12
+    m_Value: 24
   colorFilter:
     m_OverrideState: 0
     m_Value: {r: 1, g: 1, b: 1, a: 1}
@@ -117,7 +117,7 @@ MonoBehaviour:
     m_Value: 0
   saturation:
     m_OverrideState: 1
-    m_Value: -14
+    m_Value: -6
 --- !u!114 &-953652133583714070
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -147,7 +147,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d7fd9488000d3734a9e00ee676215985, type: 3}
-  m_Name: StyleLab_Post
+  m_Name: Greybox_ScanLit_Post
   m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.VolumeProfile
   components:
   - {fileID: -3949514639769826005}
@@ -158,6 +158,7 @@ MonoBehaviour:
   - {fileID: -7398792972168553305}
   - {fileID: 1927761963224228856}
   - {fileID: 1791479774987141732}
+  - {fileID: 0}
 --- !u!114 &1116298911418278689
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -198,13 +199,13 @@ MonoBehaviour:
     m_Value: 1
   threshold:
     m_OverrideState: 1
-    m_Value: 0.9
+    m_Value: 0.8
   intensity:
     m_OverrideState: 1
-    m_Value: 0.35
+    m_Value: 0.85
   scatter:
     m_OverrideState: 1
-    m_Value: 0.6
+    m_Value: 0.72
   clamp:
     m_OverrideState: 0
     m_Value: 65472

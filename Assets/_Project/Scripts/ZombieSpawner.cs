@@ -32,6 +32,10 @@ public class ZombieSpawner : MonoBehaviour
     [SerializeField] float obstacleClearance = 1.2f;    // 후보 지점에서 이 반경 안에 건물이 있으면 기각
 
     List<ZombieController> _activeZombies = new List<ZombieController>();
+
+    /// <summary>현재 살아있는 좀비 목록(읽기 전용). ScanPulseController 등 외부 시스템용.</summary>
+    public IReadOnlyList<ZombieController> ActiveZombies => _activeZombies;
+
     float _timer;
     float _backfillTimer;   // ★ 최소인구 보충용 별도 타이머
 

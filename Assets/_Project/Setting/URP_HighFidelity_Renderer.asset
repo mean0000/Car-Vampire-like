@@ -58,7 +58,8 @@ MonoBehaviour:
   - {fileID: -4636140495946472337}
   - {fileID: 6166441279204375107}
   - {fileID: 1466527225190719308}
-  m_RendererFeatureMap: 00000000000000006fa44e42c81ea9bf433a4817ac9993554c9feec6bd265a14
+  - {fileID: 3319819325610122030}
+  m_RendererFeatureMap: 00000000000000006fa44e42c81ea9bf433a4817ac9993554c9feec6bd265a142edb7765165e122e
   m_UseNativeRenderPass: 0
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
@@ -107,6 +108,48 @@ MonoBehaviour:
   passIndex: 0
   bindDepthStencilAttachment: 0
   m_Version: 1
+--- !u!114 &3319819325610122030
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b3d386ba5cd94485973aee1479b272e, type: 3}
+  m_Name: AITagOutline
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.RenderObjects
+  m_Active: 1
+  settings:
+    passTag: AITagOutline
+    Event: 300
+    filterSettings:
+      RenderQueueType: 0
+      LayerMask:
+        serializedVersion: 2
+        m_Bits: 128
+      PassNames: []
+    overrideMaterial: {fileID: 2100000, guid: c043e1364cdbf9e47802ee4dfc7a0e16, type: 2}
+    overrideMaterialPassIndex: 0
+    overrideShader: {fileID: 0}
+    overrideShaderPassIndex: 0
+    overrideMode: 1
+    overrideDepthState: 0
+    depthCompareFunction: 4
+    enableWrite: 1
+    stencilSettings:
+      overrideStencilState: 0
+      stencilReference: 0
+      stencilCompareFunction: 8
+      passOperation: 0
+      failOperation: 0
+      zFailOperation: 0
+    cameraSettings:
+      overrideCamera: 0
+      restoreCamera: 1
+      offset: {x: 0, y: 0, z: 0, w: 0}
+      cameraFieldOfView: 60
 --- !u!114 &6166441279204375107
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -122,14 +165,14 @@ MonoBehaviour:
   m_Active: 1
   m_Settings:
     AOMethod: 0
-    Downsample: 1
+    Downsample: 0
     AfterOpaque: 0
     Source: 1
     NormalSamples: 1
-    Intensity: 0.55
-    DirectLightingStrength: 0.3
-    Radius: 0.3
-    Samples: 1
+    Intensity: 1
+    DirectLightingStrength: 0.4
+    Radius: 0.45
+    Samples: 2
     BlurQuality: 0
     Falloff: 100
     SampleCount: -1

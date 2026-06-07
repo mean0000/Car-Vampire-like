@@ -20,11 +20,11 @@ RenderSettings:
   m_FogDensity: 0.008
   m_LinearFogStart: 15
   m_LinearFogEnd: 80
-  m_AmbientSkyColor: {r: 0.192, g: 0.10800001, b: 0.16800001, a: 0.6}
-  m_AmbientEquatorColor: {r: 0.24840002, g: 0.11880001, b: 0.029700002, a: 0.54}
-  m_AmbientGroundColor: {r: 0.12420001, g: 0.059400003, b: 0.014850001, a: 0.54}
+  m_AmbientSkyColor: {r: 0.22, g: 0.25, b: 0.34, a: 1}
+  m_AmbientEquatorColor: {r: 0.24840002, g: 0.118800014, b: 0.029700007, a: 0.54}
+  m_AmbientGroundColor: {r: 0.12420001, g: 0.059400007, b: 0.014850004, a: 0.54}
   m_AmbientIntensity: 1
-  m_AmbientMode: 1
+  m_AmbientMode: 3
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
   m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
   m_HaloStrength: 0.5
@@ -17277,14 +17277,6 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 256
   gunshotNoise: 90
-  assassinateRange: 2.4
-  assassinateCooldown: 0.5
-  markerHeight: 2.2
-  markerSize: 0.35
-  markerBobAmp: 0.12
-  markerBobSpeed: 4
-  markerPulseSpeed: 6
-  markerColor: {r: 0.4, g: 1, b: 0.5, a: 1}
   aimLineLength: 3
   aimLineWidth: 0.04
   aimColor: {r: 1, g: 0.9, b: 0.3, a: 0.35}
@@ -17292,6 +17284,7 @@ MonoBehaviour:
   tracerWidth: 0.12
   tracerColor: {r: 1, g: 0.85, b: 0.3, a: 1}
   gunFlashLight: {fileID: 0}
+  evolveKey: 116
 --- !u!114 &1114635134
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18021,7 +18014,7 @@ MonoBehaviour:
   highAltitudeCloudColor: {r: 0.03, g: 0.02, b: 0.05, a: 1}
   sunlightColor: {r: 1, g: 0.35, b: 0.08, a: 1}
   starColor: {r: 0.3, g: 0.3, b: 0.5, a: 0.5}
-  ambientLightHorizonColor: {r: 0.46, g: 0.22, b: 0.055, a: 1}
+  ambientLightHorizonColor: {r: 0.46, g: 0.22000001, b: 0.055000015, a: 1}
   ambientLightZenithColor: {r: 0.32, g: 0.18, b: 0.28, a: 1}
   ambientLightMultiplier: 0.6
   galaxyIntensity: 0.1
@@ -19721,7 +19714,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1520937423}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.99992007, y: 0, z: 0, w: 0.012644983}
+  m_LocalRotation: {x: 0.18005681, y: 0.4890738, z: -0.10395585, w: 0.84710073}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -19738,8 +19731,8 @@ Light:
   m_Enabled: 1
   serializedVersion: 12
   m_Type: 1
-  m_Color: {r: 1, g: 0.35, b: 0.08, a: 0}
-  m_Intensity: 0.4
+  m_Color: {r: 1, g: 0.85, b: 0.6, a: 1}
+  m_Intensity: 3.2
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -20131,6 +20124,57 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1603334994}
   m_CullTransparentMesh: 1
+--- !u!1 &1607821217
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1607821219}
+  - component: {fileID: 1607821218}
+  m_Layer: 0
+  m_Name: ScanPulse
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1607821218
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1607821217}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dffb3b11c27dd20439d42fb2b28d960a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ScanPulseController
+  spawner: {fileID: 716009222}
+  pulseInterval: 3
+  pulseSpeed: 28
+  pulseMaxRadius: 32
+  ringBand: 2.5
+  tagDuration: 2.5
+  showRing: 1
+--- !u!4 &1607821219
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1607821217}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1616162571
 GameObject:
   m_ObjectHideFlags: 0
@@ -25325,10 +25369,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.Volume
   m_IsGlobal: 1
-  priority: 10
+  priority: 1
   blendDistance: 0
   weight: 1
-  sharedProfile: {fileID: 11400000, guid: 65c1fdb25ddba5f4cb0d8a468fcaa750, type: 2}
+  sharedProfile: {fileID: 11400000, guid: d8a6c53d7f2ce2c44a4cb4bd3e1a4528, type: 2}
 --- !u!4 &1653816412
 Transform:
   m_ObjectHideFlags: 0
@@ -26615,7 +26659,7 @@ MonoBehaviour:
   biomes: []
   weight: 1
   totalSystemWeight: 0
-  cumulus: 0.2
+  cumulus: 0
   cirrus: 0
   altocumulus: 0
   cirrostratus: 0
@@ -26749,9 +26793,9 @@ MonoBehaviour:
   - startKey: 0.6666667
     endKey: 0.75
     colorBlocks:
-    - {fileID: 0}
+    - {fileID: 11400000, guid: a209cb0585f3ae14d94c450eca2c3cb4, type: 2}
     seed: 0
-    selectedBlock: {fileID: 0}
+    selectedBlock: {fileID: 11400000, guid: a209cb0585f3ae14d94c450eca2c3cb4, type: 2}
   keys:
   - 0.6666667
   - 0.75
@@ -28155,7 +28199,7 @@ Light:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1907609749}
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 12
   m_Type: 1
   m_Color: {r: 0.75, g: 0.8, b: 0.95, a: 1}
@@ -33791,3 +33835,4 @@ SceneRoots:
   - {fileID: 1653816412}
   - {fileID: 931845158}
   - {fileID: 1330789240}
+  - {fileID: 1607821219}

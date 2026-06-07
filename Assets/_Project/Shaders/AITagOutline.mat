@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_TiltShift
-  m_Shader: {fileID: 4800000, guid: 555466349fb01984fbb26ddd2456a0c7, type: 3}
+  m_Name: AITagOutline
+  m_Shader: {fileID: 4800000, guid: b15067ad8282d9d428847e3da622f71f, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -25,11 +25,9 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _Falloff: 0.15
-    - _FocusCenter: 0.5
-    - _FocusHalfBand: 0.27
-    - _MaxBlurRadius: 0.009
-    - _Mode: 0
-    m_Colors: []
+    - _OutlineWidth: 0.9
+    - _TagRenderingLayer: 2
+    m_Colors:
+    - _OutlineColor: {r: 0.05, g: 0.9, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

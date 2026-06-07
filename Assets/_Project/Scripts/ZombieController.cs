@@ -60,6 +60,30 @@ public class ZombieController : MonoBehaviour
     Animator _animator;
     static readonly int SpeedHash = Animator.StringToHash("Speed");
 
+    // ──────────── Scan Tag (AI 위협 태깅 — 아웃라인) ────────────
+    // 어그로/사망 상태 외부 노출. ScanPulseController가 태깅 대상 판별에 사용.
+    public bool IsAggro => _state == ZombieState.Chase || _state == ZombieState.Attack;
+    public bool IsDead => _dead || _state == ZombieState.Dead;
+
+    // 아웃라인 표시는 renderingLayerMask의 비트로만 제어 — 물리 레이어(7)는 건드리지 않는다.
+    const uint ScanTagBit = 1u << 1;   // "ScanTagged" 렌더링 레이어 인덱스 1
+    Renderer[] _scanRenderers;
+    bool _scanTagged;
+
+    public void SetScanTagged(bool on)
+    {
+        if (_scanTagged == on) return;
+        _scanTagged = on;
+        if (_scanRenderers == null) return;
+        for (int i = 0; i < _scanRenderers.Length; i++)
+        {
+            var r = _scanRenderers[i];
+            if (r == null) continue;
+            if (on) r.renderingLayerMask |= ScanTagBit;
+            else    r.renderingLayerMask &= ~ScanTagBit;
+        }
+    }
+
     // ──────────── Lifecycle ────────────
 
     void Awake()
@@ -73,6 +97,7 @@ public class ZombieController : MonoBehaviour
 
         _springScale = GetComponent<MMSpringScale>();
         _animator = GetComponent<Animator>();
+        _scanRenderers = GetComponentsInChildren<Renderer>(true);
     }
 
     void OnDestroy()
@@ -438,6 +463,7 @@ public class ZombieController : MonoBehaviour
     {
         _dead = true;
         _state = ZombieState.Dead;
+        SetScanTagged(false);   // 시체/래그돌에 아웃라인이 남지 않도록 즉시 태그 제거
 
         _springScale?.Bump(new Vector3(0.3f, -0.5f, 0.3f));
         MMTimeScaleEvent.Trigger(MMTimeScaleMethods.For, 0.03f, 0.05f, false, 0f, false);
@@ -457,6 +483,7 @@ public class ZombieController : MonoBehaviour
     {
         _dead = true;
         _state = ZombieState.Dead;
+        SetScanTagged(false);   // 런치되는 시체에 아웃라인이 남지 않도록 즉시 태그 제거
         _knockbackVel = Vector3.zero;   // 런치 트윈이 변위를 전담
 
         SpawnXPOrbs();
