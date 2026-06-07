@@ -1,0 +1,33 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <Style src="project://database/Assets/Jorjouto/ACS/StyleSheets/PreviewItem.uss?fileID=7433441132597879392&amp;guid=e9c3ab5a5ec5a234aab9c88852272786&amp;type=3#PreviewItem"/>
+    <ui:VisualElement name="ItemRowWrapper" class="PreviewItemRow_Normal" style="flex-direction: row;">
+        <ui:Toggle label="" value="true" focusable="true" toggle-on-label-click="false" name="VisibilityToggle" style="flex-grow: 0; align-self: flex-start;"/>
+        <ui:Foldout text="Item Test" value="true" toggle-on-label-click="false" focusable="false" enabled="true" style="flex-grow: 1; padding-left: 15px;">
+            <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" style="flex-grow: 1;">
+                <ui:VisualElement name="PreviewItemPanel" style="flex-grow: 1; flex-direction: row; margin-top: 2px; margin-right: 4px; margin-bottom: 2px; margin-left: 4px;">
+                    <ui:Label text="Preview Item" name="PreviewItemLabel" style="width: 81px;"/>
+                    <uie:ObjectField label="" focusable="true" name="PreviewItemField" style="margin-left: 25px; flex-grow: 1;"/>
+                </ui:VisualElement>
+                <ui:VisualElement name="AttachSocketHorizontalPanel" style="flex-grow: 1; flex-direction: row; margin-top: 2px; margin-right: 4px; margin-bottom: 2px; margin-left: 4px;">
+                    <ui:Label text="Attach Socket" name="AttachSocketFieldLabel"/>
+                    <ui:VisualElement name="AttachSocketVerticalPanel" style="flex-grow: 1; flex-direction: row; justify-content: flex-start; align-content: flex-start;">
+                        <ui:TextField label="" placeholder-text="Socket Name" name="SocketNameField" focusable="true" style="width: 80%; margin-left: 28px;"/>
+                        <ui:DropdownField label="" name="SocketDropdownField" focusable="false" style="flex-grow: 1;"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="OffsetPositionPanel" style="flex-grow: 1; flex-direction: row; margin-top: 2px; margin-right: 4px; margin-bottom: 2px; margin-left: 4px;">
+                    <ui:Label text="Offset Position" name="OffsetPositionLabel" style="width: 81px;"/>
+                    <ui:Vector3Field label="" name="OffsetPositionField" is-delayed="false" focusable="true" style="flex-grow: 1; margin-left: 25px;"/>
+                </ui:VisualElement>
+                <ui:VisualElement name="OffsetRotationPanel" style="flex-grow: 1; flex-direction: row; margin-top: 2px; margin-right: 4px; margin-bottom: 2px; margin-left: 4px;">
+                    <ui:Label text="Offset Rotation" name="OffsetRotationLabel" style="width: 81px;"/>
+                    <ui:Vector3Field label="" name="OffsetRotationField" is-delayed="false" focusable="true" style="flex-grow: 1; margin-left: 25px;"/>
+                </ui:VisualElement>
+                <ui:VisualElement name="ScalePanel" style="flex-grow: 1; flex-direction: row; margin-top: 2px; margin-right: 4px; margin-bottom: 2px; margin-left: 4px;">
+                    <ui:Label text="Scale" name="ScaleLabel" style="width: 81px;"/>
+                    <ui:Vector3Field label="" name="ScaleField" is-delayed="false" focusable="true" style="flex-grow: 1; margin-left: 25px;"/>
+                </ui:VisualElement>
+            </ui:ScrollView>
+        </ui:Foldout>
+    </ui:VisualElement>
+</ui:UXML>

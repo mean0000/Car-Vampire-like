@@ -1,0 +1,148 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9887673fcdd2326479cb68651544629d, type: 3}
+  m_Name: AC_Shoot
+  m_EditorClassIdentifier: Assembly-CSharp::Jorjouto.AnimComposerSystem.ScriptableObject_AnimComposer
+  AnimationClip: {fileID: 670302272868737125, guid: 910e50cf09ebca04d9d29271a0b6feac, type: 3}
+  PreviewModel: {fileID: 919132149155446097, guid: 910e50cf09ebca04d9d29271a0b6feac, type: 3}
+  PreviewItems:
+  - Item: {fileID: 395494194743491360, guid: 3f863337e8e1f9d43b22b099fdb906e4, type: 3}
+    AttachSocket: 
+    OffsetPosition: {x: 0, y: -0.25, z: 0}
+    OffsetRotation: {x: 0, y: 0, z: 0}
+    Scale: {x: 8, y: 0.5, z: 8}
+    Visible: 1
+  Tracks:
+  - ActionBlocks:
+    - Action:
+        rid: 7602220388008067080
+      StartFrame: 0
+      EndFrame: 3
+      StartTime: 0
+      EndTime: 0.1
+  - ActionBlocks:
+    - Action:
+        rid: 7602220391265206333
+      StartFrame: 2
+      EndFrame: 7
+      StartTime: 0.06666667
+      EndTime: 0.23333333
+  - ActionBlocks:
+    - Action:
+        rid: 7602220388008067081
+      StartFrame: 0
+      EndFrame: 20
+      StartTime: 0
+      EndTime: 0.6333334
+  AnimationLayer: 1
+  BlendInTime: 0.1
+  BlendInCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  BlendOutTime: 0.2
+  BlendOutCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  BlendOutOffset: 0
+  PlayRate: 1
+  Loop: 1
+  ApplyHorizontalRootMotion: 1
+  ApplyVerticalRootMotion: 0
+  ApplyRotationRootMotion: 0
+  PreviewRootMotion: 1
+  PreviewBackgroundColor: {r: 0, g: 0, b: 0, a: 1}
+  IsPreviewUnlit: 0
+  IsFootIK: 1
+  PreviewFootIK: 1
+  RootMotionCurves: []
+  NormalizedRootMotionCurves: []
+  NormalizationSamples: 300
+  references:
+    version: 2
+    RefIds:
+    - rid: 7602220388008067080
+      type: {class: ActionBlock_PlaySound, ns: Jorjouto.AnimComposerSystem.Sample, asm: Jorjouto.AnimComposerSystem.Sample}
+      data:
+        DebugEnabled: 1
+        DebugExitOnAnimationEnd: 0
+        SoundsToPlay:
+        - {fileID: 8300000, guid: 80e49787a292a6e44a5c3a7f3a8852d4, type: 3}
+        SoundVolume: 0.1
+        IsLooped: 0
+    - rid: 7602220388008067081
+      type: {class: ActionBlock_InstantiatePrefab, ns: Jorjouto.AnimComposerSystem.Sample, asm: Jorjouto.AnimComposerSystem.Sample}
+      data:
+        DebugEnabled: 1
+        DebugExitOnAnimationEnd: 1
+        PrefabToInstantiate: {fileID: 919132149155446097, guid: a00a776c0fef2334cb82cc44ccb31509, type: 3}
+        SpawnSocket: hand.R
+        ShouldAttachToSocket: 1
+        instanceLocalPosition: {x: 0.03, y: 0, z: -0.08}
+        instanceLocalRotation: {x: 15, y: 180, z: 0}
+        instanceLocalScale: {x: 1.3, y: 1.3, z: 1.3}
+    - rid: 7602220391265206333
+      type: {class: ActionBlock_PlayVfx, ns: Jorjouto.AnimComposerSystem.Sample, asm: Jorjouto.AnimComposerSystem.Sample}
+      data:
+        DebugEnabled: 1
+        DebugExitOnAnimationEnd: 1
+        VfxToPlay: {fileID: 1743301284569550, guid: ad2ab49d0a2a17148bd51c93d977bdbc, type: 3}
+        Loop: 0
+        SpawnSocket: hand.R
+        ShouldAttachToSocket: 0
+        ShouldFollowSocketYTransform: 0
+        VfxLocalPosition: {x: 0, y: 0, z: -0.35}
+        VfxLocalRotation: {x: 0, y: 0, z: 0}
+        VfxLocalScale: {x: 1, y: 1, z: 1}
+        VfxStartTime: 0
+        VfxRate: 1

@@ -1,0 +1,45 @@
+.CustomButton {
+    margin: 0;
+    -unity-text-align: middle-center;
+    -unity-font-style: bold;
+    border-color: black;
+    border-width: 1px;
+    color: rgb(30, 30, 30);
+    background-color: rgb(255, 170, 20);
+    transition-property: scale;
+    transition-duration: 0.25s;
+    -unity-background-image-tint-color: rgb(255, 255, 255);
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
+.CustomButton:hover:enabled {
+    background-color: rgb(200, 127, 0);
+    -unity-background-image-tint-color: rgb(156, 156, 156);
+    transition-property: scale;
+    transition-duration: 0.25s;
+    scale: 1 1.1 1.1;
+}
+
+.CustomButton:active:enabled {
+    background-color: rgb(167, 105, 0);
+    -unity-background-image-tint-color: rgb(72, 72, 72);
+    scale: 1 1;
+}
+
+.PauseButton {
+    background-image: url("project://database/Assets/Jorjouto/ACS/Editor/Sprites/PauseIcon.png?fileID=2800000&guid=48b21bac3e42bbb4b99eb240127afede&type=3#PauseIcon");
+}
+
+.PlayButton {
+    background-image: url("project://database/Assets/Jorjouto/ACS/Editor/Sprites/PlayIcon.png?fileID=2800000&guid=a28299229a9ddd945aed4f3bfba3c27e&type=3#PlayIcon");
+    -unity-background-scale-mode: stretch-to-fill;
+}
+
+.ScreenOptionsButton {
+    background-color: rgba(123, 122, 122, 0.19);
+}
+
+.ScreenOptionsButton:hover:enabled {
+    background-color: rgba(123, 122, 122, 0.6);
+}
