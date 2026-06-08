@@ -14,6 +14,51 @@ public class PlayerController : MonoBehaviour
     [SerializeField] float crouchMultiplier = 0.5f; // Ctrl 앉기 속도 배율 (느림)
     [SerializeField] LayerMask groundLayer = 1 << 6;
 
+    [Header("Movement Weight (가속/감속 — 무게감)")]
+    [Tooltip("정지→최대속도 가속도(m/s²). 도달시간 ≈ moveSpeed/이값. 클수록 즉각적, 작을수록 묵직.")]
+    [SerializeField] float acceleration = 50f;
+    [Tooltip("입력을 떼거나 느려질 때 감속도(m/s²). 작을수록 더 미끄러지듯 정착.")]
+    [SerializeField] float deceleration = 40f;
+
+    Vector3 _velocity;   // XZ 평면 현재 속도(m/s). 가속/감속으로 목표속도를 추종 → 질량감.
+
+    [Header("Dash (빠른 회피 버스트 + 잔상)")]
+    [SerializeField] KeyCode dashKey = KeyCode.Space;
+    [Tooltip("대시 중 순간 속도(m/s). 거리 ≈ 이값 × dashDuration.")]
+    [SerializeField] float dashSpeed = 28f;
+    [Tooltip("대시 지속 시간(초). 짧을수록 순간이동에 가깝게 톡.")]
+    [SerializeField] float dashDuration = 0.18f;
+    [Tooltip("대시 스택 1개를 충전하는 데 걸리는 시간(초).")]
+    [SerializeField] float dashCooldown = 1f;
+    [Tooltip("저장해 둘 수 있는 대시 횟수(스택). 시작 시 풀충전. 연속 대시 = 이 수만큼.")]
+    [SerializeField, Min(1)] int maxDashCharges = 2;
+    [Tooltip("켜면 대시 동안 무적(좀비 접촉 피해 무시) — 회피기로 동작. 끄면 순수 이동기.")]
+    [SerializeField] bool dashInvulnerable = true;
+    [Tooltip("대시 순간 소음(호드 유발 가능). 0이면 무음.")]
+    [SerializeField] float dashNoise = 30f;
+    [Tooltip("대시 경로를 막는 장애물 레이어 — 벽 통과 방지.")]
+    [SerializeField] LayerMask dashObstacleMask = 1 << 8;
+
+    const float DashBodyRadius = 0.5f;   // 벽 클램프용 몸 반경 패딩
+    float _dashTimer;          // >0이면 대시 중(남은 시간)
+    int _dashCharges;          // 현재 보유 대시 스택
+    float _rechargeTimer;      // 다음 1스택 충전까지 남은 시간(스택<max일 때만 흐름)
+    Vector3 _dashDir;
+    PlayerCombat _combat;      // 정지 중 대시 방향 폴백(조준)
+
+    /// <summary>대시 중이면 true — 잔상 컴포넌트가 폴링한다.</summary>
+    public bool IsDashing => _dashTimer > 0f;
+
+    /// <summary>현재 보유한 대시 스택 수 — HUD가 폴링.</summary>
+    public int DashCharges => _dashCharges;
+    /// <summary>최대 대시 스택 수 — HUD 아이콘 개수.</summary>
+    public int MaxDashCharges => maxDashCharges;
+    /// <summary>충전 중인 다음 스택의 진행도(0~1). 풀충전이면 1.</summary>
+    public float DashRechargeProgress01 =>
+        (_dashCharges >= maxDashCharges || dashCooldown <= 0f)
+            ? 1f
+            : 1f - Mathf.Clamp01(_rechargeTimer / dashCooldown);
+
     [Header("Noise (이동 중 지속 소음 레벨)")]
     [SerializeField] float crouchNoiseLevel = 2f;  // 앉기: 거의 무음(반경 ~0.5) — 암살 접근용. 닿을 듯해야 들림
     [SerializeField] float walkNoiseLevel = 22f;   // 걷기: 근처 2~3마리는 반응(반경 ~5.5) — 기본 이동에 긴장
@@ -32,6 +77,7 @@ public class PlayerController : MonoBehaviour
         Instance = this;
         PlayerStats.Reset();   // 매 런(씬 1회) 시작 시 카드 보정 초기화
         _currentHP = maxHP;
+        _dashCharges = maxDashCharges;   // 시작 시 대시 스택 풀충전
     }
 
     void Start()
@@ -39,6 +85,8 @@ public class PlayerController : MonoBehaviour
         // ★ 월드 바운드가 확정된 뒤(Start) 계산 — Awake 시 스케일/바운드 미확정 가능성 회피
         var col = GetComponent<Collider>();
         _groundOffset = col != null ? col.bounds.center.y - col.bounds.min.y : 0f;
+
+        _combat = GetComponent<PlayerCombat>();   // 정지 중 대시 방향 폴백(조준)
     }
 
     void OnDestroy()
@@ -58,13 +106,52 @@ public class PlayerController : MonoBehaviour
 
         bool moving = input.sqrMagnitude > 0.001f;
         bool crouching = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
-        bool running = moving && !crouching && Input.GetKey(KeyCode.LeftShift); // 앉은 채로는 못 달림
+        bool running = moving && !crouching && Input.GetKey(KeyCode.LeftShift); // 앉기 중엔 못 달림
 
-        if (moving)
+        // 대시 스택 충전: 보유<max인 동안 항상 타이머가 흘러 dashCooldown마다 1스택씩 회복.
+        // (대시 중에도 흐른다 — 회피 직후 다음 회피가 자연스럽게 차오르게.)
+        if (_dashCharges < maxDashCharges && dashCooldown > 0f)
         {
-            float mult = crouching ? crouchMultiplier : (running ? runMultiplier : 1f);
-            mult *= PlayerStats.MoveSpeedMult;   // 경량화 카드 반영
-            Vector3 next = transform.position + input * (moveSpeed * mult * Time.deltaTime);
+            _rechargeTimer -= Time.deltaTime;
+            // while: 큰 프레임(렉 스파이크/일시정지 복귀)에 여러 스택이 한 번에 차도록 — if면 프레임당 1개만 회복.
+            while (_rechargeTimer <= 0f && _dashCharges < maxDashCharges)
+            {
+                _dashCharges++;
+                _rechargeTimer += dashCooldown;
+            }
+            if (_dashCharges >= maxDashCharges) _rechargeTimer = 0f;   // 풀충전이면 타이머 정지
+        }
+
+        // 대시 발동: 제작 중 아님 + 대시 중 아님 + 스택 보유 시.
+        bool crafting = CraftingSystem.Instance != null && CraftingSystem.Instance.IsCrafting;
+        if (!crafting && _dashTimer <= 0f && _dashCharges > 0 && Input.GetKeyDown(dashKey))
+            TryStartDash(input);
+
+        // 대시 중이면 일반 이동 로직을 통째로 건너뛴다 — 고정 방향·고정 속도 버스트.
+        if (_dashTimer > 0f)
+        {
+            UpdateDash(Time.deltaTime);
+            return;
+        }
+
+        float mult = crouching ? crouchMultiplier : (running ? runMultiplier : 1f);
+        mult *= PlayerStats.MoveSpeedMult;   // 경량화 카드 반영
+
+        // 목표 속도 = 입력 방향 × 현재 속도. 입력 없으면 0(감속해 정착).
+        Vector3 targetVel = input * (moveSpeed * mult);
+
+        // 가속/감속 분리: "같은 방향으로 더 빨라질 때"만 가속. 그 외(정지·감속·역방향)는 감속.
+        // dot 검사가 없으면 역방향 입력(크기 동일)이 가속으로 잡혀 제동 없이 오버슈트한다.
+        // → 출발은 또렷이 밀고 나가고, 멈추거나 꺾을 땐 미끄러지며 정착 = 질량감.
+        bool speedingUp = Vector3.Dot(targetVel, _velocity) >= 0f
+                          && targetVel.sqrMagnitude >= _velocity.sqrMagnitude;
+        float rate = speedingUp ? acceleration : deceleration;
+        _velocity = Vector3.MoveTowards(_velocity, targetVel, rate * Time.deltaTime);
+
+        // 입력을 떼도 감속 꼬리가 남으므로 속도가 살아있는 동안 위치·지면 갱신.
+        if (_velocity.sqrMagnitude > 0.0001f)
+        {
+            Vector3 next = transform.position + _velocity * Time.deltaTime;
             next.y = SampleGroundHeight(next) + _groundOffset;
             transform.position = next;
         }
@@ -79,6 +166,55 @@ public class PlayerController : MonoBehaviour
         NoiseManager.Instance?.SetMovementNoise(noiseLevel);
     }
 
+    void TryStartDash(Vector3 input)
+    {
+        // 방향 결정: WASD 입력이 있으면 그 방향, 없으면(정지) 조준 방향, 그것도 없으면 현재 바라보는 방향.
+        // → 멈춰서도 마우스 쪽으로 회피 대시가 나간다(톱다운 트윈스틱의 직관).
+        Vector3 dir = input;
+        if (dir.sqrMagnitude < 0.0001f)
+            dir = _combat != null ? _combat.AimDirection : transform.forward;
+        dir.y = 0f;
+        if (dir.sqrMagnitude < 0.0001f) return;   // 방향을 못 구하면 대시 취소(스택 소모 X)
+
+        // 풀충전 상태에서 처음 소모하는 순간부터 충전 타이머를 건다.
+        // (이미 충전 중이면 진행도를 유지 — 소모해도 타이머를 리셋하지 않는다.)
+        if (_dashCharges >= maxDashCharges) _rechargeTimer = dashCooldown;
+        _dashCharges--;
+
+        _dashDir = dir.normalized;
+        _dashTimer = dashDuration;
+        _velocity = _dashDir * dashSpeed;   // 대시 종료 후에도 속도 꼬리가 자연스럽게 감속하도록 미리 채움
+
+        if (dashNoise > 0f) NoiseManager.Instance?.EmitImpulse(dashNoise);
+    }
+
+    void UpdateDash(float dt)
+    {
+        _dashTimer -= dt;
+
+        float step = dashSpeed * dt;
+
+        // 벽 통과 방지: 진행 경로에 장애물이 있으면 그 앞까지만 이동하고 대시 즉시 종료.
+        bool wallHit = false;
+        Vector3 origin = transform.position + Vector3.up * 0.5f;
+        if (Physics.Raycast(origin, _dashDir, out RaycastHit hit, step + DashBodyRadius, dashObstacleMask, QueryTriggerInteraction.Ignore))
+        {
+            step = Mathf.Max(0f, hit.distance - DashBodyRadius);
+            _dashTimer = 0f;   // 벽에 막히면 더 밀지 않는다
+            wallHit = true;
+        }
+
+        Vector3 next = transform.position + _dashDir * step;
+        next.y = SampleGroundHeight(next) + _groundOffset;
+        transform.position = next;
+
+        // 깔끔히 끝나면 감속 꼬리를 남겨 부드럽게 정착. 벽에 박으면 즉시 정지(꼬리=벽 슬라이드 잼).
+        _velocity = wallHit ? Vector3.zero : _dashDir * dashSpeed;
+
+        // 대시는 달리기급 소음 — 순간 충격(dashNoise)은 시작 시 1회, 여기선 지속 레벨만.
+        NoiseManager.Instance?.SetMovementNoise(runNoiseLevel);
+    }
+
     float SampleGroundHeight(Vector3 pos)
     {
         Vector3 origin = new Vector3(pos.x, 200f, pos.z);
@@ -91,6 +227,7 @@ public class PlayerController : MonoBehaviour
     public void TakeDamage(float amount)
     {
         if (_currentHP <= 0f) return;   // 이미 사망 — 같은 프레임 다중 타격 시 OnPlayerDied 중복 발화 방지
+        if (_dashTimer > 0f && dashInvulnerable) return;   // 대시 무적 프레임 — 회피기로 동작
         _currentHP -= amount;
         if (_currentHP <= 0f)
         {

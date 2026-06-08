@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>사후처리부 — UI 목업</title>
+
+<!-- 추천 폰트 (전부 무료 상업이용) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/quiple/galmuri/dist/galmuri.css">
+
+<style>
+:root{
+  --bg:#0b1316;
+  --bg2:#0f1d20;
+  --panel:rgba(16,28,31,.86);
+  --panel-line:#274247;
+  --teal:#1f3a40;
+  --cyan:#34e3ff;
+  --cyan-d:#0fa8c4;
+  --amber:#ffb02e;
+  --red:#ff4242;
+  --text:#cdd9dc;
+  --muted:#6f8388;
+  --font-display:'Black Han Sans',sans-serif;
+  --font-body:'Pretendard',sans-serif;
+  --font-mono:'Galmuri11','Galmuri7',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--text);font-family:var(--font-body)}
+body{
+  background:
+    radial-gradient(120% 80% at 50% -10%, #16323a 0%, var(--bg2) 45%, var(--bg) 100%);
+  min-height:100vh;
+  padding:40px 20px 80px;
+}
+/* 스캔라인 오버레이 (디제틱 글리치 무드, 에셋 0) */
+body::after{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:50;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px);
+  mix-blend-mode:multiply;opacity:.5;
+}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:46px}
+.section-tag{
+  font-family:var(--font-mono);font-size:11px;letter-spacing:1px;color:var(--cyan-d);
+  border-left:3px solid var(--cyan-d);padding-left:10px;margin-bottom:14px;text-transform:uppercase;
+}
+
+/* ====== 공통 패널: 직각 단선 + 한쪽 모서리 절단 (공문서 서식지) ====== */
+.panel{
+  background:var(--panel);
+  border:1px solid var(--panel-line);
+  position:relative;
+  /* 우상단 모서리 비대칭 절단 */
+  clip-path:polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%);
+}
+.panel::before{ /* 절단 모서리 강조선 */
+  content:"";position:absolute;top:0;right:0;width:25px;height:25px;
+  border-top:1px solid var(--cyan-d);
+  transform:translate(-6px,6px) rotate(45deg);transform-origin:top right;
+}
+
+/* ============ 1. 타이틀 ============ */
+.title-screen{
+  text-align:center;padding:54px 20px 46px;border:1px solid var(--panel-line);
+  background:
+    linear-gradient(180deg, rgba(10,20,23,.2), rgba(8,14,16,.7)),
+    radial-gradient(80% 120% at 50% 120%, #13343d 0%, transparent 60%);
+  position:relative;overflow:hidden;
+}
+.seal{
+  width:70px;height:70px;border:2px solid var(--cyan-d);border-radius:50%;
+  margin:0 auto 18px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:10px;color:var(--cyan);line-height:1.3;
+  text-align:center;box-shadow:0 0 16px rgba(52,227,255,.15) inset;opacity:.85;
+}
+.logo{
+  font-family:var(--font-display);font-size:clamp(48px,9vw,104px);line-height:.92;
+  letter-spacing:-2px;color:#eaf6f8;
+  text-shadow:0 0 26px rgba(52,227,255,.18);
+}
+/* 글리치 부제: 있음 <-> 없음 + 색분리 */
+.subtitle{
+  position:relative;display:inline-block;margin-top:14px;
+  font-family:var(--font-display);font-size:clamp(20px,3.4vw,34px);letter-spacing:2px;
+}
+.subtitle .word{position:relative;display:inline-block}
+.subtitle .glitch{position:relative;display:inline-block}
+.subtitle .glitch::before,.subtitle .glitch::after{
+  content:attr(data-text);position:absolute;left:0;top:0;width:100%;
+  clip-path:inset(0 0 0 0);opacity:.85;
+}
+.subtitle .glitch::before{color:var(--red);animation:gshift 2.2s infinite steps(2)}
+.subtitle .glitch::after{color:var(--cyan);animation:gshift2 1.7s infinite steps(2)}
+@keyframes gshift{0%,92%{transform:translate(0)}93%{transform:translate(-3px,1px)}96%{transform:translate(2px,-1px)}100%{transform:translate(0)}}
+@keyframes gshift2{0%,90%{transform:translate(0)}94%{transform:translate(3px,1px)}97%{transform:translate(-2px,0)}100%{transform:translate(0)}}
+#flicker{color:#eaf6f8}
+#flicker.on{color:var(--red);text-shadow:0 0 12px var(--red)}
+/* 부팅 중: 색분리 글리치 가속 */
+.subtitle.booting .glitch::before{animation-duration:.16s}
+.subtitle.booting .glitch::after{animation-duration:.12s}
+.tagline{font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-top:22px;letter-spacing:1px}
+/* 타이틀 진입 메뉴 — 텍스트만, 가로 정렬 */
+.title-menu{display:flex;justify-content:center;align-items:center;gap:34px;margin:32px auto 4px}
+/* 타이틀 푸터 — 버전 / 저작권 */
+.title-foot{position:absolute;right:18px;bottom:14px;font-family:var(--font-mono);font-size:10px;
+  color:var(--muted);letter-spacing:.5px}
+.title-foot .ver{color:var(--cyan-d)}
+.title-menu .tbtn{background:none;border:none;cursor:pointer;
+  font-family:var(--font-body);font-weight:800;font-size:17px;color:var(--muted);
+  letter-spacing:1px;transition:.14s;padding:4px 2px}
+.title-menu .tbtn:hover{color:#fff;text-shadow:0 0 12px rgba(52,227,255,.5)}
+.title-menu .tbtn.primary{color:var(--cyan)}
+
+/* ============ 2. HUD (v2) ============ */
+.hud-stage{
+  border:1px solid var(--panel-line);background:#091214;
+  background-image:radial-gradient(60% 50% at 50% 40%, #11242a 0%, #0a1316 70%);
+  min-height:400px;position:relative;padding:16px;overflow:hidden;
+}
+.hud-note{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  color:#15272c;font-family:var(--font-display);font-size:54px;letter-spacing:4px;user-select:none}
+
+/* XP 풀폭 상단 */
+.xp{position:absolute;top:0;left:0;right:0;height:5px;background:#0c171a;z-index:3}
+.xp i{display:block;height:100%;width:62%;background:linear-gradient(90deg,var(--cyan-d),var(--cyan))}
+
+/* 상단 좌: SYNC RATE 둠클락 */
+.sync{position:absolute;top:16px;left:16px;width:230px;padding:10px 12px;z-index:4}
+.sync .row{display:flex;justify-content:space-between;align-items:baseline}
+.sync .lbl{font-family:var(--font-body);font-weight:800;font-size:13px;letter-spacing:1px}
+.sync .lbl small{font-weight:500;color:var(--muted);font-size:10px;margin-left:4px}
+.sync .pct{font-family:var(--font-mono);font-size:20px}
+.bar{height:9px;background:#15262b;border:1px solid #25424a;margin-top:7px;position:relative;overflow:hidden}
+.bar i{display:block;height:100%;width:0;transition:width .25s linear}
+.sync .state{font-family:var(--font-mono);font-size:10px;letter-spacing:1px;margin-top:6px;color:var(--muted)}
+.sync.s-calm .pct,.sync.s-calm .lbl{color:var(--cyan)} .sync.s-calm .bar i{background:var(--cyan)}
+.sync.s-caution .pct,.sync.s-caution .lbl,.sync.s-caution .state{color:var(--amber)} .sync.s-caution .bar i{background:var(--amber)}
+.sync.s-crit .pct,.sync.s-crit .lbl,.sync.s-crit .state{color:var(--red)} .sync.s-crit .bar i{background:var(--red)}
+.sync.s-fail{animation:panicpulse .6s infinite alternate}
+.sync.s-fail .pct,.sync.s-fail .lbl,.sync.s-fail .state{color:#fff} .sync.s-fail .bar i{background:#fff}
+@keyframes panicpulse{from{background:rgba(40,8,8,.86)}to{background:rgba(120,12,12,.92)}}
+.shake{animation:sh .12s infinite}
+@keyframes sh{0%{transform:translate(0)}25%{transform:translate(1px,-1px)}50%{transform:translate(-1px,1px)}75%{transform:translate(1px,1px)}100%{transform:translate(0)}}
+
+/* 상단 중앙: 타이머 + 보스바 */
+.hud-top{position:absolute;top:12px;left:50%;transform:translateX(-50%);text-align:center;z-index:4}
+.hud-top .time{font-family:var(--font-mono);font-size:24px;color:#eaf6f8}
+.hud-top .kills{font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-top:2px}
+.boss{width:340px;margin:10px auto 0;padding:6px 10px}
+.boss .bn{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:10px;color:var(--red);margin-bottom:4px}
+.boss .bar{height:7px} .boss .bar i{background:linear-gradient(90deg,#7a0f0f,var(--red))}
+
+/* 상단 우: 이벤트 트래커 */
+.events{position:absolute;top:16px;right:16px;width:222px;padding:8px 0 4px;z-index:4}
+.events .eh{font-family:var(--font-mono);font-size:10px;color:var(--cyan-d);letter-spacing:1px;
+  padding:0 12px 7px;border-bottom:1px solid var(--panel-line)}
+.events ul{list-style:none}
+.events li{display:flex;align-items:center;gap:8px;padding:7px 12px;font-family:var(--font-body);font-size:12px;
+  border-bottom:1px solid rgba(39,66,71,.4)}
+.events li:last-child{border-bottom:none}
+.events .dot{width:7px;height:7px;flex:0 0 7px;border-radius:50%}
+.events .t{margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+.events .warn .dot{background:var(--red);box-shadow:0 0 8px var(--red)} .events .warn{color:#f0c0c0}
+.events .info .dot{background:var(--cyan)} .events .info{color:var(--text)}
+.events .gold .dot{background:var(--amber)} .events .gold{color:#f0dca0}
+
+/* 하단 좌: 초상화 + 이름 + HP + 버프 */
+.pcard{position:absolute;bottom:16px;left:16px;display:flex;gap:10px;align-items:flex-end;z-index:4}
+.portrait{width:58px;height:58px;border:1px solid var(--panel-line);background:#0c171a;
+  display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:9px;color:var(--muted);
+  clip-path:polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%)}
+.pinfo{min-width:180px}
+.pinfo .nm{font-family:var(--font-body);font-weight:800;font-size:14px;color:#eaf6f8}
+.pinfo .nm small{font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-left:5px;font-weight:400}
+.pinfo .cap{font-family:var(--font-mono);font-size:9px;color:var(--muted);margin:5px 0 3px}
+.pinfo .bar i{background:linear-gradient(90deg,#3ad07a,#7be0a0);width:74%}
+.buffs{display:flex;gap:5px;margin-top:6px}
+.buffs span{width:22px;height:22px;border:1px solid #25424a;background:#0c171a;display:flex;align-items:center;
+  justify-content:center;font-family:var(--font-mono);font-size:9px}
+.buffs .buff{color:var(--cyan);border-color:var(--cyan-d)} .buffs .debuff{color:var(--red);border-color:var(--red)}
+
+/* 하단 우: 현재 무기 (이름만) */
+.weapon{position:absolute;bottom:16px;right:16px;display:flex;gap:10px;align-items:flex-end;z-index:4}
+.dash{display:flex;flex-direction:column;align-items:center;gap:5px;font-family:var(--font-mono);font-size:9px;color:var(--muted)}
+.dash .pips{display:flex;gap:4px}
+.dash .pips i{width:9px;height:18px;background:#16323a;border:1px solid #25424a;transform:skewX(-12deg);transition:.15s}
+.dash .pips i.on{background:var(--cyan);border-color:var(--cyan);box-shadow:0 0 6px var(--cyan)}
+.wbox{padding:9px 12px;min-width:150px}
+.wbox .wt{display:flex;align-items:center;gap:8px}
+.wbox .wi{width:30px;height:30px;border:1px solid #25424a;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:10px;color:var(--amber)}
+.wbox .wn{font-family:var(--font-body);font-weight:800;font-size:13px;color:#eaf6f8;line-height:1.15}
+.wbox .wn small{display:block;font-family:var(--font-mono);font-size:9px;color:var(--muted);font-weight:400}
+.ammo{font-family:var(--font-mono);margin-top:8px;font-size:22px;color:#eaf6f8;letter-spacing:1px}
+.ammo .max{font-size:13px;color:var(--muted)} .ammo.reload{color:var(--amber);font-size:14px}
+
+/* 중앙: 플레이어 캐릭터 앵커 UI — 탄약(위) / 대시(아래), 시선 고정용 */
+.player{position:absolute;top:48%;left:50%;transform:translate(-50%,-50%);z-index:4;
+  display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
+.player .pammo{font-family:var(--font-mono);font-size:13px;color:#eaf6f8;letter-spacing:1px;
+  background:rgba(8,16,18,.55);padding:1px 6px;border-radius:2px}
+.player .pammo .max{color:var(--muted);font-size:11px}
+.player .pammo.reload{color:var(--amber);font-size:11px}
+.player .pavatar{width:32px;height:32px;border-radius:50%;
+  background:radial-gradient(circle at 50% 35%, #2f525b, #0d1d22);
+  border:1px solid var(--cyan-d);box-shadow:0 0 12px rgba(52,227,255,.25)}
+.player .pdash{display:flex;gap:4px}
+.player .pdash i{width:9px;height:5px;background:#16323a;border:1px solid #25424a;transform:skewX(-14deg);transition:.15s}
+.player .pdash i.on{background:var(--cyan);border-color:var(--cyan);box-shadow:0 0 5px var(--cyan)}
+
+/* 중앙 하단: 상호작용 프롬프트 */
+.prompt{position:absolute;bottom:104px;left:50%;transform:translateX(-50%);z-index:4;
+  font-family:var(--font-body);font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px;
+  background:rgba(10,20,23,.82);padding:7px 14px;border:1px solid var(--panel-line)}
+.prompt .key{font-family:var(--font-mono);font-size:11px;color:#0a1316;background:var(--cyan);padding:2px 7px;font-weight:700}
+
+/* 부품 획득 토스트 */
+.toast{position:absolute;top:46%;left:54%;z-index:5;
+  font-family:var(--font-mono);font-size:13px;color:var(--amber);text-shadow:0 0 8px rgba(255,176,46,.5);
+  animation:toastup 1.8s ease-out infinite;pointer-events:none}
+@keyframes toastup{0%{opacity:0;transform:translateY(10px)}15%{opacity:1}65%{opacity:1}100%{opacity:0;transform:translateY(-34px)}}
+
+/* ============ 3. 레벨업 카드 ============ */
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.card{padding:0;cursor:pointer;transition:transform .12s, box-shadow .12s}
+.card:hover{transform:translateY(-4px);box-shadow:0 0 0 1px var(--cyan-d),0 10px 30px rgba(0,0,0,.5)}
+.card .hd{display:flex;justify-content:space-between;align-items:center;
+  padding:9px 12px;border-bottom:1px solid var(--panel-line);background:#0c171a}
+.card .tier{font-family:var(--font-mono);font-size:10px;color:var(--cyan)}
+.card .body{padding:14px 14px 16px}
+.card .ico{width:42px;height:42px;border:1px solid #25424a;display:flex;align-items:center;
+  justify-content:center;font-family:var(--font-mono);font-size:11px;color:var(--amber);margin-bottom:12px}
+.card h3{font-family:var(--font-display);font-size:21px;letter-spacing:-.5px;color:#eaf6f8;line-height:1.1}
+.card .kr{font-family:var(--font-body);font-weight:800;font-size:13px;color:var(--cyan);margin-top:2px}
+.card p{font-family:var(--font-body);font-size:12.5px;line-height:1.6;color:var(--muted);margin-top:10px}
+.card .stat{color:var(--amber);font-weight:700}
+
+/* ============ 4. 메뉴 ============ */
+.menu{display:flex;flex-direction:column;gap:10px;max-width:360px}
+.mbtn{display:flex;align-items:center;gap:12px;padding:13px 18px;background:var(--panel);
+  border:1px solid var(--panel-line);font-family:var(--font-body);font-weight:800;font-size:16px;
+  color:var(--text);cursor:pointer;transition:.12s;position:relative;
+  clip-path:polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);}
+.mbtn .k{font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+.mbtn:hover{border-color:var(--cyan-d);color:#fff;background:#11242a;padding-left:26px}
+.mbtn:hover .k{color:var(--cyan)}
+.mbtn.primary{border-color:var(--cyan-d);color:var(--cyan)}
+
+h2.pagetitle{font-family:var(--font-display);font-size:16px;color:var(--muted);letter-spacing:2px;
+  text-align:center;margin-bottom:8px}
+.legend{font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:center;line-height:1.8}
+.legend b{color:var(--cyan)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h2 class="pagetitle">UI MOCKUP · 실제 추천 폰트 적용</h2>
+  <p class="legend">
+    DISPLAY <b>검은고딕</b> &nbsp;·&nbsp; BODY <b>Pretendard</b> &nbsp;·&nbsp; MONO/HUD <b>Galmuri</b><br>
+    팔레트 <b style="color:#34e3ff">CYAN</b> / <b style="color:#ffb02e">AMBER</b> / <b style="color:#ff4242">RED</b> / 다크틸 &nbsp;·&nbsp; 패널 = 직각 단선 + 모서리 절단
+  </p>
+
+  <!-- 1. 타이틀 -->
+  <section>
+    <div class="section-tag">01 · TITLE SCREEN</div>
+    <div class="title-screen">
+      <div class="seal">사후처리부<br>OFFICIAL<br>SEAL</div>
+      <div class="logo">사후처리부</div>
+      <div class="subtitle">
+        특이사항&nbsp;<span class="glitch" id="gword" data-text="없음"><span id="flicker">없음</span></span>
+      </div>
+      <div class="tagline">AFTERCARE DIVISION · CASE STATUS: ROUTINE</div>
+      <div class="title-menu">
+        <button class="tbtn primary">게임 시작</button>
+        <button class="tbtn">설정</button>
+        <button class="tbtn">종료</button>
+      </div>
+      <div class="title-foot">
+        <span class="ver">v0.0.1 · DEMO BUILD</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. HUD v2 -->
+  <section>
+    <div class="section-tag">02 · IN-GAME HUD</div>
+    <div class="hud-stage">
+      <div class="hud-note">GAMEPLAY</div>
+      <div class="xp"><i></i></div>
+
+      <!-- 둠클락 -->
+      <div class="sync s-calm" id="sync">
+        <div class="row">
+          <div class="lbl">SYNC RATE <small>동기화율</small></div>
+          <div class="pct" id="syncPct">0%</div>
+        </div>
+        <div class="bar"><i id="syncBar"></i></div>
+        <div class="state" id="syncState">상태: 안정 / STABLE</div>
+      </div>
+
+      <!-- 타이머 + 보스바 -->
+      <div class="hud-top">
+        <div class="time">12:47</div>
+        <div class="kills">REMOVED · 0342</div>
+        <div class="boss panel">
+          <div class="bn"><span>변종 · CHARGER ELITE</span><span id="bossPct">68%</span></div>
+          <div class="bar"><i id="bossBar"></i></div>
+        </div>
+      </div>
+
+      <!-- 이벤트 트래커 (게이트 대체) -->
+      <div class="events panel">
+        <div class="eh">EVENT TRACKER · 현장 이벤트</div>
+        <ul>
+          <li class="warn"><span class="dot"></span>도시 붕괴 임박<span class="t" id="ev1">0:45</span></li>
+          <li class="gold"><span class="dot"></span>본사 보급 투하<span class="t" id="ev2">1:20</span></li>
+          <li class="info"><span class="dot"></span>생존자 신호 포착<span class="t">2:10</span></li>
+        </ul>
+      </div>
+
+      <!-- 초상화 + 이름 + HP + 버프/디버프 -->
+      <div class="pcard">
+        <div class="portrait">초상화</div>
+        <div class="pinfo">
+          <div class="nm">김도현 <small>현장요원 · LV.6</small></div>
+          <div class="cap">[HP] 체력</div>
+          <div class="bar"><i></i></div>
+          <div class="buffs">
+            <span class="buff">SPD</span>
+            <span class="buff">ARM</span>
+            <span class="debuff">DoT</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 상호작용 프롬프트 -->
+      <div class="prompt"><span class="key">E</span> 보급 상자 개봉 — 설계도 회수</div>
+
+      <!-- 무기 + 탄약 + 대시 (우측 하단 상세) -->
+      <div class="weapon">
+        <div class="dash">
+          <div class="pips" id="dashPips"><i class="on"></i><i class="on"></i><i></i></div>
+          DASH
+        </div>
+        <div class="wbox panel">
+          <div class="wt">
+            <div class="wi">REV</div>
+            <div class="wn">리볼버 <small>OVERDRIVE</small></div>
+          </div>
+          <div class="ammo" id="ammo">6<span class="max"> / 6</span></div>
+        </div>
+      </div>
+
+      <!-- 중앙: 플레이어 앵커 — 탄약(위) / 대시(아래), 요약본 -->
+      <div class="player">
+        <div class="pammo" id="ammoMini">6<span class="max"> / 6</span></div>
+        <div class="pavatar"></div>
+        <div class="pdash" id="dashMini"><i class="on"></i><i class="on"></i><i></i></div>
+      </div>
+
+      <!-- 부품 획득 토스트 -->
+      <div class="toast">[ PART ] +1 회수</div>
+    </div>
+  </section>
+
+  <!-- 3. 레벨업 카드 -->
+  <section>
+    <div class="section-tag">03 · LEVEL-UP CARDS</div>
+    <div class="cards">
+      <div class="card panel">
+        <div class="hd"><span class="tier">[ WEAPON ]</span><span class="tier">▲ NEW</span></div>
+        <div class="body">
+          <div class="ico">REV</div>
+          <h3>OVERDRIVE</h3>
+          <div class="kr">과부하 실린더</div>
+          <p>리볼버 연사 속도 <span class="stat">+25%</span>. 단, 소음 반경 <span class="stat">+15%</span>.</p>
+        </div>
+      </div>
+      <div class="card panel">
+        <div class="hd"><span class="tier">[ CHASSIS ]</span><span class="tier">LV.2</span></div>
+        <div class="body">
+          <div class="ico">HUL</div>
+          <h3>REINFORCE</h3>
+          <div class="kr">보강 장갑</div>
+          <p>차체 내구도 <span class="stat">+40</span>, 충돌 넉백 저항 <span class="stat">+20%</span>.</p>
+        </div>
+      </div>
+      <div class="card panel">
+        <div class="hd"><span class="tier" style="color:var(--amber)">[ EL · AI ]</span><span class="tier">★ RARE</span></div>
+        <div class="body">
+          <div class="ico" style="color:var(--cyan)">SCN</div>
+          <h3>WIDE SCAN</h3>
+          <div class="kr">광역 스캔 펄스</div>
+          <p>엘의 위협 태깅 반경 <span class="stat">+30%</span>, 펄스 주기 <span class="stat">-0.5s</span>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 메뉴 -->
+  <section>
+    <div class="section-tag">04 · MAIN MENU (LEAN)</div>
+    <div class="menu">
+      <button class="mbtn primary">현장 투입 <span class="k" style="margin-left:auto">[ ENTER ]</span></button>
+      <button class="mbtn">기록 보관 <span class="k" style="margin-left:auto">[ R ]</span></button>
+      <button class="mbtn">설정 <span class="k" style="margin-left:auto">[ S ]</span></button>
+      <button class="mbtn">종료 <span class="k" style="margin-left:auto">[ ESC ]</span></button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+// --- 타이틀 글리치 ---
+const gword = document.getElementById('gword');
+const flicker = document.getElementById('flicker');
+const subtitle = document.querySelector('.subtitle');
+
+// 한 단어 표시 헬퍼: "있음"=진실(경고색) / "없음"=은폐(정상)
+function setWord(w){
+  flicker.textContent = w;
+  flicker.classList.toggle('on', w === '있음');
+  gword.setAttribute('data-text', w);
+}
+
+// A) 부팅 1회: "있음"(진실) -> 지직 -> "없음"으로 정정·고정
+function boot(){
+  setWord('있음');                 // 진실이 켜짐
+  subtitle.classList.add('booting');
+  setTimeout(()=>{                 // 잠깐 읽히게 hold 후 지직 버스트
+    let n = 0;
+    const burst = setInterval(()=>{
+      setWord(n % 2 === 0 ? '없음' : '있음');
+      if(++n > 7){
+        clearInterval(burst);
+        setWord('없음');           // "없음"으로 정정·고정
+        subtitle.classList.remove('booting');
+        setTimeout(leak, 1600);    // 이후 idle B 재발 시작
+      }
+    }, 70);
+  }, 950);
+}
+
+// B) idle 재발: 가끔 "없음" -> "있음" 한 프레임 새어나옴
+function leak(){
+  setWord('있음');
+  setTimeout(()=>setWord('없음'), 110);
+  setTimeout(leak, 1800 + Math.random()*2600);
+}
+
+setTimeout(boot, 350);
+
+// --- SYNC RATE: 0 -> 100 상승하며 상태/색 전환 (둠클락 데모) ---
+const sync = document.getElementById('sync');
+const bar = document.getElementById('syncBar');
+const pct = document.getElementById('syncPct');
+const st  = document.getElementById('syncState');
+let v = 0;
+function tick(){
+  v += 0.35;
+  if(v > 100) v = 0;
+  bar.style.width = v + '%';
+  pct.textContent = Math.floor(v) + '%';
+  sync.classList.remove('s-calm','s-caution','s-crit','s-fail');
+  pct.classList.remove('shake');
+  if(v < 30){ sync.classList.add('s-calm'); st.textContent='상태: 안정 / STABLE'; }
+  else if(v < 60){ sync.classList.add('s-caution'); st.textContent='상태: 주의 / CAUTION'; }
+  else if(v < 90){ sync.classList.add('s-crit'); st.textContent='상태: 위험 / CRITICAL'; pct.classList.add('shake'); }
+  else { sync.classList.add('s-fail'); st.textContent='격리 실패 / CONTAINMENT FAILED'; pct.classList.add('shake'); }
+}
+setInterval(tick, 40);
+
+// --- 보스 체력바 ---
+document.getElementById('bossBar').style.width = '68%';
+
+// --- 탄약: 발사 -> 재장전 루프 (코너 상세 + 중앙 요약 동기화) ---
+const ammoEl = document.getElementById('ammo');
+const ammoMiniEl = document.getElementById('ammoMini');
+let ammo = 6;
+function fire(){
+  if(ammo > 0){
+    ammo--;
+    ammoEl.className = 'ammo';
+    ammoEl.innerHTML = ammo + '<span class="max"> / 6</span>';
+    ammoMiniEl.className = 'pammo';
+    ammoMiniEl.innerHTML = ammo + '<span class="max"> / 6</span>';
+    setTimeout(fire, 650);
+  } else {
+    ammoEl.className = 'ammo reload';
+    ammoEl.textContent = '재장전 중…';
+    ammoMiniEl.className = 'pammo reload';
+    ammoMiniEl.textContent = '재장전…';
+    setTimeout(()=>{ ammo = 6; setTimeout(fire, 600); }, 1300);
+  }
+}
+setTimeout(fire, 1200);
+
+// --- 대시 차지: 소모 후 하나씩 재충전 (코너 상세 + 중앙 요약 동기화) ---
+const pips = document.getElementById('dashPips').children;
+const pipsMini = document.getElementById('dashMini').children;
+function dashCycle(){
+  for(const p of pips) p.classList.remove('on');
+  for(const p of pipsMini) p.classList.remove('on');
+  let i = 0;
+  const rc = setInterval(()=>{
+    if(i < pips.length){ pips[i].classList.add('on'); pipsMini[i].classList.add('on'); i++; }
+    else { clearInterval(rc); setTimeout(dashCycle, 1500); }
+  }, 700);
+}
+setTimeout(dashCycle, 1600);
+
+// --- 이벤트 트래커 카운트다운 ---
+function cd(id, t){
+  const el = document.getElementById(id);
+  setInterval(()=>{
+    t--; if(t < 0) t = 50 + Math.floor(Math.random()*120);
+    el.textContent = Math.floor(t/60) + ':' + String(t%60).padStart(2,'0');
+  }, 1000);
+}
+cd('ev1', 45); cd('ev2', 80);
+</script>
+</body>
+</html>

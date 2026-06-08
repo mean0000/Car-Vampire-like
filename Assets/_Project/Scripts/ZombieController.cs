@@ -475,6 +475,7 @@ public class ZombieController : MonoBehaviour
 
         SpawnXPOrbs();
         CraftingSystem.Instance?.NotifyKill(transform.position);
+        RunStats.Instance?.AddKill();
         Destroy(gameObject);
     }
 
@@ -488,6 +489,7 @@ public class ZombieController : MonoBehaviour
 
         SpawnXPOrbs();
         CraftingSystem.Instance?.NotifyKill(transform.position);
+        RunStats.Instance?.AddKill();
 
         // 히트스탑은 스윙당 1회만 내야 한다(다중킬 스택 방지) → MeleeAttacker.Swing이 소유.
         // 여기선 형태(squash)·런치만 무기별로 차등.

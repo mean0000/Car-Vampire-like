@@ -38,6 +38,7 @@
 | `2026-06-02-city-scale-decisions.md` | 도시 스케일/맵 결정 | |
 | `2026-06-03-demo-weapon-lineup.md` | **전투 방식·데모 무기 권위.** 리볼버(원거리)/야구방망이(근접) 택1 + 소음기 | GDD §무기체계(근접 기본)는 구버전 |
 | `2026-05-29-infection-noise-design.md` | 감염도·소음 수치 곡선 | §1 소음 = **현재 빌드 구현 확정값** |
+| `2026-06-08-ingame-hud.md` | **인게임 HUD 권위.** HUD_V2(Greybox_ScanLit) 레이아웃·REAL/PLACEHOLDER·탄약/재장전 | 옛 `04_archive/2026-05-24-uiux-design`(차량 HUD) 대체 |
 
 ## 01_handoffs — 핸드오프
 
@@ -66,7 +67,7 @@ brainstorming / session·session2 / upgrade-system-log / game-direction-pivot / 
 | `2026-05-25-weapon-system.md` | 피벗 이전 무기 설계 |
 | `2026-05-29-crafting-design.md` | 소비형 레시피 구조 폐기 → progression-system이 권위 |
 | `2026-05-25-design-doc.html` | 피벗 이전 종합 설계 HTML |
-| `2026-05-24-uiux-design.md` | 차량 HUD(HULL·SUPPRESS) 전제 — 차량 방향 보류로 일단 내림. **추후 재검토 예정** |
+| `2026-05-24-uiux-design.md` | 차량 HUD(HULL·SUPPRESS) 전제 — **`00_authority/2026-06-08-ingame-hud.md`로 대체됨.** 재참조 금지 |
 | `2026-05-25-hud-mockup-car.html` | 옛 차량 HUD 목업(SYNC RATE=정신오염·HULL·SUPPRESS) — 사후처리부 피벗으로 무효 |
 | `2026-05-24-handoff-car.md` | 피벗 이전 차량/SYNC RATE/드리프트 핸드오프 — 스토리·전투 전부 구버전 |
 
