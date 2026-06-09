@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using DG.Tweening;
 
 /// <summary>
 /// 인게임 HUD v2 — 목업(_mockups/ui_mockup.html "02 · IN-GAME HUD")을 UGUI로 재현한 단일 드라이버.
@@ -124,6 +125,57 @@ public class HudV2Controller : MonoBehaviour
     public GameObject promptRoot;            // START HIDDEN
     public TextMeshProUGUI promptLabel;
 
+    // ───────────────────── 피해/위험 화면 피드백 (HP 비네트 + 히트 플래시) ─────────────────────
+    // SYNC 비네트와 독립 채널 — 별도 Image를 런타임 생성(Awake)해 공존시킨다.
+    [Header("HP Danger Vignette (REAL — PlayerController HP%)")]
+    [Tooltip("위험 비네트 색. 순수 빨강이 아닌 짙은 핏빛.")]
+    [SerializeField] Color dangerVignetteColor = new Color(0x8B / 255f, 0x0A / 255f, 0x0A / 255f, 1f); // #8B0A0A
+    [Tooltip("이 HP% 이상이면 비네트 완전 숨김(alpha 0). = onset.")]
+    [SerializeField, Range(0f, 1f)] float dangerHpThreshold = 0.60f;
+    [Tooltip("이 HP% 미만부터 펄스(호흡) 시작.")]
+    [SerializeField, Range(0f, 1f)] float dangerPulseThreshold = 0.15f;
+    [Tooltip("정적 구간(onset→pulse) 최대 alpha. pulseThreshold에서 도달하는 값 — SmoothStep ease-in.")]
+    [SerializeField, Range(0f, 1f)] float dangerStaticAlpha = 0.72f;
+    [Tooltip("펄스 구간 alpha 최소(밸리).")]
+    [SerializeField, Range(0f, 1f)] float dangerPulseMin = 0.55f;
+    [Tooltip("펄스 구간 alpha 최대(피크).")]
+    [SerializeField, Range(0f, 1f)] float dangerPulseMax = 0.85f;
+    [Tooltip("펄스 1주기 시간(초). 사인 호흡 주기.")]
+    [SerializeField, Min(0.1f)] float dangerPulseCycle = 1.6f;
+    [Tooltip("라디얼 안쪽 투명 반경(0~1). 클수록 화면 중앙이 더 비고 가장자리에만 비네트가 산다. (베이크 — play 재진입 시 재베이크)")]
+    [SerializeField, Range(0f, 0.95f)] float dangerInnerRadius = 0.42f;
+
+    [Header("Hit Edge Pulse (REAL — 피격 시 에지 비네트 팝, 어두워짐)")]
+    [Tooltip("피격 에지 펄스 색. 어두운 핏빛(가장자리가 잠깐 어두워지는 팝).")]
+    [SerializeField] Color hitEdgeColor = new Color(0x5A / 255f, 0x00 / 255f, 0x10 / 255f, 1f); // #5A0010
+    [Tooltip("피격 에지 펄스 피크 alpha.")]
+    [SerializeField, Range(0f, 1f)] float hitEdgePeakAlpha = 0.35f;
+    [Tooltip("피격 에지 펄스 지속(초). instant-on → fade.")]
+    [SerializeField] float hitEdgeDuration = 0.18f;
+    [Tooltip("에지 펄스 라디얼 안쪽 투명 반경(0~1). 클수록 가장자리에만 산다(에지 팝). 위험 비네트보다 살짝 타이트.")]
+    [SerializeField, Range(0f, 0.95f)] float hitEdgeInnerRadius = 0.50f;
+
+    [Header("Hit Flash (REAL — 강타 한정 전체화면 번쩍) — ADDITIVE blend on dark bg")]
+    [Tooltip("히트 플래시 색(가산). 따뜻한 화이트. A/B 테스트로 창백한 레드(#FF3A3A)로 바꿀 수 있게 노출 — 레드 변종은 alpha를 ~0.06 낮출 것.")]
+    [SerializeField] Color hitFlashColor = new Color(0xFF / 255f, 0xE8 / 255f, 0xCC / 255f, 1f); // #FFE8CC
+    [Tooltip("강타 판정 임계 — 피해량이 (MaxHP × 이값) 이상이면 강타 플래시.")]
+    [SerializeField, Range(0f, 1f)] float heavyHitDamageFrac = 0.20f;
+    [Tooltip("강타 시 플래시 피크 alpha.")]
+    [SerializeField, Range(0f, 1f)] float heavyHitPeakAlpha = 0.28f;
+    [Tooltip("강타 시 플래시 지속(초).")]
+    [SerializeField] float heavyHitDuration = 0.22f;
+    [Tooltip("히트 플래시용 가산(Blend One One) 머티리얼. 미지정 시 ZombieCrush/UIAdditive 셰이더로 런타임 생성.")]
+    [SerializeField] Material hitFlashMaterial;
+
+    Image _dangerVignette;   // 런타임 생성 — HP 위험 비네트(SYNC 비네트와 별개)
+    Image _hitEdge;          // 런타임 생성 — 피격 에지 비네트 펄스(위험 비네트와 별개 채널)
+    Tween _hitEdgeTween;     // 활성 에지 펄스 트윈(디바운스)
+    Image _hitFlash;         // 런타임 생성 — 전체화면 히트 플래시(강타 한정)
+    Tween _hitFlashTween;    // 활성 플래시 트윈(디바운스: 새 피격 시 Kill 후 재시작)
+    Material _hitFlashRuntimeMat;  // hitFlashMaterial 미지정 시 셰이더로 직접 생성한 가산 머티리얼(OnDestroy에서 해제)
+    Sprite _hitEdgeSprite;   // 에지 펄스 라디얼 스프라이트(런타임)
+    Texture2D _hitEdgeTex;   // 위 스프라이트의 텍스처
+
     // ───────────────────── SYNC 흔들림 대상 ─────────────────────
     Vector2 _syncPctBasePos;
     Vector2 _syncPanelBasePos;
@@ -133,13 +185,113 @@ public class HudV2Controller : MonoBehaviour
     Sprite _vignetteSprite;          // 비네트 라디얼 스프라이트(런타임)
     Texture2D _vignetteTex;          // 위 스프라이트의 텍스처
     Texture2D _scanlineTex;          // 스캔라인 줄무늬 텍스처
+    Sprite _dangerVignetteSprite;    // HP 위험 비네트 라디얼 스프라이트(런타임)
+    Texture2D _dangerVignetteTex;    // 위 스프라이트의 텍스처
 
     // ───────────────────────────────────────────────────────────
 
     void Awake()
     {
         BuildVignetteSprite();
+        BuildDangerFeedbackImages();
     }
+
+    // HP 위험 비네트 + 히트 플래시 Image를 런타임 생성(씬 직렬화 회피 — 코드 기본값이 깔끔히 적용).
+    // 둘 다 캔버스 전체 stretch, raycast 비대상, 시작 alpha 0.
+    void BuildDangerFeedbackImages()
+    {
+        var canvasRT = transform as RectTransform;
+        if (canvasRT == null) return;
+
+        // ── HP 위험 비네트 ── 라디얼 스프라이트(중앙 투명, 가장자리만). SYNC 비네트보다 살짝 위/별 레이어.
+        var vigGO = new GameObject("HP_DangerVignette", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        var vigRT = (RectTransform)vigGO.transform;
+        vigRT.SetParent(canvasRT, false);
+        StretchFull(vigRT);
+        vigRT.SetAsFirstSibling();   // 다른 위젯 뒤(SYNC 비네트와 같은 배경 레이어대)
+        _dangerVignette = vigGO.GetComponent<Image>();
+        _dangerVignette.raycastTarget = false;
+        _dangerVignette.sprite = BuildRadialSprite(dangerInnerRadius, out _dangerVignetteSprite, out _dangerVignetteTex);
+        _dangerVignette.type = Image.Type.Simple;
+        _dangerVignette.color = WithAlpha(dangerVignetteColor, 0f);
+
+        // ── 피격 에지 비네트 펄스 ── 위험 비네트와 같은 배경 레이어대, 별개 채널(서로 alpha를 다투지 않게).
+        var edgeGO = new GameObject("HitEdgePulse", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        var edgeRT = (RectTransform)edgeGO.transform;
+        edgeRT.SetParent(canvasRT, false);
+        StretchFull(edgeRT);
+        edgeRT.SetAsFirstSibling();
+        _hitEdge = edgeGO.GetComponent<Image>();
+        _hitEdge.raycastTarget = false;
+        _hitEdge.sprite = BuildRadialSprite(hitEdgeInnerRadius, out _hitEdgeSprite, out _hitEdgeTex);
+        _hitEdge.type = Image.Type.Simple;
+        _hitEdge.color = WithAlpha(hitEdgeColor, 0f);
+
+        // ── 히트 플래시 ── 전체화면 단색. 최상단(다른 HUD 위에 번쩍).
+        var flashGO = new GameObject("HitFlash", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        var flashRT = (RectTransform)flashGO.transform;
+        flashRT.SetParent(canvasRT, false);
+        StretchFull(flashRT);
+        flashRT.SetAsLastSibling();
+        _hitFlash = flashGO.GetComponent<Image>();
+        _hitFlash.raycastTarget = false;
+        _hitFlash.color = WithAlpha(hitFlashColor, 0f);
+        // 가산 블렌드 — 어두운 씬에서 알파오버는 탁해지고 가산이 더 또렷하게 읽힘.
+        // 인스펙터 머티리얼 우선, 미지정 시 셰이더로 런타임 생성.
+        if (hitFlashMaterial != null)
+        {
+            _hitFlash.material = hitFlashMaterial;
+        }
+        else
+        {
+            var sh = Shader.Find("ZombieCrush/UIAdditive");
+            if (sh != null)
+            {
+                _hitFlashRuntimeMat = new Material(sh);
+                _hitFlash.material = _hitFlashRuntimeMat;
+            }
+            else
+            {
+                Debug.LogWarning("[HudV2] ZombieCrush/UIAdditive 셰이더를 찾지 못해 히트 플래시가 알파오버로 폴백됩니다.");
+            }
+        }
+    }
+
+    // 캔버스 전체를 덮는 stretch 앵커(1920 스케일과 무관 — 풀스트레치).
+    static void StretchFull(RectTransform rt)
+    {
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = Vector2.zero;
+        rt.offsetMax = Vector2.zero;
+        rt.localScale = Vector3.one;
+    }
+
+    // 중앙 투명·가장자리 불투명 라디얼 스프라이트. innerRadius(0~1)부터 ramp 시작 → 1에서 가득.
+    // 생성한 텍스처/스프라이트를 out으로 돌려 호출부가 보관(OnDestroy 해제) — 필드 클로버 방지.
+    Sprite BuildRadialSprite(float innerRadius, out Sprite sprite, out Texture2D tex)
+    {
+        const int s = 256;
+        tex = new Texture2D(s, s, TextureFormat.RGBA32, false)
+        { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+        var px = new Color[s * s];
+        Vector2 c = new Vector2((s - 1) / 2f, (s - 1) / 2f);
+        float maxD = c.x;
+        float ramp = Mathf.Max(0.001f, 1f - innerRadius);
+        for (int y = 0; y < s; y++)
+            for (int x = 0; x < s; x++)
+            {
+                float d = Vector2.Distance(new Vector2(x, y), c) / maxD;
+                float a = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((d - innerRadius) / ramp));
+                px[y * s + x] = new Color(1f, 1f, 1f, a);
+            }
+        tex.SetPixels(px);
+        tex.Apply();
+        sprite = Sprite.Create(tex, new Rect(0, 0, s, s), new Vector2(0.5f, 0.5f), 100f);
+        return sprite;
+    }
+
+    static Color WithAlpha(Color c, float a) { c.a = a; return c; }
 
     // 비네트 라디얼 스프라이트를 런타임 생성(에디터 베이크 텍스처는 씬 재로드 시 null).
     void BuildVignetteSprite()
@@ -185,10 +337,19 @@ public class HudV2Controller : MonoBehaviour
 
     void OnDestroy()
     {
+        _hitFlashTween?.Kill();   // 파괴 전에 먼저 — 진행 중 트윈이 파괴된 Image를 건드리지 않게
+        _hitFlashTween = null;
+        _hitEdgeTween?.Kill();
+        _hitEdgeTween = null;
         // Sprite.Create/Texture2D는 GC 대상이 아니므로 명시적으로 해제(DashChargesUI 패턴).
         if (_vignetteSprite != null) Destroy(_vignetteSprite);
         if (_vignetteTex != null) Destroy(_vignetteTex);
         if (_scanlineTex != null) Destroy(_scanlineTex);
+        if (_dangerVignetteSprite != null) Destroy(_dangerVignetteSprite);
+        if (_dangerVignetteTex != null) Destroy(_dangerVignetteTex);
+        if (_hitEdgeSprite != null) Destroy(_hitEdgeSprite);
+        if (_hitEdgeTex != null) Destroy(_hitEdgeTex);
+        if (_hitFlashRuntimeMat != null) Destroy(_hitFlashRuntimeMat);
     }
 
     void OnEnable()
@@ -200,6 +361,7 @@ public class HudV2Controller : MonoBehaviour
         }
         if (SyncRateManager.Instance != null)
             SyncRateManager.Instance.OnSyncChanged += HandleSyncChanged;
+        PlayerController.OnPlayerDamaged += HandlePlayerDamaged;
     }
 
     void OnDisable()
@@ -211,6 +373,7 @@ public class HudV2Controller : MonoBehaviour
         }
         if (SyncRateManager.Instance != null)
             SyncRateManager.Instance.OnSyncChanged -= HandleSyncChanged;
+        PlayerController.OnPlayerDamaged -= HandlePlayerDamaged;
     }
 
     void Start()
@@ -418,9 +581,74 @@ public class HudV2Controller : MonoBehaviour
     void UpdateHP()
     {
         var pc = PlayerController.Instance;
-        if (hpFill == null || pc == null) return;
+        if (pc == null) return;
         float max = pc.MaxHP;
-        hpFill.fillAmount = max > 0f ? Mathf.Clamp01(pc.CurrentHP / max) : 0f;
+        float hp01 = max > 0f ? Mathf.Clamp01(pc.CurrentHP / max) : 0f;
+        if (hpFill != null) hpFill.fillAmount = hp01;
+        UpdateDangerVignette(hp01);
+    }
+
+    // HP% → 위험 비네트 alpha (3단 비선형). 펄스/ease 모두 언스케일드(히트스탑 중 timeScale≈0.05라도 살아 호흡).
+    void UpdateDangerVignette(float hp01)
+    {
+        if (_dangerVignette == null) return;
+        float a;
+        if (hp01 >= dangerHpThreshold)
+        {
+            a = 0f;   // 안전 — 완전 숨김
+        }
+        else if (hp01 >= dangerPulseThreshold)
+        {
+            // threshold → pulse 사이: 정적. HP가 낮을수록 0→staticAlpha로 ease-in(SmoothStep).
+            float t = Mathf.InverseLerp(dangerHpThreshold, dangerPulseThreshold, hp01); // 0(40%)→1(20%)
+            a = Mathf.SmoothStep(0f, 1f, t) * dangerStaticAlpha;
+        }
+        else
+        {
+            // 위급 — 사인 호흡(언스케일드). min↔max 진동.
+            float phase = (dangerPulseCycle > 0f)
+                ? Mathf.Sin(Time.unscaledTime * (Mathf.PI * 2f / dangerPulseCycle))
+                : 0f;
+            float k = phase * 0.5f + 0.5f;   // -1..1 → 0..1
+            a = Mathf.Lerp(dangerPulseMin, dangerPulseMax, k);
+        }
+        _dangerVignette.color = WithAlpha(dangerVignetteColor, a);
+    }
+
+    // ───────────────────── REAL: 피격 피드백 (에지 펄스 + 강타 시 전체화면 번쩍) ─────────────────────
+    // 일반 피격: 아바타 발광(PlayerVisualFeedback) + 에지 비네트 펄스만 — 전체화면 워시 없음.
+    // 강타(amount >= MaxHP × heavyHitDamageFrac): 위에 더해 절제된 전체화면 플래시도 발화.
+    // 디바운스: 진행 중 트윈을 Kill 후 단일 fade 재시작(겹침/스트로빙 방지). 모든 트윈 SetUpdate(true)(언스케일드).
+    void HandlePlayerDamaged(float amount)
+    {
+        var pc = PlayerController.Instance;
+        float maxHP = pc != null ? pc.MaxHP : 0f;
+        bool heavy = maxHP > 0f && amount >= maxHP * heavyHitDamageFrac;
+
+        // 에지 비네트 펄스 — 일반/강타 모두(가장자리 어두워지는 순간 팝).
+        PulseHitEdge();
+
+        // 전체화면 플래시 — 강타 한정. 일반 피격은 아바타+에지로 충분(저정보 워시 폐기).
+        if (heavy && _hitFlash != null)
+        {
+            _hitFlashTween?.Kill();   // 단일 레이어 — 겹치지/스트로빙하지 않음
+            _hitFlash.color = WithAlpha(hitFlashColor, heavyHitPeakAlpha);   // instant-on
+            _hitFlashTween = _hitFlash.DOFade(0f, heavyHitDuration)
+                .SetEase(Ease.OutCubic)
+                .SetUpdate(true);   // 언스케일드 — 히트스탑 중에도 fade 진행
+        }
+    }
+
+    // 피격 시 에지 비네트를 피크로 올렸다 0으로 페이드(어두운 무드 → 가장자리 어두워지는 팝).
+    // 디바운스: 단일 트윈 Kill+리프레시. 언스케일드.
+    void PulseHitEdge()
+    {
+        if (_hitEdge == null) return;
+        _hitEdgeTween?.Kill();
+        _hitEdge.color = WithAlpha(hitEdgeColor, hitEdgePeakAlpha);   // instant-on
+        _hitEdgeTween = _hitEdge.DOFade(0f, hitEdgeDuration)
+            .SetEase(Ease.OutQuad)
+            .SetUpdate(true);
     }
 
     // ───────────────────── REAL: 대시 핍 (코너 + 미니) ─────────────────────

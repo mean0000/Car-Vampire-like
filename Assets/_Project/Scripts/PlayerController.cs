@@ -74,6 +74,9 @@ public class PlayerController : MonoBehaviour
 
     public event System.Action OnPlayerDied;
 
+    /// <summary>피격 성공 시(무적 프레임 통과 후 실제 피해 적용) 발화. 인자 = 적용된 피해량. HUD 히트 플래시가 구독.</summary>
+    public static event System.Action<float> OnPlayerDamaged;
+
     void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
@@ -94,7 +97,11 @@ public class PlayerController : MonoBehaviour
 
     void OnDestroy()
     {
-        if (Instance == this) Instance = null;
+        if (Instance == this)
+        {
+            Instance = null;
+            OnPlayerDamaged = null;   // static 이벤트 — 씬 리로드 시 잔존 구독자 제거(파괴된 HUD로의 발화 방지)
+        }
     }
 
     void Update()
@@ -233,6 +240,7 @@ public class PlayerController : MonoBehaviour
         if (_dashTimer > 0f && dashInvulnerable) return;   // 대시 무적 프레임 — 회피기로 동작
         _currentHP -= amount;
         PlayerCameraRig.Instance?.TriggerShake(damageShake);   // 피격 화면 펀치(발사보다 크게)
+        OnPlayerDamaged?.Invoke(amount);   // 화면 히트 플래시(HudV2Controller가 구독) — 피해량으로 강타 판정
         // 피격 임팩트 — 짧은 히트스탑(Feel). 좀비 공격은 빈도 낮고 큰 피해라 스팸/스터터 없이 "맞았다" 충격만.
         MMTimeScaleEvent.Trigger(MMTimeScaleMethods.For, 0.05f, 0.015f, false, 0f, false);
         if (_currentHP <= 0f)

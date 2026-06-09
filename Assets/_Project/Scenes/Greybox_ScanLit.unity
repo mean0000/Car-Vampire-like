@@ -2818,6 +2818,23 @@ MonoBehaviour:
   partsToastRect: {fileID: 933713807}
   promptRoot: {fileID: 616299918}
   promptLabel: {fileID: 1976535130}
+  dangerVignetteColor: {r: 0.54509807, g: 0.039215688, b: 0.039215688, a: 1}
+  dangerHpThreshold: 0.6
+  dangerPulseThreshold: 0.15
+  dangerStaticAlpha: 0.72
+  dangerPulseMin: 0.55
+  dangerPulseMax: 0.85
+  dangerPulseCycle: 1.6
+  dangerInnerRadius: 0.42
+  hitEdgeColor: {r: 0.3529412, g: 0, b: 0.0627451, a: 1}
+  hitEdgePeakAlpha: 0.35
+  hitEdgeDuration: 0.18
+  hitEdgeInnerRadius: 0.5
+  hitFlashColor: {r: 1, g: 0.9098039, b: 0.8, a: 1}
+  heavyHitDamageFrac: 0.2
+  heavyHitPeakAlpha: 0.28
+  heavyHitDuration: 0.22
+  hitFlashMaterial: {fileID: 2100000, guid: 75f27eca7bbf4fed9b61e4e604c7be08, type: 2}
 --- !u!1 &232751770
 GameObject:
   m_ObjectHideFlags: 0
@@ -13647,6 +13664,8 @@ MonoBehaviour:
   ringWidth: 0.18
   ringQuietColor: {r: 0.3, g: 1, b: 0.4, a: 0.6}
   ringLoudColor: {r: 1, g: 0.2, b: 0.1, a: 0.8}
+  hitFlashEmission: {r: 2.2, g: 2, b: 1.7, a: 1}
+  hitFlashDuration: 0.12
 --- !u!114 &1114635133
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13684,11 +13703,13 @@ MonoBehaviour:
   chargeColorHigh: {r: 1, g: 0.1, b: 0.08, a: 0.95}
   laserWidth: 0.025
   laserColor: {r: 1, g: 0.15, b: 0.12, a: 0.5}
+  laserLength: 6
+  laserFadeStart: 0.45
   laserDotSize: 0.13
   laserDotColor: {r: 1, g: 0.35, b: 0.28, a: 0.9}
   bulletSpeed: 90
   trailTime: 0.06
-  trailWidth: 0.16
+  trailWidth: 0.07
   tracerColor: {r: 1, g: 0.85, b: 0.3, a: 1}
   gunFlashLight: {fileID: 0}
   muzzleFlashColor: {r: 6, g: 3.5, b: 1.2, a: 1}

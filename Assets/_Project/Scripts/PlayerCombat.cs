@@ -60,6 +60,10 @@ public class PlayerCombat : MonoBehaviour
     [SerializeField] float laserWidth = 0.025f;
     [Tooltip("레이저 선 색(어둡게).")]
     [SerializeField] Color laserColor = new Color(1f, 0.15f, 0.12f, 0.5f);
+    [Tooltip("레이저가 또렷하게 보이는 최대 길이(m). 이 너머는 그려지지 않고 끝부분이 점점 사라진다.")]
+    [SerializeField, Min(0.5f)] float laserLength = 6f;
+    [Tooltip("또렷한 비율(0~1). 이 지점부터 선 끝까지 알파가 0으로 페이드 — 레이저처럼 트레일 오프.")]
+    [SerializeField, Range(0f, 1f)] float laserFadeStart = 0.45f;
     [Tooltip("착탄점 도트 크기(m).")]
     [SerializeField] float laserDotSize = 0.13f;
     [Tooltip("착탄점 도트 색(레이저보다 밝게).")]
@@ -99,9 +103,9 @@ public class PlayerCombat : MonoBehaviour
 
     [Header("Audio (발사·재장전 사운드 — Resources/SFX/Guns)")]
     [Tooltip("발사 사운드 볼륨.")]
-    [SerializeField, Range(0f, 1f)] float shotVolume = 0.3f;
+    [SerializeField, Range(0f, 1f)] float shotVolume = 0.185f;
     [Tooltip("재장전 사운드 볼륨.")]
-    [SerializeField, Range(0f, 1f)] float reloadVolume = 0.3f;
+    [SerializeField, Range(0f, 1f)] float reloadVolume = 0.25f;
 
     [Header("Impact Flash (명중 플래시 — 코드 생성 · 블룸용 가산 HDR)")]
     [Tooltip("명중 플래시 지속(초). 짧게 팝 — 탄착 순간만 번쩍.")]
@@ -223,6 +227,7 @@ public class PlayerCombat : MonoBehaviour
 
     LineRenderer _chargeL, _chargeR;   // 라이플 차지: 레이저 좌우에서 수렴하는 브라켓(차징 중에만)
     LineRenderer _laserLine, _laserDot;   // 조준 레이저(상시) + 착탄 도트
+    Gradient _laserGradient;              // 레이저 페이드(또렷→투명) — 1회 생성 캐시
     TrailRenderer[] _tracers;   // 발사체별 날아가는 탄 트레일(이동시키면 streak 자동 생성). BulletPoolSize만큼 풀.
     Material _tracerMat;         // 트레일 공유 가산 HDR 머티리얼(블룸용 — 모든 트레일이 한 머티리얼 공유).
 
@@ -296,6 +301,13 @@ public class PlayerCombat : MonoBehaviour
         // 조준 레이저 + 착탄 도트 — 총 들면 상시(매 프레임 _aimDir 따라 갱신). 도트는 둥글게 보이도록 캡 정점↑.
         _laserLine = CreateLine("LaserSight", laserWidth); _laserLine.enabled = false;
         _laserDot = CreateLine("LaserDot", laserDotSize); _laserDot.numCapVertices = 8; _laserDot.enabled = false;
+
+        // 레이저 페이드: 시작~laserFadeStart 까지 또렷, 그 뒤 끝까지 알파 0 → 레이저처럼 트레일 오프.
+        _laserGradient = new Gradient();
+        _laserGradient.SetKeys(
+            new[] { new GradientColorKey(laserColor, 0f), new GradientColorKey(laserColor, 1f) },
+            new[] { new GradientAlphaKey(laserColor.a, 0f), new GradientAlphaKey(laserColor.a, laserFadeStart), new GradientAlphaKey(0f, 1f) });
+        _laserLine.colorGradient = _laserGradient;
 
         // 발사체 풀은 원거리 전용. 펠릿 수가 아니라 동시 비행분을 넉넉히(연사·산탄 동시 비행) 확보한다.
         if (_kind == WeaponLoadout.Kind.Ranged)
@@ -739,12 +751,13 @@ public class PlayerCombat : MonoBehaviour
             ? hit.point
             : origin + _aimDir * range;
 
+        // 선은 또렷한 최대 길이까지만 그린다(착탄점이 더 멀어도). 끝부분은 그라디언트가 0으로 페이드.
+        float beamLen = Mathf.Min(Vector3.Distance(origin, endPoint), laserLength);
+        Vector3 lineEnd = origin + _aimDir * beamLen;
         _laserLine.enabled = true;
         _laserLine.widthMultiplier = laserWidth;
         _laserLine.SetPosition(0, origin);
-        _laserLine.SetPosition(1, endPoint);
-        _laserLine.startColor = laserColor;
-        _laserLine.endColor = laserColor;
+        _laserLine.SetPosition(1, lineEnd);
 
         // 도트: 착탄점을 중심으로 _aimDir 방향 아주 짧은 선 + 둥근 캡 → 작은 점처럼 보인다.
         Vector3 half = _aimDir * (laserDotSize * 0.5f);
