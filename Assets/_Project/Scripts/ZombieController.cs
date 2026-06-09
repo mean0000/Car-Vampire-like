@@ -409,8 +409,14 @@ public class ZombieController : MonoBehaviour
         // TODO: 공격 애니메이션 트리거
     }
 
-    /// <summary>원거리/DoT 등 일반 피해. 기본 죽음 연출(좀비 자체 파티클/사운드) 사용.</summary>
-    public void TakeDamage(int amount)
+    /// <summary>방향/넉백 없는 일반 피해(DoT 등). 기본 죽음 연출 사용.</summary>
+    public void TakeDamage(int amount) => TakeDamage(amount, Vector3.zero, 0f, 0f);
+
+    /// <summary>
+    /// 원거리(총알) 피해. 넉백(누적) + 아주 짧은 경직 + 어그로. 사망 시 기본 죽음 연출.
+    /// 경직은 연사 간격보다 짧아야(엄청 짧게) 영구 프리즈가 안 난다.
+    /// </summary>
+    public void TakeDamage(int amount, Vector3 hitDir, float knockback, float stagger)
     {
         if (_dead) return;
 
@@ -422,8 +428,22 @@ public class ZombieController : MonoBehaviour
             return;
         }
 
-        // 맞으면 작은 범프
-        _springScale?.Bump(new Vector3(0.2f, -0.3f, 0.2f));
+        // 탄 넉백 — 누적(+=). 한 발 한 발 뒤로 밀리고, 연사 받으면 점점 밀려남(후퇴), 멈추면 전진 재개.
+        // 덮어쓰기였을 땐 전진과 상쇄돼 "제자리"였음. 폭주는 클램프로 차단.
+        if (knockback > 0f)
+        {
+            Vector3 d = hitDir; d.y = 0f;
+            if (d.sqrMagnitude > 0.0001f)
+            {
+                _knockbackVel += d.normalized * knockback;
+                float maxKb = knockback * 2f;
+                if (_knockbackVel.sqrMagnitude > maxKb * maxKb)
+                    _knockbackVel = _knockbackVel.normalized * maxKb;
+            }
+        }
+
+        // 아주 짧은 경직 — 맞는 순간 전진 멈칫(넉백만 작용). 연사 간격보다 짧아야 영구 프리즈 안 됨.
+        if (stagger > 0f) _staggerTimer = Mathf.Max(_staggerTimer, stagger);
 
         // Idle/Investigate 상태에서 맞으면 → Chase
         if (_state == ZombieState.Idle || _state == ZombieState.Investigate)
@@ -450,10 +470,9 @@ public class ZombieController : MonoBehaviour
             return true;
         }
 
-        // 생존: 넉백 + 경직 + 범프 + 어그로
+        // 생존: 넉백 + 경직 + 어그로 (스케일 범프 제거 — 맞을 때 크기 변화 없음)
         _knockbackVel = dir * knockback;
         if (stagger > 0f) _staggerTimer = Mathf.Max(_staggerTimer, stagger);
-        _springScale?.Bump(new Vector3(0.25f, -0.35f, 0.25f));
         if (_state == ZombieState.Idle || _state == ZombieState.Investigate)
             EnterChase();
         return false;

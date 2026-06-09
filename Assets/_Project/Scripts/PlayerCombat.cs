@@ -25,6 +25,12 @@ public class PlayerCombat : MonoBehaviour
     [SerializeField] float range = 18f;
     [SerializeField] float hitRadius = 0.4f;      // 스피어캐스트 조준 관용
     [SerializeField] float muzzleHeight = 1f;
+    [Tooltip("샷건 펠릿이 좀비를 미는 힘(m/s) — 강한 푸시.")]
+    [SerializeField, Min(0f)] float bulletKnockback = 5f;
+    [Tooltip("샷건 외 총(권총·라이플)의 피탄 넉백(m/s). 전진 의지와 충돌 → 연사 받으면 '으그극' 버티며 기어오고, 멈추면 전진. 크면 뒤로 밀리고 작으면 그냥 전진.")]
+    [SerializeField, Min(0f)] float weakKnockback = 3.4f;
+    [Tooltip("탄 명중 시 좀비 경직(이동 멈칫) 시간(초). 엄청 짧게 — 연사 간격보다 짧아야 영구 프리즈 안 됨. 0이면 경직 없음.")]
+    [SerializeField, Min(0f)] float bulletStagger = 0.01f;
     [SerializeField] int magazineSize = 6;        // 미선택 폴백(원거리) 탄창 크기
     [SerializeField] float reloadTime = 1.1f;     // 미선택 폴백(원거리) 재장전 시간
 
@@ -65,12 +71,37 @@ public class PlayerCombat : MonoBehaviour
     [Tooltip("트레일 잔상 지속(초). 길수록 꼬리가 길게 늘어진다.")]
     [SerializeField, Min(0.01f)] float trailTime = 0.06f;
     [Tooltip("트레일 머리 두께(m). 꼬리로 갈수록 0으로 가늘어진다.")]
-    [SerializeField, Min(0.001f)] float trailWidth = 0.16f;
+    [SerializeField, Min(0.001f)] float trailWidth = 0.07f;
     [Tooltip("트레일 HDR 색 — 채널>1이면 블룸으로 빛난다(메인 씬 블룸 ON). 따뜻한 예광탄.")]
     [ColorUsage(true, true)][SerializeField] Color tracerColor = new Color(4f, 2.2f, 0.8f, 1f);
 
-    [Header("Muzzle Flash")]
+    [Header("Muzzle Flash (총구 화염 VFX — 코드 생성 빌보드 가산 HDR)")]
+    [Tooltip("(선택) 씬에 수동 배치한 머즐 라이트. 비우면 아래 값으로 코드 라이트를 생성·구동한다.")]
     [SerializeField] GunFlashLight gunFlashLight;
+    [Tooltip("총구 화염 HDR 색 — 뜨거운 화이트-앰버. 채널>1이면 블룸으로 빛난다.")]
+    [ColorUsage(true, true)][SerializeField] Color muzzleFlashColor = new Color(6f, 3.5f, 1.2f, 1f);
+    [Tooltip("총구 화염 최대 크기(m).")]
+    [SerializeField, Min(0.01f)] float muzzleFlashSize = 0.55f;
+    [Tooltip("총구 화염 지속(초) — 임팩트보다 짧게 번쩍.")]
+    [SerializeField, Min(0.01f)] float muzzleFlashTime = 0.05f;
+    [Tooltip("총구 위치를 조준 방향으로 앞당기는 거리(m) — 화염·라이트가 총신 끝에 오도록.")]
+    [SerializeField] float muzzleForward = 0.45f;
+
+    [Header("Muzzle Light (주위 밝기 — gunFlashLight 미배치 시 코드 생성)")]
+    [Tooltip("발사 순간 피크 광량.")]
+    [SerializeField] float muzzleLightIntensity = 12f;
+    [Tooltip("머즐 라이트 사거리(m) — 주위를 밝히는 범위.")]
+    [SerializeField] float muzzleLightRange = 7f;
+    [Tooltip("머즐 라이트 지속(초) — 짧고 강한 스파이크.")]
+    [SerializeField, Min(0.01f)] float muzzleLightDuration = 0.06f;
+    [Tooltip("머즐 라이트 색 — 따뜻한 앰버.")]
+    [SerializeField] Color muzzleLightColor = new Color(1f, 0.72f, 0.34f, 1f);
+
+    [Header("Audio (발사·재장전 사운드 — Resources/SFX/Guns)")]
+    [Tooltip("발사 사운드 볼륨.")]
+    [SerializeField, Range(0f, 1f)] float shotVolume = 0.3f;
+    [Tooltip("재장전 사운드 볼륨.")]
+    [SerializeField, Range(0f, 1f)] float reloadVolume = 0.3f;
 
     [Header("Impact Flash (명중 플래시 — 코드 생성 · 블룸용 가산 HDR)")]
     [Tooltip("명중 플래시 지속(초). 짧게 팝 — 탄착 순간만 번쩍.")]
@@ -84,13 +115,21 @@ public class PlayerCombat : MonoBehaviour
     [Tooltip("벽 명중 HDR 색 — 차가운 스파크. 채널>1이면 블룸으로 빛난다.")]
     [ColorUsage(true, true)][SerializeField] Color wallFlashColor = new Color(3.5f, 4.5f, 6f, 1f);
 
+    [Header("Spark Pop (탄 튀김 — 명중 시 사방으로 튀는 밝은 스파크 줄기)")]
+    [Tooltip("스파크 HDR 색 — 뜨거운 화이트-옐로(채널>1 블룸).")]
+    [ColorUsage(true, true)][SerializeField] Color sparkColor = new Color(9f, 7.5f, 3.5f, 1f);
+    [Tooltip("명중 1회당 튀는 스파크 줄기 개수.")]
+    [SerializeField, Min(1)] int sparkBurstCount = 16;
+    [Tooltip("발사 시 카메라 쉐이크 세기(m). 작게 — 연사 시 잔잔한 럼블. 샷건은 자동 2배.")]
+    [SerializeField, Min(0f)] float fireShake = 0f;
+
     [Header("Impact Override (선택 — 채우면 코드 플래시 대신 이 프리팹 사용)")]
     [Tooltip("좀비 명중 이펙트 프리팹. 비우면 위 코드 플래시 사용. ⚠️URP 호환 셰이더만(BIRP 프리팹은 핑크).")]
     [SerializeField] GameObject zombieHitOverride;
     [Tooltip("벽 명중 이펙트 프리팹. 비우면 위 코드 플래시 사용. ⚠️URP 호환 셰이더만(BIRP 프리팹은 핑크).")]
     [SerializeField] GameObject wallHitOverride;
-    [Tooltip("오버라이드 프리팹 자동 소멸 시간(초).")]
-    [SerializeField, Min(0.1f)] float overrideLifetime = 2f;
+    [Tooltip("피격 이펙트 프리팹 자동 소멸 시간(초). 짧게 — 빠른 사격에 오브젝트 누적/잔류 최소화(blood≈1.1s는 온전, spark 긴 연기 꼬리는 컷).")]
+    [SerializeField, Min(0.1f)] float overrideLifetime = 1.2f;
 
     [Header("Aim Trailing (마우스 추종 지연)")]
     [Tooltip("조준 추종 반응 속도(1/초). 낮을수록 사격 방향(조준선·탄도)이 마우스보다 더 천천히 따라온다. " +
@@ -188,7 +227,7 @@ public class PlayerCombat : MonoBehaviour
     Material _tracerMat;         // 트레일 공유 가산 HDR 머티리얼(블룸용 — 모든 트레일이 한 머티리얼 공유).
 
     // 발사체 1발의 비행 상태. ★판정은 즉발이 아니라 비행 중(UpdateBullets segment 캐스트) — 탄이 닿아야 명중.
-    struct Bullet { public bool active; public Vector3 pos; public Vector3 dir; public float remaining; public int damage; public bool pierce; }
+    struct Bullet { public bool active; public Vector3 pos; public Vector3 dir; public float remaining; public int damage; public bool pierce; public float knockback; }
     Bullet[] _bullets;
     HashSet<ZombieController>[] _bulletHits;   // 슬롯별 관통 중복타 방지(pierce 탄만 사용).
     int _bulletEvict;                          // 풀 고갈 시 라운드로빈 강제 재사용 인덱스(데미지 유실 방지).
@@ -199,13 +238,32 @@ public class PlayerCombat : MonoBehaviour
     MeshRenderer[] _flashMR;
     MaterialPropertyBlock _flashMPB; // 인스턴스별 HDR 색을 머티리얼 복제 없이 주입.
     float[] _flashTimer;             // 남은 수명(초). <=0 = 유휴.
+    float[] _flashLife;              // 이 재생의 총 수명(초) — 임팩트/총구화염이 서로 다른 지속을 갖도록 슬롯별 보관.
     Color[] _flashColor;             // 이 재생의 HDR 색.
     float[] _flashSize;              // 이 재생의 최대 크기(m).
     int _flashEvict;
     Material _impactMat;             // 가산 HDR + 라디얼 텍스처(전 플래시 공유).
     Texture2D _impactTex;            // 코드 생성 라디얼 글로우(부드러운 원형 — 사각 티 제거).
     Mesh _quadMesh;                  // 빌보드 쿼드(인스턴스 소유 — static 공유 시 멀티 OnDestroy 파탄 방지).
-    const int FlashPoolSize = 16;
+    const int FlashPoolSize = 24;   // 머즐 화염 + 임팩트(좀비/벽)가 한 풀 공유 → 산탄+연사 동시에도 살아있는 플래시 퇴거 안 되게 여유
+
+    // 머즐 라이트(주위 밝기) — gunFlashLight 미배치 시 코드로 생성·구동.
+    Light _muzzleLight;
+    float _muzzleLightTimer;
+    bool _muzzleLightActive;
+
+    // 발사/재장전 사운드 — 코드 생성 2D AudioSource + Resources 클립(GunSfx).
+    // 발사는 오프셋 재생(clip.time)을 위해 Play()를 쓰므로 per-call 볼륨이 안 됨 → 재장전과 소스를 분리(볼륨 독립 + 발사가 재장전음을 안 끊음).
+    AudioSource _gunAudio;
+    AudioSource _reloadAudio;
+    GunSfx.GunClass _gunClass = GunSfx.GunClass.Pistol;   // 미선택 폴백은 권총류
+
+    // 피 튀김 프리팹(Resources 코드 로드 — 무와이어링, 모든 씬 동작). 좀비 명중에 검은 피.
+    GameObject _bloodPrefab;
+
+    // 탄 스파크 — 월드 공간 PS 1개를 명중 지점으로 옮겨 Emit(Instantiate 없이 성능). 스트레치 줄기가 사방으로.
+    ParticleSystem _sparkPS;
+    Material _sparkMat;
 
     void Awake()
     {
@@ -262,6 +320,7 @@ public class PlayerCombat : MonoBehaviour
             _flashTr = new Transform[FlashPoolSize];
             _flashMR = new MeshRenderer[FlashPoolSize];
             _flashTimer = new float[FlashPoolSize];
+            _flashLife = new float[FlashPoolSize];
             _flashColor = new Color[FlashPoolSize];
             _flashSize = new float[FlashPoolSize];
             _flashMPB = new MaterialPropertyBlock();
@@ -277,6 +336,35 @@ public class PlayerCombat : MonoBehaviour
                 _flashTr[i] = go.transform;
                 _flashMR[i] = mr;
             }
+
+            // 머즐 라이트(주위 밝기) — 씬에 gunFlashLight를 안 꽂았으면 코드로 생성해 항상 작동.
+            if (gunFlashLight == null)
+            {
+                var lgo = new GameObject("MuzzleLight");
+                lgo.transform.SetParent(transform, false);
+                _muzzleLight = lgo.AddComponent<Light>();
+                _muzzleLight.type = LightType.Point;
+                _muzzleLight.color = muzzleLightColor;
+                _muzzleLight.range = muzzleLightRange;
+                _muzzleLight.intensity = 0f;
+                _muzzleLight.shadows = LightShadows.None;   // 머즐플래시는 그림자 불필요 — 성능
+                _muzzleLight.enabled = false;
+            }
+
+            // 발사/재장전 사운드용 2D 오디오 소스(코드 생성 — 무와이어링). 발사·재장전 분리.
+            _gunAudio = gameObject.AddComponent<AudioSource>();
+            _gunAudio.playOnAwake = false;
+            _gunAudio.spatialBlend = 0f;
+            _reloadAudio = gameObject.AddComponent<AudioSource>();
+            _reloadAudio.playOnAwake = false;
+            _reloadAudio.spatialBlend = 0f;
+
+            // 피 튀김 프리팹 코드 로드(좀비 명중). 실패 시 코드 플래시 폴백.
+            _bloodPrefab = Resources.Load<GameObject>("FX/blood_hit");
+            if (_bloodPrefab == null)
+                Debug.LogWarning("[PlayerCombat] Resources/FX/blood_hit 로드 실패 — 좀비 명중 코드 플래시로 폴백.");
+
+            _sparkPS = CreateSparkPS();
         }
     }
 
@@ -303,6 +391,16 @@ public class PlayerCombat : MonoBehaviour
         _fanShotsLeft = 0; _fanTimer = 0f;
         _charging = false; _chargeTime = 0f;
         HideChargeBrackets();
+
+        _gunClass = ClassifyGun(w);   // 발사음 분류(권총/라이플/샷건)
+    }
+
+    /// <summary>무기 특성으로 발사음 분류: 산탄=샷건, 빠른 연사(쿨≤0.2)=라이플, 그 외=권총류.</summary>
+    static GunSfx.GunClass ClassifyGun(WeaponLoadout.Weapon w)
+    {
+        if (w.pelletCount > 1) return GunSfx.GunClass.Shotgun;
+        if (w.fireCooldown <= 0.2f) return GunSfx.GunClass.Rifle;
+        return GunSfx.GunClass.Pistol;
     }
 
     void OnDestroy()
@@ -319,6 +417,9 @@ public class PlayerCombat : MonoBehaviour
         if (_impactMat != null) Destroy(_impactMat);
         if (_impactTex != null) Destroy(_impactTex);
         if (_quadMesh != null) Destroy(_quadMesh);
+        if (_muzzleLight != null) Destroy(_muzzleLight.gameObject);
+        if (_sparkPS != null) Destroy(_sparkPS.gameObject);
+        if (_sparkMat != null) Destroy(_sparkMat);
         _melee?.Cleanup();
     }
 
@@ -365,6 +466,38 @@ public class PlayerCombat : MonoBehaviour
             alphaKeys = new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) },   // 머리 불투명 → 꼬리 투명
         };
         return tr;
+    }
+
+    /// <summary>
+    /// 탄 스파크 PS 생성(월드 공간, emission off). 명중 시 transform을 명중점으로 옮겨 Emit하면
+    /// 스트레치 줄기들이 사방으로 튀어 "탄에 맞았다"는 임팩트를 준다. 가산 HDR이라 블룸으로 번쩍.
+    /// </summary>
+    ParticleSystem CreateSparkPS()
+    {
+        var go = new GameObject("BulletSparkPS");
+        var ps = go.AddComponent<ParticleSystem>();
+        ps.Stop();
+        var main = ps.main;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(0.06f, 0.1f);
+        main.startSpeed = new ParticleSystem.MinMaxCurve(6f, 12f);
+        main.startSize = new ParticleSystem.MinMaxCurve(0.02f, 0.045f);   // 엄청 얇게
+        main.startColor = sparkColor;
+        main.gravityModifier = 0.6f;
+        main.maxParticles = 256;
+        main.playOnAwake = false;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;   // 명중점에 남고 플레이어를 안 따라옴
+        var em = ps.emission; em.enabled = false;                     // 코드 버스트(Emit)로만 방출
+        var sh = ps.shape; sh.enabled = true; sh.shapeType = ParticleSystemShapeType.Sphere; sh.radius = 0.18f; sh.radiusThickness = 0f;   // 셸에서만 → 중앙에 틈(선들이 서로 떨어짐)
+
+        var psr = go.GetComponent<ParticleSystemRenderer>();
+        psr.renderMode = ParticleSystemRenderMode.Stretch;            // 속도 방향으로 늘려 줄기(streak)로
+        psr.velocityScale = 0.1f;
+        psr.lengthScale = 2f;
+        psr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        psr.receiveShadows = false;
+        _sparkMat = CreateAdditiveMaterial(Color.white);             // 색은 파티클 startColor가 결정(머티 white와 곱)
+        psr.sharedMaterial = _sparkMat;
+        return ps;
     }
 
     /// <summary>가산(additive) HDR 머티리얼 — 채널>1 색이 블룸으로 빛난다. URP 파티클 언릿 기반, Src=SrcAlpha·Dst=One.</summary>
@@ -437,6 +570,7 @@ public class PlayerCombat : MonoBehaviour
 
             UpdateBullets();
             UpdateImpactFlashes();   // 명중 플래시 팝→페이드 + 카메라 빌보드
+            UpdateMuzzleLight();     // 머즐 라이트 펀치 폴오프
             UpdateLaser(crafting);   // 조준 레이저는 차징 중에도 유지 — 브라켓이 그 좌우로 수렴한다.
         }
     }
@@ -546,7 +680,7 @@ public class PlayerCombat : MonoBehaviour
         }
 
         NoiseManager.Instance?.EmitImpulse(bashNoise);
-        gunFlashLight?.Trigger();
+        TriggerMuzzle(eye + _aimDir * muzzleForward);   // 밀치기 순간 라이트 펀치(총성 아님 — VFX·사운드 없음)
         GetComponent<MoreMountains.Feedbacks.MMSpringScale>()?.Bump(new Vector3(-0.12f, 0.08f, -0.12f));
     }
 
@@ -665,6 +799,12 @@ public class PlayerCombat : MonoBehaviour
         // reloadTime이 0(데이터 실수 등)이면 재장전 상태로 들어가지 않고 즉시 풀충전 — 무한탄약 footgun 차단.
         if (_reloadTime <= 0f) { _ammo = _magazine; _reloading = false; _reloadTimer = 0f; return; }
         _reloading = true; _reloadTimer = _reloadTime;
+
+        if (_reloadAudio != null)
+        {
+            var clip = GunSfx.Reload(_gunClass);
+            if (clip != null) _reloadAudio.PlayOneShot(clip, reloadVolume);
+        }
     }
 
     /// <summary>
@@ -677,6 +817,8 @@ public class PlayerCombat : MonoBehaviour
         Vector3 origin = transform.position + Vector3.up * muzzleHeight;
         pellets = Mathf.Max(1, pellets);
         int dmg = baseDmg + PlayerStats.DamageBonus;
+        // 넉백: 샷건=강한 푸시, 그 외=아주 약한 잼킹(타격감용 흔들림, 호드는 안 흩어짐).
+        float kb = _gunClass == GunSfx.GunClass.Shotgun ? bulletKnockback : weakKnockback;
 
         for (int p = 0; p < pellets; p++)
         {
@@ -684,12 +826,43 @@ public class PlayerCombat : MonoBehaviour
             Vector3 dir = spread > 0f
                 ? Quaternion.AngleAxis(Random.Range(-spread, spread), Vector3.up) * _aimDir
                 : _aimDir;
-            SpawnBullet(origin, dir, rng, dmg, pierce);
+            SpawnBullet(origin, dir, rng, dmg, pierce, kb);
         }
 
-        // 소음·머즐플래시는 발사 1회당 한 번(펠릿 수와 무관).
+        // 소음·머즐 연출·사운드는 발사 1회당 한 번(펠릿 수와 무관).
         NoiseManager.Instance?.EmitImpulse(noise);
-        gunFlashLight?.Trigger();
+
+        // 총구 끝(조준 방향으로 앞당김) — 화염 VFX·라이트가 총신 끝에 오도록.
+        Vector3 muzzleTip = origin + _aimDir * muzzleForward;
+        PlayFlash(muzzleTip, muzzleFlashColor, muzzleFlashSize, muzzleFlashTime);   // 총구 화염(임팩트 풀 재사용, 더 짧게)
+        TriggerMuzzle(muzzleTip);                                                   // 주위 밝기(라이트)
+        PlayShotSound();
+        PlayerCameraRig.Instance?.TriggerShake(_gunClass == GunSfx.GunClass.Shotgun ? fireShake * 2f : fireShake);   // 발사 화면 펀치(샷건 강하게)
+    }
+
+    /// <summary>머즐 라이트 점멸: 씬에 꽂힌 gunFlashLight가 있으면 그걸, 없으면 코드 라이트를 muzzleTip에서 번쩍.</summary>
+    void TriggerMuzzle(Vector3 muzzleTip)
+    {
+        if (gunFlashLight != null) { gunFlashLight.Trigger(); return; }
+        if (_muzzleLight == null) return;
+        _muzzleLight.transform.position = muzzleTip;
+        _muzzleLight.intensity = muzzleLightIntensity;
+        _muzzleLight.enabled = true;
+        _muzzleLightActive = true;
+        _muzzleLightTimer = muzzleLightDuration;
+    }
+
+    /// <summary>발사음 1회 재생(무기 분류별 변형 랜덤 + 살짝 피치 흔들기로 반복 피로 완화).</summary>
+    void PlayShotSound()
+    {
+        if (_gunAudio == null) return;
+        var clip = GunSfx.Shot(_gunClass);
+        if (clip == null) return;
+        // 오프셋 재생: 완만한 어택 앞부분을 건너뛰어 트리거 즉시 타격. Play()는 재생 중이면 자동 재시작 → 연사 누적도 차단.
+        _gunAudio.volume = shotVolume;
+        _gunAudio.clip = clip;
+        _gunAudio.time = Mathf.Clamp(GunSfx.ShotSkip(_gunClass), 0f, Mathf.Max(0f, clip.length - 0.02f));
+        _gunAudio.Play();
     }
 
     /// <summary>빈 발사체 슬롯 인덱스. 다 차 있으면 라운드로빈으로 가장 오래된 슬롯을 강제 재사용(데미지 유실 방지).</summary>
@@ -703,11 +876,11 @@ public class PlayerCombat : MonoBehaviour
     }
 
     /// <summary>날아가는 탄 1발을 풀에 생성. 판정은 비행 중(UpdateBullets)에서 처리한다.</summary>
-    void SpawnBullet(Vector3 origin, Vector3 dir, float range, int damage, bool pierce)
+    void SpawnBullet(Vector3 origin, Vector3 dir, float range, int damage, bool pierce, float knockback)
     {
         if (_bullets == null) return;
         int i = AcquireBulletSlot();
-        _bullets[i] = new Bullet { active = true, pos = origin, dir = dir, remaining = Mathf.Max(0.15f, range), damage = damage, pierce = pierce };
+        _bullets[i] = new Bullet { active = true, pos = origin, dir = dir, remaining = Mathf.Max(0.15f, range), damage = damage, pierce = pierce, knockback = knockback };
         if (pierce) _bulletHits[i].Clear();
 
         var tr = i < _tracers.Length ? _tracers[i] : null;
@@ -766,14 +939,14 @@ public class PlayerCombat : MonoBehaviour
                     var z = h.collider.GetComponentInParent<ZombieController>();
                     if (z == null || _bulletHits[i].Contains(z)) continue;
                     _bulletHits[i].Add(z);
-                    z.TakeDamage(_bullets[i].damage);
+                    z.TakeDamage(_bullets[i].damage, dir, _bullets[i].knockback, bulletStagger);
                     PlayImpact(h.distance > 0f ? h.point : from, dir, true);   // 관통: 뚫는 좀비마다 살점 임팩트(초근접 point=0 폴백)
                 }
             }
             else if (Physics.SphereCast(castFrom, hitRadius, dir, out RaycastHit zHit, castLen, zombieMask, QueryTriggerInteraction.Collide))
             {
                 var z = zHit.collider.GetComponentInParent<ZombieController>();
-                if (z != null) z.TakeDamage(_bullets[i].damage);
+                if (z != null) z.TakeDamage(_bullets[i].damage, dir, _bullets[i].knockback, bulletStagger);
                 PlayImpact(zHit.distance > 0f ? zHit.point : from, dir, true);   // 비관통: 첫 좀비에 살점 임팩트(초근접 point=0 폴백)
                 hitZombie = true;
                 travel = Mathf.Clamp(zHit.distance - hitRadius, 0f, travel);   // castFrom 기준 → from 기준 환산 후 명중점에서 멈춤
@@ -798,16 +971,21 @@ public class PlayerCombat : MonoBehaviour
     }
 
     /// <summary>
-    /// 명중 이펙트 1회 재생. 해당 오버라이드 프리팹이 꽂혀 있으면 그걸 스폰(교체), 없으면 코드 플래시로 폴백.
-    /// zombie=true면 좀비(살점), false면 벽(스파크) 계열 색·크기·프리팹을 고른다.
+    /// 명중 이펙트 1회 재생. 탄 스파크 팝(밝은 흰 코드 빌보드)은 모든 명중에, 검은 피 분사(프리팹)는 좀비 명중에만.
+    /// zombieHitOverride를 채우면 코드 로드 블러드를 대체. 블러드 미로드 시 좀비색 코드 플래시로 폴백.
     /// </summary>
     void PlayImpact(Vector3 pos, Vector3 dir, bool zombie)
     {
-        var ov = zombie ? zombieHitOverride : wallHitOverride;
-        if (ov != null) { SpawnOverride(ov, pos, dir); return; }
-        PlayFlash(pos,
-            zombie ? zombieFlashColor : wallFlashColor,
-            zombie ? zombieFlashSize : wallFlashSize);
+        // 탄 튀김 — 모든 명중에 사방으로 튀는 밝은 스파크 줄기(월드 PS를 명중점으로 옮겨 Emit).
+        if (_sparkPS != null) { _sparkPS.transform.position = pos; _sparkPS.Emit(sparkBurstCount); }
+
+        // 피 튀김 — 좀비 명중에 검은 피 분사(프리팹). 없으면 좀비색 플래시 폴백.
+        if (zombie)
+        {
+            var blood = zombieHitOverride != null ? zombieHitOverride : _bloodPrefab;
+            if (blood != null) SpawnOverride(blood, pos, dir);
+            else PlayFlash(pos, zombieFlashColor, zombieFlashSize, impactFlashTime);
+        }
     }
 
     /// <summary>오버라이드 프리팹을 명중점에 스폰하고 수명 후 자동 소멸(표면에서 튀어나오도록 -dir 정렬).</summary>
@@ -818,16 +996,32 @@ public class PlayerCombat : MonoBehaviour
     }
 
     /// <summary>명중점에 풀에서 플래시 1발을 재생(팝→페이드는 UpdateImpactFlashes가 처리). 색·크기는 좀비/벽으로 분기해 넘긴다.</summary>
-    void PlayFlash(Vector3 pos, Color hdr, float size)
+    void PlayFlash(Vector3 pos, Color hdr, float size, float life)
     {
         if (_flashTr == null) return;
         int i = AcquireFlashSlot();
-        _flashTimer[i] = impactFlashTime;
+        _flashLife[i] = Mathf.Max(0.02f, life);
+        _flashTimer[i] = _flashLife[i];
         _flashColor[i] = hdr;
         _flashSize[i] = size;
         _flashTr[i].position = pos;
         _flashTr[i].localScale = Vector3.zero;   // 첫 프레임 팝 전 0에서 시작(터짐 연출)
         _flashMR[i].gameObject.SetActive(true);
+    }
+
+    /// <summary>머즐 라이트를 매 프레임 t² 폴오프로 감쇠(짧고 강한 펀치). 코드 생성 라이트일 때만 동작.</summary>
+    void UpdateMuzzleLight()
+    {
+        if (!_muzzleLightActive || _muzzleLight == null) return;
+        _muzzleLightTimer -= Time.deltaTime;
+        float t = Mathf.Clamp01(_muzzleLightTimer / Mathf.Max(0.0001f, muzzleLightDuration));
+        _muzzleLight.intensity = muzzleLightIntensity * t * t;   // 빠른 폴오프 = 펀치감
+        if (_muzzleLightTimer <= 0f)
+        {
+            _muzzleLightActive = false;
+            _muzzleLight.intensity = 0f;
+            _muzzleLight.enabled = false;
+        }
     }
 
     /// <summary>유휴(타이머≤0) 슬롯을 먼저, 없으면 라운드로빈으로 재사용.</summary>
@@ -852,8 +1046,9 @@ public class PlayerCombat : MonoBehaviour
             if (_flashTimer[i] <= 0f) continue;
             _flashTimer[i] -= dt;
             if (_flashTimer[i] <= 0f) { _flashMR[i].gameObject.SetActive(false); continue; }
+            if (_flashLife[i] <= 0f) { _flashTimer[i] = 0f; _flashMR[i].gameObject.SetActive(false); continue; }   // 방어: 수명 0 슬롯 NaN scale 차단
 
-            float life01 = 1f - _flashTimer[i] / impactFlashTime;   // 0(탄착)→1(소멸)
+            float life01 = 1f - _flashTimer[i] / _flashLife[i];     // 0(탄착)→1(소멸) — 슬롯별 수명 기준
             float pop = 1f - (1f - life01) * (1f - life01);         // ease-out: 빠르게 퍼지고 둔화
             float fade = 1f - life01;                               // 선형 페이드(SrcAlpha 가산 → 알파가 기여도)
 

@@ -38,14 +38,33 @@ public class PlayerCameraRig : MonoBehaviour
     [Tooltip("SmoothDamp 추종 시간(초). 작을수록 즉각적(생존 장르=작게), 클수록 묵직/지연.")]
     [SerializeField, Min(0f)] float followSmoothTime = 1f;
 
+    [Header("Shake (발사·피격 화면 펀치 — 위치만, 회전 없음=탑다운 멀미 방지)")]
+    [Tooltip("쉐이크 감쇠율(클수록 빨리 멎음).")]
+    [SerializeField] float shakeDamping = 12f;
+    [Tooltip("쉐이크 진동 주파수(Perlin).")]
+    [SerializeField] float shakeFrequency = 22f;
+
+    /// <summary>도보 카메라 싱글턴 — PlayerCombat·PlayerController가 쉐이크 트리거에 사용.</summary>
+    public static PlayerCameraRig Instance { get; private set; }
+
     Camera _cam;
     Vector3 _baseOffset;     // 시작 시 카메라-플레이어 월드 오프셋(높이/각도 프레이밍 보존)
     Vector3 _lastTargetPos;
     float _velX, _velZ;      // SmoothDamp 내부 속도 상태(축별 분리 — Y 변위가 XZ 수렴에 안 섞이게)
     bool _ready;
+    float _shakeIntensity, _shakeTime;
+
+    void OnDestroy() { if (Instance == this) Instance = null; }
+
+    /// <summary>발사·피격 시 호출 — 화면 펀치(위치 쉐이크). intensity ≈ 오프셋 최대치(m).</summary>
+    public void TriggerShake(float intensity)
+    {
+        _shakeIntensity = Mathf.Max(_shakeIntensity, Mathf.Clamp(intensity, 0f, 1f));
+    }
 
     void Awake()
     {
+        Instance = this;
         _cam = GetComponent<Camera>();
 
         // 부모(Player) 리지드 결합이 지연을 상쇄하므로, 월드 트랜스폼을 유지한 채 분리한다.
@@ -114,6 +133,18 @@ public class PlayerCameraRig : MonoBehaviour
         Vector3 cur = transform.position;
         float nx = Mathf.SmoothDamp(cur.x, desired.x, ref _velX, smooth, Mathf.Infinity, dt);
         float nz = Mathf.SmoothDamp(cur.z, desired.z, ref _velZ, smooth, Mathf.Infinity, dt);
-        transform.position = new Vector3(nx, desired.y, nz);
+        Vector3 pos = new Vector3(nx, desired.y, nz);
+
+        // 쉐이크: 추종 위치 위에 Perlin XZ 오프셋을 얹고 지수 감쇠(회전 없음 — 탑다운 멀미 방지).
+        if (_shakeIntensity > 0.001f)
+        {
+            _shakeTime = (_shakeTime + dt * shakeFrequency) % 1000f;
+            float ox = (Mathf.PerlinNoise(_shakeTime, 0f) - 0.5f) * 2f * _shakeIntensity;
+            float oz = (Mathf.PerlinNoise(0f, _shakeTime + 1f) - 0.5f) * 2f * _shakeIntensity;
+            pos += new Vector3(ox, 0f, oz);
+            _shakeIntensity = Mathf.Lerp(_shakeIntensity, 0f, 1f - Mathf.Exp(-shakeDamping * dt));
+        }
+
+        transform.position = pos;
     }
 }

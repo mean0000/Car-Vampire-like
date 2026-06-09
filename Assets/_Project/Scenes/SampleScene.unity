@@ -133,6 +133,10 @@ GameObject:
   - component: {fileID: 408198747}
   - component: {fileID: 408198746}
   - component: {fileID: 408198745}
+  - component: {fileID: 408198754}
+  - component: {fileID: 408198753}
+  - component: {fileID: 408198752}
+  - component: {fileID: 408198751}
   m_Layer: 0
   m_Name: Car
   m_TagString: Untagged
@@ -152,13 +156,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 67a31d6f00a7ef54c9aa1657d533fb83, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CarController
-  maxSpeed: 20
-  engineForce: 30
-  deceleration: 10
-  turnSpeed: 120
-  lowSpeedGrip: 0.85
-  highSpeedGrip: 0.4
-  velocitySteerBlend: 0.08
 --- !u!54 &408198746
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -211,7 +208,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -279,6 +276,99 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &408198751
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 408198744}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d88269f08caa64e4eaa5947242910b60, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CarHitFeedback
+  hitShakeBase: 0.2
+  hitShakeMax: 0.8
+  minSpeedAfterHit: 3
+  hitStopScale: 0.4
+  hitStopDuration: 0.04
+--- !u!114 &408198752
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 408198744}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3c30eed8b0325f4d9f1f38022d1fa32, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CarBoost
+  maxBoostFuel: 100
+  boostDrainRate: 30
+  driftFuelRate: 20
+  boostImpulseSpeed: 38
+  boostForce: 15
+  boostMaxSpeed: 35
+  syncRatePerSecond: 0.05
+  boostShake: 0.4
+  boostDecayRate: 8
+  passiveDrainRate: 6
+  emptyFuelSpeedMult: 0.4
+  fuelEmptyFeedback: {fileID: 0}
+  _springCA: {fileID: 0}
+  driftTierThresholds:
+  - 1
+  - 3
+  - 5
+  driftTierFuelMultipliers:
+  - 1.5
+  - 2
+  - 3
+  driftTierExitBonus:
+  - 10
+  - 25
+  - 50
+--- !u!114 &408198753
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 408198744}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad841c33e26175c47aef1c9e69eb333f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CarMovement
+  maxSpeed: 22
+  engineForce: 30
+  deceleration: 8
+  turnSpeed: 200
+  lowSpeedGrip: 0.85
+  highSpeedGrip: 0.38
+  gripRate: 13
+  slopeAlignSpeed: 12
+  driftGripMultiplier: 0.06
+  driftEntryKick: 8
+  driftVelRotScale: 0.25
+--- !u!114 &408198754
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 408198744}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cdd460ec58ca696489a2b0f19cd1b822, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CarGroundSensor
+  checkDistance: 0.35
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
@@ -482,16 +572,39 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraController
   car: {fileID: 408198745}
-  heightOffset: 20
-  pitchAngle: 65
-  followSmooth: 0.12
+  followSpeed: 5
+  boostFollowMultiplier: 5
+  lookaheadBias: 0
   lookaheadMax: 4
-  lookaheadSmooth: 0.25
+  boostLookaheadMax: 10
+  lookaheadAttackSpeed: 8
+  lookaheadReleaseSpeed: 4
+  lateralLookaheadMax: 3
+  carViewportY: 0.42
   fovBase: 60
   fovMax: 75
-  fovSmooth: 0.15
+  fovSpeed: 8
+  boostFovKick: 12
+  fovKickAttack: 15
+  fovKickDecay: 4
+  heightOffset: 20
   heightBonus: 3
+  pitchAngle: 65
+  pitchMin: 35
+  pitchChangeSpeed: 0.4
+  yawTrackSpeed: 3
+  chaseBackDist: 18
+  chaseHeight: 12
+  pitchSensitivity: 0.03
+  maxPitchOffset: 4
+  tiltSpeed: 6
+  accelFilterSpeed: 4
+  maxDirPitchOffset: 3
+  maxDirRollOffset: 3
   shakeDamping: 5
+  suspensionAmplitude: 0.04
+  suspensionFrequency: 12
+  suspensionSpeedMin: 0.2
 --- !u!1 &1792380278
 GameObject:
   m_ObjectHideFlags: 0
@@ -536,7 +649,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

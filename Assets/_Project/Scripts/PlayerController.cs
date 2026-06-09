@@ -1,4 +1,5 @@
 using UnityEngine;
+using MoreMountains.Feedbacks;
 
 public class PlayerController : MonoBehaviour
 {
@@ -6,6 +7,8 @@ public class PlayerController : MonoBehaviour
 
     [Header("HP")]
     [SerializeField] float maxHP = 100f;
+    [Tooltip("피격 시 카메라 쉐이크 세기(m). 발사보다 크게 — 맞았다는 충격.")]
+    [SerializeField] float damageShake = 0.4f;
     float _currentHP;
 
     [Header("Movement")]
@@ -229,6 +232,9 @@ public class PlayerController : MonoBehaviour
         if (_currentHP <= 0f) return;   // 이미 사망 — 같은 프레임 다중 타격 시 OnPlayerDied 중복 발화 방지
         if (_dashTimer > 0f && dashInvulnerable) return;   // 대시 무적 프레임 — 회피기로 동작
         _currentHP -= amount;
+        PlayerCameraRig.Instance?.TriggerShake(damageShake);   // 피격 화면 펀치(발사보다 크게)
+        // 피격 임팩트 — 짧은 히트스탑(Feel). 좀비 공격은 빈도 낮고 큰 피해라 스팸/스터터 없이 "맞았다" 충격만.
+        MMTimeScaleEvent.Trigger(MMTimeScaleMethods.For, 0.05f, 0.015f, false, 0f, false);
         if (_currentHP <= 0f)
         {
             _currentHP = 0f;
