@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>사후처리부 — 코어 디자인</title>
+<style>
+  :root{
+    --bg:#0c0d11; --bg2:#14161c; --bg3:#1b1e26;
+    --txt:#d6dae3; --dim:#8a909e; --line:#262a34;
+    --amber:#f5a623; --tox:#7fdb6a; --danger:#ff5a48; --cyan:#4fd1c5;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:'Pretendard','Segoe UI',system-ui,sans-serif;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:0 24px 120px}
+  /* hero */
+  .hero{padding:90px 24px 70px;text-align:center;border-bottom:1px solid var(--line);background:radial-gradient(ellipse at 50% -20%,rgba(245,166,35,.10),transparent 60%)}
+  .tag{display:inline-block;font-size:12px;letter-spacing:3px;color:var(--amber);border:1px solid var(--amber);border-radius:99px;padding:5px 14px;margin-bottom:22px;text-transform:uppercase}
+  h1{font-size:64px;font-weight:800;letter-spacing:-1px;background:linear-gradient(90deg,#fff,var(--amber));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;line-height:1.05}
+  .sub{margin-top:10px;color:var(--dim);font-size:15px;letter-spacing:1px}
+  .oneliner{max-width:720px;margin:34px auto 0;font-size:19px;color:#eef0f5;font-weight:500;border-left:3px solid var(--tox);padding:14px 22px;background:var(--bg2);text-align:left;border-radius:0 10px 10px 0}
+  .meta{margin-top:26px;font-size:12px;color:var(--dim)}
+  /* sections */
+  section{margin-top:64px}
+  h2{font-size:13px;letter-spacing:2px;color:var(--amber);text-transform:uppercase;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:26px;display:flex;align-items:baseline;gap:12px}
+  h2 .n{color:var(--dim);font-weight:400}
+  h3{font-size:18px;color:#fff;margin:26px 0 12px}
+  p{color:var(--txt);margin:10px 0}
+  .dim{color:var(--dim)}
+  strong{color:#fff}
+  .tox{color:var(--tox)} .amber{color:var(--amber)} .danger{color:var(--danger)} .cyan{color:var(--cyan)}
+  /* cards */
+  .grid{display:grid;gap:16px}
+  .g3{grid-template-columns:repeat(3,1fr)} .g2{grid-template-columns:repeat(2,1fr)} .g4{grid-template-columns:repeat(2,1fr)}
+  .card{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:20px 22px}
+  .card h4{font-size:16px;color:#fff;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .card .lbl{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--dim)}
+  .card p{font-size:14px;margin:8px 0 0}
+  .pill{font-size:11px;padding:2px 9px;border-radius:99px;border:1px solid currentColor}
+  /* code/diagram */
+  pre{background:#08090c;border:1px solid var(--line);border-radius:12px;padding:22px;overflow:auto;font-family:'JetBrains Mono','Consolas',monospace;font-size:13px;color:#c2c8d4;line-height:1.7}
+  /* table */
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--amber);font-size:12px;letter-spacing:1px;text-transform:uppercase;font-weight:600}
+  tr:hover td{background:var(--bg2)}
+  td b{color:#fff}
+  /* callout */
+  .note{background:rgba(255,90,72,.08);border:1px solid rgba(255,90,72,.35);border-radius:12px;padding:16px 20px;font-size:14px;margin:16px 0}
+  .note.tox{background:rgba(127,219,106,.07);border-color:rgba(127,219,106,.32)}
+  .axis{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  ul{margin:8px 0 8px 4px;list-style:none}
+  li{padding:5px 0 5px 18px;position:relative;font-size:14px}
+  li:before{content:"▹";position:absolute;left:0;color:var(--amber)}
+  .foot{margin-top:80px;padding-top:24px;border-top:1px solid var(--line);font-size:12px;color:var(--dim);text-align:center}
+  @media(max-width:760px){h1{font-size:42px}.g3,.g2,.g4,.axis{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="tag">Core Design · v1.0 · 2026-06-09</div>
+  <h1>사후처리부</h1>
+  <div class="sub">탑다운 뱀서라이크 × 익스트랙션 × 로그라이트</div>
+  <div class="oneliner">회사가 시키는 청소. 세계는 일정대로 폭격되고<span class="amber">(작전 타이머)</span>, 내 힘은 내 몸을 갉아 산다<span class="tox">(싱크)</span>. 끓어넘치기 전에 정화하고, <span class="cyan">strain</span> 챙겨 빠져라.</div>
+  <div class="meta">유저 + Claude 설계 세션 · pm/LevelDesign 적대검토 · 웹 리서치 기반 &nbsp;|&nbsp; 옛 게이트·감염·무기 설계를 대체</div>
+</div>
+
+<div class="wrap">
+
+<section>
+  <h2><span class="n">01</span> 게임 정체성</h2>
+  <div class="grid g2">
+    <div class="card"><div class="lbl">톤</div><h4>관료제 블랙코미디</h4><p>"회사가 시키는 청소" + Hades식 따뜻한 어두움. <strong>회사는 직원 목숨보다 일정을 친다</strong> — 소독은 네가 안에 있든 말든 일정대로.</p></div>
+    <div class="card"><div class="lbl">전제</div><h4>나노봇 전환 세계</h4><p>AI 나노봇이 인간을 좀비로 전환. <strong>사후처리부</strong> = 오염 구역 정화 회사. 플레이어 = 말단 정화 요원.</p></div>
+    <div class="card"><div class="lbl">차별화 ①</div><h4 class="amber">외부 세력(회사) 개입</h4><p>소독 드론 오인사격 등 — 내 회사가 날 위협이자 기회로 만든다.</p></div>
+    <div class="card"><div class="lbl">차별화 ②</div><h4 class="cyan">나노봇 strain 크래프팅</h4><p>정화 산물로 나만의 무기를 만든다.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">02</span> 런 구조</h2>
+<pre>[사무실] ─ 허브: 본사 지령 · 미션 선택 · strain 크래프팅 · 메타 성장
+   │ 미션(정화 계약) 선택 → 헬기 안착
+   ▼
+[미션 = 한 런] ─ 좀비 정화하며 뱀서식 레벨업
+   │   미션마다 위협 프로파일 = strain 풀 + 타이머 천장 차등
+   ├─ 작전 타이머 : 소독 폭격까지 카운트다운
+   ├─ 싱크 게이지 : 능력 자원 (폭주 / 좀비화)
+   ├─ 이벤트       : 돌발 · 기회 · 외부세력 · 계약형 (랜덤, 시간대 escalating)
+   ▼
+[보스] (선택적 대박) → [탈출 = 캐시아웃] "더 긁을까 / 지금 빠질까"
+   ▼
+[사무실] ─ 모은 strain으로 더 나은 무기 → 더 위험한 계약 → 반복</pre>
+  <p class="dim">사무실 = 허브(미션 선택이 곧 strain 타게팅 + 리스크 선택). 미션 = 이산 런 — 옛 연속 바이옴 여정을 대체.</p>
+</section>
+
+<section>
+  <h2><span class="n">03</span> 3축 게이지 + 죽음</h2>
+  <div class="axis">
+    <div class="card"><div class="lbl">전투</div><h4>HP</h4><p>피격으로 감소. <span class="danger">0 = 사망.</span></p></div>
+    <div class="card" style="border-color:rgba(245,166,35,.35)"><div class="lbl">외부 데드라인</div><h4 class="amber">작전 타이머</h4><p>회사 소독 일정까지 카운트다운(바닥 15 ~ 천장 30분). <span class="danger">0 = 폭격 = sweep.</span></p></div>
+    <div class="card" style="border-color:rgba(127,219,106,.35)"><div class="lbl">내부 자원</div><h4 class="tox">싱크 게이지</h4><p>능력 사용 시 ↑, 느린 회복. 90~99% <strong>폭주 버프</strong>. <span class="danger">100% = 좀비화 = sweep.</span></p></div>
+  </div>
+  <div class="note">죽음 통일 — 타이머 0(꾸물댐) &amp; 싱크 100(과욕) 둘 다 <strong>같은 sweep 연출</strong>("회사가 날 포함해 구역을 폭격으로 치운다"). 게이지는 둘이지만 <strong>죽음의 얼굴은 하나.</strong></div>
+
+  <h3>파워 철학 — 두 축 (강함 ≠ 트리비얼)</h3>
+  <div class="grid g2">
+    <div class="card"><h4 class="tox">축1 · 처치력</h4><p>강한 무기로 호드를 쓸어버리며 <strong>FEEL 강함 = 파워 판타지.</strong> 너프하지 않는다.</p></div>
+    <div class="card"><h4 class="danger">축2 · 위협</h4><p>밀도 · 엘리트 · 타이머 · 싱크 · 미션 티어. 쓸어버려도 <strong>이기는 게 아니다.</strong></p></div>
+  </div>
+  <p class="dim">강함을 죽이지 말고 위협을 축2에 실어라. "신이 된 동시에 죽기 직전" + "시계가 똑딱이고 빈손으로 나갈 수도."</p>
+</section>
+
+<section>
+  <h2><span class="n">04</span> 코어 루프 — strain → 크래프팅 → 나만의 무기</h2>
+  <div class="note tox"><strong class="tox">재료 = 정화의 산물 (약탈 아님).</strong> 플레이어는 단순히 정화만 한다. 중화된 좀비가 나노봇 코어를 남긴다(XP/골드 드롭과 동일 위상). 무기 = 정화 산물 재활용.</div>
+
+  <h3>계열 5종 — 적 타입 1:1 (적 로스터 = 재료 표)</h3>
+  <table>
+    <tr><th>계열</th><th>출처(적)</th><th>무기 성격</th></tr>
+    <tr><td><b>생체</b></td><td>일반 좀비</td><td>베이스 — 기본 제작 + 화폐</td></tr>
+    <tr><td><b>강골</b></td><td>대형 좀비</td><td>중량 · 방어 · 넉백</td></tr>
+    <tr><td><b>신경</b></td><td>소형 · 빠른 좀비</td><td>속도 · 연사 · 기동</td></tr>
+    <tr><td><b>제어</b></td><td>신호 좀비</td><td>유틸 · 디버프 · 범위</td></tr>
+    <tr><td><b>과열</b></td><td>과부하 좀비</td><td>화력 · 폭발 · 관통</td></tr>
+  </table>
+
+  <h3>등급 3성 — 확률 드롭</h3>
+  <table>
+    <tr><th>등급</th><th>출처</th><th>확률(시작값)</th><th>역할</th></tr>
+    <tr><td><b>1성</b> 조악</td><td>일반 개체</td><td>생체 ~80% / 특수 ~40%</td><td>기본 무기</td></tr>
+    <tr><td><b>2성</b> 정제</td><td>엘리트 · 변이</td><td>~50%</td><td>중급 무기</td></tr>
+    <tr><td><b>3성</b> 고순도</td><td>보스 · 희귀 변이</td><td>보스 보장 / 희귀 ~8%</td><td>무기 정의급</td></tr>
+  </table>
+
+  <div class="grid g2" style="margin-top:18px">
+    <div class="card"><h4 class="cyan">크래프팅 = 메타 목적지</h4><p>계열 = 무기 성격, <strong>등급 = 빌드 천장/진화</strong>(플랫 파워 아님 — "강한 시작"이 아니라 "더 높이 클 도구"). "나만의" = 계열·등급 조합.</p></div>
+    <div class="card"><h4 class="amber">익스트랙션 stake</h4><p>죽으면 이번 런 strain 상실 / <strong>무기는 집에 안전</strong>(MH식). 타게팅 = 미션 + 동사("3성 과열 필요 → 과부하 계약 수주").</p></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">04·5</span> 적 로스터 <span class="dim" style="font-size:13px">— strain 출처</span></h2>
+  <p class="dim">원칙: 적은 데미지/HP가 아니라 <strong>"무슨 결정·움직임을 강제하느냐"</strong>로 정의. 5계열은 각자 다른 동사를 강제(안 겹치는 5문제).</p>
+  <table>
+    <tr><th>계열</th><th>역할</th><th>강제하는 동사</th><th>일반→엘리트(행동 변화)</th></tr>
+    <tr><td><b>생체</b> 일반</td><td>매스</td><td>없음 — 처치력 파워판타지 무대 + 밀도</td><td>사망 시 분열 / 오염 장판</td></tr>
+    <tr><td><b>강골</b> 대형</td><td>앵커·벽</td><td>회피 + 후면 약점으로 돌아서 치기</td><td>약점 다단계 + 짧은 돌진</td></tr>
+    <tr><td><b>신경</b> 소형빠름</td><td>쇄도</td><td>멈춤 금지(카이팅) — 빈틈 즉시 닫음</td><td>점멸 / 순간이동</td></tr>
+    <tr><td><b>제어</b> 신호</td><td>Controller</td><td class="amber">★타겟 선택 "쟤 먼저"</td><td>캔슬 난이도↑·역할 중첩</td></tr>
+    <tr><td><b>과열</b> 과부하</td><td>공간거부</td><td>흩어져·타이밍 — 죽거나 접근 시 위험지대화</td><td>잔류 장판 / 연쇄 폭발</td></tr>
+  </table>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card" style="border-color:rgba(245,166,35,.32)"><h4 class="amber">제어 = 디스럽터 (무스텔스 재정의)</h4><p>살아있는 동안 <strong>주변 호드 버프 + 내 무기 효과 약화(반경)</strong>. "강한 무기로도 안 녹네 → 제어부터." 트리거=탐지(소음 아님 → 원거리 이중처벌 없음). 죽이면 즉시 정상화(사망나선 없음).</p></div>
+    <div class="card" style="border-color:rgba(127,219,106,.32)"><h4 class="tox">단일 스폰 디렉터 (L4D식)</h4><p>좀비 스폰을 결정하는 단일 두뇌. <strong>Build Up → Peak → Relax(30~45초 무스폰)</strong> = 긴장 톱니파. 소음·이벤트·제어는 디렉터의 입력값. 가독성 + 리듬 + 사망나선 자동 해결.</p></div>
+  </div>
+  <div class="note">등급(1/2/3성) = <strong>HP 아니라 행동/영향반경 변화</strong>(스탯 스펀지 금지). 제어/엘리트는 시각적으로 반드시 튀어야(오라·색·체력바) — 그레이박스 가독성 우선.</div>
+</section>
+
+<section>
+  <h2><span class="n">05</span> 작전 타이머 — "항상 30분" 결함의 고침</h2>
+  <p><strong>바닥 15분 ~ 하드 천장 30분.</strong> 업무 완수 = +시간(체감 4.5/4/3.5/3 → <strong>4건이 정확히 30분 수렴</strong>). 탈출 언제든(딜레이 15~20초) + 보스 = 천장 직전 선택적 대박.</p>
+  <div class="note">"탈출 언제든 + escalation 점진적"이면 <span class="danger">항상 30분이 우성전략 → 조기탈출 죽음 → 익스트랙션 결정 증발.</span> 고침 묶음:</div>
+  <ul>
+    <li><strong>죽으면 수확 소실 / 탈출=확정</strong> — cash-out.</li>
+    <li><strong>escalation 후반 불연속 급가속 + 실경과시간 기준</strong> — 오래 = 위험↑ + 파밍 효율 역전. 결정은 계단에서 태어남.</li>
+    <li><strong>조기탈출 고유 보상</strong> — 15분 탈출 = "안전하게 챙긴 승리."</li>
+    <li><strong>톱니 = 이벤트 완수 시 escalation cull</strong>(밀도 −40%/10초). +시간이 아니라 밀도 비움이 이완.</li>
+    <li><strong>욕심 제동축 = 싱크</strong> — 타이머+싱크 비동기 이중 데드라인.</li>
+  </ul>
+  <p class="dim">⚠️ "+시간 밸브가 거꾸로(액셀)" — 시간 연장은 escalation을 늘린다. 시간 = 도박 잔액, 페이싱 = 밀도(cull)로 분리.</p>
+</section>
+
+<section>
+  <h2><span class="n">06</span> 이벤트 풀 <span class="dim" style="font-size:13px">— 랜덤 발생 + 시간대 escalating</span></h2>
+  <div class="grid g2">
+    <div class="card"><h4>A · 돌발 상황 <span class="pill dim">위협</span></h4><p class="dim">VS 박쥐떼류. 강제 이동·스파이크.</p><p>감염 군집 이동 · 오염 확산 지대 · 변이 경보 · 구조신호 변종(N초 내 끊기) · 변종 스웜 경보</p></div>
+    <div class="card"><h4>B · 기회 이벤트 <span class="pill tox">밸브</span></h4><p class="dim">리스크/리워드.</p><p>보급 투하(흩뿌림) · 표적 지령 Bounty · 현장 비품(버프/스탯/회복) · 긴급 정화(위험 자청, 보상 2배)</p></div>
+    <div class="card" style="border-color:rgba(245,166,35,.32)"><h4 class="amber">C · 외부 세력 개입 <span class="pill amber">시그니처</span></h4><p class="dim">회사가 개입 = 우리만의 축.</p><p><strong>소독 드론 오인사격</strong> · 정찰 드론 유인 · 통제구역 격상(룰 변경) · 고가치 표적 추적</p></div>
+    <div class="card" style="border-color:rgba(79,209,197,.32)"><h4 class="cyan">D · 계약형 미니 이벤트 <span class="pill cyan">트위스트</span></h4><p class="dim">catch = 영혼.</p><p>격리 봉인(결계) · 수거 드론 추격(놓치면 탈취) · 과부하 계약(싱크↑) · 블랙박스 회수(점령) · 샘플 과채취(거래) · 나노봇 증폭 노드(눈덩이) · 현장 감사(실패=벌칙) · 고립된 부서원(구출)</p></div>
+  </div>
+  <div class="note tox" style="margin-top:18px"><strong>MVP 검증 최소셋</strong> — 감염 군집 이동(돌발) / 보급 투하(기회) / <span class="amber">소독 드론 오인사격(시그니처)</span> / 격리 봉인(계약형). 4갈래 대표 + 시그니처.</div>
+</section>
+
+<section>
+  <h2><span class="n">07</span> 톤 원칙</h2>
+  <ul>
+    <li><strong class="danger">전환된 인간이라는 진실 = 배경 공포(서사·환경·로어)지 전투 전면 아님.</strong> 전투에선 몬스터(나노봇 구성체)를 정화 — 적은 연민 대상이 아니라 처리 대상.</li>
+    <li><strong>회사·익스트랙션 테마가 이벤트의 내러티브 래퍼.</strong> 같은 메커닉도 "본사 지령/소독/보급"으로 감싸 우리 톤을 만든다.</li>
+    <li><strong>회사는 직원 목숨보다 일정을 친다.</strong> 블랙코미디의 핵심.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">08</span> OPEN — 플레이테스트 / 미정</h2>
+  <ul>
+    <li>크래프팅 디테일(레시피 vs 모듈), 등급의 빌드 천장/진화 메커닉</li>
+    <li>strain 드롭 확률, 이벤트 발생 빈도·밴드 스케줄, MVP 셋 확정</li>
+    <li>타이머·싱크·escalation 수치 곡선</li>
+    <li><strong>좀비 로스터 무스텔스 재정당화</strong> — 옛 zombie-ai-handoff는 스텔스 전제라 오염. strain 출처(계열 5 = 적 5)와 정합하게 재정의 필요.</li>
+  </ul>
+</section>
+
+<div class="foot">
+  사후처리부 코어 디자인 v1.0 · 2026-06-09 · 시스템/코어 루프 권위<br>
+  서사·세계관: <span class="dim">03_reference/2026-06-06-worldbuilding-pitch.md</span> &nbsp;|&nbsp; 옛 GDD v3.0 / level-design-authority / demo-weapon-lineup 대체
+</div>
+
+</div>
+</body>
+</html>
