@@ -67,6 +67,22 @@ public class PlayerController : MonoBehaviour
     [SerializeField] float walkNoiseLevel = 22f;   // 걷기: 근처 2~3마리는 반응(반경 ~5.5) — 기본 이동에 긴장
     [SerializeField] float runNoiseLevel = 70f;    // 달리기: 추격 임계(50) 초과 — 확 커지는 위험한 스파이크
 
+    [Header("Grapple (게이트0 ③ — 좀비에게 잡힘. 무한 카이팅 치즈 차단)")]
+    [Tooltip("탈출에 필요한 연타 횟수(대시 키 연타 — 패닉 연타가 곧 탈출 입력).")]
+    [SerializeField, Min(1)] int grappleEscapePresses = 5;
+
+    ZombieController _grappler;   // 잡고 있는 좀비(null = 자유). 동시 grapple은 1마리만.
+    float _grappleTimer;
+    int _escapeLeft;
+
+    /// <summary>좀비에게 잡혀 있는가 — 이동·대시·사격이 잠긴다.</summary>
+    public bool IsGrappled => _grappler != null;
+    /// <summary>대시 무적 중인가 — 런지 접촉이 헛손질로 빠진다(회피 보상).</summary>
+    public bool IsUntouchable => _dashTimer > 0f && dashInvulnerable;
+
+    /// <summary>좀비 시야 인식의 노출 배수 — 뛰면 잘 보이고, 앉으면 덜 보인다. ZombieController 인식 틱이 읽는다.</summary>
+    public float SightExposureMult { get; private set; } = 1f;
+
     float _groundOffset;
 
     public float CurrentHP => _currentHP;
@@ -97,6 +113,13 @@ public class PlayerController : MonoBehaviour
 
     void OnDestroy()
     {
+        // 잡힌 채 파괴(씬 전환 등)되면 좀비를 풀어준다 — 좀비 Grapple 고착 방지(리뷰 반영).
+        if (_grappler != null)
+        {
+            var z = _grappler;
+            _grappler = null;
+            z.OnGrappleEnded(false);
+        }
         if (Instance == this)
         {
             Instance = null;
@@ -106,7 +129,63 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        // 잡혀 있으면 이동 대신 발버둥(연타 탈출)만 — 무한 카이팅을 끊는 안티치즈(§6.5).
+        if (IsGrappled)
+        {
+            UpdateGrapple();
+            return;
+        }
+
         UpdateMovement();
+    }
+
+    // ── Grapple (게이트0 ③) ──────────────────────────────────
+
+    /// <summary>좀비(런지 접촉)가 호출. 성공 시 플레이어는 잠기고 연타 탈출 루프로 들어간다.</summary>
+    public bool TryBeginGrapple(ZombieController zombie, float holdDuration)
+    {
+        if (_currentHP <= 0f || _grappler != null) return false;
+        if (IsUntouchable) return false;   // 대시 무적 — 회피 성공
+
+        _grappler = zombie;
+        _grappleTimer = holdDuration;
+        _escapeLeft = grappleEscapePresses;
+        _velocity = Vector3.zero;
+        _dashTimer = 0f;
+        return true;
+    }
+
+    /// <summary>좀비 사망/경직 등 외부 요인 해제 — 해당 좀비가 잡고 있을 때만 푼다.</summary>
+    public void ReleaseGrapple(ZombieController zombie)
+    {
+        if (_grappler == zombie) _grappler = null;
+    }
+
+    void UpdateGrapple()
+    {
+        if (_grappler == null) return;
+
+        // 발버둥 = 최대 노출 — 잡힌 상태가 의도치 않은 은신이 되지 않게(리뷰 반영).
+        SightExposureMult = 1.5f;
+        // 발버둥 소음 — 걷기급(조용히 잡혀 있진 않다).
+        NoiseManager.Instance?.SetMovementNoise(walkNoiseLevel);
+
+        // 연타 탈출: 대시 키(패닉 연타가 자연스럽게 탈출 입력이 된다).
+        if (Input.GetKeyDown(dashKey) && --_escapeLeft <= 0)
+        {
+            var z = _grappler;
+            _grappler = null;
+            z.OnGrappleEnded(true);   // 좀비를 밀쳐내고 탈출
+            return;
+        }
+
+        _grappleTimer -= Time.deltaTime;
+        if (_grappleTimer <= 0f)
+        {
+            var z = _grappler;
+            _grappler = null;
+            z.OnGrappleTimeout();     // 탈출 실패의 청구서 — 한 입 더
+        }
     }
 
     void UpdateMovement()
@@ -117,6 +196,12 @@ public class PlayerController : MonoBehaviour
         bool moving = input.sqrMagnitude > 0.001f;
         bool crouching = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
         bool running = moving && !crouching && Input.GetKey(KeyCode.LeftShift); // 앉기 중엔 못 달림
+
+        // 좀비 시야 인식의 노출 배수(combat-texture-foundation §2.2 — 플레이어 행동이 노출 확률 스케일).
+        if (!moving) SightExposureMult = 0.7f;
+        else if (crouching) SightExposureMult = 0.6f;
+        else if (running || IsDashing) SightExposureMult = 1.5f;
+        else SightExposureMult = 1f;
 
         // 대시 스택 충전: 보유<max인 동안 항상 타이머가 흘러 dashCooldown마다 1스택씩 회복.
         // (대시 중에도 흐른다 — 회피 직후 다음 회피가 자연스럽게 차오르게.)
@@ -246,6 +331,13 @@ public class PlayerController : MonoBehaviour
         if (_currentHP <= 0f)
         {
             _currentHP = 0f;
+            // 잡힌 채 죽으면 좀비를 풀어준다 — 좀비가 Grapple 상태로 고착되지 않게.
+            if (_grappler != null)
+            {
+                var z = _grappler;
+                _grappler = null;
+                z.OnGrappleEnded(false);
+            }
             OnPlayerDied?.Invoke();
         }
     }

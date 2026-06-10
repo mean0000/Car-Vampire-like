@@ -29,10 +29,12 @@ public class PlayerCombat : MonoBehaviour
     [SerializeField, Min(0f)] float bulletKnockback = 5f;
     [Tooltip("샷건 외 총(권총·라이플)의 피탄 넉백(m/s). 전진 의지와 충돌 → 연사 받으면 '으그극' 버티며 기어오고, 멈추면 전진. 크면 뒤로 밀리고 작으면 그냥 전진.")]
     [SerializeField, Min(0f)] float weakKnockback = 3.4f;
-    [Tooltip("탄 명중 시 좀비 경직(이동 멈칫) 시간(초). 엄청 짧게 — 연사 간격보다 짧아야 영구 프리즈 안 됨. 0이면 경직 없음.")]
-    [SerializeField, Min(0f)] float bulletStagger = 0.01f;
     [SerializeField] int magazineSize = 6;        // 미선택 폴백(원거리) 탄창 크기
     [SerializeField] float reloadTime = 1.1f;     // 미선택 폴백(원거리) 재장전 시간
+
+    [Header("Combat Feel (게이트0 — 3계층 탄 판정·히트스탑. 비우면 기본값으로 런타임 인스턴스 생성)")]
+    [Tooltip("combat-texture-foundation §6.2 수치의 거처. 랩 튜닝은 이 SO 에셋만 만진다.")]
+    [SerializeField] CombatFeelConfig feel;
 
     [Header("Layers")]
     [SerializeField] LayerMask zombieMask = 1 << 7;
@@ -276,6 +278,10 @@ public class PlayerCombat : MonoBehaviour
     void Awake()
     {
         _cam = Camera.main;
+
+        // 3계층 판정/히트스탑 수치 — SO 미와이어링이어도 기본값으로 동작(랩에선 에셋을 꽂아 튜닝).
+        if (feel == null) feel = ScriptableObject.CreateInstance<CombatFeelConfig>();
+        ZombieController.SetKillFeedbackWindow(feel.killFeedbackWindow);
 
         // 메타 업그레이드 배율 캐시 + 변경 구독(사무실 구매 시 갱신). Instance가 없으면 1배 폴백.
         RefreshMetaMultipliers();
@@ -555,14 +561,16 @@ public class PlayerCombat : MonoBehaviour
     {
         UpdateAim();
 
-        // 제작 채널링 중에는 무방비 — 사격/스윙 모두 잠금(움직임도 잠겨 있음).
+        // 제작 채널링·좀비에게 잡힘(grapple) 중에는 무방비 — 사격/스윙 모두 잠금(움직임도 잠겨 있음).
         bool crafting = CraftingSystem.Instance != null && CraftingSystem.Instance.IsCrafting;
+        bool grappled = PlayerController.Instance != null && PlayerController.Instance.IsGrappled;
+        bool locked = crafting || grappled;
         bool attackHeld = Input.GetMouseButton(0);
 
         if (_kind == WeaponLoadout.Kind.Melee)
         {
             // 근접: 입력/조준/잠금만 넘기고 쿨·판정·연출은 MeleeAttacker가 전담.
-            _melee.Tick(attackHeld, _aimDir, crafting);
+            _melee.Tick(attackHeld, _aimDir, locked);
 
             // 데모: 디버그키로 방망이 → 쇠지렛대 라이브 진화.
             if (Input.GetKeyDown(evolveKey) && _melee != null)
@@ -587,32 +595,32 @@ public class PlayerCombat : MonoBehaviour
             if (_reloading) { _reloadTimer -= Time.deltaTime; if (_reloadTimer <= 0f) { _reloading = false; _ammo = _magazine; } }
 
             // 우클릭 보조 발사(무기별). 진행 중이던 패닝 난사는 입력과 무관하게 계속 쏜다.
-            HandleAltFire(crafting);
+            HandleAltFire(locked);
             if (_fanShotsLeft > 0) TickFan();
 
             // 좌클릭 주발사 — 패닝/차징 중에는 잠금(같은 무기 좌·우 동시 발사 방지).
             bool altBusy = _fanShotsLeft > 0 || _charging;
-            if (!crafting && !altBusy && attackHeld && _cooldownTimer <= 0f && !_reloading && _ammo > 0)
+            if (!locked && !altBusy && attackHeld && _cooldownTimer <= 0f && !_reloading && _ammo > 0)
                 Fire();
             // 빈 탄창인데 계속 쏘려 하면 자동 재장전.
-            else if (!crafting && !altBusy && attackHeld && !_reloading && _ammo <= 0 && _magazine > 0)
+            else if (!locked && !altBusy && attackHeld && !_reloading && _ammo <= 0 && _magazine > 0)
                 StartReload();
 
             UpdateBullets();
             UpdateImpactFlashes();   // 명중 플래시 팝→페이드 + 카메라 빌보드
             UpdateMuzzleLight();     // 머즐 라이트 펀치 폴오프
-            UpdateLaser(crafting);   // 조준 레이저는 차징 중에도 유지 — 브라켓이 그 좌우로 수렴한다.
+            UpdateLaser(locked);     // 조준 레이저는 차징 중에도 유지 — 브라켓이 그 좌우로 수렴한다.
         }
     }
 
-    /// <summary>우클릭 보조 발사 입력 처리(무기별 분기).</summary>
-    void HandleAltFire(bool crafting)
+    /// <summary>우클릭 보조 발사 입력 처리(무기별 분기). locked = 제작 중 또는 grapple로 잡힘.</summary>
+    void HandleAltFire(bool locked)
     {
         switch (_altFire)
         {
             case WeaponLoadout.AltFire.FanFire:
                 // 즉발 트리거: 쿨·장전·난사 모두 비어 있을 때만 난사 시작(첫 발은 TickFan이 같은 프레임에).
-                if (!crafting && Input.GetMouseButtonDown(1)
+                if (!locked && Input.GetMouseButtonDown(1)
                     && _altCooldownTimer <= 0f && _cooldownTimer <= 0f && _fanShotsLeft <= 0)
                 {
                     _fanShotsLeft = Mathf.Max(1, fanShots);
@@ -621,8 +629,8 @@ public class PlayerCombat : MonoBehaviour
                 break;
 
             case WeaponLoadout.AltFire.ChargePierce:
-                // 제작 진입 시 차징 강제 취소 — 안 그러면 _charging이 잔류해 좌클릭(altBusy)이 영구 잠긴다.
-                if (crafting)
+                // 잠금 진입 시 차징 강제 취소 — 안 그러면 _charging이 잔류해 좌클릭(altBusy)이 영구 잠긴다.
+                if (locked)
                 {
                     if (_charging) { _charging = false; _chargeTime = 0f; }
                     HideChargeBrackets();
@@ -646,7 +654,7 @@ public class PlayerCombat : MonoBehaviour
                 break;
 
             case WeaponLoadout.AltFire.StockBash:
-                if (!crafting && Input.GetMouseButtonDown(1) && _altCooldownTimer <= 0f)
+                if (!locked && Input.GetMouseButtonDown(1) && _altCooldownTimer <= 0f)
                     StockBash();
                 break;
         }
@@ -706,7 +714,7 @@ public class PlayerCombat : MonoBehaviour
             if (dl > 0.001f && Physics.Raycast(eye, d / dl, dl, obstacleMask, QueryTriggerInteraction.Ignore)) continue;
 
             _altHits.Add(z);
-            z.TakeMeleeHit(dmg, origin, bashKnockback, bashStagger, WeaponLoadout.DeathStyle.None);
+            z.TakeMeleeHit(dmg, origin, bashKnockback, bashStagger, WeaponLoadout.DeathStyle.None, 0.03f);
         }
 
         NoiseManager.Instance?.EmitImpulse(bashNoise);
@@ -753,10 +761,10 @@ public class PlayerCombat : MonoBehaviour
     /// 조준 레이저: 총구에서 _aimDir(실제 탄도 방향 — 마우스보다 한 박자 늦음)을 따라
     /// 첫 벽/좀비까지 얇고 어두운 선 + 착탄 도트. 디제틱한 조준 보조. 제작 중엔 숨김.
     /// </summary>
-    void UpdateLaser(bool crafting)
+    void UpdateLaser(bool locked)
     {
         if (_laserLine == null || _laserDot == null) return;
-        if (crafting)
+        if (locked)
         {
             _laserLine.enabled = false;
             _laserDot.enabled = false;
@@ -913,7 +921,7 @@ public class PlayerCombat : MonoBehaviour
         if (_bullets == null) return;
         int i = AcquireBulletSlot();
         _bullets[i] = new Bullet { active = true, pos = origin, dir = dir, remaining = Mathf.Max(0.15f, range), damage = damage, pierce = pierce, knockback = knockback };
-        if (pierce) _bulletHits[i].Clear();
+        _bulletHits[i].Clear();   // 3계층 판정은 그레이즈(비정지)가 있어 비관통 탄도 중복타 방지 셋이 필요
 
         var tr = i < _tracers.Length ? _tracers[i] : null;
         if (tr != null)
@@ -959,30 +967,70 @@ public class PlayerCombat : MonoBehaviour
                 finish = true;
             }
 
-            // 좀비: 구간 스피어캐스트. 시작점을 hitRadius만큼 뒤로 빼 초근접(시작점 겹침) 누락을 막는다.
-            // 벽에 hitRadius 이내로 밀착해 쏠 때 cast가 벽면 너머로 새지 않도록 길이를 벽 거리로 캡한다.
-            Vector3 castFrom = from - dir * hitRadius;
-            float castLen = Mathf.Min(travel + hitRadius, wallDist);
-            if (_bullets[i].pierce)
+            // 좀비: 3계층 탄 판정(combat-texture-foundation §6.2) — "맞췄나"(디지털)가 아니라 "얼마나 잘 맞췄나"(아날로그).
+            // 탄도선↔좀비 축 최단 수평거리 d로 분류: 풀히트(정지) / 스침(50%+flinch, 정지) / 그레이즈(소량+비틀 확률, ★탄 계속).
+            // 그레이즈가 탄을 안 멈추므로 비관통도 CastAll로 경로상 전원을 평가한다. 시작점을 반경만큼 뒤로 빼 초근접 누락 방지,
+            // 벽 밀착 사격 시 cast가 벽면 너머로 새지 않도록 길이를 벽 거리로 캡.
+            float judgeR = feel.nearMissRadius;
+            Vector3 castFrom = from - dir * judgeR;
+            float castLen = Mathf.Min(travel + judgeR, wallDist);
+            var hits = Physics.SphereCastAll(castFrom, judgeR, dir, castLen, zombieMask, QueryTriggerInteraction.Collide);
+            if (hits.Length > 1) System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+            foreach (var h in hits)
             {
-                var hits = Physics.SphereCastAll(castFrom, hitRadius, dir, castLen, zombieMask, QueryTriggerInteraction.Collide);
-                foreach (var h in hits)
+                var z = h.collider.GetComponentInParent<ZombieController>();
+                if (z == null || z.IsDead || _bulletHits[i].Contains(z)) continue;
+
+                // 탄도 "세그먼트"와 좀비 축(수직 캡슐)의 최단 수평거리 — 무한 직선이 아니라 이번 스텝 구간에
+                // 투영을 클램프(리뷰 반영: 구간 끝 너머 좀비가 직선 거리로 과대 판정되는 것 방지).
+                Vector3 rel = z.transform.position - from; rel.y = 0f;
+                Vector3 flat = dir; flat.y = 0f;
+                float flatLen = flat.magnitude;
+                float perp;
+                if (flatLen > 0.0001f)
                 {
-                    var z = h.collider.GetComponentInParent<ZombieController>();
-                    if (z == null || _bulletHits[i].Contains(z)) continue;
-                    _bulletHits[i].Add(z);
-                    z.TakeDamage(_bullets[i].damage, dir, _bullets[i].knockback, bulletStagger);
-                    PlayImpact(h.distance > 0f ? h.point : from, dir, true);   // 관통: 뚫는 좀비마다 살점 임팩트(초근접 point=0 폴백)
+                    Vector3 axis = flat / flatLen;
+                    float along = Mathf.Clamp(Vector3.Dot(rel, axis), 0f, travel);
+                    perp = (rel - axis * along).magnitude;
                 }
-            }
-            else if (Physics.SphereCast(castFrom, hitRadius, dir, out RaycastHit zHit, castLen, zombieMask, QueryTriggerInteraction.Collide))
-            {
-                var z = zHit.collider.GetComponentInParent<ZombieController>();
-                if (z != null) z.TakeDamage(_bullets[i].damage, dir, _bullets[i].knockback, bulletStagger);
-                PlayImpact(zHit.distance > 0f ? zHit.point : from, dir, true);   // 비관통: 첫 좀비에 살점 임팩트(초근접 point=0 폴백)
-                hitZombie = true;
-                travel = Mathf.Clamp(zHit.distance - hitRadius, 0f, travel);   // castFrom 기준 → from 기준 환산 후 명중점에서 멈춤
-                finish = true;
+                else perp = rel.magnitude;
+                if (perp > judgeR) continue;   // 넓은 캐스트가 주워온 콜라이더 가장자리 — 판정 밖
+
+                _bulletHits[i].Add(z);
+                Vector3 hitPoint = h.distance > 0f ? h.point : from;
+
+                if (perp <= feel.fullHitRadius)
+                {
+                    // 풀히트: 풀데미지 + 넉백 + 피격 사다리 + 히트스탑. 비관통은 여기서 정지.
+                    z.TakeBulletHit(_bullets[i].damage, dir, _bullets[i].knockback, feel.hitStopNormal, BulletHitTier.Full, false);
+                    PlayImpact(hitPoint, dir, true);
+                }
+                else if (perp <= feel.grazeRadius)
+                {
+                    // 스침: 데미지 절반 + flinch만(넉백·사다리 없음). 맞긴 맞았으니 탄은 정지.
+                    int gdmg = Mathf.Max(1, Mathf.RoundToInt(_bullets[i].damage * feel.grazeDamageMult));
+                    z.TakeBulletHit(gdmg, dir, 0f, feel.hitStopNormal, BulletHitTier.Graze, false);
+                    PlayImpact(hitPoint, dir, true);
+                }
+                else
+                {
+                    // 그레이즈: 미스에 가깝지만 소량 데미지 + 비틀 확률. 탄은 계속 — 모든 발사가 세계에 흔적을 남긴다.
+                    // 피 없이 스파크만(절반) — 풀히트와의 질감 차이를 시각으로도 가른다.
+                    int ndmg = Mathf.Max(1, Mathf.RoundToInt(_bullets[i].damage * feel.nearMissDamageMult));
+                    bool flinch = Random.value < feel.nearMissFlinchChance;
+                    z.TakeBulletHit(ndmg, dir, 0f, 0f, BulletHitTier.NearMiss, flinch);
+                    if (_sparkPS != null) { _sparkPS.transform.position = hitPoint; _sparkPS.Emit(Mathf.Max(1, sparkBurstCount / 2)); }
+                    continue;   // 탄 비행 유지
+                }
+
+                // 풀히트/스침 — 관통탄은 뚫고 계속, 비관통은 명중점에서 정지.
+                if (!_bullets[i].pierce)
+                {
+                    hitZombie = true;
+                    travel = Mathf.Clamp(h.distance - judgeR, 0f, travel);   // castFrom 기준 → from 기준 환산
+                    finish = true;
+                    break;
+                }
             }
 
             Vector3 to = from + dir * travel;

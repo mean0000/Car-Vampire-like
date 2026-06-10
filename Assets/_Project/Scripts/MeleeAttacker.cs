@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using MoreMountains.Feedbacks;
-using MoreMountains.Tools;
 using UnityEngine;
 
 /// <summary>
@@ -111,7 +110,8 @@ public class MeleeAttacker
             if (!hitAny) firstHitPos = z.transform.position;
             hitAny = true;
 
-            bool killed = z.TakeMeleeHit(dmg, origin, _profile.knockback, _profile.stagger, _profile.deathStyle);
+            // 히트스탑은 피격자 전용(전역 timeScale 금지 — combat-texture-foundation §6.2). 킬 가중은 좀비 쪽에서.
+            bool killed = z.TakeMeleeHit(dmg, origin, _profile.knockback, _profile.stagger, _profile.deathStyle, _profile.hitstop);
             killedAny |= killed;
         }
 
@@ -122,12 +122,7 @@ public class MeleeAttacker
         if (hitAny) MeleeSfx.PlayHit(_profile.deathStyle, firstHitPos);
         else MeleeSfx.PlayWhiff(eye);
 
-        // 멈춤감: 스윙당 1회만(다중킬 시 DieByWeapon이 각자 내면 스택돼 슬로모 고착 → 여기서 소유).
-        // 죽이면 더 묵직하게, 비살상 타격이면 짧게.
-        float stop = killedAny ? _profile.hitstop * 1.5f : (hitAny ? _profile.hitstop : 0f);
-        if (stop > 0f)
-            MMTimeScaleEvent.Trigger(MMTimeScaleMethods.For, stop, 0.05f, false, 0f, false);
-
+        // 멈춤감: 전역 슬로모 제거 — 피격자 각자가 멈춘다(TakeMeleeHit의 hitstop 인자, 사쿠라이 "맞는 쪽만").
         // 플레이어 반응: 스윙 펀치(있으면).
         _ownerSpring?.Bump(new Vector3(-0.12f, 0.08f, -0.12f));
 
