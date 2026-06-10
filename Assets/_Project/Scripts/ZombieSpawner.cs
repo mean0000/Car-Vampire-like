@@ -155,7 +155,8 @@ public class ZombieSpawner : MonoBehaviour
     {
         for (int i = _activeZombies.Count - 1; i >= 0; i--)
         {
-            if (_activeZombies[i] == null)
+            // 시체는 죽음의 스펙터클로 수 초 잔류한다 — 산 좀비로 카운트하면 웨이브가 억제됨(리뷰 H-5).
+            if (_activeZombies[i] == null || _activeZombies[i].IsDead)
                 _activeZombies.RemoveAt(i);
         }
     }

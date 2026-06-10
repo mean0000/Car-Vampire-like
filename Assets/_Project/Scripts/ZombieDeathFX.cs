@@ -2,6 +2,13 @@ using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
 
+/// <summary>BakeMesh로 만든 런타임 Mesh를 프롭 파괴 시 확실히 정리 — 어느 경로(트윈/안전망/씬 언로드)로 죽어도 누수 없음.</summary>
+public class BakedMeshCleanup : MonoBehaviour
+{
+    public Mesh mesh;
+    void OnDestroy() { if (mesh != null) Destroy(mesh); }
+}
+
 /// <summary>
 /// 죽음의 스펙터클 전담 싱글톤 — "신체 일부가 터져서 쓰러지며" (디자인 나침반 §3.1).
 /// 역할 3분리(2026-06-10 확정):
@@ -65,6 +72,7 @@ public class ZombieDeathFX : MonoBehaviour
     // 시체/프롭 잔류 관리 — 상한 초과 시 오래된 것부터 와해
     readonly List<ZombieController> _corpses = new List<ZombieController>();
     readonly List<GameObject> _props = new List<GameObject>();
+    readonly HashSet<int> _dissolving = new HashSet<int>();   // 상한 퇴출 ↔ 잔류 코루틴의 이중 와해 방지
 
     void Awake()
     {
@@ -103,6 +111,12 @@ public class ZombieDeathFX : MonoBehaviour
     void OnDestroy()
     {
         if (s_instance == this) s_instance = null;
+        // 진행 중 잔류/와해 정리 — 파괴된 타겟에 남은 DOTween 트윈이 다음 씬에서 터지지 않게(리뷰 H-4).
+        StopAllCoroutines();
+        foreach (var p in _props) if (p != null) { p.transform.DOKill(); Destroy(p); }
+        _props.Clear();
+        foreach (var c in _corpses) if (c != null) c.transform.DOKill();
+        _corpses.Clear();
         if (_burstMat != null) Destroy(_burstMat);
         if (_ringMat != null) Destroy(_ringMat);
         if (_ringTex != null) Destroy(_ringTex);
@@ -195,6 +209,7 @@ public class ZombieDeathFX : MonoBehaviour
                 var prop = new GameObject(n + "_Pop");
                 prop.transform.SetPositionAndRotation(smr.transform.position, smr.transform.rotation);
                 var mf = prop.AddComponent<MeshFilter>(); mf.sharedMesh = baked;
+                prop.AddComponent<BakedMeshCleanup>().mesh = baked;   // 어느 파괴 경로든 메시 누수 차단
                 var mr = prop.AddComponent<MeshRenderer>();
                 mr.sharedMaterials = smr.sharedMaterials;
                 mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -237,13 +252,15 @@ public class ZombieDeathFX : MonoBehaviour
     {
         yield return new WaitForSeconds(s_corpseLinger);
         if (corpse == null) yield break;
-        _corpses.Remove(corpse);
+        if (!_corpses.Remove(corpse)) yield break;   // 이미 상한 퇴출로 와해됨(리뷰 C-1 — _dissolving 셋과 이중 방어)
         DissolveCorpse(corpse);
     }
 
     void DissolveCorpse(ZombieController corpse)
     {
         if (corpse == null) return;
+        int id = corpse.GetInstanceID();
+        if (!_dissolving.Add(id)) return;   // 이미 와해 중(상한 퇴출과 잔류 만료가 겹친 레이스)
         var go = corpse.gameObject;
         // MMSpringScale이 localScale을 계속 쓰면 축소 트윈과 싸운다 — 와해 전에 끈다.
         var spring = go.GetComponent<MoreMountains.Feedbacks.MMSpringScale>();
@@ -251,8 +268,8 @@ public class ZombieDeathFX : MonoBehaviour
         PlayDissolveBurst(go.transform.position + Vector3.up * 0.6f);
         go.transform.DOKill();
         go.transform.DOScale(Vector3.zero, s_dissolveTime).SetEase(Ease.InQuad)
-            .OnComplete(() => { if (go != null) Destroy(go); });
-        Destroy(go, s_dissolveTime + 1f);   // 트윈이 끊겨도 확실히 제거
+            .OnComplete(() => { _dissolving.Remove(id); if (go != null) Destroy(go); });
+        Destroy(go, s_dissolveTime + 1f);   // 트윈이 끊겨도 확실히 제거(이때 id는 잔존하나 int뿐 — 무해)
     }
 
     System.Collections.IEnumerator DissolveProp(GameObject prop, float delay)
