@@ -86,31 +86,37 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 **진짜 기준선은 "설계 vs 구현"이 아니라 "불확실성·레버리지가 높은가 vs 기계적인가"다.**
 게임 개발에선 게임감(주스, 물리, 핸들링, 드리프트 보상 등)이 코드 단계에서 만들어지므로, 설계와 구현이 자주 섞인다. 빌드→느껴보고→수치 조정하는 반복 루프에선 의도를 보존하기 위해 **설계한 모델이 구현까지 끝까지** 잡는다.
 
-기본 세션 모델은 Opus(`claude-opus-4-8`)다. 따라서 메인 대화에서의 판단·설계는 이미 Opus로 이뤄지며, 별도 Plan 에이전트 스폰 빈도는 줄여도 된다. **기계적 구현만 Sonnet 에이전트로 내려보낸다.**
+**기본 세션 모델 = Fable(`claude-fable-5`). Fable이 오케스트레이터다 — 판단하고 명령을 내려 하위 모델에 위임한다.** 이유: Fable은 1패스로 정확히 맞혀 **루프가 덜 돌기 때문에 토큰 출혈이 더 적다**(토큰당 Opus의 2배여도, 같은 작업을 평균 더 적은 토큰으로 끝내 어려운 작업은 누적 달러 비용이 오히려 더 쌀 수 있음 — Boris Cherny). 따라서 "항상 켜두되 기계적 손작업만 아래로 내려보낸다."
 
-**Opus로 처리 (메인 세션 직접, 또는 `model: opus` 에이전트):**
-- Physics or movement system design (force curves, handling model, collision response)
-- Architecture decisions across 3+ interacting scripts
-- Game-feel tradeoffs with no clear right answer (arcade vs. sim, responsiveness vs. stability)
-- Designing a new feature end-to-end (data flow, component responsibilities, API shape)
-- Non-obvious bug root-cause analysis spanning multiple systems
-- **게임감 튜닝이 포함된 구현** — 설계한 모델이 그대로 손까지 잡아 의도 보존
+**Fable이 반드시 직접 잡는다 (위임 금지) — 우리 게임에서 번복이 가장 비쌌던 존. effort: `xhigh`:**
+- **게임의 중심 잡기** — 다른 게임을 레퍼런스로 가져와 그 디자인을 판단·해부할 때, 우리 게임의 코어 루프·게임성(fun) 자체를 논할 때
+- **A. 그래픽/라이팅/포스트 처리 판정** — 무드·그레이드·틸트시프트 등 정답 없는 미적 판단 (최종 미적 콜은 유저 몫 → 캡처루프로 보여주되, 판단 자체는 Fable이 1패스로)
+- **B. 게임감/주스** — 타격감·쉐이크·넉백·경직 등 게임감 튜닝이 포함된 설계+구현 (의도 보존 위해 손까지 Fable이)
+- **C. 코어 디자인 방향/루프** — 매크로 설계, 다중 시스템 트레이드오프, 방향 전환
+- **D. 레벨/인카운터/페이싱** — 스폰 디렉터, 게이트, NavMesh 공간 설계
+- Physics/movement 설계, 3+ 스크립트 아키텍처, 다중 시스템 버그 루트코즈
 
-**Sonnet으로 처리 (Gameplay 에이전트에 위임, 빠르게):**
-- Implementing from an already-decided, fully-specified design
-- Editing specific files — 명시된 수치로 값 조정, 필드 추가
-- Codebase search and exploration
-- Single-system bug fixes
+**Opus(`claude-opus-4-8`)로 위임 (Fable이 명령). effort: medium~high:**
+- 중간 복잡도 — 단일 시스템 설계, 복잡한 컴포넌트 와이어링, 명확한 버그 수정
+
+**Sonnet으로 위임 (Gameplay 에이전트, 빠르게). effort: low~medium:**
+- 스펙 동결된 기계적 구현 — 명시된 수치로 값 조정, 필드 추가
+- 코드베이스 검색·탐색, 단일 시스템 버그 수정
 
 **Protocol:**
-1. On receiving a request, silently classify it: 게임감·불확실성이 걸렸나 vs. 기계적인가.
-2. 게임감·설계·다중 시스템이 걸렸으면 → Opus(메인 세션 직접)로 설계+구현을 끝까지 잡는다.
+1. 요청을 받으면 조용히 분류한다: 게임 중심·불확실·레버리지가 걸렸나(=Fable 직접) vs. 중간(=Opus 위임) vs. 기계적(=Sonnet 위임).
+2. **승격 서킷브레이커: Opus(또는 하위)에 위임한 작업이 실패하거나 헛돌면 즉시 Fable로 승격해 직접 잡는다. 같은 티어에서 재시도하며 헛돌지 말 것.**
 3. 스펙이 완전히 동결된 기계적 구현이면 → Gameplay 에이전트(Sonnet)로 위임.
-   - **단, 복잡한 설정 작업(다중 컴포넌트 와이어링, 물리·게임감 튜닝이 섞인 구현, 3+ 스크립트 상호작용 셋업 등)일 때는 Gameplay를 `model: opus` 오버라이드로 띄운다.** Gameplay 기본값은 sonnet이지만, 복잡한 설정엔 opus로 올려 의도를 보존한다.
-4. If the request is ambiguous, lean toward Opus — under-thinking a design costs more than latency.
+   - **단, 복잡한 설정 작업(다중 컴포넌트 와이어링, 물리·게임감 튜닝이 섞인 구현, 3+ 스크립트 상호작용 셋업 등)일 때는 Gameplay를 `model: opus` 오버라이드로 띄운다.**
+4. 모호하면 한 티어 위로 — under-thinking이 latency보다 비싸다.
 5. **작은 편집·자잘한 값 조정엔 3단 에이전트 춤(Plan→구현→리뷰)을 생략한다. 순수 오버헤드다.**
 
-> Always announce the switch briefly before acting. Example: "게임감이 걸려서 Opus로 끝까지 잡습니다." or "스펙 동결된 기계적 구현이라 Sonnet으로 위임합니다."
+**토큰 규율 (Fable 기본의 대가를 방어):**
+- **effort를 작업별로 조절** — 어려운 판단만 `xhigh`, 루틴은 low/medium. effort가 Fable의 토큰·성능 최대 레버다.
+- **캐싱 친화** — CLAUDE.md/메모리를 안정시켜 반복 컨텍스트 input 90% 할인을 받는다.
+- **컨텍스트 최소 주입** — 전체 코드베이스 ❌, 관련 파일만 주입.
+
+> Always announce the switch briefly before acting. Example: "게임 중심·게임감이 걸려서 Fable이 직접 끝까지 잡습니다." / "스펙 동결된 기계적 구현이라 Sonnet으로 위임합니다." / "Opus 위임이 헛돌아서 Fable로 승격합니다."
 
 ## Agent Workflow (코드 작업 시 필수)
 

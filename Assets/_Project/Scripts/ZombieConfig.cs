@@ -41,4 +41,8 @@ public class ZombieConfig : ScriptableObject
     [Header("XP Drop")]
     public int xpOrbCountMin = 3;
     public int xpOrbCountMax = 5;
+
+    [Header("Strain Drop (익스트랙션 루프)")]
+    [Tooltip("사망 시 수확되는 strain. 비우면 RunManager 기본(생체 1성) 사용.")]
+    public Run.StrainDef strainDrop;
 }

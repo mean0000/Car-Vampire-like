@@ -189,6 +189,9 @@ public class PlayerCombat : MonoBehaviour
 
     Camera _cam;
     float _cooldownTimer;
+    // 메타 업그레이드 배율 — 시작 시 1회 캐시 + MetaUpgrades.OnChanged로 갱신(매 발사 조회 회피).
+    float _metaDamageMult = 1f;
+    float _metaFireRateMult = 1f;
     Vector3 _aimDir = Vector3.forward;
     bool _aimInitialized;   // 첫 유효 샘플은 스냅(시작 시 forward→커서 스윙 방지)
 
@@ -273,6 +276,11 @@ public class PlayerCombat : MonoBehaviour
     void Awake()
     {
         _cam = Camera.main;
+
+        // 메타 업그레이드 배율 캐시 + 변경 구독(사무실 구매 시 갱신). Instance가 없으면 1배 폴백.
+        RefreshMetaMultipliers();
+        if (Meta.MetaProgress.Instance != null)
+            Meta.MetaProgress.Instance.Upgrades.OnChanged += RefreshMetaMultipliers;
 
         // 미선택 기본값: 인스펙터 원거리값 + 단발, 산포는 hipfireSpread.
         // 우클릭은 기본 권총류 → 패닝(FanFire)을 줘 미선택으로 바로 플레이해도 alt-fire가 작동한다.
@@ -415,8 +423,18 @@ public class PlayerCombat : MonoBehaviour
         return GunSfx.GunClass.Pistol;
     }
 
+    /// <summary>메타 업그레이드 배율을 캐시(Awake 1회 + OnChanged마다). 매 발사 조회를 피한다.</summary>
+    void RefreshMetaMultipliers()
+    {
+        var meta = Meta.MetaProgress.Instance;
+        _metaDamageMult = meta != null ? meta.Upgrades.GetDamageMultiplier() : 1f;
+        _metaFireRateMult = meta != null ? meta.Upgrades.GetFireRateMultiplier() : 1f;
+    }
+
     void OnDestroy()
     {
+        if (Meta.MetaProgress.Instance != null)
+            Meta.MetaProgress.Instance.Upgrades.OnChanged -= RefreshMetaMultipliers;
         if (_chargeL != null) Destroy(_chargeL.material);
         if (_chargeR != null) Destroy(_chargeR.material);
         if (_laserLine != null) Destroy(_laserLine.material);
@@ -796,8 +814,8 @@ public class PlayerCombat : MonoBehaviour
     /// <summary>좌클릭 주발사 — 무기 스탯대로 한 번 발사하고 쿨다운을 건다.</summary>
     void Fire()
     {
-        // 속사 카드: 연사 속도 배수만큼 쿨다운 단축.
-        _cooldownTimer = fireCooldown / Mathf.Max(0.01f, PlayerStats.FireRateMult);
+        // 속사 카드 + 메타 연사 업그레이드: 두 배수만큼 쿨다운 단축.
+        _cooldownTimer = fireCooldown / Mathf.Max(0.01f, PlayerStats.FireRateMult * _metaFireRateMult);
         FireShot(_spread, damage, range, _pelletCount, false, gunshotNoise);
 
         // 탄약 소모 — 발사 후 차감. 빈 탄창이면 자동 재장전 시작.
@@ -829,7 +847,8 @@ public class PlayerCombat : MonoBehaviour
     {
         Vector3 origin = transform.position + Vector3.up * muzzleHeight;
         pellets = Mathf.Max(1, pellets);
-        int dmg = baseDmg + PlayerStats.DamageBonus;
+        // 카드 가산 후 메타 데미지 업그레이드 배수 적용(반올림). 배수≥1이라 최소 카드값은 보장.
+        int dmg = Mathf.RoundToInt((baseDmg + PlayerStats.DamageBonus) * _metaDamageMult);
         // 넉백: 샷건=강한 푸시, 그 외=아주 약한 잼킹(타격감용 흔들림, 호드는 안 흩어짐).
         float kb = _gunClass == GunSfx.GunClass.Shotgun ? bulletKnockback : weakKnockback;
 

@@ -28,6 +28,9 @@ public class GameOverUI : MonoBehaviour
 
     private void Start()
     {
+        // 런 루프 씬에선 RunManager가 사망/정산을 단일 처리(헌장 부록 A) — 레거시 게임오버 비활성.
+        if (Run.RunManager.Instance != null) return;
+
         if (SyncRateManager.Instance != null)
             SyncRateManager.Instance.OnSyncMaxed += Show;
         if (PlayerController.Instance != null)

@@ -66,8 +66,7 @@ namespace DistantLands.Cozy.EditorScripts
             dayPercentage.label = "Time";
             Container.Add(dayPercentage);
 
-            SliderInt currentDay = new SliderInt("Day", 0, timeModule.DaysPerYear - 1, SliderDirection.Horizontal, 0);
-            currentDay.SetEnabled(!timeModule.overrideDate);
+            SliderInt currentDay = new SliderInt("Day", 0, timeModule.DaysPerYear, SliderDirection.Horizontal, 0);
             currentDay.showInputField = true;
             currentDay.AddToClassList("unity-base-field__aligned");
             currentDay.BindProperty(serializedObject.FindProperty("currentDay"));
@@ -75,7 +74,6 @@ namespace DistantLands.Cozy.EditorScripts
 
             PropertyField currentYear = new PropertyField();
             currentYear.BindProperty(serializedObject.FindProperty("currentYear"));
-            currentYear.SetEnabled(!timeModule.overrideDate);
             Container.Add(currentYear);
 
             InspectorElement inspector = new InspectorElement(timeModule.perennialProfile);
@@ -83,7 +81,7 @@ namespace DistantLands.Cozy.EditorScripts
             root.Add(inspector);
             inspector.RegisterCallback<PointerMoveEvent>((PointerMoveEvent) =>
             {
-                currentDay.highValue = timeModule.DaysPerYear - 1;
+                currentDay.highValue = timeModule.DaysPerYear;
             });
 
             return root;

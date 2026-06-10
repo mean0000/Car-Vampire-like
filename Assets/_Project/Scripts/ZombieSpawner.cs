@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using Run;
 
 public class ZombieSpawner : MonoBehaviour
 {
@@ -15,6 +16,12 @@ public class ZombieSpawner : MonoBehaviour
     [SerializeField] int maxZombies = 25;
     [SerializeField] float spawnInterval = 2f;
     [SerializeField] float backfillInterval = 0.3f;   // ★ 최소인구 미달 시 빠른 보충 간격
+
+    [Header("Escalation (익스트랙션 루프 — 디렉터 seam)")]
+    [Tooltip("경과 시간→초당 스폰 곡선. 지정 시 spawnInterval 대신 이 커브로 스폰율 결정. " +
+             "비우면 기존 고정 spawnInterval 사용.")]
+    [SerializeField] Run.EscalationProfile escalationProfile;
+    float _missionElapsed;   // 미션 경과 시간(스폰율 평가용). InMission일 때만 누적.
 
     [Header("Spawn Radius")]
     [SerializeField] float minSpawnRadius = 20f;
@@ -55,8 +62,26 @@ public class ZombieSpawner : MonoBehaviour
         CleanupDead();
         DespawnFar();
 
+        // RunPhase 게이트: InMission/Extracting에만 스폰. RunManager가 없으면(테스트 씬 등) 항상 스폰.
+        var rm = RunManager.Instance;
+        if (rm != null)
+        {
+            bool active = rm.Phase == RunManager.RunPhase.InMission
+                       || rm.Phase == RunManager.RunPhase.Extracting;
+            if (!active) return;
+            _missionElapsed += Time.deltaTime;
+        }
+
+        // 스폰 간격: EscalationProfile이 있으면 경과 시간 커브(초당 스폰 수)에서 도출, 없으면 고정값.
+        float interval = spawnInterval;
+        if (escalationProfile != null)
+        {
+            float sps = escalationProfile.SpawnsPerSecondAt(_missionElapsed);
+            interval = sps > 0.0001f ? 1f / sps : spawnInterval;
+        }
+
         _timer += Time.deltaTime;
-        if (_timer >= spawnInterval && _activeZombies.Count < maxZombies)
+        if (_timer >= interval && _activeZombies.Count < maxZombies)
         {
             _timer = 0f;
             SpawnOne();

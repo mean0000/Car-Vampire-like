@@ -93,7 +93,8 @@ public class ZombieController : MonoBehaviour
         _rb.interpolation = RigidbodyInterpolation.Interpolate;
 
         var col = GetComponent<Collider>();
-        _groundOffset = col.bounds.center.y - col.bounds.min.y;
+        // 피벗→콜라이더 바닥 거리. 리그 피벗=발(콜라이더 center y>0)이라 center 기준이 아닌 피벗 기준이어야 접지됨
+        _groundOffset = transform.position.y - col.bounds.min.y;
 
         _springScale = GetComponent<MMSpringScale>();
         _animator = GetComponent<Animator>();
@@ -495,6 +496,7 @@ public class ZombieController : MonoBehaviour
         SpawnXPOrbs();
         CraftingSystem.Instance?.NotifyKill(transform.position);
         RunStats.Instance?.AddKill();
+        HarvestStrain();
         Destroy(gameObject);
     }
 
@@ -509,6 +511,7 @@ public class ZombieController : MonoBehaviour
         SpawnXPOrbs();
         CraftingSystem.Instance?.NotifyKill(transform.position);
         RunStats.Instance?.AddKill();
+        HarvestStrain();
 
         // 히트스탑은 스윙당 1회만 내야 한다(다중킬 스택 방지) → MeleeAttacker.Swing이 소유.
         // 여기선 형태(squash)·런치만 무기별로 차등.
@@ -552,6 +555,16 @@ public class ZombieController : MonoBehaviour
             var orb = obj.GetComponent<XPOrb>();
             if (orb != null) orb.Init(burstDir, _player);
         }
+    }
+
+    /// <summary>익스트랙션 루프: 사망 시 strain 1개 수확. config에 지정이 없으면 RunManager 기본(생체 1성).</summary>
+    void HarvestStrain()
+    {
+        if (Run.RunHarvest.Instance == null) return;
+        var def = _config != null ? _config.strainDrop : null;
+        if (def == null && Meta.MetaProgress.Instance != null)
+            def = Meta.MetaProgress.Instance.BioStrain;
+        if (def != null) Run.RunHarvest.Instance.Add(def, 1);
     }
 
     // ──────────── Signal Zombie ────────────
