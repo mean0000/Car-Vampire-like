@@ -846,7 +846,7 @@ public class ZombieController : MonoBehaviour
         else Flinch();
     }
 
-    /// <summary>방향/넉백 없는 일반 피해(DoT 등). 기본 죽음 연출 사용.</summary>
+    /// <summary>방향/넉백 없는 일반 피해(DoT 등). 기본 죽음 연출 사용(비산 방향은 전방 반대 폴백).</summary>
     public void TakeDamage(int amount) => TakeBulletHit(amount, Vector3.zero, 0f, 0f, BulletHitTier.NearMiss, false);
 
     /// <summary>
@@ -865,7 +865,7 @@ public class ZombieController : MonoBehaviour
 
         if (_currentHP <= 0)
         {
-            Die(hitStop * 2.5f);   // 킬샷: 일반 30~50ms → 80~120ms급 프리즈
+            Die(hitDir, hitStop * 2.5f);   // 킬샷: 일반 30~50ms → 80~120ms급 프리즈 후 스펙터클
             return;
         }
 
@@ -934,10 +934,11 @@ public class ZombieController : MonoBehaviour
     }
 
     /// <summary>
-    /// 사망. corpseStop 동안 시체를 프리즈(킬 히트스탑 — 피격자만)한 뒤 제거.
+    /// 사망 — 죽음의 스펙터클(디자인 나침반 §3.1): corpseStop 프리즈(킬 히트스탑 — 피격자만)
+    /// → 머리/모자 팝(터짐) → 쓰러짐 → 시체 잔류 → 시안 와해(디스폰=정화). ZombieDeathFX가 잔류·와해 관리.
     /// 전역 MMTimeScale 제거(combat-texture-foundation §6.2 통합 경로) — 세계는 계속 흐른다.
     /// </summary>
-    void Die(float corpseStop = 0f)
+    void Die(Vector3 hitDir, float corpseStop = 0f)
     {
         _dead = true;
         _state = ZombieState.Dead;
@@ -958,12 +959,42 @@ public class ZombieController : MonoBehaviour
             if (_player != null)
                 PlayerCameraRig.Instance?.TriggerPunchIn(transform.position - _player.position, KillPunchIn);
         }
+        ZombieDeathFX.PlayKillRing(transform.position);   // "죽였다"의 확인 신호 — 클램프 없음(위치별 정보)
 
         SpawnXPOrbs();
         CraftingSystem.Instance?.NotifyKill(transform.position);
         RunStats.Instance?.AddKill();
         HarvestStrain();
-        Destroy(gameObject, Mathf.Max(0.01f, corpseStop));
+
+        Vector3 dir = hitDir; dir.y = 0f;
+        if (dir.sqrMagnitude < 0.0001f) dir = -transform.forward;
+        StartCoroutine(DeathSpectacle(dir.normalized, Mathf.Max(0f, corpseStop)));
+        Destroy(gameObject, 12f);   // 스펙터클 경로가 끊겨도(트윈/코루틴 중단) 확실히 제거되는 안전망
+    }
+
+    /// <summary>킬 프리즈 → 머리 팝 → 쓰러짐 → 시체 등록(잔류·와해는 ZombieDeathFX 소관).</summary>
+    System.Collections.IEnumerator DeathSpectacle(Vector3 dir, float corpseStop)
+    {
+        if (corpseStop > 0f) yield return new WaitForSeconds(corpseStop);
+        ZombieDeathFX.PopHead(this, dir);
+        LieDown(dir);
+        ZombieDeathFX.RegisterCorpse(this);
+    }
+
+    /// <summary>쓰러짐 — 타격 방향으로 살짝 밀리며 눕는다(시체 잔류의 시작).</summary>
+    void LieDown(Vector3 dir)
+    {
+        if (_visual != null)
+        {
+            _visual.DOKill();
+            _visual.DOLocalRotate(new Vector3(-85f, 0f, 0f), 0.35f).SetEase(Ease.OutQuad);
+        }
+        dir.y = 0f;
+        if (dir.sqrMagnitude > 0.0001f)
+        {
+            transform.DOKill();
+            transform.DOMove(transform.position + dir.normalized * 0.4f, 0.3f).SetEase(Ease.OutQuad);
+        }
     }
 
     /// <summary>무기별 죽음 연출(형태/멈춤/런치 차등). 킬 프리즈 후 시체를 넉백 방향으로 날린 뒤 제거.</summary>
@@ -1004,15 +1035,23 @@ public class ZombieController : MonoBehaviour
         // 근접 킬도 같은 클램프 창에서 카메라 펀치인(사운드는 MeleeSfx 소관이라 여기선 카메라만).
         if (TryConsumeKillFeedback() && _player != null)
             PlayerCameraRig.Instance?.TriggerPunchIn(transform.position - _player.position, KillPunchIn);
+        ZombieDeathFX.PlayKillRing(transform.position);
 
         // 킬 프리즈(corpseStop) 동안 멈췄다가 런치 — "맞는 순간 멈추고, 풀리며 날아간다".
+        // 런치가 끝나면 죽음의 스펙터클(머리 팝→쓰러짐→시체 잔류→와해)로 합류.
         Vector3 launchTarget = transform.position + launchDir * launchDist;
         if (style == WeaponLoadout.DeathStyle.Crunch) launchTarget += Vector3.up * 0.5f;
         transform.DOKill();
         transform.DOMove(launchTarget, 0.25f).SetEase(Ease.OutQuad)
             .SetDelay(Mathf.Max(0f, corpseStop))
-            .OnComplete(() => Destroy(gameObject));
-        Destroy(gameObject, 0.6f + Mathf.Max(0f, corpseStop));   // 트윈이 끊겨도 확실히 제거되는 안전망
+            .OnComplete(() =>
+            {
+                if (this == null) return;
+                ZombieDeathFX.PopHead(this, launchDir);
+                LieDown(launchDir);
+                ZombieDeathFX.RegisterCorpse(this);
+            });
+        Destroy(gameObject, 12f);   // 스펙터클 경로가 끊겨도 확실히 제거되는 안전망
     }
 
     void SpawnXPOrbs()

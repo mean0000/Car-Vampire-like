@@ -284,6 +284,7 @@ public class PlayerCombat : MonoBehaviour
         // 3계층 판정/히트스탑 수치 — SO 미와이어링이어도 기본값으로 동작(랩에선 에셋을 꽂아 튜닝).
         if (feel == null) feel = ScriptableObject.CreateInstance<CombatFeelConfig>();
         ZombieController.SetKillFeedbackWindow(feel.killFeedbackWindow);
+        ZombieDeathFX.Configure(feel);   // 죽음의 스펙터클 수치 주입(시체 잔류·머리 팝·킬 링)
 
         // 메타 업그레이드 배율 캐시 + 변경 구독(사무실 구매 시 갱신). Instance가 없으면 1배 폴백.
         RefreshMetaMultipliers();

@@ -32,6 +32,18 @@ public class CombatFeelConfig : ScriptableObject
     [Tooltip("킬 사운드·킬 펀치를 이 시간창(초)당 1회로 클램프. 초과분 병합.")]
     public float killFeedbackWindow = 0.15f;
 
+    [Header("죽음의 스펙터클 — 터짐·쓰러짐·와해 (디자인 나침반 §3.1)")]
+    [Tooltip("머리/모자 팝 비산 거리(m). 20m 카메라에서 읽히려면 과장 필요(아트 검토: 3~4m).")]
+    public float headPopDistance = 3f;
+    [Tooltip("시체 잔류 시간(초) — 쓰러진 채 남아 '무게'를 만든다. 이후 나노봇 와해로 정화.")]
+    public float corpseLinger = 6f;
+    [Tooltip("동시 시체 상한 — 초과하면 오래된 시체부터 와해(호드 성능 보호).")]
+    public int corpseMax = 18;
+    [Tooltip("와해 연출 시간(초) — 시안 버스트 + 축소.")]
+    public float dissolveTime = 0.3f;
+    [Tooltip("킬 링 펄스 최대 지름(m) — '죽였다'의 원거리 확인 신호(시안).")]
+    public float killRingSize = 1.8f;
+
     void OnValidate()
     {
         // 판정 반경의 순서(풀히트 ≤ 스침 ≤ 그레이즈)가 무너지면 계층이 사라진다 — 에디터에서 강제.
