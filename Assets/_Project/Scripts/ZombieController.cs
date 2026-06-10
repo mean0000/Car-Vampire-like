@@ -97,6 +97,8 @@ public class ZombieController : MonoBehaviour
     // 좀비는 SO 미접근 경로(DoT 등)도 있어 마지막 적용값을 static으로 공유한다.
     static float s_lastKillFeedbackTime = -999f;
     static float s_killFeedbackWindow = 0.15f;
+    const float KillPunchIn = 0.18f;   // 킬 카메라 펀치인 크기(m) — 카메라 명세 §충격
+
     /// <summary>PlayerCombat이 CombatFeelConfig 값으로 1회 동기화.</summary>
     public static void SetKillFeedbackWindow(float window) => s_killFeedbackWindow = Mathf.Max(0f, window);
     static bool TryConsumeKillFeedback()
@@ -948,9 +950,13 @@ public class ZombieController : MonoBehaviour
 
         if (killParticlePrefab != null)
             Instantiate(killParticlePrefab, transform.position, Quaternion.identity);
-        // 킬 사운드는 시간창당 1회 클램프 — 대량 정화에서 오디오 폭주 방지(§6.2).
-        if (killSound != null && TryConsumeKillFeedback())
-            AudioSource.PlayClipAtPoint(killSound, transform.position);
+        // 킬 피드백(사운드+카메라 펀치인)은 시간창당 1회 클램프 — 대량 정화에서 발작 방지(§6.2).
+        if (TryConsumeKillFeedback())
+        {
+            if (killSound != null) AudioSource.PlayClipAtPoint(killSound, transform.position);
+            if (_player != null)
+                PlayerCameraRig.Instance?.TriggerPunchIn(transform.position - _player.position, KillPunchIn);
+        }
 
         SpawnXPOrbs();
         CraftingSystem.Instance?.NotifyKill(transform.position);
@@ -994,6 +1000,9 @@ public class ZombieController : MonoBehaviour
         _springScale?.Bump(squash);
         if (killParticlePrefab != null)
             Instantiate(killParticlePrefab, transform.position, Quaternion.identity);
+        // 근접 킬도 같은 클램프 창에서 카메라 펀치인(사운드는 MeleeSfx 소관이라 여기선 카메라만).
+        if (TryConsumeKillFeedback() && _player != null)
+            PlayerCameraRig.Instance?.TriggerPunchIn(transform.position - _player.position, KillPunchIn);
 
         // 킬 프리즈(corpseStop) 동안 멈췄다가 런치 — "맞는 순간 멈추고, 풀리며 날아간다".
         Vector3 launchTarget = transform.position + launchDir * launchDist;

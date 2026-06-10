@@ -1878,7 +1878,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3855839344179066007, guid: 9a118a53adef55a479045a26c28f920e, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3855839344179066007, guid: 9a118a53adef55a479045a26c28f920e, type: 3}
       propertyPath: m_Shadows.m_Type
@@ -11047,12 +11047,18 @@ MonoBehaviour:
   target: {fileID: 0}
   aimSource: {fileID: 0}
   leadFraction: 0.4
-  leadMaxDistance: 5
+  leadMaxDistance: 4
+  aimLeadBoost: 1.35
   velocityLeadTime: 0
   velocityLeadMax: 2
-  followSmoothTime: 1
+  followSmoothTime: 0.18
+  aimFovDrop: 2.5
+  aimBlendSpeed: 6
   shakeDamping: 12
   shakeFrequency: 22
+  kickDecay: 20
+  punchDecay: 14
+  impulseTotalCap: 0.5
 --- !u!1 &766109816
 GameObject:
   m_ObjectHideFlags: 0
@@ -15388,7 +15394,8 @@ MonoBehaviour:
   wallFlashColor: {r: 3.5, g: 4.5, b: 6, a: 1}
   sparkColor: {r: 9, g: 7.5, b: 3.5, a: 1}
   sparkBurstCount: 16
-  fireShake: 0
+  fireShake: 0.06
+  fireKick: 0.1
   zombieHitOverride: {fileID: 0}
   wallHitOverride: {fileID: 0}
   overrideLifetime: 2

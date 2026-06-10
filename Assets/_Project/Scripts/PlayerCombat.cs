@@ -127,7 +127,9 @@ public class PlayerCombat : MonoBehaviour
     [Tooltip("명중 1회당 튀는 스파크 줄기 개수.")]
     [SerializeField, Min(1)] int sparkBurstCount = 16;
     [Tooltip("발사 시 카메라 쉐이크 세기(m). 작게 — 연사 시 잔잔한 럼블. 샷건은 자동 2배.")]
-    [SerializeField, Min(0f)] float fireShake = 0f;
+    [SerializeField, Min(0f)] float fireShake = 0.06f;
+    [Tooltip("발사 시 카메라 킥(m) — 반동 반대 방향으로 밀렸다 복귀. 묵직함의 주력 채널. 샷건은 자동 1.8배.")]
+    [SerializeField, Min(0f)] float fireKick = 0.1f;
 
     [Header("Impact Override (선택 — 채우면 코드 플래시 대신 이 프리팹 사용)")]
     [Tooltip("좀비 명중 이펙트 프리팹. 비우면 위 코드 플래시 사용. ⚠️URP 호환 셰이더만(BIRP 프리팹은 핑크).")]
@@ -877,7 +879,9 @@ public class PlayerCombat : MonoBehaviour
         PlayFlash(muzzleTip, muzzleFlashColor, muzzleFlashSize, muzzleFlashTime);   // 총구 화염(임팩트 풀 재사용, 더 짧게)
         TriggerMuzzle(muzzleTip);                                                   // 주위 밝기(라이트)
         PlayShotSound();
-        PlayerCameraRig.Instance?.TriggerShake(_gunClass == GunSfx.GunClass.Shotgun ? fireShake * 2f : fireShake);   // 발사 화면 펀치(샷건 강하게)
+        // 발사 화면 반응: 방향성 킥(반동 반대 — 묵직함의 주력) + 약한 무방향 쉐이크(샷건 강하게).
+        PlayerCameraRig.Instance?.TriggerKick(-_aimDir, _gunClass == GunSfx.GunClass.Shotgun ? fireKick * 1.8f : fireKick);
+        PlayerCameraRig.Instance?.TriggerShake(_gunClass == GunSfx.GunClass.Shotgun ? fireShake * 2f : fireShake);
     }
 
     /// <summary>머즐 라이트 점멸: 씬에 꽂힌 gunFlashLight가 있으면 그걸, 없으면 코드 라이트를 muzzleTip에서 번쩍.</summary>
