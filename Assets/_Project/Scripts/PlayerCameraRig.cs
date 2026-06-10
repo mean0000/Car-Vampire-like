@@ -98,7 +98,8 @@ public class PlayerCameraRig : MonoBehaviour
     {
         dir.y = 0f;
         if (dir.sqrMagnitude < 0.0001f || magnitude <= 0f) return;
-        _kickOffset += dir.normalized * magnitude;
+        // 입력단에서도 채널 캡 — 출력 클램프만 있으면 내부 누적이 캡 해제 순간 터진다(리뷰 M-1).
+        _kickOffset = Vector3.ClampMagnitude(_kickOffset + dir.normalized * magnitude, impulseTotalCap);
     }
 
     /// <summary>킬 펀치인 — 처치 방향으로 카메라가 미세하게 당겨졌다 복귀("탄이 꽂혔다"의 공감각).</summary>
@@ -106,7 +107,7 @@ public class PlayerCameraRig : MonoBehaviour
     {
         towardDir.y = 0f;
         if (towardDir.sqrMagnitude < 0.0001f || magnitude <= 0f) return;
-        _punchOffset += towardDir.normalized * magnitude;
+        _punchOffset = Vector3.ClampMagnitude(_punchOffset + towardDir.normalized * magnitude, impulseTotalCap);
     }
 
     /// <summary>조준 상태(조준 의식) — 리드 강화 + FOV 미세 수축. 추후 조준 입력에서 구동.</summary>
@@ -118,7 +119,6 @@ public class PlayerCameraRig : MonoBehaviour
     {
         Instance = this;
         _cam = GetComponent<Camera>();
-        _baseFov = _cam.fieldOfView;
 
         // 부모(Player) 리지드 결합이 지연을 상쇄하므로, 월드 트랜스폼을 유지한 채 분리한다.
         if (transform.parent != null) transform.SetParent(null, true);
@@ -133,6 +133,9 @@ public class PlayerCameraRig : MonoBehaviour
 
     void Start()
     {
+        // FOV 베이스는 Start에서 캡처 — 다른 컴포넌트가 Start에서 FOV를 만질 수 있어 Awake 캡처는 이르다(리뷰 M-3).
+        _baseFov = _cam.fieldOfView;
+
         if (target == null) return;
         // 분리 직후의 월드 오프셋 = 기존 프레이밍(높이/뒤로 기운 각도)을 그대로 보존.
         _baseOffset = transform.position - target.position;
@@ -145,7 +148,10 @@ public class PlayerCameraRig : MonoBehaviour
         if (!_ready || target == null) return;
 
         // 슬로모/일시정지와 무관하게 카메라는 실시간 반응(충격 감쇠가 timeScale에 묶이면 답답해진다).
-        float dt = Time.unscaledDeltaTime;
+        // 일시정지(timeScale 0) 중에도 커서 리드가 살아있는 것은 의도 — 사무실/정산은 풀스크린 UI라 무해.
+        // ★unscaled는 maximumDeltaTime 보호를 안 받는다 — ALT+TAB/씬 전환 스파이크에서 SmoothDamp
+        //   속도 상태가 폭주하지 않게 클램프(리뷰 M-2).
+        float dt = Mathf.Min(Time.unscaledDeltaTime, 0.1f);
         if (dt <= 0f) return;
 
         Vector3 p = target.position;

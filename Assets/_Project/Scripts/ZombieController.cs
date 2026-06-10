@@ -951,6 +951,7 @@ public class ZombieController : MonoBehaviour
         if (killParticlePrefab != null)
             Instantiate(killParticlePrefab, transform.position, Quaternion.identity);
         // 킬 피드백(사운드+카메라 펀치인)은 시간창당 1회 클램프 — 대량 정화에서 발작 방지(§6.2).
+        // killSound 미할당 좀비도 창을 소비한다(의도 — 펀치인은 모든 킬의 권리, 창은 공유 예산).
         if (TryConsumeKillFeedback())
         {
             if (killSound != null) AudioSource.PlayClipAtPoint(killSound, transform.position);
