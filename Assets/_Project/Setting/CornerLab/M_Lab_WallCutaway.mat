@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_LKPGhost
-  m_Shader: {fileID: 4800000, guid: 3321a769358cc564a9c3cdb00a077c0f, type: 3}
+  m_Name: M_Lab_WallCutaway
+  m_Shader: {fileID: 4800000, guid: 53c3ce8fa17a95d42a5acbbfe3c8ef68, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -25,8 +25,13 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _Fade: 1
+    - _CutEnd: 1000
+    - _CutStart: 999
+    - _Dissolve: 0
+    - _DissolveFloor: 0.65
+    - _SolidBase: 0.5
+    - _SolidBaseFade: 0.4
     m_Colors:
-    - _BaseColor: {r: 0.62, g: 0.63, b: 0.65, a: 0.42}
+    - _BaseColor: {r: 0.85, g: 0.82, b: 0.8, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

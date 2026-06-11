@@ -15,7 +15,7 @@ MonoBehaviour:
   zombieType: 0
   moveSpeed: 3
   acceleration: 6
-  maxHP: 12
+  maxHP: 2
   sightRange: 12
   sightHalfAngle: 60
   hearingMultiplier: 1
@@ -24,6 +24,33 @@ MonoBehaviour:
   attackDamage: 20
   investigateLookTime: 3
   investigateTimeout: 8
+  perceptionTickInterval: 0.2
+  detectBaseChance: 0.45
+  detectGaugePerTick: 0.34
+  alertThreshold: 0.34
+  detectDecayPerSec: 0.4
+  alertStareTime: 1.5
+  alertApproachSpeedMult: 0.35
+  senseVariance: 0.3
+  gruntRadius: 8
+  flinchDuration: 0.15
+  staggerDuration: 0.4
+  knockdownDuration: 1.5
+  staggerAtHit: 3
+  knockdownAtHit: 6
+  poiseWindow: 2.5
+  resistGrowth: 1.5
+  resistDecayTime: 4
+  downedDamageMult: 1.5
+  lungeRange: 2.6
+  lungeWindup: 0.5
+  lungeSpeed: 9
+  lungeDuration: 0.35
+  lungeRecover: 0.6
+  grappleContactRadius: 1
+  grappleHold: 2.5
+  grappleEscapeStagger: 0.8
+  grappleEscapeKnockback: 4
   isSignalZombie: 0
   signalRadius: 15
   signalDelay: 3
@@ -31,3 +58,4 @@ MonoBehaviour:
   signalCooldown: 15
   xpOrbCountMin: 3
   xpOrbCountMax: 5
+  strainDrop: {fileID: 0}

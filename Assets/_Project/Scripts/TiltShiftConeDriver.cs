@@ -50,6 +50,18 @@ public class TiltShiftConeDriver : MonoBehaviour
     [Tooltip("수렴 완료 시 어둠 추가량 — 마지막 한 단계 더 깊은 집중.")]
     [SerializeField, Range(0f, 0.25f)] float convergedExtraDarken = 0.12f;
 
+    [Header("Info Cone (★2026-06-11 유저 콜: 상시 시야 콘 = 정보 게이트)")]
+    [Tooltip("평시 시각 콘 강도(coneBlend에 곱). 0=구 동작(조준 게이트만). 평시에도 약한 콘이 보여야 조준 수축이 연속적.")]
+    [SerializeField, Range(0f, 1f)] float baseBlend = 0.55f;
+    [Tooltip("평시 콘 밖 어둠(0~1) — 평시 콘이 '보이게' 하는 주 채널(블러·탈색만으론 지각 불가 — 플레이 실측).")]
+    [SerializeField, Range(0f, 0.5f)] float baseOutsideDarken = 0.18f;
+    [Tooltip("평시 정보 콘 반각(도) — 이 밖의 좀비는 '안 보임'(LKP 게이트가 실물 숨김). 시각 콘(35°)보다 넓다.")]
+    [SerializeField, Range(20f, 90f)] float infoBaseHalfAngle = 70f;
+    [Tooltip("조준 시 정보 콘 반각(도). 수렴(8°)까지는 따라가지 않는다 — 측면 정보까지 지우면 불공정.")]
+    [SerializeField, Range(15f, 80f)] float infoAimHalfAngle = 45f;
+    [Tooltip("정보 콘 근접 무조건 가시 반경(uv 단위) — 밀착 위협은 방향 무관 보임(싸구려 죽음 방지).")]
+    [SerializeField, Range(0.05f, 0.35f)] float infoProximityRadius = 0.18f;
+
     static readonly int ConePosId    = Shader.PropertyToID("_TS_ConePos");
     static readonly int ConeParamsId = Shader.PropertyToID("_TS_ConeParams");
     static readonly int ConeExtraId  = Shader.PropertyToID("_TS_ConeExtra");
@@ -67,6 +79,8 @@ public class TiltShiftConeDriver : MonoBehaviour
     float _curBlend;                   // 이번 프레임 실효 블렌드(조준 게이트 반영) — ConeActive 판정 공유
     float _prevConv;                   // 수렴 완료 순간 감지(0.95 교차)용
     float _convPulseT = -10f;          // 완료 플래시 시작 시각(unscaled)
+    float _curInfoHalfAngle = 70f;     // 이번 프레임 실효 정보 콘 반각(조준 블렌드 반영)
+    bool _infoValid;                   // 이번 프레임 콘 상태(uvP/dir) 유효 여부 — 미유효 시 전부 보임 폴백
 
     /// <summary>콘이 실제로 화면에 적용 중인가(조준 게이트 반영). false면 "전부 보이는 상태".</summary>
     public bool ConeActive => _curBlend > 0.01f;
@@ -86,9 +100,28 @@ public class TiltShiftConeDriver : MonoBehaviour
         return ca >= Mathf.Cos((_curHalfAngle + coneFalloff * 0.5f) * Mathf.Deg2Rad);   // 조준 수축 반영
     }
 
+    /// <summary>상시 정보 콘이 판정 가능한 상태인가(드라이버 살아있고 이번 프레임 상태 유효).</summary>
+    public bool InfoConeReady => _infoValid && _cam != null;
+
+    /// <summary>★정보 게이트(2026-06-11 유저 콜): 월드 좌표가 상시 정보 콘 안인가 — 시각 콘과
+    /// 별개 각도(평시 70°/조준 45°). 각도·근접만 본다(벽 LOS는 호출자 몫). 미준비 시 true(전부 보임) 폴백.</summary>
+    public bool IsWorldPosInInfoCone(Vector3 worldPos)
+    {
+        if (!InfoConeReady) return true;
+        Vector3 vp = _cam.WorldToViewportPoint(worldPos);
+        if (vp.z <= 0f) return false;   // 카메라 뒤 — 화면 밖
+        float aspect = _cam.aspect;
+        Vector2 toPix = new Vector2((vp.x - _lastUvP.x) * aspect, vp.y - _lastUvP.y);
+        float d = toPix.magnitude;
+        if (d < infoProximityRadius) return true;   // 밀착 위협 보호
+        float ca = Vector2.Dot(toPix / Mathf.Max(d, 1e-5f), _smoothDir);
+        return ca >= Mathf.Cos((_curInfoHalfAngle + coneFalloff * 0.5f) * Mathf.Deg2Rad);
+    }
+
     void OnEnable()
     {
         _cam = GetComponent<Camera>();
+        _infoValid = false;   // 에디터/플레이 전환 시 스테일 true 잔류 방지(리뷰 M) — 첫 LateUpdate가 재설정
         // 플레이 중엔 항상 게임 카메라가 권위. 에디터(ExecuteAlways)에선 빈 슬롯만 차지(씬뷰 경합 방지 — 리뷰 H-2).
         if (Application.isPlaying || Instance == null) Instance = this;
     }
@@ -97,6 +130,7 @@ public class TiltShiftConeDriver : MonoBehaviour
     {
         Shader.SetGlobalVector(ConeParamsId, Vector4.zero);   // blend 0 → 효과 완전 해제
         Shader.SetGlobalVector(ConeFxId, Vector4.zero);       // 수렴 플래시 잔류 방지(리뷰 L-4)
+        _infoValid = false;                                   // 정보 게이트도 "전부 보임" 폴백
         if (Instance == this) Instance = null;                // 비활성 드라이버의 stale 콘 판정 차단(리뷰 M-4)
     }
     void OnDestroy()                                                           // 도메인 리로드 시 OnDisable 미보장(리뷰 M-2)
@@ -112,9 +146,9 @@ public class TiltShiftConeDriver : MonoBehaviour
         if (_combat == null)
         {
             _combat = FindObjectOfType<PlayerCombat>();
-            if (_combat == null) { Shader.SetGlobalVector(ConeParamsId, Vector4.zero); return; }
+            if (_combat == null) { Shader.SetGlobalVector(ConeParamsId, Vector4.zero); _infoValid = false; return; }
         }
-        if (_cam == null) return;
+        if (_cam == null) { _infoValid = false; return; }
 
         Vector3 origin = _combat.transform.position + Vector3.up * originHeight;
         Vector3 aim = _combat.AimDirection; aim.y = 0f;
@@ -124,7 +158,7 @@ public class TiltShiftConeDriver : MonoBehaviour
         // 아티팩트가 생기지 않게 소프트 클램프).
         Vector3 vpP = _cam.WorldToViewportPoint(origin);
         // 카메라 뒤(z≤0)면 WorldToViewportPoint가 좌표를 미러해 콘이 엉뚱한 곳에 뜬다 — 효과 해제(리뷰 H-2).
-        if (vpP.z <= 0f) { Shader.SetGlobalVector(ConeParamsId, Vector4.zero); return; }
+        if (vpP.z <= 0f) { Shader.SetGlobalVector(ConeParamsId, Vector4.zero); _infoValid = false; return; }
         Vector2 uvP = new Vector2(Mathf.Clamp(vpP.x, 0.1f, 0.9f), Mathf.Clamp(vpP.y, 0.1f, 0.9f));
         _lastUvP = uvP;
 
@@ -150,8 +184,16 @@ public class TiltShiftConeDriver : MonoBehaviour
         float conv = (_rig != null && Application.isPlaying) ? _rig.AimConvergence : 0f;
         // 1단계(블렌드): 35°→22° 수축, 2단계(수렴): 22°→8° 붕괴 — 콘 자체가 수렴 게이지(UI 불필요).
         _curHalfAngle = Mathf.Lerp(Mathf.Lerp(coneHalfAngle, aimConeHalfAngle, aimF), convergedHalfAngle, conv);
-        _curBlend = coneBlend * aimF;
-        float darken = (aimOutsideDarken + convergedExtraDarken * conv) * aimF;
+        // ★2026-06-11 유저 콜(상시 콘): 평시에도 baseBlend만큼 약한 콘이 살아있고, 조준 시 풀 콘으로 블렌드.
+        //   (구 "평시 틸트시프트 포기" 콜을 갱신 — 평시 콘이 있어야 조준 수축이 이질적이지 않다.)
+        //   어둠(darken)은 여전히 조준 게이트 — 평시는 블러/탈색 약간만.
+        _curBlend = coneBlend * Mathf.Lerp(baseBlend, 1f, aimF);
+        // 평시에도 약한 어둠으로 콘이 읽힌다 → 조준 시 깊은 어둠으로 연속 블렌드.
+        float darken = Mathf.Lerp(baseOutsideDarken, aimOutsideDarken + convergedExtraDarken * conv, aimF);
+
+        // 정보 콘(좀비 가시성 게이트) — 시각 콘과 별개 각도. 수렴은 시각만 붕괴, 정보는 조준 각 유지.
+        _curInfoHalfAngle = Mathf.Lerp(infoBaseHalfAngle, infoAimHalfAngle, aimF);
+        _infoValid = true;
 
         float cosInner = Mathf.Cos(_curHalfAngle * Mathf.Deg2Rad);
         float cosOuter = Mathf.Cos((_curHalfAngle + coneFalloff) * Mathf.Deg2Rad);

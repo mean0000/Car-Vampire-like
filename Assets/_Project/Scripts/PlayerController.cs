@@ -252,7 +252,8 @@ public class PlayerController : MonoBehaviour
         // 입력을 떼도 감속 꼬리가 남으므로 속도가 살아있는 동안 위치·지면 갱신.
         if (_velocity.sqrMagnitude > 0.0001f)
         {
-            Vector3 next = transform.position + _velocity * Time.deltaTime;
+            // 벽 통과 방지(2026-06-11): 대시와 같은 Obstacle 마스크로 경로를 막고, 벽면을 따라 미끄러진다.
+            Vector3 next = transform.position + WallGuardedStep(_velocity * Time.deltaTime);
             next.y = SampleGroundHeight(next) + _groundOffset;
             transform.position = next;
         }
@@ -266,6 +267,55 @@ public class PlayerController : MonoBehaviour
         else noiseLevel = walkNoiseLevel;
         NoiseManager.Instance?.SetMovementNoise(noiseLevel);
     }
+
+    /// <summary>일반 이동 벽 가드 — 진행 경로가 막히면 벽 앞까지만 가고, 남은 분량은 벽면을 따라
+    /// 슬라이드(코너에서 끈적하게 멈추지 않게). 스피어캐스트라 몸 반경(DashBodyRadius)이 자연 반영.</summary>
+    Vector3 WallGuardedStep(Vector3 step)
+    {
+        float dist = step.magnitude;
+        if (dist < 1e-5f) return step;
+        Vector3 dir = step / dist;
+        Vector3 origin = transform.position + Vector3.up * 0.5f;
+
+        // 초기 겹침 탈출(리뷰 H): SphereCast는 시작 시점에 겹친 콜라이더를 무시한다 —
+        // 이미 벽 안이면(레거시 통과 잔재·텔레포트) 밀어내기 벡터를 먼저 더해 빠져나온다.
+        Collider[] overlaps = Physics.OverlapSphere(origin, DashBodyRadius, dashObstacleMask, QueryTriggerInteraction.Ignore);
+        if (overlaps.Length > 0)
+        {
+            var self = GetComponent<Collider>();
+            foreach (var col in overlaps)
+            {
+                if (Physics.ComputePenetration(self, transform.position, transform.rotation,
+                        col, col.transform.position, col.transform.rotation,
+                        out Vector3 pushDir, out float pushDist))
+                {
+                    Vector3 push = pushDir * (pushDist + SkinWidth);
+                    push.y = 0f;
+                    step += push;
+                }
+            }
+            return step;   // 이번 프레임은 탈출 우선 — 다음 프레임부터 정상 가드
+        }
+
+        if (!Physics.SphereCast(origin, DashBodyRadius, dir, out RaycastHit hit,
+                dist + SkinWidth, dashObstacleMask, QueryTriggerInteraction.Ignore))
+            return step;
+
+        float allowed = Mathf.Max(0f, hit.distance - SkinWidth);
+        Vector3 moved = dir * allowed;
+
+        // 남은 이동을 벽 접면으로 투영 — 한 번 더 차단 검사(안쪽 코너 끼임 방지).
+        Vector3 slide = Vector3.ProjectOnPlane(step - moved, hit.normal);
+        slide.y = 0f;
+        if (slide.sqrMagnitude > 1e-6f &&
+            !Physics.SphereCast(origin + moved, DashBodyRadius, slide.normalized, out _,
+                slide.magnitude + SkinWidth, dashObstacleMask, QueryTriggerInteraction.Ignore))
+            moved += slide;
+
+        return moved;
+    }
+
+    const float SkinWidth = 0.05f;   // 벽면 밀착 여유 — 0이면 다음 프레임 캐스트가 내부에서 시작
 
     void TryStartDash(Vector3 input)
     {
@@ -296,11 +346,12 @@ public class PlayerController : MonoBehaviour
         float step = dashSpeed * dt;
 
         // 벽 통과 방지: 진행 경로에 장애물이 있으면 그 앞까지만 이동하고 대시 즉시 종료.
+        // (리뷰 반영: 중심 레이→스피어캐스트 — 몸 반경이 얇은 벽 모서리를 비껴 뚫는 것 방지)
         bool wallHit = false;
         Vector3 origin = transform.position + Vector3.up * 0.5f;
-        if (Physics.Raycast(origin, _dashDir, out RaycastHit hit, step + DashBodyRadius, dashObstacleMask, QueryTriggerInteraction.Ignore))
+        if (Physics.SphereCast(origin, DashBodyRadius, _dashDir, out RaycastHit hit, step + SkinWidth, dashObstacleMask, QueryTriggerInteraction.Ignore))
         {
-            step = Mathf.Max(0f, hit.distance - DashBodyRadius);
+            step = Mathf.Max(0f, hit.distance - SkinWidth);
             _dashTimer = 0f;   // 벽에 막히면 더 밀지 않는다
             wallHit = true;
         }

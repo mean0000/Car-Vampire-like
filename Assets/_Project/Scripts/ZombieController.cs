@@ -1140,14 +1140,15 @@ public class ZombieController : MonoBehaviour
         }
     }
 
-    /// <summary>익스트랙션 루프: 사망 시 strain 1개 수확. config에 지정이 없으면 RunManager 기본(생체 1성).</summary>
+    /// <summary>익스트랙션 루프: 사망 시 strain 수확. config에 지정이 없으면 RunManager 기본(생체 1성).
+    /// E-001: 깊이 가중(랩 A+1/B+2/C+3) — LabDepthStrain이 씬에 없으면 기존대로 1.</summary>
     void HarvestStrain()
     {
         if (Run.RunHarvest.Instance == null) return;
         var def = _config != null ? _config.strainDrop : null;
         if (def == null && Meta.MetaProgress.Instance != null)
             def = Meta.MetaProgress.Instance.BioStrain;
-        if (def != null) Run.RunHarvest.Instance.Add(def, 1);
+        if (def != null) Run.RunHarvest.Instance.Add(def, Run.LabDepthStrain.WeightAt(transform.position));
     }
 
     // ──────────── Signal Zombie ────────────

@@ -162,8 +162,8 @@ namespace Run
             var meta = MetaProgress.Instance;
             var strain = meta != null ? meta.BioStrain : null;
             int n = (_harvest != null && strain != null) ? _harvest.Count(strain) : 0;
-            string label = strain != null ? strain.DisplayName : "생체";
-            harvestLabel.text = $"{label} strain: {n}";
+            // 렉시콘 v1.4: 인게임 표기 = "메모리" (개발 용어 strain은 코드에만).
+            harvestLabel.text = $"메모리: {n}";
         }
 
         void HandleRunSettled(SettlementReport report)
@@ -177,8 +177,13 @@ namespace Run
             if (settlementBody != null)
             {
                 string flavor = OutcomeFlavor(report.outcome);
+                // E-001: 사망 시 소실 사실 1줄 — "잃었음이 보여야 판돈이다"(스펙 §요소2).
+                string lossLine = report.outcome == RunManager.RunOutcome.Died
+                    ? $"메모리 {report.totalHarvested}개 소실\n\n"
+                    : "";
                 settlementBody.text =
                     $"{flavor}\n\n" +
+                    lossLine +
                     $"금일 회수 실적: {report.totalHarvested}\n" +
                     $"본부 입금 처리: {report.totalDeposited}\n" +
                     $"누적 보유 strain: {balance}";
