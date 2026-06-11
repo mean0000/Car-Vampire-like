@@ -65,6 +65,8 @@ public class ZombieDeathFX : MonoBehaviour
     Transform[] _ringTr;
     MeshRenderer[] _ringMR;
     float[] _ringTimer;
+    float[] _ringLife;    // 링별 수명(수렴 킬=연장)
+    float[] _ringScale;   // 링별 최대 지름(수렴 킬=대형)
     const float RingLife = 0.22f;
     MaterialPropertyBlock _mpb;
     int _ringEvict;
@@ -93,6 +95,8 @@ public class ZombieDeathFX : MonoBehaviour
         _ringTr = new Transform[RingPoolSize];
         _ringMR = new MeshRenderer[RingPoolSize];
         _ringTimer = new float[RingPoolSize];
+        _ringLife = new float[RingPoolSize];
+        _ringScale = new float[RingPoolSize];
         for (int i = 0; i < RingPoolSize; i++)
         {
             var go = new GameObject("KillRing" + i);
@@ -125,14 +129,15 @@ public class ZombieDeathFX : MonoBehaviour
 
     // ──────────── 공개 API (전부 static — 호출부 단순) ────────────
 
-    /// <summary>킬 링 펄스 — 모든 킬의 확인 신호(클램프 없음: 위치별이라 겹쳐도 정보).</summary>
-    public static void PlayKillRing(Vector3 pos) => Get().RingAt(pos);
+    /// <summary>킬 링 펄스 — 모든 킬의 확인 신호(클램프 없음: 위치별이라 겹쳐도 정보).
+    /// converged = 수렴샷 킬: 대형(×1.95)+긴 수명+0.08s 뒤 메아리 링 — "이 에너지가 주변을 쓸었다".</summary>
+    public static void PlayKillRing(Vector3 pos, bool converged = false) => Get().RingAt(pos, converged);
 
     /// <summary>
     /// 머리/모자 팝 — 머리 계열 SMR을 현재 포즈로 베이크해 분리 프롭으로 날리고 원본은 끈다.
-    /// dir = 비산 기준 방향(탄/타격 방향). 실패해도(메시 미발견) 조용히 무시.
+    /// dir = 비산 기준 방향(탄/타격 방향). converged = 수렴샷 킬: 비산 거리·스핀·버스트 과장(탄도 방향이 공간에 써진다).
     /// </summary>
-    public static void PopHead(ZombieController zombie, Vector3 dir) => Get().PopHeadInternal(zombie, dir);
+    public static void PopHead(ZombieController zombie, Vector3 dir, bool converged = false) => Get().PopHeadInternal(zombie, dir, converged);
 
     /// <summary>시체 등록 — 잔류 후 와해. 상한 초과 시 오래된 시체부터 즉시 와해.</summary>
     public static void RegisterCorpse(ZombieController corpse) => Get().RegisterCorpseInternal(corpse);
@@ -147,14 +152,35 @@ public class ZombieDeathFX : MonoBehaviour
 
     // ──────────── 내부 구현 ────────────
 
-    void RingAt(Vector3 pos)
+    void RingAt(Vector3 pos, bool converged = false)
+    {
+        if (converged)
+        {
+            // 수렴 킬: 대형 본 링 + 0.08s 뒤 메아리 링(빠르고 작게) — 충격파의 2박자.
+            SpawnRing(pos, s_killRingSize * 1.95f, RingLife * 1.6f);
+            StartCoroutine(EchoRing(pos));
+        }
+        else SpawnRing(pos, s_killRingSize, RingLife);
+    }
+
+    System.Collections.IEnumerator EchoRing(Vector3 pos)
+    {
+        // 실시간 대기 — 히트스탑(timeScale 0.05) 중에도 "2박자 충격파" 간격이 설계값(리뷰 F-2).
+        yield return new WaitForSecondsRealtime(0.08f);
+        if (this == null) yield break;   // 씬 전환 중 파괴 방어
+        SpawnRing(pos, s_killRingSize * 1.55f, RingLife * 1.2f);
+    }
+
+    void SpawnRing(Vector3 pos, float scale, float life)
     {
         int idx = -1;
         for (int i = 0; i < RingPoolSize; i++)
             if (_ringTimer[i] <= 0f) { idx = i; break; }
         if (idx < 0) { idx = _ringEvict; _ringEvict = (_ringEvict + 1) % RingPoolSize; }
 
-        _ringTimer[idx] = RingLife;
+        _ringTimer[idx] = life;
+        _ringLife[idx] = life;
+        _ringScale[idx] = scale;
         _ringTr[idx].position = pos + Vector3.up * 0.9f;
         _ringTr[idx].localScale = Vector3.zero;
         _ringMR[idx].gameObject.SetActive(true);
@@ -172,9 +198,9 @@ public class ZombieDeathFX : MonoBehaviour
             _ringTimer[i] -= dt;
             if (_ringTimer[i] <= 0f) { _ringMR[i].gameObject.SetActive(false); continue; }
 
-            float t = 1f - _ringTimer[i] / RingLife;               // 0→1
+            float t = 1f - _ringTimer[i] / Mathf.Max(0.01f, _ringLife[i]);   // 0→1 (링별 수명)
             float pop = 1f - (1f - t) * (1f - t);                   // ease-out 팽창
-            _ringTr[i].localScale = Vector3.one * (s_killRingSize * pop);
+            _ringTr[i].localScale = Vector3.one * (_ringScale[i] * pop);
             Vector3 to = _ringTr[i].position - camPos;
             if (to.sqrMagnitude > 1e-6f) _ringTr[i].rotation = Quaternion.LookRotation(to);
 
@@ -185,12 +211,16 @@ public class ZombieDeathFX : MonoBehaviour
         }
     }
 
-    void PopHeadInternal(ZombieController zombie, Vector3 dir)
+    void PopHeadInternal(ZombieController zombie, Vector3 dir, bool converged = false)
     {
         if (zombie == null) return;
         dir.y = 0f;
         if (dir.sqrMagnitude < 0.0001f) dir = -zombie.transform.forward;
         dir.Normalize();
+
+        // 수렴 킬 과장 계수 — 탑다운 15m에서 "방향으로 날았다"가 읽히려면 4~5m 비산 필요(art 판정).
+        float distMult = converged ? 1.7f : 1f;
+        float spinMult = converged ? 1.6f : 1f;
 
         var smrs = zombie.GetComponentsInChildren<SkinnedMeshRenderer>(true);
         foreach (var smr in smrs)
@@ -215,11 +245,13 @@ public class ZombieDeathFX : MonoBehaviour
                 mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
                 // 포물선 비산(과장 — 20m 카메라 가독) + 랜덤 스핀. 물리 없이 트윈(시체와 동일한 수명 관리).
-                Vector3 scatter = Quaternion.Euler(0f, Random.Range(-35f, 35f), 0f) * dir;
-                Vector3 target = prop.transform.position + scatter * (s_headPopDistance * Random.Range(0.8f, 1.2f));
+                // 수렴 킬: 산포각을 좁혀(±35→±15°) 탄도 방향성이 또렷하게 — "어디서 맞았는지"가 공간에 써진다.
+                float scatterArc = converged ? 15f : 35f;
+                Vector3 scatter = Quaternion.Euler(0f, Random.Range(-scatterArc, scatterArc), 0f) * dir;
+                Vector3 target = prop.transform.position + scatter * (s_headPopDistance * distMult * Random.Range(0.8f, 1.2f));
                 target.y = zombie.transform.position.y + 0.15f;   // 바닥 근처로 착지
                 prop.transform.DOJump(target, Random.Range(1.2f, 1.8f), 1, 0.55f).SetEase(Ease.Linear);
-                prop.transform.DORotate(new Vector3(Random.Range(180f, 540f), Random.Range(-180f, 180f), 0f), 0.55f, RotateMode.FastBeyond360);
+                prop.transform.DORotate(new Vector3(Random.Range(180f, 540f) * spinMult, Random.Range(-180f, 180f), 0f), 0.55f, RotateMode.FastBeyond360);
 
                 _props.Add(prop);
                 StartCoroutine(DissolveProp(prop, s_corpseLinger * Random.Range(0.7f, 1f)));
@@ -227,10 +259,10 @@ public class ZombieDeathFX : MonoBehaviour
 
             smr.gameObject.SetActive(false);   // 원본 머리는 끈다 — 목 스텀프(Body 메시)가 남는다
         }
-        // 터지는 순간의 시안 버스트 — 절단면의 나노봇 와해(세계관: 고어가 아니라 정화).
+        // 터지는 순간의 시안 버스트 — 절단면의 나노봇 와해(세계관: 고어가 아니라 정화). 수렴 킬은 2배 가까이.
         var headPos = zombie.transform.position + Vector3.up * 1.6f;
         _burstPS.transform.position = headPos;
-        _burstPS.Emit(18);
+        _burstPS.Emit(converged ? 34 : 18);
     }
 
     void RegisterCorpseInternal(ZombieController corpse)

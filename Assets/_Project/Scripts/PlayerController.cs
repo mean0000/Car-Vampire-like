@@ -27,6 +27,8 @@ public class PlayerController : MonoBehaviour
 
     [Header("Dash (빠른 회피 버스트 + 잔상)")]
     [SerializeField] KeyCode dashKey = KeyCode.Space;
+    [Tooltip("조준/주시(우클릭 홀드) 중 이동 속도 배율 — 의식의 비용. 보장 원샷과 반드시 짝(pm 판정).")]
+    [SerializeField, Range(0.2f, 1f)] float aimMoveMultiplier = 0.5f;
     [Tooltip("대시 중 순간 속도(m/s). 거리 ≈ 이값 × dashDuration.")]
     [SerializeField] float dashSpeed = 28f;
     [Tooltip("대시 지속 시간(초). 짧을수록 순간이동에 가깝게 톡.")]
@@ -231,6 +233,10 @@ public class PlayerController : MonoBehaviour
 
         float mult = crouching ? crouchMultiplier : (running ? runMultiplier : 1f);
         mult *= PlayerStats.MoveSpeedMult;   // 경량화 카드 반영
+
+        // 조준/주시 중 이동 둔화(B-009) — 의식의 비용이자 보장 원샷의 균형 짝(카이팅 치즈 방지).
+        if (PlayerCameraRig.Instance != null)
+            mult *= Mathf.Lerp(1f, aimMoveMultiplier, PlayerCameraRig.Instance.AimBlend);
 
         // 목표 속도 = 입력 방향 × 현재 속도. 입력 없으면 0(감속해 정착).
         Vector3 targetVel = input * (moveSpeed * mult);

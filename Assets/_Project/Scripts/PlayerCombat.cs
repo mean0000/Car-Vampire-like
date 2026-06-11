@@ -26,9 +26,9 @@ public class PlayerCombat : MonoBehaviour
     [SerializeField] float hitRadius = 0.4f;      // 스피어캐스트 조준 관용
     [SerializeField] float muzzleHeight = 1f;
     [Tooltip("샷건 펠릿이 좀비를 미는 힘(m/s) — 강한 푸시.")]
-    [SerializeField, Min(0f)] float bulletKnockback = 5f;
+    [SerializeField, Min(0f)] float bulletKnockback = 6.5f;   // 볼트 A: ×1.3 — 넉백=15m 부감의 피격 가독(실루엣 변위)
     [Tooltip("샷건 외 총(권총·라이플)의 피탄 넉백(m/s). 전진 의지와 충돌 → 연사 받으면 '으그극' 버티며 기어오고, 멈추면 전진. 크면 뒤로 밀리고 작으면 그냥 전진.")]
-    [SerializeField, Min(0f)] float weakKnockback = 3.4f;
+    [SerializeField, Min(0f)] float weakKnockback = 4.4f;   // 볼트 A: ×1.3
     [SerializeField] int magazineSize = 6;        // 미선택 폴백(원거리) 탄창 크기
     [SerializeField] float reloadTime = 1.1f;     // 미선택 폴백(원거리) 재장전 시간
 
@@ -59,23 +59,25 @@ public class PlayerCombat : MonoBehaviour
 
     [Header("Laser Sight (조준 레이저 — 총 들면 상시 표시)")]
     [Tooltip("레이저 선 두께(m). 얇고 어둡게 — 조준 보조용.")]
-    [SerializeField] float laserWidth = 0.025f;
-    [Tooltip("레이저 선 색(어둡게).")]
-    [SerializeField] Color laserColor = new Color(1f, 0.15f, 0.12f, 0.5f);
-    [Tooltip("레이저가 또렷하게 보이는 최대 길이(m). 이 너머는 그려지지 않고 끝부분이 점점 사라진다.")]
-    [SerializeField, Min(0.5f)] float laserLength = 6f;
-    [Tooltip("또렷한 비율(0~1). 이 지점부터 선 끝까지 알파가 0으로 페이드 — 레이저처럼 트레일 오프.")]
-    [SerializeField, Range(0f, 1f)] float laserFadeStart = 0.45f;
+    [SerializeField] float laserWidth = 0.045f;
+    [Tooltip("레이저 선 색 — 정보선(UI)이라 가독 우선. G/B를 거의 0으로 — HDR 가산에서 섞이면 주황으로 번진다(2026-06-11).")]
+    [SerializeField] Color laserColor = new Color(1f, 0.02f, 0.02f, 0.9f);   // 순적색 — G/B 완전 제거
+    [Tooltip("(미사용 — 풀 라인 전환) 과거 레이저 캡 길이(m). Inspector 연결 보존을 위해 필드만 유지.")]
+    [SerializeField, Min(0.5f)] float laserLength = 6f;   // 풀 라인 전환으로 미사용
+    [Tooltip("(미사용 — 풀 라인 전환) 과거 페이드 시작 비율. Inspector 연결 보존을 위해 필드만 유지.")]
+    [SerializeField, Range(0f, 1f)] float laserFadeStart = 0.45f;   // 풀 라인 전환으로 미사용(알파 키 고정 프로필로 대체)
     [Tooltip("착탄점 도트 크기(m).")]
     [SerializeField] float laserDotSize = 0.13f;
     [Tooltip("착탄점 도트 색(레이저보다 밝게).")]
-    [SerializeField] Color laserDotColor = new Color(1f, 0.35f, 0.28f, 0.9f);
+    [SerializeField] Color laserDotColor = new Color(1f, 0.05f, 0.04f, 1f);   // 진한 순적색 — 마커는 정보 UI(2026-06-11)
 
     [Header("Bullet Tracer (날아가는 탄 — 트레일)")]
     [Tooltip("탄 비주얼 속도(m/s). 판정은 즉발이고 이건 연출 전용 — 클수록 즉발에 가깝게 보인다.")]
     [SerializeField, Min(0.001f)] float bulletSpeed = 90f;   // 0이면 머리가 안 나가 트레일이 영구 정지하는 footgun 차단
     [Tooltip("트레일 잔상 지속(초). 길수록 꼬리가 길게 늘어진다.")]
-    [SerializeField, Min(0.01f)] float trailTime = 0.06f;
+    [SerializeField, Min(0.01f)] float trailTime = 0.15f;   // 비행 중 꼬리(짧게) — 잔류 궤적은 트레이서 라인이 담당
+    [Tooltip("쏘는 동시에 남고 빠르게 사라지는 잔광")]
+    [SerializeField, Min(0.1f)] float tracerLingerTime = 0.35f;
     [Tooltip("트레일 머리 두께(m). 꼬리로 갈수록 0으로 가늘어진다.")]
     [SerializeField, Min(0.001f)] float trailWidth = 0.07f;
     [Tooltip("트레일 HDR 색 — 채널>1이면 블룸으로 빛난다(메인 씬 블룸 ON). 따뜻한 예광탄.")]
@@ -111,9 +113,9 @@ public class PlayerCombat : MonoBehaviour
 
     [Header("Impact Flash (명중 플래시 — 코드 생성 · 블룸용 가산 HDR)")]
     [Tooltip("명중 플래시 지속(초). 짧게 팝 — 탄착 순간만 번쩍.")]
-    [SerializeField, Min(0.02f)] float impactFlashTime = 0.12f;
+    [SerializeField, Min(0.02f)] float impactFlashTime = 0.2f;   // 볼트 A: 0.12는 7~8프레임 — 인지 직전에 꺼졌음
     [Tooltip("좀비(살점) 명중 플래시 최대 크기(m).")]
-    [SerializeField, Min(0.01f)] float zombieFlashSize = 0.7f;
+    [SerializeField, Min(0.01f)] float zombieFlashSize = 0.85f;   // 볼트 A
     [Tooltip("벽(스파크) 명중 플래시 최대 크기(m).")]
     [SerializeField, Min(0.01f)] float wallFlashSize = 0.5f;
     [Tooltip("좀비 명중 HDR 색 — 따뜻한 살점 히트. 채널>1이면 블룸으로 빛난다.")]
@@ -130,6 +132,29 @@ public class PlayerCombat : MonoBehaviour
     [SerializeField, Min(0f)] float fireShake = 0.06f;
     [Tooltip("발사 시 카메라 킥(m) — 반동 반대 방향으로 밀렸다 복귀. 묵직함의 주력 채널. 샷건은 자동 1.8배.")]
     [SerializeField, Min(0f)] float fireKick = 0.1f;
+    [Tooltip("카메라 충격 예약제: 발사간격이 이 값(초) 이상인 무거운 단발(또는 산탄)만 카메라를 친다. " +
+             "연사류는 카메라 충격 0 — 손맛은 히트스탑·머즐·사운드 채널 담당(Hades/DOOM 모델). " +
+             "충격 유무 자체가 무기 계열의 촉각 언어(묵직=킥/속사=무킥).")]
+    [SerializeField, Min(0f)] float heavyKickMinCooldown = 0.3f;
+
+    [Header("수렴샷 (B-009 — 정조준 수렴 완료 후의 한 발)")]
+    [Tooltip("수렴샷 데미지 배수. 탄퍼짐도 0이 된다 — '모아서 쏜 한 발'의 기계적 보상.")]
+    [SerializeField, Min(1f)] float convergedDamageMult = 2f;
+    [Tooltip("수렴샷 넉백 배수 — 임팩트의 물리 언어.")]
+    [SerializeField, Min(1f)] float convergedKnockbackMult = 2f;
+    [Tooltip("수렴샷 '풀히트' 순간 전역 히트스탑(초). 연사엔 절대 안 걸림 — 시간의 사다리 최하단(60ms<Zone 0.2s<산데).")]
+    [SerializeField, Range(0f, 0.15f)] float convergedHitStop = 0.06f;
+    [Tooltip("수렴샷 카메라 킥 배수 — 예약제 무관, 의도된 한 발은 항상 묵직.")]
+    [SerializeField, Min(1f)] float convergedKickMult = 1.4f;
+    [Tooltip("수렴샷 '킬' 히트스탑(초) — 일반 명중 60ms와 차별되는 110ms. '이 킬은 달랐다'.")]
+    [SerializeField, Range(0f, 0.2f)] float convergedKillHitStop = 0.11f;
+    [Tooltip("수렴 킬 직후 조준이 강제로 풀리는 시간(초) — 줌이 탁 풀리며 '일이 끝났다'(날숨). 홀드 유지 시 자동 재진입.")]
+    [SerializeField, Min(0f)] float aimReleaseAfterKill = 0.35f;
+
+    float _aimSuppressUntil;                 // 수렴 킬 날숨 — 이 시각(unscaled)까지 조준 억제
+    float _dotHitTimer;                      // 도트 히트마커(볼트 A) — 풀히트 순간 도트 흰색 확대(디제틱 히트마커)
+    Gradient _laserGradDefault;              // 레이저 기본 그라디언트(수렴 신호 후 원복용)
+    static readonly Color ConvergedCyan = new Color(0f, 1f, 0.93f, 0.9f);
 
     [Header("Impact Override (선택 — 채우면 코드 플래시 대신 이 프리팹 사용)")]
     [Tooltip("좀비 명중 이펙트 프리팹. 비우면 위 코드 플래시 사용. ⚠️URP 호환 셰이더만(BIRP 프리팹은 핑크).")]
@@ -140,8 +165,7 @@ public class PlayerCombat : MonoBehaviour
     [SerializeField, Min(0.1f)] float overrideLifetime = 1.2f;
 
     [Header("Aim Trailing (마우스 추종 지연)")]
-    [Tooltip("조준 추종 반응 속도(1/초). 낮을수록 사격 방향(조준선·탄도)이 마우스보다 더 천천히 따라온다. " +
-             "높을수록 즉각. 빠른 스윙 중엔 탄착이 뒤처지므로 정확도에 직접 영향.")]
+    [Tooltip("(미사용 — 즉각 조준 전환 2026-06-11) 과거 조준 추종 반응 속도(1/초). Inspector 연결 보존을 위해 필드만 유지.")]
     [SerializeField, Range(1f, 25f)] float aimResponsiveness = 10f;
 
     [Header("Spread (미선택 폴백)")]
@@ -188,6 +212,8 @@ public class PlayerCombat : MonoBehaviour
 
     [Header("Debug")]
     [SerializeField] KeyCode evolveKey = KeyCode.T;   // 데모용: 방망이 → 쇠지렛대 라이브 진화
+    [Tooltip("보조사격 키. 우클릭은 주시/정조준에 이양(2026-06-11) — Q 임시, 최종 배치는 B-009 게이트에서.")]
+    [SerializeField] KeyCode altFireKey = KeyCode.Q;
     [Tooltip("켜면 숫자키 1/2/3으로 원거리 무기를 라이브 스왑(1=리볼버 2=라이플 3=샷건). 데모 테스트용.")]
     [SerializeField] bool allowWeaponHotswap = true;
 
@@ -197,7 +223,7 @@ public class PlayerCombat : MonoBehaviour
     float _metaDamageMult = 1f;
     float _metaFireRateMult = 1f;
     Vector3 _aimDir = Vector3.forward;
-    bool _aimInitialized;   // 첫 유효 샘플은 스냅(시작 시 forward→커서 스윙 방지)
+    Vector3 _cursorGroundPos;   // 커서의 지면 교차점(즉시값) — 조준 도트의 라인 위 위치(수평 거리) 산출용
 
     // 탄약/재장전 런타임 상태(원거리 전용. _magazine=0이면 무탄약 = 근접).
     int _ammo;
@@ -233,13 +259,33 @@ public class PlayerCombat : MonoBehaviour
     readonly HashSet<ZombieController> _altHits = new HashSet<ZombieController>();   // 개머리판 밀치기 중복타 방지(관통은 발사체별 _bulletHits)
 
     LineRenderer _chargeL, _chargeR;   // 라이플 차지: 레이저 좌우에서 수렴하는 브라켓(차징 중에만)
-    LineRenderer _laserLine, _laserDot;   // 조준 레이저(상시) + 착탄 도트
+    LineRenderer _laserLine, _laserDot;   // 조준 레이저(상시) + 착탄 도트(글로우 도트로 대체 — 영구 비활성)
+    // 글로우 도트 — 임팩트 플래시와 같은 카메라 빌보드 가산 쿼드 + 라디얼 텍스처. _laserDot(뭉툭한 블롭)을 대체.
+    LineRenderer _laserCore;      // 레이저 코어 — 불투명 순적색 실선("진함" 담당, 글로우와 이중 레이어)
+    LineRenderer _aimBarTop, _aimBarMid, _aimBarBot;   // 마우스 마커 王자 — 가로획 3개(상=조준선 높이/중/바닥), 세로획은 _laserDrop
+    Transform _hitDotTr;          // 착탄점 마커(레이저가 닿는 지점의 원형 글로우)
+    MeshRenderer _hitDotMR;
+    Material _hitDotMat;
+    Transform _aimDotTr;
+    MeshRenderer _aimDotMR;
+    Material _aimDotMat;
+    LineRenderer _laserDrop;              // 높이 틱 — 총구 높이에 뜬 조준선을 바닥에 접지시키는 표시(블라인드스팟 문법)
     Gradient _laserGradient;              // 레이저 페이드(또렷→투명) — 1회 생성 캐시
     TrailRenderer[] _tracers;   // 발사체별 날아가는 탄 트레일(이동시키면 streak 자동 생성). BulletPoolSize만큼 풀.
     Material _tracerMat;         // 트레일 공유 가산 HDR 머티리얼(블룸용 — 모든 트레일이 한 머티리얼 공유).
+    Material _tracerMatConverged;   // 수렴샷 전용 시안 HDR 트레일 머티리얼.
+    Material _tracerMatLine;        // 궤적 라인 전용 중성 흰색 HDR — 노란 tracerColor 대신 얇고 하얀 잔광.
 
-    // 발사체 1발의 비행 상태. ★판정은 즉발이 아니라 비행 중(UpdateBullets segment 캐스트) — 탄이 닿아야 명중.
-    struct Bullet { public bool active; public Vector3 pos; public Vector3 dir; public float remaining; public int damage; public bool pierce; public float knockback; }
+    // 블라인드 스팟식 궤적 라인 풀 — 착탄 순간 총구→착탄점 한 줄이 남아 균일 페이드.
+    const int TracerLinePool = 24;
+    LineRenderer[] _tracerLines;
+    float[] _tracerLineAge;      // 경과(초). <0 = 비활성
+    float[] _tracerLineDur;
+    float[] _tracerLineWidth;    // 슬롯별 기본 폭 — 페이드 시 폭도 함께 잦아들게 기록
+    int _tracerLineEvict;
+
+    // 발사체 1발의 상태. ★즉착 — 발사된 프레임에 UpdateBullets가 전체 경로를 세그먼트 캐스트로 판정.
+    struct Bullet { public bool active; public Vector3 pos; public Vector3 dir; public float remaining; public int damage; public bool pierce; public float knockback; public bool converged; public Vector3 origin; }
     Bullet[] _bullets;
     HashSet<ZombieController>[] _bulletHits;   // 슬롯별 관통 중복타 방지(pierce 탄만 사용).
     int _bulletEvict;                          // 풀 고갈 시 라운드로빈 강제 재사용 인덱스(데미지 유실 방지).
@@ -317,19 +363,60 @@ public class PlayerCombat : MonoBehaviour
 
         // 조준 레이저 + 착탄 도트 — 총 들면 상시(매 프레임 _aimDir 따라 갱신). 도트는 둥글게 보이도록 캡 정점↑.
         _laserLine = CreateLine("LaserSight", laserWidth); _laserLine.enabled = false;
-        _laserDot = CreateLine("LaserDot", laserDotSize); _laserDot.numCapVertices = 8; _laserDot.enabled = false;
+        _laserDot = CreateLine("LaserDot", laserDotSize); _laserDot.numCapVertices = 8; _laserDot.enabled = false;   // 글로우 도트로 대체 — 영구 비활성(필드·생성 코드는 보존)
+        // 높이 틱 — 총구 높이에 뜬 조준선을 바닥에 접지시키는 보조선(블라인드스팟 문법). 도트가 주인공, 틱은 속삭임.
+        _laserDrop = CreateLine("LaserDrop", 0.03f); _laserDrop.enabled = false;   // 王자 세로획
+        // 王자 가로획 3개 — 마우스 마커의 UI형 구조(유저 픽 2026-06-11): 높이 정보가 형태에 내장. 진하게(0.04).
+        _aimBarTop = CreateLine("AimBarTop", 0.04f); _aimBarTop.enabled = false;
+        _aimBarMid = CreateLine("AimBarMid", 0.04f); _aimBarMid.enabled = false;
+        _aimBarBot = CreateLine("AimBarBot", 0.04f); _aimBarBot.enabled = false;
 
-        // 레이저 페이드: 시작~laserFadeStart 까지 또렷, 그 뒤 끝까지 알파 0 → 레이저처럼 트레일 오프.
+        // 레이저 이중 레이어(2026-06-11): ①코어=불투명 순적색 실선("진함"·직관 담당, 알파 블렌드)
+        // ②글로우=가산 HDR("발광" 담당). 순적색은 루마 21%라 가산 단독으론 어두워 보임 — 코어가 실체를 만든다.
+        _laserCore = CreateLine("LaserCore", laserWidth * 0.45f);
+        _laserCore.enabled = false;
+        _laserCore.material.renderQueue = 3101;   // 글로우보다 위 — 실선이 또렷하게
+        if (_laserLine.material != null) Destroy(_laserLine.material);
+        _laserLine.material = CreateAdditiveMaterial(new Color(1.6f, 1.6f, 1.6f, 1f));
+        _laserLine.material.renderQueue = 3100;
+        if (_laserDrop.material != null) Destroy(_laserDrop.material);
+        _laserDrop.material = CreateAdditiveMaterial(new Color(1.6f, 1.6f, 1.6f, 1f));
+        _laserDrop.material.renderQueue = 3100;
+
+        // 레이저 풀 라인(PUBG 블라인드 스팟식): 끝까지 보이되 마지막 15%만 살짝 잦아드는 프로필.
         _laserGradient = new Gradient();
         _laserGradient.SetKeys(
             new[] { new GradientColorKey(laserColor, 0f), new GradientColorKey(laserColor, 1f) },
-            new[] { new GradientAlphaKey(laserColor.a, 0f), new GradientAlphaKey(laserColor.a, laserFadeStart), new GradientAlphaKey(0f, 1f) });
+            new[] { new GradientAlphaKey(laserColor.a, 0f), new GradientAlphaKey(laserColor.a, 0.85f), new GradientAlphaKey(laserColor.a * 0.7f, 1f) });   // 끝단도 정보 — 페이드 최소화
         _laserLine.colorGradient = _laserGradient;
+        _laserGradDefault = _laserGradient;   // 수렴 신호 원복용 기본 그라디언트 — 생성 직후 캐시(UpdateLaser의 lazy 캐시는 폴백)
 
         // 발사체 풀은 원거리 전용. 펠릿 수가 아니라 동시 비행분을 넉넉히(연사·산탄 동시 비행) 확보한다.
         if (_kind == WeaponLoadout.Kind.Ranged)
         {
             _tracerMat = CreateAdditiveMaterial(tracerColor);
+            _tracerMatConverged = CreateAdditiveMaterial(new Color(0f, 4f, 3.7f, 1f));   // 수렴샷 시안 HDR — 정화 에너지의 색
+            _tracerMatLine = CreateAdditiveMaterial(new Color(2f, 2f, 2f, 1f));   // 궤적 라인 — 중성 흰색 HDR(노란 tracerColor 사용 중단)
+
+            // 궤적 라인 풀(블라인드 스팟) — 비행 꼬리와 별개로, 완결된 한 줄이 잔류했다 사라진다.
+            _tracerLines = new LineRenderer[TracerLinePool];
+            _tracerLineAge = new float[TracerLinePool];
+            _tracerLineDur = new float[TracerLinePool];
+            _tracerLineWidth = new float[TracerLinePool];
+            for (int i = 0; i < TracerLinePool; i++)
+            {
+                var go = new GameObject("TracerLine" + i);
+                var lr = go.AddComponent<LineRenderer>();
+                lr.positionCount = 2;
+                lr.useWorldSpace = true;
+                lr.alignment = LineAlignment.View;
+                lr.numCapVertices = 2;
+                lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                lr.receiveShadows = false;
+                lr.enabled = false;
+                _tracerLines[i] = lr;
+                _tracerLineAge[i] = -1f;
+            }
             _tracers = new TrailRenderer[BulletPoolSize];
             _bullets = new Bullet[BulletPoolSize];
             _bulletHits = new HashSet<ZombieController>[BulletPoolSize];
@@ -364,6 +451,38 @@ public class PlayerCombat : MonoBehaviour
                 go.SetActive(false);
                 _flashTr[i] = go.transform;
                 _flashMR[i] = mr;
+            }
+
+            // 글로우 도트 — 임팩트 플래시와 같은 카메라 빌보드 가산 쿼드(라디얼 글로우). 색은 전용 머티리얼이라 SetColor 안전.
+            {
+                var go = new GameObject("AimDot");
+                var mf = go.AddComponent<MeshFilter>(); mf.sharedMesh = _quadMesh;
+                _aimDotMR = go.AddComponent<MeshRenderer>();
+                _aimDotMat = CreateAdditiveMaterial(Color.white);
+                if (_aimDotMat.HasProperty("_BaseMap")) _aimDotMat.SetTexture("_BaseMap", _impactTex);
+                if (_aimDotMat.HasProperty("_MainTex")) _aimDotMat.SetTexture("_MainTex", _impactTex);
+                if (_aimDotMat.HasProperty("_Cull")) _aimDotMat.SetInt("_Cull", 0);   // 빌보드라 양면
+                _aimDotMR.sharedMaterial = _aimDotMat;
+                _aimDotMR.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                _aimDotMR.receiveShadows = false;
+                _aimDotMR.enabled = false;   // UpdateLaser가 켠다
+                _aimDotTr = go.transform;
+            }
+
+            // 착탄점 마커 — 레이저가 벽/좀비에 닿는 지점의 원형 글로우(예전 착탄 도트의 복원, 별도 빌보드).
+            {
+                var go = new GameObject("LaserHitDot");
+                var mf = go.AddComponent<MeshFilter>(); mf.sharedMesh = _quadMesh;
+                _hitDotMR = go.AddComponent<MeshRenderer>();
+                _hitDotMat = CreateAdditiveMaterial(Color.white);
+                if (_hitDotMat.HasProperty("_BaseMap")) _hitDotMat.SetTexture("_BaseMap", _impactTex);
+                if (_hitDotMat.HasProperty("_MainTex")) _hitDotMat.SetTexture("_MainTex", _impactTex);
+                if (_hitDotMat.HasProperty("_Cull")) _hitDotMat.SetInt("_Cull", 0);
+                _hitDotMR.sharedMaterial = _hitDotMat;
+                _hitDotMR.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                _hitDotMR.receiveShadows = false;
+                _hitDotMR.enabled = false;
+                _hitDotTr = go.transform;
             }
 
             // 머즐 라이트(주위 밝기) — 씬에 gunFlashLight를 안 꽂았으면 코드로 생성해 항상 작동.
@@ -448,9 +567,17 @@ public class PlayerCombat : MonoBehaviour
         if (_chargeR != null) Destroy(_chargeR.material);
         if (_laserLine != null) Destroy(_laserLine.material);
         if (_laserDot != null) Destroy(_laserDot.material);
+        if (_laserDrop != null) Destroy(_laserDrop.material);
+        if (_aimDotTr != null) Destroy(_aimDotTr.gameObject);
+        if (_aimDotMat != null) Destroy(_aimDotMat);
+        if (_hitDotTr != null) Destroy(_hitDotTr.gameObject);
+        if (_hitDotMat != null) Destroy(_hitDotMat);
         if (_tracers != null)
             foreach (var t in _tracers) if (t != null) Destroy(t.gameObject);
         if (_tracerMat != null) Destroy(_tracerMat);
+        if (_tracerMatConverged != null) Destroy(_tracerMatConverged);
+        if (_tracerMatLine != null) Destroy(_tracerMatLine);
+        if (_tracerLines != null) foreach (var lr in _tracerLines) if (lr != null) Destroy(lr.gameObject);
         if (_flashTr != null)
             foreach (var f in _flashTr) if (f != null) Destroy(f.gameObject);
         if (_impactMat != null) Destroy(_impactMat);
@@ -477,6 +604,8 @@ public class PlayerCombat : MonoBehaviour
         if (sh == null) sh = Shader.Find("Universal Render Pipeline/Particles/Unlit");
         if (sh == null) sh = Shader.Find("Universal Render Pipeline/Unlit");
         lr.material = new Material(sh);
+        // 정보선은 다른 반투명(피 데칼·이펙트)에 덮이면 안 된다 — 투명 큐 후순위로 항상 위에 그림.
+        lr.material.renderQueue = 3100;
         return lr;
     }
 
@@ -491,6 +620,13 @@ public class PlayerCombat : MonoBehaviour
         tr.time = trailTime;
         tr.widthMultiplier = trailWidth;
         tr.widthCurve = AnimationCurve.Linear(0f, 1f, 1f, 0f);   // 머리 두껍게 → 꼬리 0으로 테이퍼
+        // 궤적 잔광(볼트 A, 블라인드 스팟 레퍼런스): 알파가 천천히 옅어지며 사라짐 —
+        // "내가 어디로 쐈는지"의 인과 기록. 연사 시엔 궤적의 밀도가 곧 피드백(카메라 고요의 보상).
+        var fade = new Gradient();
+        fade.SetKeys(
+            new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+            new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0.55f, 0.45f), new GradientAlphaKey(0f, 1f) });
+        tr.colorGradient = fade;
         tr.numCapVertices = 2;
         tr.minVertexDistance = 0.02f;
         tr.autodestruct = false;
@@ -517,9 +653,9 @@ public class PlayerCombat : MonoBehaviour
         var ps = go.AddComponent<ParticleSystem>();
         ps.Stop();
         var main = ps.main;
-        main.startLifetime = new ParticleSystem.MinMaxCurve(0.06f, 0.1f);
+        main.startLifetime = new ParticleSystem.MinMaxCurve(0.12f, 0.18f);   // 볼트 A: 0.06~0.1은 15m 부감에서 인지 불가
         main.startSpeed = new ParticleSystem.MinMaxCurve(6f, 12f);
-        main.startSize = new ParticleSystem.MinMaxCurve(0.02f, 0.045f);   // 엄청 얇게
+        main.startSize = new ParticleSystem.MinMaxCurve(0.08f, 0.16f);   // 볼트 A: 0.02~0.045는 부감에서 소실(교과서 2원칙)
         main.startColor = sparkColor;
         main.gravityModifier = 0.6f;
         main.maxParticles = 256;
@@ -563,12 +699,18 @@ public class PlayerCombat : MonoBehaviour
     void Update()
     {
         UpdateAim();
+        UpdateTracerLines();   // 궤적 라인 페이드 — 무기 종류와 무관하게 항상 진행
 
         // 제작 채널링·좀비에게 잡힘(grapple) 중에는 무방비 — 사격/스윙 모두 잠금(움직임도 잠겨 있음).
         bool crafting = CraftingSystem.Instance != null && CraftingSystem.Instance.IsCrafting;
         bool grappled = PlayerController.Instance != null && PlayerController.Instance.IsGrappled;
         bool locked = crafting || grappled;
         bool attackHeld = Input.GetMouseButton(0);
+
+        // 주시/정조준(이원 카메라, 2026-06-11): 우클릭 홀드 = 카메라가 커서 방향을 주시(리드 강화+FOV 수축).
+        // B-009 정조준 의식이 이 입력 위에 얹힌다. 보조사격은 Q로 임시 이양(최종 배치는 B-009 게이트에서).
+        // 수렴 킬 직후엔 잠깐 강제 해제(날숨) — 줌이 풀리며 "일이 끝났다", 홀드 유지 시 자동 재진입.
+        PlayerCameraRig.Instance?.SetAimState(!locked && Input.GetMouseButton(1) && Time.unscaledTime >= _aimSuppressUntil);
 
         if (_kind == WeaponLoadout.Kind.Melee)
         {
@@ -597,7 +739,7 @@ public class PlayerCombat : MonoBehaviour
             // 재장전 진행(주발사 쿨과 별도 — alt-fire는 재장전 중에도 사용 가능).
             if (_reloading) { _reloadTimer -= Time.deltaTime; if (_reloadTimer <= 0f) { _reloading = false; _ammo = _magazine; } }
 
-            // 우클릭 보조 발사(무기별). 진행 중이던 패닝 난사는 입력과 무관하게 계속 쏜다.
+            // 보조 발사(altFireKey, 무기별). 진행 중이던 패닝 난사는 입력과 무관하게 계속 쏜다.
             HandleAltFire(locked);
             if (_fanShotsLeft > 0) TickFan();
 
@@ -616,14 +758,14 @@ public class PlayerCombat : MonoBehaviour
         }
     }
 
-    /// <summary>우클릭 보조 발사 입력 처리(무기별 분기). locked = 제작 중 또는 grapple로 잡힘.</summary>
+    /// <summary>보조 발사 입력 처리(altFireKey, 무기별 분기). locked = 제작 중 또는 grapple로 잡힘.</summary>
     void HandleAltFire(bool locked)
     {
         switch (_altFire)
         {
             case WeaponLoadout.AltFire.FanFire:
                 // 즉발 트리거: 쿨·장전·난사 모두 비어 있을 때만 난사 시작(첫 발은 TickFan이 같은 프레임에).
-                if (!locked && Input.GetMouseButtonDown(1)
+                if (!locked && Input.GetKeyDown(altFireKey)
                     && _altCooldownTimer <= 0f && _cooldownTimer <= 0f && _fanShotsLeft <= 0)
                 {
                     _fanShotsLeft = Mathf.Max(1, fanShots);
@@ -642,13 +784,13 @@ public class PlayerCombat : MonoBehaviour
 
                 // 홀드 차징 → 떼면 발사. 쿨 중이면 차징 안 함.
                 bool altReady = _altCooldownTimer <= 0f;
-                if (altReady && Input.GetMouseButton(1))
+                if (altReady && Input.GetKey(altFireKey))
                 {
                     _charging = true;
                     _chargeTime += Time.deltaTime;
                     ShowChargeBrackets(Mathf.Clamp01(_chargeTime / Mathf.Max(0.01f, chargeTimeMax)));
                 }
-                if (Input.GetMouseButtonUp(1))
+                if (Input.GetKeyUp(altFireKey))
                 {
                     if (_charging) ReleaseCharge();
                     else { _charging = false; _chargeTime = 0f; }
@@ -657,7 +799,7 @@ public class PlayerCombat : MonoBehaviour
                 break;
 
             case WeaponLoadout.AltFire.StockBash:
-                if (!locked && Input.GetMouseButtonDown(1) && _altCooldownTimer <= 0f)
+                if (!locked && Input.GetKeyDown(altFireKey) && _altCooldownTimer <= 0f)
                     StockBash();
                 break;
         }
@@ -761,8 +903,9 @@ public class PlayerCombat : MonoBehaviour
     }
 
     /// <summary>
-    /// 조준 레이저: 총구에서 _aimDir(실제 탄도 방향 — 마우스보다 한 박자 늦음)을 따라
-    /// 첫 벽/좀비까지 얇고 어두운 선 + 착탄 도트. 디제틱한 조준 보조. 제작 중엔 숨김.
+    /// 조준 레이저: 총구에서 _aimDir(실제 탄도 방향 — 마우스 즉각 일치)을 따라
+    /// 첫 벽/좀비(없으면 사거리 끝)까지 끝까지 이어지는 풀 라인 + 라인 위를 미끄러지는 마우스 지점 도트
+    /// + 도트→바닥 높이 틱(접지 표시). 제작 중엔 숨김.
     /// </summary>
     void UpdateLaser(bool locked)
     {
@@ -771,30 +914,139 @@ public class PlayerCombat : MonoBehaviour
         {
             _laserLine.enabled = false;
             _laserDot.enabled = false;
+            if (_laserCore != null) _laserCore.enabled = false;
+            if (_aimDotMR != null) _aimDotMR.enabled = false;
+            if (_hitDotMR != null) _hitDotMR.enabled = false;
+            if (_laserDrop != null) _laserDrop.enabled = false;
+            if (_aimBarTop != null) _aimBarTop.enabled = false;
+            if (_aimBarMid != null) _aimBarMid.enabled = false;
+            if (_aimBarBot != null) _aimBarBot.enabled = false;
             return;
         }
 
         Vector3 origin = transform.position + Vector3.up * muzzleHeight;
         int mask = zombieMask | obstacleMask;
-        Vector3 endPoint = Physics.Raycast(origin, _aimDir, out RaycastHit hit, range, mask, QueryTriggerInteraction.Collide)
-            ? hit.point
-            : origin + _aimDir * range;
+        // 조준선 시각 길이는 무기 사거리와 무관하게 멀리(30m) — 도트가 화면 끝까지 마우스를 따라간다.
+        // 판정은 탄(즉착 세그먼트)이 하므로 시각 전용 연장은 무해.
+        float visLen = Mathf.Max(range, 30f);
+        bool blocked = Physics.Raycast(origin, _aimDir, out RaycastHit hit, visLen, mask, QueryTriggerInteraction.Collide);
+        Vector3 endPoint = blocked ? hit.point : origin + _aimDir * visLen;
 
-        // 선은 또렷한 최대 길이까지만 그린다(착탄점이 더 멀어도). 끝부분은 그라디언트가 0으로 페이드.
-        float beamLen = Mathf.Min(Vector3.Distance(origin, endPoint), laserLength);
-        Vector3 lineEnd = origin + _aimDir * beamLen;
+        // 풀 라인: 첫 벽/좀비(없으면 사거리 끝)까지 끝까지 그린다 — 그라디언트가 끝에서 살짝만 잦아든다.
+        Vector3 lineEnd = endPoint;
         _laserLine.enabled = true;
-        _laserLine.widthMultiplier = laserWidth;
+
+        // 수렴 완료 신호("지금이다" — 저격의 크리스프니스): 레이저가 시안으로 점화 + 굵어지고, 도트 확대.
+        var rigL = PlayerCameraRig.Instance;
+        bool convReady = rigL != null && rigL.AimConvergence >= 0.95f;
+        // 원복용 캐시 — 수렴 상태에서 캐시하면 시안이 기본값으로 굳는다(리뷰 C-1): 비수렴 프레임에서만.
+        if (_laserGradDefault == null && !convReady) _laserGradDefault = _laserLine.colorGradient;
+        if (_laserGradDefault == null && convReady) return;   // 첫 프레임부터 수렴(엣지) — 다음 프레임에 캐시
+        if (convReady)
+        {
+            _laserLine.startColor = ConvergedCyan;
+            _laserLine.endColor = new Color(ConvergedCyan.r, ConvergedCyan.g, ConvergedCyan.b, 0f);
+            _laserLine.widthMultiplier = laserWidth * 1.8f;
+        }
+        else
+        {
+            _laserLine.colorGradient = _laserGradDefault;
+            _laserLine.widthMultiplier = laserWidth;
+        }
         _laserLine.SetPosition(0, origin);
         _laserLine.SetPosition(1, lineEnd);
 
-        // 도트: 착탄점을 중심으로 _aimDir 방향 아주 짧은 선 + 둥근 캡 → 작은 점처럼 보인다.
-        Vector3 half = _aimDir * (laserDotSize * 0.5f);
-        _laserDot.enabled = true;
-        _laserDot.SetPosition(0, endPoint - half);
-        _laserDot.SetPosition(1, endPoint + half);
-        _laserDot.startColor = laserDotColor;
-        _laserDot.endColor = laserDotColor;
+        // 코어 실선 — 불투명 순적색(수렴 시 시안). 글로우 안쪽의 가는 실체가 "진함"을 만든다.
+        if (_laserCore != null)
+        {
+            _laserCore.enabled = true;
+            Color coreCol = convReady ? new Color(ConvergedCyan.r, ConvergedCyan.g, ConvergedCyan.b, 1f)
+                                      : new Color(laserColor.r, laserColor.g, laserColor.b, 1f);
+            _laserCore.startColor = coreCol;
+            _laserCore.endColor = new Color(coreCol.r, coreCol.g, coreCol.b, 0.75f);   // 끝단 살짝만
+            _laserCore.widthMultiplier = laserWidth * (convReady ? 0.8f : 0.45f);
+            _laserCore.SetPosition(0, origin);
+            _laserCore.SetPosition(1, lineEnd);
+        }
+
+        // 도트: 조준선 위에서 마우스 위치를 따라 미끄러지는 마커(블라인드스팟 문법) — 지면이 아니라
+        // 총구 높이의 라인 위. 마우스 수평 거리를 라인 길이로 클램프해 라인을 벗어나지 않는다.
+        // 짧은 선분+둥근 캡 → 작은 점처럼 보인다.
+        // 히트마커(볼트 A): 풀히트 직후 0.09s 동안 도트가 흰색으로 확대 — UI 없이 디제틱으로 "박혔다" 확인.
+        bool dotHit = _dotHitTimer > 0f;
+        if (dotHit) _dotHitTimer -= Time.deltaTime;
+        float dotScale = convReady ? 1.6f : 1f;
+        if (dotHit) dotScale = Mathf.Max(dotScale, 1.8f);
+        Color dotCol = dotHit ? Color.white : (convReady ? ConvergedCyan : laserDotColor);
+        // 마커 거리는 커서 광선을 "총구 높이 평면"과 교차해 측정 — 王 상획(레이저 통과점)이
+        // 화면상 마우스 커서와 정확히 겹친다(바닥 평면 기준이면 45° 카메라에서 하획이 커서에 붙음).
+        float cursorDist;
+        Ray mray = _cam.ScreenPointToRay(Input.mousePosition);
+        Plane aimPlane = new Plane(Vector3.up, new Vector3(0f, origin.y, 0f));
+        if (aimPlane.Raycast(mray, out float enterAim))
+        {
+            Vector3 flat = mray.GetPoint(enterAim) - transform.position; flat.y = 0f;
+            cursorDist = flat.magnitude;
+        }
+        else
+        {
+            Vector3 flat = _cursorGroundPos - transform.position; flat.y = 0f;   // 폴백(지면 교차)
+            cursorDist = flat.magnitude;
+        }
+        float lineLen = Vector3.Distance(origin, endPoint);
+        Vector3 dotPos = origin + _aimDir * Mathf.Min(cursorDist, lineLen);   // 조준선 위(총구 높이)
+        // 마우스 마커 王자(유저 픽 2026-06-11, 글로우 점 대체): 가로획 3개(상=조준선 높이/중간/바닥)
+        // + 세로획(높이 틱)이 관통 — 높이 정보가 형태 자체에 내장된 UI형 마커.
+        if (_aimDotMR != null) _aimDotMR.enabled = false;   // 글로우 점은 은퇴(자산 보존)
+        {
+            Vector3 side = Vector3.Cross(Vector3.up, _aimDir);
+            if (side.sqrMagnitude < 1e-6f) side = Vector3.right; else side.Normalize();
+            float groundY = transform.position.y + 0.03f;
+            Vector3 botPos = new Vector3(dotPos.x, groundY, dotPos.z);
+            Vector3 midPos = (dotPos + botPos) * 0.5f;
+            float barScale = dotHit ? 1.3f : (convReady ? 1.15f : 1f);
+            Color barCol = dotCol; barCol.a = 1f;   // 정보 UI — 불투명
+
+            System.Action<LineRenderer, Vector3, float> bar = (lr, center, halfW) =>
+            {
+                if (lr == null) return;
+                lr.enabled = true;
+                lr.SetPosition(0, center - side * (halfW * barScale));
+                lr.SetPosition(1, center + side * (halfW * barScale));
+                lr.startColor = barCol; lr.endColor = barCol;
+            };
+            bar(_aimBarTop, dotPos, 0.12f);    // 상획 — 조준선 높이
+            bar(_aimBarMid, midPos, 0.09f);    // 중획 — 짧게(王 비례)
+            bar(_aimBarBot, botPos, 0.15f);    // 하획 — 가장 길게(바닥 접지)
+        }
+
+        // 착탄점 마커 — 레이저가 실제로 닿는 지점(벽/좀비)의 원형 글로우. 허공 끝(미차단)이면 숨김.
+        if (_hitDotTr != null)
+        {
+            _hitDotMR.enabled = blocked;
+            if (blocked)
+            {
+                _hitDotTr.position = endPoint;
+                Vector3 camPos2 = _cam != null ? _cam.transform.position : endPoint - Vector3.forward;
+                Vector3 toHit = endPoint - camPos2;
+                if (toHit.sqrMagnitude > 1e-6f) _hitDotTr.rotation = Quaternion.LookRotation(toHit);
+                _hitDotTr.localScale = Vector3.one * (convReady ? 0.42f : 0.34f);   // 착탄점 — 마우스 마커와 동일 크기
+                Color hitCol = (convReady ? ConvergedCyan : laserColor) * 2.2f; hitCol.a = 1f;
+                _hitDotMat.SetColor("_BaseColor", hitCol);
+                _hitDotMat.SetColor("_Color", hitCol);
+            }
+        }
+
+        // 높이 틱(王자 세로획) — 도트에서 수직 아래 바닥까지. 가로획과 한 몸이라 같은 진하기.
+        if (_laserDrop != null)
+        {
+            Color dropCol = dotCol; dropCol.a = 1f;
+            _laserDrop.enabled = true;
+            _laserDrop.SetPosition(0, dotPos);
+            _laserDrop.SetPosition(1, new Vector3(dotPos.x, transform.position.y + 0.02f, dotPos.z));
+            _laserDrop.startColor = dropCol;
+            _laserDrop.endColor = dropCol;
+        }
     }
 
     void UpdateAim()
@@ -807,17 +1059,14 @@ public class PlayerCombat : MonoBehaviour
         if (ground.Raycast(ray, out float enter))
         {
             Vector3 hit = ray.GetPoint(enter);
+            _cursorGroundPos = hit;   // 마우스 의도점(즉시) — 조준 도트 표시용
             Vector3 dir = hit - transform.position;
             dir.y = 0f;
             if (dir.sqrMagnitude > 0.0001f)
             {
-                Vector3 targetDir = dir.normalized;
-                // 커서에 즉시 스냅하지 않고 지수 감쇠로 추종 → 마우스를 홱 돌려도 사격 방향이
-                // 한 박자 늦게 따라붙는다(조준선·탄도·근접 스윙 모두 _aimDir 공유 → 일관). 프레임율 독립.
-                _aimDir = _aimInitialized
-                    ? Vector3.Slerp(_aimDir, targetDir, 1f - Mathf.Exp(-aimResponsiveness * Time.deltaTime)).normalized
-                    : targetDir;
-                _aimInitialized = true;
+                // 마우스 즉각 일치(2026-06-11, 블라인드스팟 문법) — 조준선·탄도·근접 스윙 모두 _aimDir 공유.
+                // 카메라 콘의 각속도 제한은 TiltShiftConeDriver가 자체 보유 — 여기선 스무딩 없음.
+                _aimDir = dir.normalized;
             }
         }
     }
@@ -850,8 +1099,8 @@ public class PlayerCombat : MonoBehaviour
     }
 
     /// <summary>
-    /// 발사체 발사(주발사·패닝·차지샷 공용). spread로 펠릿마다 방향을 정해 날아가는 탄을 만든다.
-    /// ★판정은 즉발이 아니라 비행 중(UpdateBullets segment 캐스트) — 탄이 실제로 닿아야 명중.
+    /// 발사체 발사(주발사·패닝·차지샷 공용). spread로 펠릿마다 방향을 정해 탄을 만든다.
+    /// ★즉착(레퍼런스 3종 표준) — 같은 프레임에 UpdateBullets가 전체 경로를 세그먼트 캐스트로 판정.
     /// 데미지·사거리·관통 여부는 발사 순간 스냅해 발사체에 싣는다(강선 카드 보너스도 여기서 가산).
     /// </summary>
     void FireShot(float spread, int baseDmg, float rng, int pellets, bool pierce, float noise)
@@ -863,26 +1112,54 @@ public class PlayerCombat : MonoBehaviour
         // 넉백: 샷건=강한 푸시, 그 외=아주 약한 잼킹(타격감용 흔들림, 호드는 안 흩어짐).
         float kb = _gunClass == GunSfx.GunClass.Shotgun ? bulletKnockback : weakKnockback;
 
+        // 수렴샷(B-009): 수렴 완료 상태의 발사 — 탄퍼짐 0, 데미지·넉백 강화, 풀히트 시 전역 히트스탑(탄에 마킹).
+        // 관통(차지샷)은 수렴샷 제외 — 즉착 관통이 경로상 전원을 보장 킬하는 조합 차단(리뷰 A-1).
+        var rig = PlayerCameraRig.Instance;
+        bool converged = rig != null && rig.AimConvergence >= 0.95f && !pierce;
+        if (converged)
+        {
+            spread = 0f;
+            dmg = Mathf.RoundToInt(dmg * convergedDamageMult);
+            kb *= convergedKnockbackMult;
+        }
+
         for (int p = 0; p < pellets; p++)
         {
             // 펠릿마다 좌우(yaw) 랜덤 산포. spread=0이면 정확히 조준 방향.
             Vector3 dir = spread > 0f
                 ? Quaternion.AngleAxis(Random.Range(-spread, spread), Vector3.up) * _aimDir
                 : _aimDir;
-            SpawnBullet(origin, dir, rng, dmg, pierce, kb);
+            SpawnBullet(origin, dir, rng, dmg, pierce, kb, converged);
         }
 
         // 소음·머즐 연출·사운드는 발사 1회당 한 번(펠릿 수와 무관).
         NoiseManager.Instance?.EmitImpulse(noise);
 
-        // 총구 끝(조준 방향으로 앞당김) — 화염 VFX·라이트가 총신 끝에 오도록.
+        // 총구 끝(조준 방향으로 앞당김) — 화염 VFX·라이트가 총신 끝에 오도록. 수렴샷은 화염도 크게.
         Vector3 muzzleTip = origin + _aimDir * muzzleForward;
-        PlayFlash(muzzleTip, muzzleFlashColor, muzzleFlashSize, muzzleFlashTime);   // 총구 화염(임팩트 풀 재사용, 더 짧게)
+        PlayFlash(muzzleTip, muzzleFlashColor,
+                  converged ? muzzleFlashSize * 1.5f : muzzleFlashSize,
+                  converged ? muzzleFlashTime * 1.3f : muzzleFlashTime);
         TriggerMuzzle(muzzleTip);                                                   // 주위 밝기(라이트)
         PlayShotSound();
-        // 발사 화면 반응: 방향성 킥(반동 반대 — 묵직함의 주력) + 약한 무방향 쉐이크(샷건 강하게).
-        PlayerCameraRig.Instance?.TriggerKick(-_aimDir, _gunClass == GunSfx.GunClass.Shotgun ? fireKick * 1.8f : fireKick);
-        PlayerCameraRig.Instance?.TriggerShake(_gunClass == GunSfx.GunClass.Shotgun ? fireShake * 2f : fireShake);
+        // 발사 화면 반응 — 예약제(2026-06-11): 무거운 단발(산탄 or 발사간격≥heavyKickMinCooldown)만
+        // 방향성 킥+쉐이크로 카메라를 친다. 연사류는 카메라 충격 0 — 커서 리드 위에 충격이 겹치는
+        // 복합 움직임(멀미 원인)을 끊고, "모든 발이 무거우면 무게는 소멸"의 무기 단위 적용.
+        // (어택-서스테인은 무거운 총을 빠르게 연타할 때의 안전망으로 림 내부에 유지)
+        // fireCooldown은 버프 미적용 기준값으로 비교 — 의도적(무기 정체성 고정: 연사 버프가 킥 유무를
+        // 바꾸지 않는다). 버프로 실제 간격이 내려가는 케이스는 림의 어택-서스테인이 안전망(리뷰 M-1).
+        // 수렴샷은 예약제 무관하게 항상 묵직 — 의도된 한 발.
+        bool heavyKick = _pelletCount > 1 || fireCooldown >= heavyKickMinCooldown;
+        if ((heavyKick || converged) && rig != null)
+        {
+            float kick = _gunClass == GunSfx.GunClass.Shotgun ? fireKick * 1.8f : fireKick;
+            if (converged) kick = Mathf.Max(kick, fireKick * convergedKickMult);
+            rig.TriggerKick(-_aimDir, kick);
+            if (!rig.IsSustainedFire)
+                rig.TriggerShake(_gunClass == GunSfx.GunClass.Shotgun ? fireShake * 2f : fireShake);
+        }
+        // 발사 반동은 수렴을 깨뜨린다 — 콘이 22°로 튕겨 돌아갔다 다시 무너지는 "한 발 한 발의 리듬".
+        rig?.BreakConvergence();
     }
 
     /// <summary>머즐 라이트 점멸: 씬에 꽂힌 gunFlashLight가 있으면 그걸, 없으면 코드 라이트를 muzzleTip에서 번쩍.</summary>
@@ -920,40 +1197,75 @@ public class PlayerCombat : MonoBehaviour
         return e;
     }
 
-    /// <summary>날아가는 탄 1발을 풀에 생성. 판정은 비행 중(UpdateBullets)에서 처리한다.</summary>
-    void SpawnBullet(Vector3 origin, Vector3 dir, float range, int damage, bool pierce, float knockback)
+    /// <summary>착탄 순간 총구→착탄점의 온전한 궤적 라인(블라인드 스팟) — 균일 알파 페이드로 천천히 소멸.</summary>
+    void SpawnTracerLine(Vector3 from, Vector3 to, bool converged)
     {
-        if (_bullets == null) return;
-        int i = AcquireBulletSlot();
-        _bullets[i] = new Bullet { active = true, pos = origin, dir = dir, remaining = Mathf.Max(0.15f, range), damage = damage, pierce = pierce, knockback = knockback };
-        _bulletHits[i].Clear();   // 3계층 판정은 그레이즈(비정지)가 있어 비관통 탄도 중복타 방지 셋이 필요
+        if (_tracerLines == null) return;
+        int idx = -1;
+        for (int i = 0; i < TracerLinePool; i++) if (_tracerLineAge[i] < 0f) { idx = i; break; }
+        if (idx < 0) { idx = _tracerLineEvict; _tracerLineEvict = (_tracerLineEvict + 1) % TracerLinePool; }
 
-        var tr = i < _tracers.Length ? _tracers[i] : null;
-        if (tr != null)
+        var lr = _tracerLines[idx];
+        // 일반=중성 흰색 HDR 얇은 선, 수렴샷=시안 굵은 선 — 색·폭으로 "의도된 한 발"을 가른다. 세선화(궤적은 속삭임).
+        lr.sharedMaterial = converged && _tracerMatConverged != null ? _tracerMatConverged : _tracerMatLine;
+        float baseWidth = converged ? 0.035f : 0.015f;   // 유저 픽(2026-06-11): 일반 0.015
+        lr.widthMultiplier = baseWidth;
+        _tracerLineWidth[idx] = baseWidth;
+        lr.SetPosition(0, from);
+        lr.SetPosition(1, to);
+        lr.startColor = Color.white; lr.endColor = Color.white;
+        lr.enabled = true;
+        _tracerLineAge[idx] = 0f;
+        _tracerLineDur[idx] = converged ? tracerLingerTime * 1.4f : tracerLingerTime;
+    }
+
+    /// <summary>궤적 라인 페이드 — 알파 제곱 감쇠 + 폭도 함께 잦아든다(끝에서 스르륵 사라지는 잔광).</summary>
+    void UpdateTracerLines()
+    {
+        if (_tracerLines == null) return;
+        float dt = Time.deltaTime;
+        for (int i = 0; i < TracerLinePool; i++)
         {
-            tr.emitting = false;          // 먼저 끔 — 텔레포트 전 잔여 꼬리 방출 차단(일부 URP 버전 안전)
-            tr.transform.position = origin;
-            tr.Clear();                   // 직전 비행/주차 위치에서 늘어진 꼬리 제거(텔레포트 streak 방지)
-            tr.emitting = true;
+            if (_tracerLineAge[i] < 0f) continue;
+            _tracerLineAge[i] += dt;
+            float remain = 1f - _tracerLineAge[i] / Mathf.Max(0.01f, _tracerLineDur[i]);
+            if (remain <= 0f) { _tracerLineAge[i] = -1f; _tracerLines[i].enabled = false; continue; }
+            float alpha = remain * remain;   // 제곱 감쇠 — 끝에서 스르륵
+            var c = new Color(1f, 1f, 1f, alpha);
+            _tracerLines[i].startColor = c;
+            _tracerLines[i].endColor = c;
+            _tracerLines[i].widthMultiplier = _tracerLineWidth[i] * (0.4f + 0.6f * remain);   // 폭 페이드
         }
     }
 
+    /// <summary>날아가는 탄 1발을 풀에 생성. 판정은 비행 중(UpdateBullets)에서 처리한다.</summary>
+    void SpawnBullet(Vector3 origin, Vector3 dir, float range, int damage, bool pierce, float knockback, bool converged = false)
+    {
+        if (_bullets == null) return;
+        int i = AcquireBulletSlot();
+        _bullets[i] = new Bullet { active = true, pos = origin, dir = dir, remaining = Mathf.Max(0.15f, range), damage = damage, pierce = pierce, knockback = knockback, converged = converged, origin = origin };
+        _bulletHits[i].Clear();   // 3계층 판정은 그레이즈(비정지)가 있어 비관통 탄도 중복타 방지 셋이 필요
+
+        // 비행 꼬리(TrailRenderer)는 사용 중단 — 즉착이라 비행 구간이 없어 꼬리가 무의미하고,
+        // "두껍고 노란" 비주얼의 원흉이었다. 궤적 표현은 SpawnTracerLine(총구→착탄 한 줄)이 전담.
+        // 풀 자체는 남아 있으나 emitting은 생성 시 false에서 절대 켜지 않는다.
+    }
+
     /// <summary>
-    /// 발사체 갱신: 매 프레임 bulletSpeed만큼 전진시키며 그 구간(이전→현재)을 캐스트해 명중을 판정한다.
-    /// segment 캐스트라 빠른 탄도 좀비를 건너뛰지(터널링) 않는다. 벽/사거리/비관통 명중 시 비행 종료.
-    /// 트레일 오브젝트를 현재 위치로 옮기면 TrailRenderer가 꼬리를 자동으로 그린다.
+    /// 발사체 갱신: 즉착(레퍼런스 3종 표준) — 발사된 프레임에 전체 경로(remaining)를 세그먼트 캐스트해
+    /// 명중을 판정한다. 벽 캡·3계층 판정·관통 로직은 그대로(한 프레임에 경로 전체를 처리할 뿐).
     /// </summary>
     void UpdateBullets()
     {
         if (_bullets == null) return;
-        float dt = Time.deltaTime;
         for (int i = 0; i < _bullets.Length; i++)
         {
             if (!_bullets[i].active) continue;
 
             Vector3 from = _bullets[i].pos;
             Vector3 dir = _bullets[i].dir;
-            float step = bulletSpeed * dt;
+            // 즉착(레퍼런스 3종 표준) — 발사와 궤적·착탄이 같은 프레임. 세그먼트 판정이 전체 경로를 한 번에 처리.
+            float step = _bullets[i].remaining;
             bool finish = false;
             bool hitZombie = false;   // 비관통이 좀비에 멈췄는지 — 종료 시 벽 임팩트와 구분
 
@@ -1007,8 +1319,18 @@ public class PlayerCombat : MonoBehaviour
                 if (perp <= feel.fullHitRadius)
                 {
                     // 풀히트: 풀데미지 + 넉백 + 피격 사다리 + 히트스탑. 비관통은 여기서 정지.
-                    z.TakeBulletHit(_bullets[i].damage, dir, _bullets[i].knockback, feel.hitStopNormal, BulletHitTier.Full, false);
+                    bool wasAlive = !z.IsDead;
+                    z.TakeBulletHit(_bullets[i].damage, dir, _bullets[i].knockback, feel.hitStopNormal, BulletHitTier.Full, false, _bullets[i].converged);
                     PlayImpact(hitPoint, dir, true);
+                    _dotHitTimer = 0.09f;   // 디제틱 히트마커 — 조준 도트가 "박혔다"를 확인
+                    // 수렴샷 풀히트 — 전역 마이크로 히트스탑. 킬이면 110ms("이 킬은 달랐다"), 비킬 60ms.
+                    // 연사는 converged=false라 절대 안 걸림.
+                    if (_bullets[i].converged)
+                    {
+                        bool kill = wasAlive && z.IsDead;
+                        HitStop.Do(kill ? convergedKillHitStop : convergedHitStop);
+                        if (kill) _aimSuppressUntil = Time.unscaledTime + aimReleaseAfterKill;   // 날숨 — 줌 해제 스냅
+                    }
                 }
                 else if (perp <= feel.grazeRadius)
                 {
@@ -1042,13 +1364,11 @@ public class PlayerCombat : MonoBehaviour
             _bullets[i].pos = to;
             _bullets[i].remaining -= travel;
 
-            var tr = i < _tracers.Length ? _tracers[i] : null;
-            if (tr != null) tr.transform.position = to;
-
             if (finish)
             {
                 _bullets[i].active = false;
-                if (tr != null) tr.emitting = false;
+                // 궤적 라인: 총구→착탄점 온전한 한 줄 — 쏘는 동시에 남고 빠르게 사라지는 잔광(인과의 기록).
+                SpawnTracerLine(_bullets[i].origin, to, _bullets[i].converged);
                 // 좀비에 멈춘 게 아니라 벽에 멈췄으면 벽 스파크(사거리 소진=허공이면 무생성).
                 if (!hitZombie && !float.IsPositiveInfinity(wallDist)) PlayImpact(wallPoint, dir, false);
             }
@@ -1065,10 +1385,11 @@ public class PlayerCombat : MonoBehaviour
         if (_sparkPS != null) { _sparkPS.transform.position = pos; _sparkPS.Emit(sparkBurstCount); }
 
         // 피 튀김 — 좀비 명중에 검은 피 분사(프리팹). 없으면 좀비색 플래시 폴백.
+        // 분사 방향을 살짝 위로 기울임(볼트 A) — 수평 분사는 45° 부감에서 납작한 선으로 보임.
         if (zombie)
         {
             var blood = zombieHitOverride != null ? zombieHitOverride : _bloodPrefab;
-            if (blood != null) SpawnOverride(blood, pos, dir);
+            if (blood != null) SpawnOverride(blood, pos, (dir + Vector3.up * 0.5f).normalized);
             else PlayFlash(pos, zombieFlashColor, zombieFlashSize, impactFlashTime);
         }
     }

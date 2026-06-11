@@ -98,6 +98,7 @@ public class ZombieController : MonoBehaviour
     static float s_lastKillFeedbackTime = -999f;
     static float s_killFeedbackWindow = 0.15f;
     const float KillPunchIn = 0.18f;   // 킬 카메라 펀치인 크기(m) — 카메라 명세 §충격
+    const float ConvergedKillPunchIn = 0.32f;   // 수렴샷 킬 펀치인 — "저격 킬"의 카메라 무게(합산 캡 0.5m 안)
 
     /// <summary>PlayerCombat이 CombatFeelConfig 값으로 1회 동기화.</summary>
     public static void SetKillFeedbackWindow(float window) => s_killFeedbackWindow = Mathf.Max(0f, window);
@@ -109,6 +110,9 @@ public class ZombieController : MonoBehaviour
     }
 
     MMSpringScale _springScale;
+    MaterialPropertyBlock _flashMpb;   // 피격 흰 점멸(볼트 A) — MPB라 머티리얼 무손상
+    float _hitFlashTimer;
+    static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
     Animator _animator;
     Transform _visual;         // 리그 루트("Visual" 자식) — 윈드업 젖힘/넉다운 기울임 대상
     bool _hasAttackTrigger;    // Animator에 "Attack" 트리거가 있으면 클립, 없으면 코드 기울임 폴백
@@ -239,6 +243,14 @@ public class ZombieController : MonoBehaviour
 
     void FixedUpdate()
     {
+        // 피격 흰 점멸 해제 — 사망/히트스탑 가드보다 먼저(점멸이 시체에 영구 잔류하지 않게).
+        if (_hitFlashTimer > 0f)
+        {
+            _hitFlashTimer -= Time.fixedDeltaTime;
+            if (_hitFlashTimer <= 0f && _scanRenderers != null)
+                foreach (var r in _scanRenderers) if (r != null) r.SetPropertyBlock(null);
+        }
+
         // ★ _config null 가드 추가 (SO 미연결 좀비가 NRE 내지 않도록)
         if (_dead || _spawning || _player == null || _config == null) return;
 
@@ -825,6 +837,15 @@ public class ZombieController : MonoBehaviour
         _attackCooldownTimer = _config.attackCooldown;
     }
 
+    /// <summary>피격 흰 점멸(볼트 A) — "박혔다"의 최저비용·최고가독 신호(로우폴리 표준). 생존 피격에만(사망은 스펙터클 소관).</summary>
+    void HitFlash(float duration = 0.07f)
+    {
+        if (_scanRenderers == null) return;
+        _hitFlashTimer = duration;
+        if (_flashMpb == null) { _flashMpb = new MaterialPropertyBlock(); _flashMpb.SetColor(BaseColorId, new Color(2.6f, 2.6f, 2.6f, 1f)); }
+        foreach (var r in _scanRenderers) if (r != null) r.SetPropertyBlock(_flashMpb);
+    }
+
     /// <summary>풀히트의 사다리 누적: 윈도우 내 N번째 히트가 flinch→stagger→knockdown으로 승급. 내성으로 스턴락 방지.</summary>
     void ApplySolidReaction()
     {
@@ -854,18 +875,26 @@ public class ZombieController : MonoBehaviour
     /// Full: 풀데미지+넉백+사다리. Graze(스침): flinch만. NearMiss(그레이즈): 데미지만(+호출자가 굴린 비틀).
     /// hitStop은 피격자 전용(전역 timeScale 금지). 사망 시 킬 히트스탑은 내부에서 증폭.
     /// </summary>
-    public void TakeBulletHit(int amount, Vector3 hitDir, float knockback, float hitStop, BulletHitTier tier, bool nearMissFlinch)
+    public void TakeBulletHit(int amount, Vector3 hitDir, float knockback, float hitStop, BulletHitTier tier, bool nearMissFlinch, bool converged = false)
     {
         if (_dead || _config == null) return;   // SO 미연결 좀비 NRE 가드(FixedUpdate와 동일 — 리뷰 반영)
 
         if (_downTimer > 0f)
             amount = Mathf.Max(1, Mathf.RoundToInt(amount * _config.downedDamageMult));   // 다운 추가타 보너스
 
+        // 보장 원샷(B-009 수정 2026-06-11): 수렴샷 풀히트 = 비엘리트 확정 킬. 데미지 배수가 아니라 "보장" —
+        // 저격의 1순위는 확실성(확률적 죽음=저격 아님). 희소성은 의식 비용(0.85s 노출+이동 둔화)×전장 밀도가
+        // 담보한다(pm 판정). 엘리트 도입 시 여기서 면역(대크리) 분기.
+        if (converged && tier == BulletHitTier.Full)
+            amount = Mathf.Max(amount, _currentHP);
+
         _currentHP -= amount;
 
         if (_currentHP <= 0)
         {
-            Die(hitDir, hitStop * 2.5f);   // 킬샷: 일반 30~50ms → 80~120ms급 프리즈 후 스펙터클
+            float stop = hitStop * 2.5f;                      // 킬샷: 일반 30~50ms → 80~120ms급 프리즈
+            if (converged) stop = Mathf.Max(stop, 0.12f);     // 수렴 킬은 프리즈 연장 — "한 발의 무게"
+            Die(hitDir, stop, converged);
             return;
         }
 
@@ -887,6 +916,9 @@ public class ZombieController : MonoBehaviour
             case BulletHitTier.Full:
                 ApplyHitStop(hitStop);
                 ApplySolidReaction();
+                // 볼트 A(탄착 확실성): 흰 점멸 + 피격 스쿼시 — 15m 부감의 화폐는 실루엣 변위(교과서 2원칙).
+                HitFlash();
+                _springScale?.Bump(new Vector3(0.16f, -0.2f, 0.16f));
                 break;
             case BulletHitTier.Graze:
                 ApplyHitStop(hitStop * 0.5f);
@@ -929,6 +961,7 @@ public class ZombieController : MonoBehaviour
         if (stagger > 0f) _staggerTimer = Mathf.Max(_staggerTimer, stagger);
         ApplyHitStop(hitStop);
         ApplySolidReaction();
+        HitFlash();   // 볼트 A — 근접도 동일한 "박혔다" 신호
         if (_state < ZombieState.Chase) EnterChase();
         return false;
     }
@@ -938,7 +971,7 @@ public class ZombieController : MonoBehaviour
     /// → 머리/모자 팝(터짐) → 쓰러짐 → 시체 잔류 → 시안 와해(디스폰=정화). ZombieDeathFX가 잔류·와해 관리.
     /// 전역 MMTimeScale 제거(combat-texture-foundation §6.2 통합 경로) — 세계는 계속 흐른다.
     /// </summary>
-    void Die(Vector3 hitDir, float corpseStop = 0f)
+    void Die(Vector3 hitDir, float corpseStop = 0f, bool converged = false)
     {
         _dead = true;
         _state = ZombieState.Dead;
@@ -957,9 +990,10 @@ public class ZombieController : MonoBehaviour
         {
             if (killSound != null) AudioSource.PlayClipAtPoint(killSound, transform.position);
             if (_player != null)
-                PlayerCameraRig.Instance?.TriggerPunchIn(transform.position - _player.position, KillPunchIn);
+                PlayerCameraRig.Instance?.TriggerPunchIn(transform.position - _player.position,
+                    converged ? ConvergedKillPunchIn : KillPunchIn);
         }
-        ZombieDeathFX.PlayKillRing(transform.position);   // "죽였다"의 확인 신호 — 클램프 없음(위치별 정보)
+        ZombieDeathFX.PlayKillRing(transform.position, converged);   // "죽였다"의 확인 신호 — 수렴 킬은 대형 2연속
 
         SpawnXPOrbs();
         CraftingSystem.Instance?.NotifyKill(transform.position);
@@ -968,15 +1002,16 @@ public class ZombieController : MonoBehaviour
 
         Vector3 dir = hitDir; dir.y = 0f;
         if (dir.sqrMagnitude < 0.0001f) dir = -transform.forward;
-        StartCoroutine(DeathSpectacle(dir.normalized, Mathf.Max(0f, corpseStop)));
+        StartCoroutine(DeathSpectacle(dir.normalized, Mathf.Max(0f, corpseStop), converged));
         Destroy(gameObject, 12f);   // 스펙터클 경로가 끊겨도(트윈/코루틴 중단) 확실히 제거되는 안전망
     }
 
     /// <summary>킬 프리즈 → 머리 팝 → 쓰러짐 → 시체 등록(잔류·와해는 ZombieDeathFX 소관).</summary>
-    System.Collections.IEnumerator DeathSpectacle(Vector3 dir, float corpseStop)
+    System.Collections.IEnumerator DeathSpectacle(Vector3 dir, float corpseStop, bool converged = false)
     {
-        if (corpseStop > 0f) yield return new WaitForSeconds(corpseStop);
-        ZombieDeathFX.PopHead(this, dir);
+        // 실시간 대기 — 전역 히트스탑(timeScale 0.05)이 걸려도 프리즈 길이가 설계값을 지킨다(리뷰 F-1).
+        if (corpseStop > 0f) yield return new WaitForSecondsRealtime(corpseStop);
+        ZombieDeathFX.PopHead(this, dir, converged);
         LieDown(dir);
         ZombieDeathFX.RegisterCorpse(this);
     }
