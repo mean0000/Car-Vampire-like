@@ -1330,6 +1330,7 @@ public class PlayerCombat : MonoBehaviour
                         bool kill = wasAlive && z.IsDead;
                         HitStop.Do(kill ? convergedKillHitStop : convergedHitStop);
                         if (kill) _aimSuppressUntil = Time.unscaledTime + aimReleaseAfterKill;   // 날숨 — 줌 해제 스냅
+                        if (kill) PurgeSnapshotFX.Play(z.transform.position, dir);   // 처리 스냅샷 — 엘의 처리 기록 1컷(임팩트 프레임)
                     }
                 }
                 else if (perp <= feel.grazeRadius)
