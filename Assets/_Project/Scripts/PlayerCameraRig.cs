@@ -26,12 +26,14 @@ public class PlayerCameraRig : MonoBehaviour
     [SerializeField] PlayerCombat aimSource;
 
     [Header("Cursor Lead (멀미 주의 — 0이면 비활성)")]
-    [Tooltip("플레이어↔커서 사이 어디에 카메라 초점을 둘지. 0=플레이어 중앙, 0.4≈커서 쪽 40%. 멀미 유발 핵심 노브.")]
-    [SerializeField, Range(0f, 0.6f)] float leadFraction = 0.4f;
-    [Tooltip("커서 리드가 밀어낼 수 있는 최대 거리(m). 멀리 조준해도 캐릭터가 화면 밖으로 안 나가게 캡. 카메라 15m 기준 4m.")]
-    [SerializeField, Min(0f)] float leadMaxDistance = 4f;
-    [Tooltip("조준 상태에서 리드 배율(>1 = 타겟 쪽이 더 보임). SetAimState(true)일 때 부드럽게 적용.")]
-    [SerializeField, Min(1f)] float aimLeadBoost = 1.35f;
+    [Tooltip("평시 커서 리드 비율. 이원 카메라(2026-06-11): 평시=연결감만 남기고 차분(0.18), 주시(우클릭)=의도 기반으로 크게.")]
+    [SerializeField, Range(0f, 0.6f)] float leadFraction = 0.18f;
+    [Tooltip("평시 커서 리드 최대 거리(m).")]
+    [SerializeField, Min(0f)] float leadMaxDistance = 2f;
+    [Tooltip("주시/조준(우클릭 홀드) 시 리드 배율. 0.18×2.2≈커서 쪽 40% — '내가 보겠다고 한 순간'에만 카메라가 넘어간다.")]
+    [SerializeField, Min(1f)] float aimLeadBoost = 2.2f;
+    [Tooltip("주시/조준 시 리드 최대 거리(m) — 평시 캡과 별도. 코너 너머 정찰의 실질 사거리.")]
+    [SerializeField, Min(0f)] float aimLeadMaxDistance = 5.5f;
 
     [Header("Velocity Lead (이동 방향 예측 — 0이면 비활성)")]
     [Tooltip("이동 방향으로 미리 보는 시간(초). 속도감 보강용. 과하면 화면이 흐물거린다(swimmy).")]
@@ -44,10 +46,29 @@ public class PlayerCameraRig : MonoBehaviour
     [SerializeField, Min(0f)] float followSmoothTime = 0.18f;
 
     [Header("Aim State (조준 의식 — 외부에서 SetAimState로 구동)")]
-    [Tooltip("조준 시 FOV 감소량(도). ±3도 이내 — 틸트시프트 월드 투영 오차 한계.")]
-    [SerializeField, Range(0f, 3f)] float aimFovDrop = 2.5f;
-    [Tooltip("조준 상태 전환 속도(1/초).")]
-    [SerializeField, Min(0.1f)] float aimBlendSpeed = 6f;
+    [Tooltip("조준 시 FOV 감소량(도) = 진짜 줌. 구 ±3° 제약은 평시 틸트시프트 밴드 정합용이었고, " +
+             "평시 밴드 폐지(2026-06-11)로 해제 — 콘 스택은 플레이어 추적형이라 FOV 변화에 안전.")]
+    [SerializeField, Range(0f, 12f)] float aimFovDrop = 8f;
+    [Tooltip("조준 진입 속도(1/초). 4≈0.25초 — 들숨처럼 '천천히 당겨져야' 줌이 모션으로 읽힌다(빠르면 컷처럼 보임).")]
+    [SerializeField, Min(0.1f)] float aimBlendSpeed = 4f;
+    [Tooltip("조준 해제 속도(1/초). 진입보다 빠르게 — 전투 복귀가 굼뜨면 안 된다.")]
+    [SerializeField, Min(0.1f)] float aimBlendOutSpeed = 8f;
+
+    /// <summary>조준/주시 블렌드(0~1, 이징 적용) — FOV·리드·콘 수축·어두움·포커스 풀의 단일 구동값.
+    /// 선형 진행에 smoothstep을 씌워 "기계적으로 확 붙는" 느낌을 제거(자연스러운 가감속).</summary>
+    public float AimBlend => _aimBlend * _aimBlend * (3f - 2f * _aimBlend);
+
+    [Header("Aim Convergence (정조준 수렴 — B-009: 콘이 무너져 거의 직선이 되는 2단계 집중)")]
+    [Tooltip("주시 블렌드 완료 후 완전 수렴까지(초) — 의식의 길이. 콘 22°→수렴각으로 무너지는 시간.")]
+    [SerializeField, Min(0.1f)] float convergeTime = 0.6f;
+
+    float _convergence;   // 0~1 — 블렌드 완료 후부터 누적, 발사/해제로 리셋
+
+    /// <summary>수렴 진행도(0~1) — 콘 붕괴·수렴샷 판정의 구동값. 1≈"완전히 모인" 상태.</summary>
+    public float AimConvergence => _convergence;
+
+    /// <summary>수렴 파괴 — 발사 반동이 집중의 직선을 깨뜨린다(다음 발은 다시 모아야). 한 발 한 발의 리듬.</summary>
+    public void BreakConvergence() => _convergence = 0f;
 
     [Header("Impulse — Shake (무방향 Perlin · 피격/폭발용)")]
     [Tooltip("쉐이크 감쇠율(클수록 빨리 멎음).")]
@@ -58,6 +79,14 @@ public class PlayerCameraRig : MonoBehaviour
     [Header("Impulse — Kick (방향성 · 발사 반동)")]
     [Tooltip("킥 감쇠율(지수). 18~22 = 60~90ms 복귀.")]
     [SerializeField] float kickDecay = 20f;
+
+    [Header("Impulse — Kick 연사 서스테인 (어택-서스테인 모델 · 멀미 방지)")]
+    [Tooltip("이 간격(초) 미만으로 킥이 연속 오면 연사로 판정 — 매발 임펄스 대신 고정 밀림으로 전환. 0.25 ≈ 240RPM.")]
+    [SerializeField, Min(0.05f)] float rapidKickInterval = 0.25f;
+    [Tooltip("연사 유지 중 반동 방향 고정 밀림(m). 진동(고주파)을 밀림(0Hz)으로 치환해 멀미 원인 제거.")]
+    [SerializeField, Min(0f)] float sustainedKickOffset = 0.05f;
+    [Tooltip("서스테인 진입/추종 스무딩(초).")]
+    [SerializeField, Min(0.01f)] float sustainedRampTime = 0.08f;
 
     [Header("Impulse — Punch-In (방향성 · 킬 확인)")]
     [Tooltip("펀치인 감쇠율(지수). 킥보다 살짝 느긋하게 복귀.")]
@@ -80,6 +109,10 @@ public class PlayerCameraRig : MonoBehaviour
     float _shakeIntensity, _shakeTime;
     Vector3 _kickOffset;     // 방향성 킥(반동 반대) — 지수 감쇠
     Vector3 _punchOffset;    // 방향성 펀치인(킬 방향) — 지수 감쇠
+    float _lastKickTime = float.NegativeInfinity;   // 연사 판정용(unscaled)
+    bool _sustainedFire;     // 연사 서스테인 상태 — 임펄스 누적 대신 고정 밀림 유지
+    Vector3 _sustainDir;     // 서스테인 밀림 방향(반동 반대, 최신 킥 방향 추종)
+    float _sustainVel;       // 서스테인 SmoothDamp 속도 상태
     bool _aiming;
     float _aimBlend;         // 0~1 — 조준 상태 부드러운 전환
 
@@ -93,12 +126,32 @@ public class PlayerCameraRig : MonoBehaviour
         _shakeIntensity = Mathf.Max(_shakeIntensity, Mathf.Clamp(intensity, 0f, 1f));
     }
 
-    /// <summary>발사 반동 킥 — 사격 반대 방향으로 순간 밀렸다 복귀. dir = 카메라가 밀릴 방향(수평), magnitude(m).</summary>
+    /// <summary>연사 서스테인 중인가 — PlayerCombat이 연사 보조 쉐이크를 끄는 데 사용(22Hz 노이즈가 멀미 주범).</summary>
+    public bool IsSustainedFire => _sustainedFire;
+
+    /// <summary>발사 반동 킥 — 사격 반대 방향으로 순간 밀렸다 복귀. dir = 카메라가 밀릴 방향(수평), magnitude(m).
+    /// 어택-서스테인: 첫 발(단발)은 풀 임펄스("무게"), rapidKickInterval 미만 간격의 연속 킥은
+    /// 임펄스 누적 대신 고정 밀림 유지로 전환 — 5~10Hz 반복 충격(전정계 민감 대역)을 0Hz 밀림으로 치환.</summary>
     public void TriggerKick(Vector3 dir, float magnitude)
     {
         dir.y = 0f;
         if (dir.sqrMagnitude < 0.0001f || magnitude <= 0f) return;
-        // 입력단에서도 채널 캡 — 출력 클램프만 있으면 내부 누적이 캡 해제 순간 터진다(리뷰 M-1).
+
+        float now = Time.unscaledTime;
+        // 히스테리시스 — 발사 간격이 정확히 임계 근처인 총기가 단발/서스테인을 매발 오가며
+        // 채터링(멀미 방지 무력화)하지 않게, 이미 서스테인 중이면 임계를 20% 늘려 잡는다(리뷰 M-1).
+        float threshold = _sustainedFire ? rapidKickInterval * 1.2f : rapidKickInterval;
+        bool rapid = (now - _lastKickTime) < threshold;
+        _lastKickTime = now;
+        _sustainDir = dir.normalized;   // 서스테인 방향은 항상 최신 반동 방향 추종
+
+        if (rapid)
+        {
+            _sustainedFire = true;      // 연사 — 임펄스 추가 없이 LateUpdate에서 밀림 유지
+            return;
+        }
+        _sustainedFire = false;
+        // 첫 발/단발 — 풀 임펄스. 입력단에서도 채널 캡 — 출력 클램프만 있으면 내부 누적이 캡 해제 순간 터진다(리뷰 M-1).
         _kickOffset = Vector3.ClampMagnitude(_kickOffset + dir.normalized * magnitude, impulseTotalCap);
     }
 
@@ -156,10 +209,17 @@ public class PlayerCameraRig : MonoBehaviour
 
         Vector3 p = target.position;
 
-        // --- 조준 상태 블렌딩(리드 배율·FOV) ---
-        _aimBlend = Mathf.MoveTowards(_aimBlend, _aiming ? 1f : 0f, aimBlendSpeed * dt);
+        // --- 조준 상태 블렌딩(리드 배율·FOV) --- 진입은 들숨(느리게), 해제는 빠르게. 소비는 이징값으로.
+        _aimBlend = Mathf.MoveTowards(_aimBlend, _aiming ? 1f : 0f, (_aiming ? aimBlendSpeed : aimBlendOutSpeed) * dt);
+        float aimEased = AimBlend;
         if (_cam != null && aimFovDrop > 0f)
-            _cam.fieldOfView = _baseFov - aimFovDrop * _aimBlend;
+            _cam.fieldOfView = _baseFov - aimFovDrop * aimEased;
+
+        // --- 수렴(2단계 집중): 블렌드가 다 들어온 뒤부터 콘이 직선을 향해 무너진다. 해제 시 즉시 리셋. ---
+        if (_aiming && _aimBlend >= 0.999f)
+            _convergence = Mathf.MoveTowards(_convergence, 1f, dt / Mathf.Max(0.01f, convergeTime));
+        else if (!_aiming)
+            _convergence = 0f;
 
         // --- 커서 리드: 플레이어↔커서 지면 투영점 사이를 leadFraction만큼, 최대 거리로 캡 ---
         Vector3 lead = Vector3.zero;
@@ -171,9 +231,11 @@ public class PlayerCameraRig : MonoBehaviour
             {
                 Vector3 cursor = ray.GetPoint(enter);
                 lead = cursor - p; lead.y = 0f;
-                lead *= leadFraction * Mathf.Lerp(1f, aimLeadBoost, _aimBlend);
+                lead *= leadFraction * Mathf.Lerp(1f, aimLeadBoost, aimEased);
+                // 캡도 주시 상태에 따라 확장 — 평시엔 짧게(차분), 주시엔 코너 너머까지(이원 카메라).
+                float cap = Mathf.Lerp(leadMaxDistance, aimLeadMaxDistance, aimEased);
                 float m = lead.magnitude;
-                if (m > leadMaxDistance) lead *= leadMaxDistance / m;
+                if (m > cap) lead *= cap / m;
             }
         }
 
@@ -212,10 +274,24 @@ public class PlayerCameraRig : MonoBehaviour
             _shakeIntensity = Mathf.Lerp(_shakeIntensity, 0f, 1f - Mathf.Exp(-shakeDamping * dt));
         }
 
-        if (_kickOffset.sqrMagnitude > 0.000001f)
+        // 사격이 멈추면(킥 공백 > 연사 간격) 서스테인 해제 → 아래 기존 지수 감쇠로 부드럽게 복귀(릴리즈).
+        // 해제도 TriggerKick과 같은 확장 임계(×1.2) — 진입보다 해제가 먼저 일어나면 히스테리시스가 무의미.
+        if (_sustainedFire && Time.unscaledTime - _lastKickTime > rapidKickInterval * 1.2f)
+            _sustainedFire = false;
+
+        if (_sustainedFire)
+        {
+            // 연사 서스테인 — 반동 방향으로 "밀려 있는 상태"를 유지(임펄스 반복 없음 → 진동 0Hz).
+            float next = Mathf.SmoothDamp(_kickOffset.magnitude, sustainedKickOffset, ref _sustainVel,
+                                          sustainedRampTime, Mathf.Infinity, dt);
+            _kickOffset = _sustainDir * Mathf.Min(next, impulseTotalCap);
+            impulse += _kickOffset;
+        }
+        else if (_kickOffset.sqrMagnitude > 0.000001f)
         {
             impulse += _kickOffset;
             _kickOffset = Vector3.Lerp(_kickOffset, Vector3.zero, 1f - Mathf.Exp(-kickDecay * dt));
+            _sustainVel = 0f;
         }
 
         if (_punchOffset.sqrMagnitude > 0.000001f)
