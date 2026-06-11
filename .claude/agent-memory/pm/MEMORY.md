@@ -1,0 +1,2 @@
+- [ZombieCrush 개발자 프로필](user_zombiecrush.md) — 1인 개발, Steam PC, 취업 포트폴리오 목적, 한국어 소통
+- [ZombieCrush 프로젝트 현황](project_zombiecrush.md) — 뱀서라이크+자동차 컨셉, 확정 사항 및 미결 과제 목록
