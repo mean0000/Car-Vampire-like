@@ -123,6 +123,8 @@ public class ZombieController : MonoBehaviour
     // 어그로/사망 상태 외부 노출. ScanPulseController가 태깅 대상 판별에 사용.
     public bool IsAggro => _state >= ZombieState.Chase && _state <= ZombieState.Recover;
     public bool IsDead => _dead || _state == ZombieState.Dead;
+    /// <summary>Investigate~Alert 구간(어그로 전 의심 단계) — TensionAudioDirector의 Alert 판정용(B-005a).</summary>
+    public bool IsAlerted => _state == ZombieState.Investigate || _state == ZombieState.Alert;
 
     // 전투 질감 랩 관측용 — 상태/설정 가시화(에디터 자동화·디버그 HUD가 읽는다. 게임 로직에서 사용 금지).
     public string DebugState => _downTimer > 0f ? "Downed" : _state.ToString();
@@ -516,11 +518,46 @@ public class ZombieController : MonoBehaviour
         }
     }
 
+    // ── 절차 그르렁 폴백(B-005a) — gruntSound 미할당 좀비 공용 클립 1장 ──
+    // 70~110Hz 사인 스윕 다운 + 진폭 거칠기(30Hz 변조) + 저역 노이즈 = "으르렁" 근사.
+    static AudioClip s_proceduralGrunt;
+    static AudioClip ProceduralGrunt
+    {
+        get
+        {
+            if (s_proceduralGrunt != null) return s_proceduralGrunt;   // 플레이 종료로 파괴되면 재생성
+            const int sr = 44100;
+            const float dur = 0.6f;
+            int len = (int)(sr * dur);
+            float[] data = new float[len];
+            var rng = new System.Random(7707);
+            double phase = 0.0;
+            float lp = 0f;
+            for (int i = 0; i < len; i++)
+            {
+                float t = i / (float)sr;
+                float u = i / (float)(len - 1);
+                float freq = Mathf.Lerp(110f, 70f, u);              // 스윕 다운 — 목 깊은 데로 내려가는 으르렁
+                phase += 2.0 * System.Math.PI * freq / sr;          // 스윕은 위상 적분(주파수 직대입은 글리치)
+                float growl = (float)System.Math.Sin(phase);
+                float rough = 0.65f + 0.35f * Mathf.Sin(2f * Mathf.PI * 30f * t);   // 진폭 거칠기
+                float white = (float)(rng.NextDouble() * 2.0 - 1.0);
+                lp += 0.05f * (white - lp);                          // 저역 노이즈(숨 섞임)
+                // 어택 50ms / 릴리즈 마지막 30% — 양끝 클릭 방지
+                float env = Mathf.Clamp01(u / 0.08f) * (u > 0.7f ? (1f - u) / 0.3f : 1f);
+                data[i] = (growl * rough * 0.7f + lp * 0.3f) * env;
+            }
+            s_proceduralGrunt = AudioClip.Create("ProceduralGrunt", len, 1, sr, false);
+            s_proceduralGrunt.SetData(data, 0);
+            return s_proceduralGrunt;
+        }
+    }
+
     void EmitGrunt()
     {
         if (_config == null) return;
-        if (gruntSound != null)
-            AudioSource.PlayClipAtPoint(gruntSound, transform.position);
+        // 클립 미할당이어도 절차 폴백으로 소리를 낸다 — 리스너 분리 검증(좌우 정위 게이트)에 필수(B-005a).
+        SfxOneShot.Play(gruntSound != null ? gruntSound : ProceduralGrunt, transform.position);
 
         Collider[] nearby = Physics.OverlapSphere(transform.position, _config.gruntRadius, zombieLayer);
         foreach (var col in nearby)
@@ -548,7 +585,7 @@ public class ZombieController : MonoBehaviour
         _windupTimer = _config.lungeWindup;
 
         if (windupSound != null)
-            AudioSource.PlayClipAtPoint(windupSound, transform.position);
+            SfxOneShot.Play(windupSound, transform.position);
 
         // 윈드업 텔레그래프: Attack 클립이 와이어링돼 있으면 그걸, 없으면 상체 젖힘 코드 폴백.
         if (_hasAttackTrigger && _animator != null) _animator.SetTrigger(AttackHash);
@@ -988,7 +1025,7 @@ public class ZombieController : MonoBehaviour
         // killSound 미할당 좀비도 창을 소비한다(의도 — 펀치인은 모든 킬의 권리, 창은 공유 예산).
         if (TryConsumeKillFeedback())
         {
-            if (killSound != null) AudioSource.PlayClipAtPoint(killSound, transform.position);
+            if (killSound != null) SfxOneShot.Play(killSound, transform.position);
             if (_player != null)
                 PlayerCameraRig.Instance?.TriggerPunchIn(transform.position - _player.position,
                     converged ? ConvergedKillPunchIn : KillPunchIn);

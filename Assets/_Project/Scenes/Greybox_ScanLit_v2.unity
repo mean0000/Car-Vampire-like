@@ -11010,7 +11010,6 @@ GameObject:
   m_Component:
   - component: {fileID: 762228340}
   - component: {fileID: 762228339}
-  - component: {fileID: 762228338}
   - component: {fileID: 762228341}
   - component: {fileID: 762228342}
   - component: {fileID: 762228343}
@@ -11024,14 +11023,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!81 &762228338
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 762228337}
-  m_Enabled: 1
 --- !u!20 &762228339
 Camera:
   m_ObjectHideFlags: 0
@@ -14286,6 +14277,59 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1004770962}
   m_CullTransparentMesh: 1
+--- !u!1 &1011889174
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1011889177}
+  - component: {fileID: 1011889176}
+  - component: {fileID: 1011889175}
+  m_Layer: 0
+  m_Name: AudioListenerRig
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1011889175
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1011889174}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c63c6a69a36110f48997950febeed240, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AudioListenerRig
+--- !u!81 &1011889176
+AudioListener:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1011889174}
+  m_Enabled: 1
+--- !u!4 &1011889177
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1011889174}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1018459395
 GameObject:
   m_ObjectHideFlags: 0
@@ -25317,6 +25361,56 @@ Transform:
   - {fileID: 1646870094}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1997132766
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1997132768}
+  - component: {fileID: 1997132767}
+  m_Layer: 0
+  m_Name: TensionAudioDirector
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1997132767
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1997132766}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e777b9558ffa664469b038d8e71390c6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TensionAudioDirector
+  calmMaxVolume: 0.03
+  alertMaxVolume: 0.1
+  combatMaxVolume: 0.14
+  attackTime: 0.5
+  releaseTime: 5
+  masterEnabled: 0
+--- !u!4 &1997132768
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1997132766}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1998385853
 GameObject:
   m_ObjectHideFlags: 0
@@ -31728,3 +31822,5 @@ SceneRoots:
   - {fileID: 1170400104}
   - {fileID: 2078205614}
   - {fileID: 2098021065}
+  - {fileID: 1011889177}
+  - {fileID: 1997132768}
