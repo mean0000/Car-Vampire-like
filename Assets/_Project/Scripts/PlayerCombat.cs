@@ -248,6 +248,8 @@ public class PlayerCombat : MonoBehaviour
     public float ReloadProgress01 => (_reloading && _reloadTime > 0f) ? 1f - Mathf.Clamp01(_reloadTimer / _reloadTime) : 1f;
     /// <summary>현재 무기의 재장전 소요 시간(초) — 장전 모션 길이 동기화용(게임 수치가 권위, 애니는 종속).</summary>
     public float ReloadDuration => _reloadTime;
+    /// <summary>현재 원거리 무기의 발사음 분류(권총/라이플/샷건) — 로코모션 스탠스 선택용. ApplyRanged에서 갱신.</summary>
+    public GunSfx.GunClass CurrentGunClass => _gunClass;
 
     WeaponLoadout.Kind _kind = WeaponLoadout.Kind.Ranged;
     MeleeAttacker _melee;   // 근접일 때만 생성(원거리는 null)

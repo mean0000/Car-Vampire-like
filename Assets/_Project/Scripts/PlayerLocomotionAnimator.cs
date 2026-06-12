@@ -36,6 +36,12 @@ public class PlayerLocomotionAnimator : MonoBehaviour
     [Tooltip("방향(MoveX/MoveY) 댐핑 — 급격한 방향 전환을 부드럽게.")]
     [SerializeField] float dirDamp = 0.08f;
 
+    [Header("Stance Controllers (무기별 자세)")]
+    [Tooltip("라이플/샷건 스탠스 컨트롤러. 비우면 스탠스 스왑 비활성(현재 컨트롤러 유지).")]
+    [SerializeField] RuntimeAnimatorController rifleController;
+    [Tooltip("권총(리볼버) 스탠스 컨트롤러. 비우면 스탠스 스왑 비활성.")]
+    [SerializeField] RuntimeAnimatorController pistolController;
+
     [Header("Reload (UpperBody Layer)")]
     [Tooltip("장전 블렌드트리의 기준 클립 길이(초). Stand_Reload 길이 — Move_Reload는 트리 내 timeScale로 동일 길이 정규화됨.")]
     [SerializeField] float reloadClipLength = 3.6666667f;
@@ -49,6 +55,35 @@ public class PlayerLocomotionAnimator : MonoBehaviour
     Animator _animator;
     Vector3 _lastPos;
     bool _wasReloading;
+
+    /// <summary>
+    /// 무기 종류(PlayerCombat 폴링)에 따라 컨트롤러 스왑: 권총류=권총 스탠스, 그 외(라이플/샷건)=라이플 스탠스.
+    /// runtimeAnimatorController 교체는 파라미터를 보존하지 않으므로, 스왑 직전 댐핑된 현재 값을 읽어
+    /// 직후 그대로 재주입한다 — 이동 중 스왑에도 블렌드 연속성 유지(한 프레임 idle 스냅 방지).
+    /// </summary>
+    void ApplyStance()
+    {
+        if (aimSource == null || rifleController == null || pistolController == null) return;
+
+        RuntimeAnimatorController desired =
+            aimSource.CurrentGunClass == GunSfx.GunClass.Pistol ? pistolController : rifleController;
+        if (_animator.runtimeAnimatorController == desired) return;
+
+        // 스왑 직전의 댐핑된 실제 값(목표값이 아니라 현재 보간값)을 캡처.
+        float speed = _animator.GetFloat(SpeedHash);
+        float moveX = _animator.GetFloat(MoveXHash);
+        float moveY = _animator.GetFloat(MoveYHash);
+
+        _animator.runtimeAnimatorController = desired;
+
+        _animator.SetFloat(SpeedHash, speed);
+        _animator.SetFloat(MoveXHash, moveX);
+        _animator.SetFloat(MoveYHash, moveY);
+
+        // 새 컨트롤러의 Reload bool은 기본 false — 폴링 엣지 상태를 동기화해
+        // 장전 중 스왑이어도(무기 교체가 _reloading을 리셋) 다음 폴링이 올바른 엣지를 본다.
+        _wasReloading = false;
+    }
 
     void Awake()
     {
@@ -69,6 +104,8 @@ public class PlayerLocomotionAnimator : MonoBehaviour
 
         float dt = Time.deltaTime;
         if (dt <= 0f) return;
+
+        ApplyStance();
 
         // 평면(XZ) 변위만 — 지면 추종에 의한 y 변화는 로코모션과 무관.
         Vector3 cur = moveSource.position;
