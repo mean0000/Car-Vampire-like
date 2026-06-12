@@ -8,11 +8,12 @@ namespace Run
     /// strain 수확 연출 매니저 — 좀비 처리 순간 strain을 결정 파편으로 떨궈 플레이어가 줍게 한다(PhysicalDrop).
     ///   (A/B 판정 완료 2026-06-12: PhysicalDrop 승리 — AutoAbsorb 즉시입금 모드는 제거됨.)
     ///
-    /// 동작: 처리 → 0.05s 후 회전하는 시안 결정 파편(팔면체) 드랍 + 지면 시안 마커.
+    /// 동작: 처리 → 0.05s 후 시안 큐브 응집체(코어+외각 카운터 회전) 드랍 + 지면 시안 마커 + 송출 입자 스트림.
     ///   플레이어가 픽업 반경에 들면 입금 + 흡수 쿼드 수렴 연출. 안 주우면 수명 만료로 소실(수확 소실).
     ///
     /// 세계관: strain="메모리"(나노봇 잔해). 현장에 흩어진 잔해를 직접 줍는 거친 회수.
-    ///   색은 시안(정상 신호 채널, 스캔펄스 캐넌). 결정 파편의 Y 회전은 부감에서 글린트(실루엣 폭 변화)로 읽힌다.
+    ///   색은 시안(정상 신호 채널, 스캔펄스 캐넌). ★형태=큐브 클러스터(2026-06-12 유저 판정: 보석 팔면체는
+    ///   '전리품/돈'으로 오독되어 기각) — 큐브=데이터, 느슨한 뭉침=군체 응집, 위로 새는 입자=회수 전 신호 송출.
     ///
     /// 패턴: PurgeSnapshotFX의 자가 부트스트랩 싱글톤 + PlayerAfterimage의 가산 머티리얼/풀/폴백 체인 재사용.
     ///   씬 배치 불필요 — 첫 호출 시 GameObject를 만들고, 자원은 전부 코드 생성, OnDestroy/OnDisable에서 정리.
@@ -44,7 +45,7 @@ namespace Run
 
         // ── 드랍 결정 파편 ──
         const float DropDelay = 0.05f;        // 킬 신호와 분리하는 스폰 딜레이(초)
-        const float DropSpawnHeight = 0.35f;  // 사망 위치 +높이(m) — 하단 꼭짓점(−0.27)이 지면 위 0.08m
+        const float DropSpawnHeight = 0.35f;  // 사망 위치 +높이(m) — 응집체 하단(≈−0.23)이 지면 위 0.12m
         const float DropScatterMin = 0.25f;   // 다중 드랍 XZ 산란 최소 반경(m) — 호드 밀집 겹침 방지
         const float DropScatterMax = 0.45f;   // 다중 드랍 XZ 산란 최대 반경(m)
         const float DropPickupRadius = 1.3f;  // 플레이어 픽업 반경(m)
@@ -65,11 +66,19 @@ namespace Run
         // 무채 그레이(루마 보존) — 시안 틴트가 만료 시 여기로 수렴해 "신호 죽음"을 읽힌다.
         static readonly Color PurgeGrayBase = new Color(0.6f, 0.62f, 0.64f, 1f);
 
-        // ── 결정 파편 형태(코드 생성 세로 길쭉 팔면체 — 가산 언릿이라 실루엣이 전부) ──
-        const float CrystalTopY = 0.48f;      // 상단 꼭짓점 +높이(m)
-        const float CrystalBottomY = -0.27f;  // 하단 꼭짓점 −깊이(m)
-        const float CrystalEquatorR = 0.20f;  // 적도 사각형 반경(m)
-        const float CrystalSpinSpeed = 50f;   // Y축 연속 회전 속도(°/s, scaled) — 글린트용
+        // ── 응집체 형태(코드 생성 큐브 클러스터 — 유저 판정: 보석은 '전리품'으로 읽혀 기각.
+        //    큐브=데이터(글리치 블록 문법과 동일 세계 언어), 느슨한 뭉침=나노 군체가 응집한 잔해) ──
+        const float CoreCubeSize = 0.24f;     // 코어 큐브 한 변(m)
+        const float ClusterSpinSpeed = 50f;   // 코어 Y축 회전(°/s, scaled) — 실루엣 글린트
+        const float ShellSpinSpeed = 30f;     // 외각 파편의 월드 역회전(°/s) — 군체가 미세 재배열되는 인상
+
+        // ── 송출 스트림(드랍에서 위로 새는 시안 점입자 — "회수 전까지 신호 송출 중" 디제틱
+        //    + 수직 가독 채널(루트 빔 자리): 엄폐물 뒤 드랍도 올라오는 입자로 위치가 읽힌다) ──
+        const float MoteInterval = 0.45f;     // 입자 방출 간격(초, ±20% 지터)
+        const float MoteRise = 0.95f;         // 상승 거리(m)
+        const float MoteDuration = 0.9f;      // 입자 수명(초)
+        const float MoteSize = 0.07f;         // 입자 한 변(m)
+        const float MoteHDR = 1.4f;           // 입자 HDR(은은하게 — 본체보다 낮게)
 
         // ── 바닥 마커(드랍마다 지면에 깔리는 희미한 시안 디스크 — 위치 단서) ──
         const float MarkerHeight = 0.03f;     // 지면 +높이(m, z-fight 회피)
@@ -81,7 +90,7 @@ namespace Run
         const string PickupInfoLayerName = "PickupInfo";
 
         // ── 풀 워밍업 ──
-        const int AbsorbWarm = 32;            // 흡수 쿼드 프리워밍 수
+        const int AbsorbWarm = 48;            // 흡수 쿼드 프리워밍 수(송출 입자가 같은 풀을 쓰므로 여유 포함)
         const int DropWarm = 24;              // 드랍 구체 프리워밍 수
 
         // 시안 — 정상 신호 채널(스캔펄스 캐넌). PlayerAfterimage ghostColorCyan과 동일 계열.
@@ -125,8 +134,9 @@ namespace Run
         // ════════════ 런타임 자원 ════════════
 
         Material _absorbMat;     // 시안 가산(쿼드·링 공용 템플릿 — 인스턴스 색은 풀 슬롯이 따로 가짐)
-        Mesh _quadMesh;          // 1×1 평면 쿼드(흡수·링 공용)
-        Mesh _crystalMesh;       // 세로 길쭉 팔면체(드랍 결정 파편 — 1회 생성 공유)
+        Mesh _quadMesh;          // 1×1 평면 쿼드(흡수·링·송출 입자 공용)
+        Mesh _coreMesh;          // 코어 큐브(드랍 응집체 중심 — 1회 생성 공유)
+        Mesh _shellMesh;         // 외각 파편 큐브 5개 베이크(코어와 역회전하는 군체 껍질)
         Mesh _discMesh;          // 지름 1 원형 디스크(바닥 마커 — 원이라 부모 Y스핀이 보이지 않음)
         bool _safe;              // 셰이더 폴백까지 전멸하면 false — FX 생략, 입금 폴백은 유지
 
@@ -150,9 +160,12 @@ namespace Run
             public Vector3 source;     // 출발(사망) 위치 — 호밍 모드: 매 프레임 플레이어로 보간 / 산란 모드: 부유 기준점
             public float arcPhase;     // sin 호 위상(쿼드별 분산)
             public float arcAmp;       // sin 호 진폭(쿼드별 분산)
-            // ── 산란 모드 전용(만료 소독 회수) ──
-            public bool scatter;       // true=회백 산란 부유 모드(호밍 끔)
-            public Vector3 driftDir;   // 부유 방향(위+측면 랜덤, 정규화 안 함 — 길이가 속도)
+            // ── 산란 모드 전용(만료 소독 회수 + 송출 입자 공용 — 슬롯별 파라미터) ──
+            public bool scatter;       // true=고정 드리프트 부유 모드(호밍 끔)
+            public Vector3 driftDir;   // 부유 방향(정규화 안 함 — 길이가 이동량)
+            public float dur;          // 부유 수명(초) — 소독 파편/송출 입자가 다름
+            public Color color;        // 부유 색 — 소독=회백, 송출=시안
+            public float hdr;          // 부유 HDR 배율
         }
 
         // ── 도착 링 1슬롯: 플레이어 발밑 펄스 ──
@@ -169,9 +182,10 @@ namespace Run
         // ── 드랍 결정 파편 1슬롯 ──
         class Drop
         {
-            public GameObject go;       // 결정 파편 본체(회전·보빙)
+            public GameObject go;       // 응집체 본체(코어 큐브 — Y 스핀)
             public MeshRenderer mr;
             public Material mat;
+            public Transform shell;     // 외각 파편(go의 자식, 코어와 역회전 — 머티리얼은 d.mat 공유)
             public GameObject marker;   // 지면 고정 시안 디스크(go의 자식 — 생성/회수 일체화)
             public MeshRenderer markerMr;
             public Material markerMat;
@@ -179,7 +193,9 @@ namespace Run
             public float age;          // 스폰 후 경과(딜레이 포함)
             public bool live;          // 딜레이 끝나 픽업 가능한 상태인가
             public bool purged;        // 만료 페이드 진입 시 회백 산란 쿼드를 1회만 뿌리도록
-            public Vector3 basePos;    // 정지 부유 위치(보빙 폐지 — 톤 교정으로 결정은 가만히 떠 있음)
+            public Vector3 basePos;    // 정지 부유 위치(보빙 폐지 — 톤 교정으로 응집체는 가만히 떠 있음)
+            public float yaw0;         // 초기 Y 회전 위상(드랍별 분산 — 동시 스폰이 같은 자세로 돌지 않게)
+            public float moteTimer;    // 송출 입자 방출 타이머
             public StrainDef def;      // 보유 strain
             public int weight;         // 보유 가중
         }
@@ -201,7 +217,8 @@ namespace Run
             }
 
             _quadMesh = CreateQuadMesh();
-            _crystalMesh = CreateCrystalMesh();
+            _coreMesh = CreateCubeMesh(CoreCubeSize);
+            _shellMesh = CreateShellMesh();
             _discMesh = CreateDiscMesh();
             _absorbMat = CreateAdditiveMaterial(CyanBase, AbsorbHDR);
             _safe = _absorbMat != null;
@@ -243,7 +260,8 @@ namespace Run
             // 풀 슬롯은 부모 없는 독립 GO라 자동 파괴되지 않는다 — 메시/머티리얼/오브젝트 명시 정리.
             if (_absorbMat != null) Destroy(_absorbMat);
             if (_quadMesh != null) Destroy(_quadMesh);
-            if (_crystalMesh != null) Destroy(_crystalMesh);
+            if (_coreMesh != null) Destroy(_coreMesh);
+            if (_shellMesh != null) Destroy(_shellMesh);
             if (_discMesh != null) Destroy(_discMesh);
             foreach (var q in _absorbPool) { if (q.mat != null) Destroy(q.mat); if (q.go != null) Destroy(q.go); }
             foreach (var r in _ringPool) { if (r.mat != null) Destroy(r.mat); if (r.go != null) Destroy(r.go); }
@@ -290,7 +308,7 @@ namespace Run
                 // ── 산란 모드(만료 소독 회수): 호밍/링 없이 고정 드리프트 부유 + 페이드 후 회수 ──
                 if (q.scatter)
                 {
-                    float st = q.age / PurgeShardDuration;
+                    float st = q.age / q.dur;
                     if (st >= 1f)
                     {
                         q.active = false; q.scatter = false;
@@ -304,7 +322,7 @@ namespace Run
                         q.go.transform.position = q.source + q.driftDir * se;
                         FaceCamera(q.go.transform);
                     }
-                    SetTint(q.mat, PurgeGrayBase, PurgeShardHDR * (1f - st));
+                    SetTint(q.mat, q.color, q.hdr * (1f - st));
                     continue;
                 }
 
@@ -425,17 +443,29 @@ namespace Run
                 {
                     SetDropTint(d, DropHDR);
                 }
+
+                // 송출 스트림 — 위로 새는 시안 점입자("회수 전 신호 송출 중" + 수직 가독 채널).
+                d.moteTimer -= dt;
+                if (d.moteTimer <= 0f)
+                {
+                    d.moteTimer = MoteInterval * Random.Range(0.8f, 1.2f);
+                    EmitMote(d.basePos);
+                }
                 PoseDrop(d, life);
             }
         }
 
-        // 정지 부유(보빙 폐지) + Y축 연속 회전. 결정은 basePos에 가만히 떠 있고, 마커만 지면에 고정.
+        // 정지 부유(보빙 폐지) + 코어/외각 카운터 회전. 응집체는 basePos에 가만히 떠 있고, 마커만 지면에 고정.
         void PoseDrop(Drop d, float life)
         {
             if (d.go == null) return;   // 다른 d.go 접근부와 동일하게 방어
             d.go.transform.position = d.basePos;   // 정지 부유 — 상하 사인 운동 제거(톤 교정)
-            // 빌보드 대신 Y축 스핀 — 부감에서 실루엣 폭이 주기적으로 변해 글린트.
-            d.go.transform.rotation = Quaternion.Euler(0f, life * CrystalSpinSpeed, 0f);
+            // 코어 Y스핀 + 외각 역회전 — 실루엣이 불규칙하게 변해 글린트, 군체가 재배열되는 인상.
+            float yaw = d.yaw0 + life * ClusterSpinSpeed;
+            d.go.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+            // 외각의 월드 회전 = −ShellSpinSpeed가 되도록 부모 회전을 로컬에서 상쇄.
+            if (d.shell != null)
+                d.shell.localRotation = Quaternion.Euler(0f, -life * (ClusterSpinSpeed + ShellSpinSpeed), 0f);
             // 마커는 지면 고정: basePos가 DropSpawnHeight만큼 떠 있으므로 로컬로 끌어내려 지면 마커 높이에 둔다(보빙 상쇄항 제거).
             if (d.marker != null)
                 d.marker.transform.localPosition = new Vector3(0f, -DropSpawnHeight + MarkerHeight, 0f);
@@ -490,6 +520,9 @@ namespace Run
                 q.active = true;
                 q.scatter = true;
                 q.age = 0f;
+                q.dur = PurgeShardDuration;
+                q.color = PurgeGrayBase;
+                q.hdr = PurgeShardHDR;
                 q.source = src + new Vector3(Random.Range(-0.1f, 0.1f), Random.Range(-0.05f, 0.05f), Random.Range(-0.1f, 0.1f));
                 // 부유 방향 = 위 보장 + 측면 랜덤. 길이가 곧 이동량(UpdateAbsorb에서 정규화 보간 t로 적용).
                 q.driftDir = new Vector3(
@@ -502,6 +535,25 @@ namespace Run
                 SetTint(q.mat, PurgeGrayBase, PurgeShardHDR);   // 회백 — 차가운 정리 톤
                 q.go.SetActive(true);
             }
+        }
+
+        // 송출 입자 1개 — absorb 풀 scatter 모드 재사용(위로 직선 부유, 시안, 은은함).
+        void EmitMote(Vector3 basePos)
+        {
+            var q = GetAbsorbQuad();
+            q.active = true;
+            q.scatter = true;
+            q.age = 0f;
+            q.dur = MoteDuration;
+            q.color = CyanBase;
+            q.hdr = MoteHDR;
+            q.source = basePos + new Vector3(Random.Range(-0.12f, 0.12f), Random.Range(0.05f, 0.25f), Random.Range(-0.12f, 0.12f));
+            q.driftDir = new Vector3(Random.Range(-0.06f, 0.06f), MoteRise, Random.Range(-0.06f, 0.06f));
+            q.go.transform.position = q.source;
+            q.go.transform.localScale = Vector3.one * MoteSize;
+            FaceCamera(q.go.transform);
+            SetTint(q.mat, CyanBase, MoteHDR);
+            q.go.SetActive(true);
         }
 
         void SpawnRing(Vector3 center)
@@ -532,11 +584,13 @@ namespace Run
             float rad = Random.Range(DropScatterMin, DropScatterMax);
             Vector3 scatter = new Vector3(Mathf.Cos(ang) * rad, 0f, Mathf.Sin(ang) * rad);
             d.basePos = worldPos + scatter + Vector3.up * DropSpawnHeight;
+            d.yaw0 = Random.value * 360f;                          // 드랍별 자세 분산
+            d.moteTimer = Random.Range(0.05f, MoteInterval);       // 송출 시작 지터
             d.go.transform.position = d.basePos;
-            d.go.transform.rotation = Quaternion.identity;
-            // 크리스탈 메시는 실치수로 생성됐으므로 스케일 1(DropDiameter 폐지). 마커는 자식이 자체 스케일로 처리.
+            d.go.transform.rotation = Quaternion.Euler(0f, d.yaw0, 0f);
+            // 응집체 메시는 실치수로 생성됐으므로 스케일 1. 마커는 자식이 자체 스케일로 처리.
             d.go.transform.localScale = Vector3.one;
-            SetDropTint(d, DropHDR);   // 크리스탈+마커 초기 색
+            SetDropTint(d, DropHDR);   // 응집체(코어+외각 공유 머티리얼)+마커 초기 색
             d.go.SetActive(false);   // 딜레이 끝나면 UpdateDrops가 켠다(마커는 자식이라 함께 켜짐)
             return true;
         }
@@ -602,17 +656,28 @@ namespace Run
 
         Drop CreateDrop()
         {
-            // 본체 = 세로 길쭉 팔면체 결정 파편(Y 스핀 — 부감 글린트).
+            // 본체 = 큐브 응집체 코어(Y 스핀). 외각 파편은 자식으로 역회전 — 군체가 재배열되는 인상.
             var go = new GameObject("StrainDrop");
             go.layer = _pickupLayer;   // 정보 레이어 승격(조준 탈색·어둠 면제)
             go.transform.SetParent(null, false);
             var mf = go.AddComponent<MeshFilter>();
-            mf.sharedMesh = _crystalMesh;
+            mf.sharedMesh = _coreMesh;
             var mr = go.AddComponent<MeshRenderer>();
             mr.shadowCastingMode = ShadowCastingMode.Off;
             mr.receiveShadows = false;
             var mat = new Material(_absorbMat);
             mr.sharedMaterial = mat;
+
+            // 외각 파편 — 코어와 같은 머티리얼 인스턴스 공유(틴트·점멸·페이드가 자동 동기화).
+            var shell = new GameObject("StrainDropShell");
+            shell.layer = _pickupLayer;   // 자식이라도 명시 — 레이어는 상속 안 됨
+            shell.transform.SetParent(go.transform, false);
+            var shellMf = shell.AddComponent<MeshFilter>();
+            shellMf.sharedMesh = _shellMesh;
+            var shellMr = shell.AddComponent<MeshRenderer>();
+            shellMr.shadowCastingMode = ShadowCastingMode.Off;
+            shellMr.receiveShadows = false;
+            shellMr.sharedMaterial = mat;
 
             // 바닥 마커 = 지면에 눕힌 희미한 시안 디스크(쿼드 재사용). go의 자식 — 생성/회수/표시 일체화.
             var marker = new GameObject("StrainDropMarker");
@@ -628,7 +693,7 @@ namespace Run
             var markerMat = new Material(_absorbMat);
             markerMr.sharedMaterial = markerMat;
 
-            var d = new Drop { go = go, mr = mr, mat = mat, marker = marker, markerMr = markerMr, markerMat = markerMat, active = false };
+            var d = new Drop { go = go, mr = mr, mat = mat, shell = shell.transform, marker = marker, markerMr = markerMr, markerMat = markerMat, active = false };
             go.SetActive(false);
             _dropPool.Add(d);
             return d;
@@ -696,30 +761,60 @@ namespace Run
             return mesh;
         }
 
-        // 세로 길쭉 팔면체 결정 파편(실치수). 상단 꼭짓점·하단 꼭짓점 + 적도 사각형 4점 → 8삼각형.
-        // 가산 언릿이라 노멀 무관 — 실루엣이 전부. 와인딩은 무시 가능(양면처럼 보이도록 두 갈래 모두 채움).
-        Mesh CreateCrystalMesh()
+        // 한 변 size 큐브(중심 원점). 가산 언릿이라 노멀 무관 — 닫힌 볼록체라 단일 와인딩으로 충분.
+        Mesh CreateCubeMesh(float size)
         {
-            var mesh = new Mesh { name = "StrainCrystalShard" };
-            float r = CrystalEquatorR;
-            // 0=상단, 1=하단, 2~5=적도 사각형(+X,+Z,−X,−Z)
-            mesh.vertices = new[]
-            {
-                new Vector3(0f, CrystalTopY, 0f),     // 0 상단 꼭짓점
-                new Vector3(0f, CrystalBottomY, 0f),  // 1 하단 꼭짓점
-                new Vector3( r, 0f,  0f),             // 2 적도 +X
-                new Vector3( 0f, 0f,  r),             // 3 적도 +Z
-                new Vector3(-r, 0f,  0f),             // 4 적도 −X
-                new Vector3( 0f, 0f, -r),             // 5 적도 −Z
-            };
-            // 상단 4삼각형(꼭짓점→적도 변) + 하단 4삼각형. 적도는 2-3-4-5 순환.
-            mesh.triangles = new[]
-            {
-                0, 2, 3,  0, 3, 4,  0, 4, 5,  0, 5, 2,   // 상단 팬
-                1, 3, 2,  1, 4, 3,  1, 5, 4,  1, 2, 5,   // 하단 팬(역와인딩)
-            };
+            var mesh = new Mesh { name = "StrainCubeCore" };
+            var verts = new List<Vector3>(8);
+            var tris = new List<int>(36);
+            AppendCube(verts, tris, Vector3.zero, size);
+            mesh.SetVertices(verts);
+            mesh.SetTriangles(tris, 0);
             mesh.RecalculateBounds();
             return mesh;
+        }
+
+        // 외각 파편 — 작은 큐브 5개를 불규칙 오프셋으로 1메시에 베이크(드로우 1회).
+        // 큐브=데이터(글리치 블록 문법), 느슨한 배치=군체 응집 잔해. 코어와 역회전해 실루엣이 계속 변한다.
+        Mesh CreateShellMesh()
+        {
+            var mesh = new Mesh { name = "StrainCubeShell" };
+            var verts = new List<Vector3>(40);
+            var tris = new List<int>(180);
+            AppendCube(verts, tris, new Vector3( 0.27f,  0.14f,  0.05f), 0.15f);
+            AppendCube(verts, tris, new Vector3(-0.23f,  0.00f,  0.17f), 0.17f);
+            AppendCube(verts, tris, new Vector3( 0.06f, -0.16f, -0.25f), 0.13f);
+            AppendCube(verts, tris, new Vector3(-0.13f,  0.26f, -0.13f), 0.10f);
+            AppendCube(verts, tris, new Vector3(-0.03f,  0.38f,  0.08f), 0.08f);   // 상단 액센트 — 세로 실루엣 확보
+            mesh.SetVertices(verts);
+            mesh.SetTriangles(tris, 0);
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+
+        // 큐브 1개를 버텍스/트라이 리스트에 추가(아웃워드 와인딩 — Unity 시계방향 전면).
+        static void AppendCube(List<Vector3> verts, List<int> tris, Vector3 c, float size)
+        {
+            float h = size * 0.5f;
+            int b = verts.Count;
+            verts.Add(c + new Vector3(-h, -h, -h));   // 0
+            verts.Add(c + new Vector3( h, -h, -h));   // 1
+            verts.Add(c + new Vector3( h,  h, -h));   // 2
+            verts.Add(c + new Vector3(-h,  h, -h));   // 3
+            verts.Add(c + new Vector3(-h, -h,  h));   // 4
+            verts.Add(c + new Vector3( h, -h,  h));   // 5
+            verts.Add(c + new Vector3( h,  h,  h));   // 6
+            verts.Add(c + new Vector3(-h,  h,  h));   // 7
+            int[] t =
+            {
+                0, 2, 1,  0, 3, 2,   // −Z
+                4, 5, 6,  4, 6, 7,   // +Z
+                0, 4, 7,  0, 7, 3,   // −X
+                1, 2, 6,  1, 6, 5,   // +X
+                0, 1, 5,  0, 5, 4,   // −Y
+                3, 7, 6,  3, 6, 2,   // +Y
+            };
+            for (int i = 0; i < t.Length; i++) tris.Add(b + t[i]);
         }
 
         // 가산 언릿 — PlayerAfterimage.CreateGhostMaterial 폴백 체인. 전멸 시 null(호출부가 입금 폴백 유지).
