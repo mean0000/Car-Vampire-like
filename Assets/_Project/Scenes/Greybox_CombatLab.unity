@@ -6718,6 +6718,10 @@ PrefabInstance:
       propertyPath: m_Shadows.m_Type
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3919892245518314164, guid: 9a118a53adef55a479045a26c28f920e, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3919892245518314165, guid: 9a118a53adef55a479045a26c28f920e, type: 3}
       propertyPath: satHolder
       value: 
@@ -45894,6 +45898,7 @@ MonoBehaviour:
   leadMaxDistance: 2
   aimLeadBoost: 2.2
   aimLeadMaxDistance: 5.5
+  maxCursorLead: 3
   velocityLeadTime: 0
   velocityLeadMax: 2
   followSmoothTime: 0.18
@@ -54571,7 +54576,7 @@ MonoBehaviour:
   silenceSnap: 0.5
   radiusPerNoise: 0.25
   maxRadius: 25
-  chaseThreshold: 50
+  chaseThreshold: 80
 --- !u!1 &910725858
 GameObject:
   m_ObjectHideFlags: 0

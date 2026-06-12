@@ -34,6 +34,9 @@ public class PlayerCameraRig : MonoBehaviour
     [SerializeField, Min(1f)] float aimLeadBoost = 2.2f;
     [Tooltip("주시/조준 시 리드 최대 거리(m) — 평시 캡과 별도. 코너 너머 정찰의 실질 사거리.")]
     [SerializeField, Min(0f)] float aimLeadMaxDistance = 5.5f;
+    // 커서 리드 월드거리 상한 — 0 이하 = 무제한. 평시+조준 합산 최종 커서 리드의 총량 캡(2026-06-12 유저 판정: 이동량 일관).
+    [Tooltip("커서 리드 총량 상한(m). 평시·조준 캡과 별도로 최종 커서 리드 크기를 한 번 더 클램프. 0 이하 = 무제한.")]
+    [SerializeField] float maxCursorLead = 3f;
 
     [Header("Velocity Lead (이동 방향 예측 — 0이면 비활성)")]
     [Tooltip("이동 방향으로 미리 보는 시간(초). 속도감 보강용. 과하면 화면이 흐물거린다(swimmy).")]
@@ -236,6 +239,8 @@ public class PlayerCameraRig : MonoBehaviour
                 float cap = Mathf.Lerp(leadMaxDistance, aimLeadMaxDistance, aimEased);
                 float m = lead.magnitude;
                 if (m > cap) lead *= cap / m;
+                // 총량 캡 — 최종 커서 리드 벡터 크기를 클램프(방향 보존). SmoothDamp 입력 이전(목표값 단계)이라 댐핑과 간섭 없음.
+                if (maxCursorLead > 0f) lead = Vector3.ClampMagnitude(lead, maxCursorLead);
             }
         }
 

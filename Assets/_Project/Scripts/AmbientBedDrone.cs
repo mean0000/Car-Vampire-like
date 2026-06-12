@@ -35,12 +35,18 @@ public class AmbientBedDrone : MonoBehaviour
 
     AudioSource _src;
 
+    // 2026-06-12 유저 판정: 합성 드론 톤 기각("아무 상황 없을 때 우우우웅 거슬림"). 실음원 확보 시 true로 재기동.
+    const bool kAutoStart = false;
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Bootstrap()
     {
+#pragma warning disable 0162   // kAutoStart=false 동안 아래 코드는 의도된 unreachable — 재기동 대비 보존
+        if (!kAutoStart) return;
         if (s_instance != null) return;
         var go = new GameObject("AmbientBedDrone");
         go.AddComponent<AmbientBedDrone>();
+#pragma warning restore 0162
     }
 
     void Awake()
