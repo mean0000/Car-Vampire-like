@@ -1,2 +1,4 @@
-- [ZombieCrush 개발자 프로필](user_zombiecrush.md) — 1인 개발, Steam PC, 취업 포트폴리오 목적, 한국어 소통
-- [ZombieCrush 프로젝트 현황](project_zombiecrush.md) — 뱀서라이크+자동차 컨셉, 확정 사항 및 미결 과제 목록
+- [ZombieCrush 개발자 프로필](user_zombiecrush.md) — 1인 개발, Steam PC 출시 1순위, 한국어 소통
+- [ZombieCrush 프로젝트 현황](project_zombiecrush.md) — 탑다운 도보 익스트랙션(자동차 뱀서 폐기), 필-볼트 모드, 06-12 판정=경제 본편
+- [볼트 우선순위 판정 원칙](priority_ruling_principles.md) — 재확인=회귀, 2차 게이트는 다음 볼트 안에서 공짜, 잔불=작은 편집 예외
+- [후방 위협 힌트 판정](rear_threat_hint_ruling.md) — 06-12 아크+발자국 2채널 동결, 원칙=동기 이중 인코딩≈예산 1단위, 라이더=호드캡+B-005a 관찰

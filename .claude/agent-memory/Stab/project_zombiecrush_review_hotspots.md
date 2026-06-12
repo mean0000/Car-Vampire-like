@@ -24,3 +24,13 @@ ZombieCrush(Unity URP 톱다운) QA 리뷰 시 반복 점검 항목.
 - DDOL 싱글톤의 sceneLoaded 재구독 패턴: 인스턴스 추적 Unsubscribe(_subbedX 필드)는 검증된 안전 패턴. 단 "씬 로드 후 늦게 스폰되는" 씬 싱글톤은 다음 씬 로드까지 미구독 — "사무실로=씬 리로드" 계약에 기대는 또 하나의 코드.
 - 파이프라인 에셋(URP_HighFidelity) 실측 기준: m_RequireOpaqueTexture=1(전역 상시), OpaqueDownsampling=None, MSAA=1x, HDR=on — 카메라별 requiresColorOption 오버라이드는 현재 중복(무해). 리뷰 시 "opaque texture 비용 추가" 지적은 성립 안 함.
 - 씬 스폰 마커가 디제틱 프롭 지오메트리(벽 슬랩·맨홀 디스크) 트랜스폼을 겸하는 패턴 — 스폰 위치가 벽 콜라이더와 겹치거나 공중(y>0)일 수 있음. 마커 ≠ 빈 오브젝트면 반드시 월드 좌표·주변 콜라이더 확인. 런 재시작 1회성 플래그는 "사무실로 = 씬 리로드" 계약에 안전하게 기대는 중(비-리로드 재출동 도입 시 전부 재검증).
+- IsHiddenFromPlayer(z) API: hidden 필드가 SetRenderers() 내부에서만 써진다 — SetRenderers를 통하지 않는 경로(렌더러 직접 조작 등)가 생기면 hidden 캐시가 stale해짐. 외부 채널이 이 API를 진실 소스로 쓰므로 채널 분리 원칙을 반드시 유지할 것.
+- DDOL 부트스트랩 싱글톤(RearThreatHint 패턴): s_instance static은 domain reload 없는 Enter Play Mode에서 이전 런 값 잔존 가능. Bootstrap()의 `if (s_instance != null) return;` 가드는 이 경우 새 GO 생성을 막아 정상처럼 보이지만, 이전 인스턴스가 Destroy됐으면 s_instance는 fake-non-null — Awake()의 중복 인스턴스 파괴 경로가 진짜 보호막.
+- DDOL 씬 싱글톤 재획득: _partner(PartnerAIUI) 같은 씬 종속 참조는 Rescan 루프(1s) 안에서 null 체크+재탐색. 단 rescanTimer가 0에 도달하는 최대 1초 지연 노출 창이 항상 존재 — 찰나 창에 이벤트 발화가 필요한 시스템엔 부적합(RearThreatHint 토스트는 허용 가능 수준).
+- ZombieController.IsAttacking: Windup/Lunge/Grapple만 포함, Recover는 미포함. 공격 후 Recover 구간(자세 복원 중)은 실물이 다시 숨겨질 수 있음 — 시야 복귀 전 재은폐가 의도인지 리뷰 필요(2026-06-12 발견, 낮은 우선순위 게임 느낌 판단).
+- ReturnWaveTrigger _minSpawnDistEffective 미초기화 경로: SpawnWave 코루틴 시작 전에 PickFairIndex가 호출되는 경로는 없으나, PickFairIndex의 `_minSpawnDistEffective > 0f` 폴백이 안전망 역할. 단 float 기본값 0f + `> 0f` 조건이 정확히 맞물리는 구조임을 기억.
+- RunHarvest.Instance null 검사 후 StrainHarvestFX.OnZombiePurged 호출 순서: ZombieController.HarvestStrain()이 RunHarvest.Instance null이면 조기 리턴하지만, StrainHarvestFX 내부에서 다시 RunHarvest.Instance를 조회한다 — 이중 null 검사라 안전하지만, 첫 가드를 제거하면 StrainHarvestFX가 FX(시각)는 실행하고 입금만 누락하는 분리 버그 가능성이 있음.
+- PartnerAIUI는 씬 오브젝트(DDOL 아님) — RearThreatHint 코드 주석에 "DDOL이라"고 잘못 기재됨(2026-06-12 확인). DDOL 컴포넌트가 씬 오브젝트를 _partner 등으로 캐시할 때, 씬 리로드 후 Unity fake-non-null(파괴된 GO, C# null 체크는 통과) 함정이 발동 — 반드시 `if (_partner == null || !_partner)` Unity null 체크(또는 sceneLoaded 이벤트에서 null 리셋) 필요.
+- RearThreatHint 레벨 트리거 재동기화(ZombieLKPSilhouette): renderers[0].enabled 단독 감시보다 t.hidden 캐시 기반 재동기화(`t.hidden == vis`)가 더 강인 — hidden은 SetRenderers만이 쓰는 단일 진실 소스라 다중 렌더러/파티클 0번 슬롯 혼동 문제를 완전 회피.
+- FirePulse/FireFootprint에서 SetActive(true) 전에 PositionPulse가 카메라 null로 갱신을 skip하면 위치 (0,0,0)에서 1프레임 렌더 가능 — SetActive를 위치 갱신 성공 후로 순서 교체 필요(씬 전환 첫 프레임 함정).
+- _stepQueue(시간차 발자국): scaled Time.time 기반이라 씬 전환+DDOL 구조에서 이전 런의 큐가 잔존할 수 있음 — SceneManager.sceneLoaded 구독으로 Clear가 올바른 위치. dt<=0f 조기 리턴은 timeScale=0 구간을 정확히 동결하지만 씬 전환 클리어 경로를 막기도 함.
