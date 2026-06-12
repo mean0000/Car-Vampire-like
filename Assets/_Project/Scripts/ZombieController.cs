@@ -1148,7 +1148,11 @@ public class ZombieController : MonoBehaviour
         var def = _config != null ? _config.strainDrop : null;
         if (def == null && Meta.MetaProgress.Instance != null)
             def = Meta.MetaProgress.Instance.BioStrain;
-        if (def != null) Run.RunHarvest.Instance.Add(def, Run.LabDepthStrain.WeightAt(transform.position));
+        if (def != null)
+        {
+            int weight = Run.LabDepthStrain.WeightAt(transform.position);
+            Run.StrainHarvestFX.OnZombiePurged(def, weight, transform.position);
+        }
     }
 
     // ──────────── Signal Zombie ────────────
