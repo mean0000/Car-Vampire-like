@@ -51,7 +51,9 @@ public class PlayerCameraRig : MonoBehaviour
     [Header("Aim State (조준 의식 — 외부에서 SetAimState로 구동)")]
     [Tooltip("조준 시 FOV 감소량(도) = 진짜 줌. 구 ±3° 제약은 평시 틸트시프트 밴드 정합용이었고, " +
              "평시 밴드 폐지(2026-06-11)로 해제 — 콘 스택은 플레이어 추적형이라 FOV 변화에 안전.")]
-    [SerializeField, Range(0f, 12f)] float aimFovDrop = 8f;
+    // 2026-06-12 유저 판정: 줌인 기각("확대되면 그쪽이 제대로 안 보임") — 조준 정보는 커서 리드가 담당.
+    // 필드·적용 코드는 노브로 보존(0 = 비활성).
+    [SerializeField, Range(0f, 12f)] float aimFovDrop = 0f;
     [Tooltip("조준 진입 속도(1/초). 4≈0.25초 — 들숨처럼 '천천히 당겨져야' 줌이 모션으로 읽힌다(빠르면 컷처럼 보임).")]
     [SerializeField, Min(0.1f)] float aimBlendSpeed = 4f;
     [Tooltip("조준 해제 속도(1/초). 진입보다 빠르게 — 전투 복귀가 굼뜨면 안 된다.")]
@@ -65,13 +67,23 @@ public class PlayerCameraRig : MonoBehaviour
     [Tooltip("주시 블렌드 완료 후 완전 수렴까지(초) — 의식의 길이. 콘 22°→수렴각으로 무너지는 시간.")]
     [SerializeField, Min(0.1f)] float convergeTime = 0.6f;
 
-    float _convergence;   // 0~1 — 블렌드 완료 후부터 누적, 발사/해제로 리셋
+    float _convergence;        // 0~1 — 블렌드 완료 후부터 누적, 발사/해제로 리셋
+    ConvergeGate _convergeGate = ConvergeGate.Reset;   // 수렴 게이트 — PlayerCombat이 매 프레임 구동
 
     /// <summary>수렴 진행도(0~1) — 콘 붕괴·수렴샷 판정의 구동값. 1≈"완전히 모인" 상태.</summary>
     public float AimConvergence => _convergence;
 
     /// <summary>수렴 파괴 — 발사 반동이 집중의 직선을 깨뜨린다(다음 발은 다시 모아야). 한 발 한 발의 리듬.</summary>
     public void BreakConvergence() => _convergence = 0f;
+
+    /// <summary>수렴 게이트 3상태(리뷰 HIGH — grace 중 충전 어뷰즈 차단).
+    /// Charge=레이저가 살아있는 타깃을 실제로 비추는 프레임만 누적,
+    /// Hold=grace(프레임 지터) 동안 현재값 유지(증감 없음), Reset=즉시 0.</summary>
+    public enum ConvergeGate { Reset, Hold, Charge }
+
+    /// <summary>수렴 게이트(2026-06-12 유저 판정: "어디에든 조준" 즉사 금지 — 대상을 쉬지 않고 지속 조준할 때만 충전).
+    /// PlayerCombat이 매 프레임 구동: 실명중=Charge / grace 내 타깃 유지=Hold / 그 외=Reset.</summary>
+    public void SetConvergeGate(ConvergeGate g) => _convergeGate = g;
 
     [Header("Impulse — Shake (무방향 Perlin · 피격/폭발용)")]
     [Tooltip("쉐이크 감쇠율(클수록 빨리 멎음).")]
@@ -215,13 +227,16 @@ public class PlayerCameraRig : MonoBehaviour
         // --- 조준 상태 블렌딩(리드 배율·FOV) --- 진입은 들숨(느리게), 해제는 빠르게. 소비는 이징값으로.
         _aimBlend = Mathf.MoveTowards(_aimBlend, _aiming ? 1f : 0f, (_aiming ? aimBlendSpeed : aimBlendOutSpeed) * dt);
         float aimEased = AimBlend;
-        if (_cam != null && aimFovDrop > 0f)
+        // aimFovDrop 자기복원형(리뷰 L-1) — 라이브 튜닝 중 0으로 내려도 항상 베이스 기준으로 다시 쓰므로 FOV가 복원된다.
+        if (_cam != null)
             _cam.fieldOfView = _baseFov - aimFovDrop * aimEased;
 
-        // --- 수렴(2단계 집중): 블렌드가 다 들어온 뒤부터 콘이 직선을 향해 무너진다. 해제 시 즉시 리셋. ---
-        if (_aiming && _aimBlend >= 0.999f)
+        // --- 수렴(2단계 집중): 블렌드가 다 들어온 뒤부터, 레이저가 같은 대상을 실제로 비추는 프레임(Charge)만
+        //     콘이 직선을 향해 무너진다. Hold(grace 지터 관용)는 유지만 — 안 비추는 동안 충전되지 않는다(리뷰 HIGH).
+        //     Reset(타깃 없음·교체·사망·비조준)은 즉시 0 — 허공 조준은 모이지 않는다. ---
+        if (_convergeGate == ConvergeGate.Charge && _aiming && _aimBlend >= 0.999f)
             _convergence = Mathf.MoveTowards(_convergence, 1f, dt / Mathf.Max(0.01f, convergeTime));
-        else if (!_aiming)
+        else if (_convergeGate == ConvergeGate.Reset)
             _convergence = 0f;
 
         // --- 커서 리드: 플레이어↔커서 지면 투영점 사이를 leadFraction만큼, 최대 거리로 캡 ---

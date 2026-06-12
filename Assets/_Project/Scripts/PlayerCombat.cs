@@ -152,6 +152,11 @@ public class PlayerCombat : MonoBehaviour
     [SerializeField, Min(0f)] float aimReleaseAfterKill = 0.35f;
 
     float _aimSuppressUntil;                 // 수렴 킬 날숨 — 이 시각(unscaled)까지 조준 억제
+    // 수렴샷 대상 게이트(2026-06-12 유저 판정): "어디에든 조준"이 아니라 같은 좀비를 쉬지 않고 지속 조준할 때만 수렴.
+    ZombieController _convergeTarget;        // 현재 레이저가 비추는 좀비(grace 내 유지)
+    float _convergeTargetLastSeen;           // 레이저가 마지막으로 타깃을 비춘 시각(unscaled)
+    bool _convergeLitThisFrame;              // 이번 프레임 레이저가 살아있는 타깃을 실제로 비췄나 — Charge/Hold 분기(리뷰 HIGH)
+    const float ConvergeTargetGrace = 0.12f; // 프레임 지터 관용 — 이 시간 안에 레이저가 돌아오면 같은 타깃 유지
     float _dotHitTimer;                      // 도트 히트마커(볼트 A) — 풀히트 순간 도트 흰색 확대(디제틱 히트마커)
     Gradient _laserGradDefault;              // 레이저 기본 그라디언트(수렴 신호 후 원복용)
     static readonly Color ConvergedCyan = new Color(0f, 1f, 0.93f, 0.9f);
@@ -285,7 +290,7 @@ public class PlayerCombat : MonoBehaviour
     int _tracerLineEvict;
 
     // 발사체 1발의 상태. ★즉착 — 발사된 프레임에 UpdateBullets가 전체 경로를 세그먼트 캐스트로 판정.
-    struct Bullet { public bool active; public Vector3 pos; public Vector3 dir; public float remaining; public int damage; public bool pierce; public float knockback; public bool converged; public bool emphasis; public Vector3 origin; }
+    struct Bullet { public bool active; public Vector3 pos; public Vector3 dir; public float remaining; public int damage; public bool pierce; public float knockback; public bool converged; public bool emphasis; public Vector3 origin; public ZombieController convergeTarget; }
     Bullet[] _bullets;
     HashSet<ZombieController>[] _bulletHits;   // 슬롯별 관통 중복타 방지(pierce 탄만 사용).
     int _bulletEvict;                          // 풀 고갈 시 라운드로빈 강제 재사용 인덱스(데미지 유실 방지).
@@ -557,6 +562,10 @@ public class PlayerCombat : MonoBehaviour
         _charging = false; _chargeTime = 0f;
         HideChargeBrackets();
 
+        // 핫스왑이 수렴을 통과시키지 않게(리뷰 M-1) — 다른 총으로 모은 집중은 새 총의 것이 아니다.
+        _convergeTarget = null;
+        PlayerCameraRig.Instance?.SetConvergeGate(PlayerCameraRig.ConvergeGate.Reset);
+
         _gunClass = ClassifyGun(w);   // 발사음 분류(권총/라이플/샷건)
     }
 
@@ -581,6 +590,19 @@ public class PlayerCombat : MonoBehaviour
         var meta = Meta.MetaProgress.Instance;
         _metaDamageMult = meta != null ? meta.Upgrades.GetDamageMultiplier() : 1f;
         _metaFireRateMult = meta != null ? meta.Upgrades.GetFireRateMultiplier() : 1f;
+    }
+
+    /// <summary>비활성화 시 카메라 리그에 걸어둔 상태 원복(리뷰 Low) — 조준 FOV·수렴이 유령으로 남지 않게.
+    /// 리그는 별개 오브젝트라 PlayerCombat이 꺼져도 LateUpdate를 계속 돈다 — 여기서 끊어줘야 한다.</summary>
+    void OnDisable()
+    {
+        var rig = PlayerCameraRig.Instance;
+        if (rig != null)
+        {
+            rig.SetAimState(false);
+            rig.SetConvergeGate(PlayerCameraRig.ConvergeGate.Reset);
+        }
+        _convergeTarget = null;
     }
 
     void OnDestroy()
@@ -724,6 +746,7 @@ public class PlayerCombat : MonoBehaviour
     {
         UpdateAim();
         UpdateTracerLines();   // 궤적 라인 페이드 — 무기 종류와 무관하게 항상 진행
+        _convergeLitThisFrame = false;   // TrackConvergeTarget(레이저 갱신 경로)이 비추는 프레임에만 true로 올린다
 
         // 제작 채널링·좀비에게 잡힘(grapple) 중에는 무방비 — 사격/스윙 모두 잠금(움직임도 잠겨 있음).
         bool crafting = CraftingSystem.Instance != null && CraftingSystem.Instance.IsCrafting;
@@ -734,7 +757,8 @@ public class PlayerCombat : MonoBehaviour
         // 주시/정조준(이원 카메라, 2026-06-11): 우클릭 홀드 = 카메라가 커서 방향을 주시(리드 강화+FOV 수축).
         // B-009 정조준 의식이 이 입력 위에 얹힌다. 보조사격은 Q로 임시 이양(최종 배치는 B-009 게이트에서).
         // 수렴 킬 직후엔 잠깐 강제 해제(날숨) — 줌이 풀리며 "일이 끝났다", 홀드 유지 시 자동 재진입.
-        PlayerCameraRig.Instance?.SetAimState(!locked && Input.GetMouseButton(1) && Time.unscaledTime >= _aimSuppressUntil);
+        bool aiming = !locked && Input.GetMouseButton(1) && Time.unscaledTime >= _aimSuppressUntil;
+        PlayerCameraRig.Instance?.SetAimState(aiming);
 
         if (_kind == WeaponLoadout.Kind.Melee)
         {
@@ -780,6 +804,20 @@ public class PlayerCombat : MonoBehaviour
             UpdateImpactFlashes();   // 명중 플래시 팝→페이드 + 카메라 빌보드
             UpdateMuzzleLight();     // 머즐 라이트 펀치 폴오프
             UpdateLaser(locked);     // 조준 레이저는 차징 중에도 유지 — 브라켓이 그 좌우로 수렴한다.
+        }
+
+        // 수렴 게이트 3상태(매 프레임, 추적 직후 — 리뷰 HIGH): grace는 "유지"만, 충전은 실명중 프레임만.
+        // 실명중+조준=Charge / grace 내 타깃 유지+조준=Hold / 그 외(타깃 없음·교체·사망·비조준)=Reset.
+        // 근접 무기는 레이저가 없어 타깃이 항상 null → Reset(수렴샷은 원거리 전용 — 정합).
+        var convRig = PlayerCameraRig.Instance;
+        if (convRig != null)
+        {
+            var gate = PlayerCameraRig.ConvergeGate.Reset;
+            if (aiming && _convergeLitThisFrame)
+                gate = PlayerCameraRig.ConvergeGate.Charge;
+            else if (aiming && _convergeTarget != null && !_convergeTarget.IsDead)
+                gate = PlayerCameraRig.ConvergeGate.Hold;   // grace 내 — 값 유지(들락날락해도 안 모인다)
+            convRig.SetConvergeGate(gate);
         }
     }
 
@@ -928,6 +966,37 @@ public class PlayerCombat : MonoBehaviour
     }
 
     /// <summary>
+    /// 수렴샷 대상 추적(2026-06-12 유저 판정): 수렴은 "어디에든 조준"이 아니라 레이저가 같은 좀비를
+    /// 쉬지 않고 지속 비출 때만 모인다. UpdateLaser의 기존 시각 레이캐스트 결과를 재사용.
+    /// - 다른 좀비로 옮기면 즉시 수렴 리셋(새 대상은 0부터) — 발사 리셋과 같은 "한 발 한 발" 규율.
+    /// - 빗나감은 grace(0.12s) 동안 관용(프레임 지터) — 초과하면 해제+리셋. 타깃 사망은 즉시 해제.
+    /// </summary>
+    void TrackConvergeTarget(Collider laserHit)
+    {
+        ZombieController z = laserHit != null ? laserHit.GetComponentInParent<ZombieController>() : null;
+        float now = Time.unscaledTime;
+
+        if (z != null && !z.IsDead)
+        {
+            if (z != _convergeTarget)
+            {
+                _convergeTarget = z;   // 대상 교체 — 수렴은 0부터 다시(교체 프레임 게이트는 Charge라 이 즉시 0이 리셋을 담당)
+                PlayerCameraRig.Instance?.BreakConvergence();
+            }
+            _convergeTargetLastSeen = now;
+            _convergeLitThisFrame = true;   // 이번 프레임 실명중 — Update 말미에서 Charge
+            return;
+        }
+
+        if (_convergeTarget == null) return;
+        if (_convergeTarget.IsDead || now - _convergeTargetLastSeen > ConvergeTargetGrace)
+        {
+            _convergeTarget = null;
+            PlayerCameraRig.Instance?.BreakConvergence();
+        }
+    }
+
+    /// <summary>
     /// 조준 레이저: 총구에서 _aimDir(실제 탄도 방향 — 마우스 즉각 일치)을 따라
     /// 첫 벽/좀비(없으면 사거리 끝)까지 끝까지 이어지는 풀 라인 + 라인 위를 미끄러지는 마우스 지점 도트
     /// + 도트→바닥 높이 틱(접지 표시). 제작 중엔 숨김.
@@ -956,6 +1025,9 @@ public class PlayerCombat : MonoBehaviour
         float visLen = Mathf.Max(range, 30f);
         bool blocked = Physics.Raycast(origin, _aimDir, out RaycastHit hit, visLen, mask, QueryTriggerInteraction.Collide);
         Vector3 endPoint = blocked ? hit.point : origin + _aimDir * visLen;
+
+        // 수렴 타깃 추적 — 기존 시각 레이캐스트 재사용(mask에 zombieMask 포함, 추가 캐스트 없음).
+        TrackConvergeTarget(blocked ? hit.collider : null);
 
         // 풀 라인: 첫 벽/좀비(없으면 사거리 끝)까지 끝까지 그린다 — 그라디언트가 끝에서 살짝만 잦아든다.
         Vector3 lineEnd = endPoint;
@@ -1139,8 +1211,9 @@ public class PlayerCombat : MonoBehaviour
 
         // 수렴샷(B-009): 수렴 완료 상태의 발사 — 탄퍼짐 0, 데미지·넉백 강화, 풀히트 시 전역 히트스탑(탄에 마킹).
         // 관통(차지샷)은 수렴샷 제외 — 즉착 관통이 경로상 전원을 보장 킬하는 조합 차단(리뷰 A-1).
+        // 타깃 스냅샷(리뷰 HIGH): 수렴은 "그 좀비를 모은 것" — 발사 순간의 수렴 타깃을 탄에 굽는다.
         var rig = PlayerCameraRig.Instance;
-        bool converged = rig != null && rig.AimConvergence >= 0.95f && !pierce;
+        bool converged = rig != null && rig.AimConvergence >= 0.95f && !pierce && _convergeTarget != null;
         if (converged)
         {
             spread = 0f;
@@ -1161,7 +1234,7 @@ public class PlayerCombat : MonoBehaviour
             Vector3 dir = spread > 0f
                 ? Quaternion.AngleAxis(Random.Range(-spread, spread), Vector3.up) * _aimDir
                 : _aimDir;
-            SpawnBullet(origin, dir, rng, dmg, pierce, kb, converged, emphasis);
+            SpawnBullet(origin, dir, rng, dmg, pierce, kb, converged, emphasis, converged ? _convergeTarget : null);
         }
 
         // 소음·머즐 연출·사운드는 발사 1회당 한 번(펠릿 수와 무관).
@@ -1320,11 +1393,11 @@ public class PlayerCombat : MonoBehaviour
     }
 
     /// <summary>날아가는 탄 1발을 풀에 생성. 판정은 비행 중(UpdateBullets)에서 처리한다.</summary>
-    void SpawnBullet(Vector3 origin, Vector3 dir, float range, int damage, bool pierce, float knockback, bool converged = false, bool emphasis = false)
+    void SpawnBullet(Vector3 origin, Vector3 dir, float range, int damage, bool pierce, float knockback, bool converged = false, bool emphasis = false, ZombieController convergeTarget = null)
     {
         if (_bullets == null) return;
         int i = AcquireBulletSlot();
-        _bullets[i] = new Bullet { active = true, pos = origin, dir = dir, remaining = Mathf.Max(0.15f, range), damage = damage, pierce = pierce, knockback = knockback, converged = converged, emphasis = emphasis, origin = origin };
+        _bullets[i] = new Bullet { active = true, pos = origin, dir = dir, remaining = Mathf.Max(0.15f, range), damage = damage, pierce = pierce, knockback = knockback, converged = converged, emphasis = emphasis, origin = origin, convergeTarget = convergeTarget };
         _bulletHits[i].Clear();   // 3계층 판정은 그레이즈(비정지)가 있어 비관통 탄도 중복타 방지 셋이 필요
 
         // 비행 꼬리(TrailRenderer)는 사용 중단 — 즉착이라 비행 구간이 없어 꼬리가 무의미하고,
@@ -1399,18 +1472,21 @@ public class PlayerCombat : MonoBehaviour
 
                 if (perp <= feel.fullHitRadius)
                 {
+                    // 디렉터 판정(리뷰 HIGH — 오발 즉사 차단): 오발(수렴 타깃≠피격자)은 발사 시 구워진
+                    // 2배 대미지·넉백은 받되, 보장 즉사·수렴 연출(히트스탑/날숨/스냅샷)은 불발.
+                    bool convOnTarget = _bullets[i].converged && z == _bullets[i].convergeTarget;
                     // 풀히트: 풀데미지 + 넉백 + 피격 사다리 + 히트스탑. 비관통은 여기서 정지.
                     bool wasAlive = !z.IsDead;
-                    z.TakeBulletHit(_bullets[i].damage, dir, _bullets[i].knockback, feel.hitStopNormal, BulletHitTier.Full, false, _bullets[i].converged);
+                    z.TakeBulletHit(_bullets[i].damage, dir, _bullets[i].knockback, feel.hitStopNormal, BulletHitTier.Full, false, convOnTarget);
                     PlayImpact(hitPoint, dir, true);
                     _dotHitTimer = 0.09f;   // 디제틱 히트마커 — 조준 도트가 "박혔다"를 확인
                     // B-004 C3③: 명중 thud — 발사음과 분리된 확인 채널(CoD 히트마커 문법). 풀히트만(도트 히트마커와 동기).
                     // 클립은 MeleeSfx 절차 생성 "퍽" 재사용(신규 클립 금지) — SfxOneShot 기존 피치 지터로 반복 피로 완화.
                     if (feel.transientMatrixEnabled && feel.thudVolume > 0f)
                         SfxOneShot.Play(MeleeSfx.ThudClip, hitPoint, feel.thudVolume);
-                    // 수렴샷 풀히트 — 전역 마이크로 히트스탑. 킬이면 110ms("이 킬은 달랐다"), 비킬 60ms.
+                    // 수렴샷 풀히트(타깃 일치만) — 전역 마이크로 히트스탑. 킬이면 110ms("이 킬은 달랐다"), 비킬 60ms.
                     // 연사는 converged=false라 절대 안 걸림.
-                    if (_bullets[i].converged)
+                    if (convOnTarget)
                     {
                         bool kill = wasAlive && z.IsDead;
                         HitStop.Do(kill ? convergedKillHitStop : convergedHitStop);
