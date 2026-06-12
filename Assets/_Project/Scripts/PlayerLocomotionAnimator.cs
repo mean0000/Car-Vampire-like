@@ -55,10 +55,14 @@ public class PlayerLocomotionAnimator : MonoBehaviour
     static readonly int MoveYHash = Animator.StringToHash("MoveY");
     static readonly int ReloadHash = Animator.StringToHash("Reload");
     static readonly int ReloadSpeedHash = Animator.StringToHash("ReloadSpeed");
+    static readonly int FiringHash = Animator.StringToHash("Firing");
 
     Animator _animator;
     Vector3 _lastPos;
     bool _wasReloading;
+    bool _wasFiring;
+    bool _hasFiringParam;        // 현재 컨트롤러에 Firing 파라미터가 있는가 — 권총 스탠스엔 없음(발사 클립 부재)
+    bool _firingParamChecked;    // 스탠스 스왑마다 1회 재검사(파라미터 조회는 배열 할당이라 매 프레임 금지)
 
     /// <summary>
     /// 무기 종류(PlayerCombat 폴링)에 따라 컨트롤러 스왑: 권총류=권총 스탠스, 그 외(라이플/샷건)=라이플 스탠스.
@@ -87,6 +91,8 @@ public class PlayerLocomotionAnimator : MonoBehaviour
         // 새 컨트롤러의 Reload bool은 기본 false — 폴링 엣지 상태를 동기화해
         // 장전 중 스왑이어도(무기 교체가 _reloading을 리셋) 다음 폴링이 올바른 엣지를 본다.
         _wasReloading = false;
+        _wasFiring = false;
+        _firingParamChecked = false;   // 컨트롤러가 바뀌었으니 Firing 파라미터 존재 여부 재검사
     }
 
     void Awake()
@@ -184,6 +190,25 @@ public class PlayerLocomotionAnimator : MonoBehaviour
                 }
                 _animator.SetBool(ReloadHash, reloading);
                 _wasReloading = reloading;
+            }
+
+            // --- 상체 발사 레이어: 주발사 지속 상태 폴링(장전과 동일 패턴) ---
+            // Firing 파라미터가 없는 스탠스(권총: 발사 클립 부재)에서는 세팅 자체를 생략 — 미존재 파라미터 SetBool 워닝 방지.
+            if (!_firingParamChecked)
+            {
+                _hasFiringParam = false;
+                foreach (var p in _animator.parameters)
+                    if (p.nameHash == FiringHash) { _hasFiringParam = true; break; }
+                _firingParamChecked = true;
+            }
+            if (_hasFiringParam)
+            {
+                bool firing = aimSource.IsFiringSustained;
+                if (firing != _wasFiring)
+                {
+                    _animator.SetBool(FiringHash, firing);
+                    _wasFiring = firing;
+                }
             }
         }
     }

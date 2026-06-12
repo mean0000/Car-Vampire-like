@@ -250,6 +250,9 @@ public class PlayerCombat : MonoBehaviour
     public float ReloadDuration => _reloadTime;
     /// <summary>현재 원거리 무기의 발사음 분류(권총/라이플/샷건) — 로코모션 스탠스 선택용. ApplyRanged에서 갱신.</summary>
     public GunSfx.GunClass CurrentGunClass => _gunClass;
+    /// <summary>주발사 지속 중인가 — 마지막 주발사 후 0.15s 유지창(연사=연속 true, alt-fire 제외).
+    /// 상체 발사 모션(Firing bool) 구동용. _burstShots 가드는 게임 시작 직후(Time.time≈0) 오탐 방지.</summary>
+    public bool IsFiringSustained => _burstShots > 0 && Time.time - _lastShotTime < 0.15f;
 
     WeaponLoadout.Kind _kind = WeaponLoadout.Kind.Ranged;
     MeleeAttacker _melee;   // 근접일 때만 생성(원거리는 null)
