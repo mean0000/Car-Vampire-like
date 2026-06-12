@@ -43,6 +43,7 @@ namespace Run
         PlayerController _player;
         bool _playerDiedHooked;
         float _sweepFlashTarget;   // sweep 플래시 알파 목표(0→1)
+        string _opCode = "";       // 이번 작전의 작업코드(StartMission 발급, 정산서 표기)
 
         void Awake()
         {
@@ -118,6 +119,7 @@ namespace Run
             if (Phase != RunPhase.Office) return;
 
             harvest?.Clear();
+            _opCode = $"OP-{UnityEngine.Random.Range(0, 10000):D4}";   // 정산서 작업코드 발급
             Time.timeScale = 1f;
 
             // 플레이어가 늦게 생성됐을 수 있으니 한 번 더 훅 시도.
@@ -145,7 +147,9 @@ namespace Run
         // ───────── Settle 경로 3개 ─────────
 
         void HandleExtractionComplete() => Settle(RunOutcome.Extracted, 1.0f);
-        void HandlePlayerDied()         => Settle(RunOutcome.Died, 0.0f);
+
+        // 사망 = 산재 특약(E-002): 개수 인정이 아니라 금액 보전(N×단가×보전율).
+        void HandlePlayerDied() => Settle(RunOutcome.Died, config != null ? config.deathRetention : 0.3f);
 
         void HandleTimerExpired()
         {
@@ -168,15 +172,25 @@ namespace Run
             int total = 0;
             foreach (var kv in snapshot) total += kv.Value;
 
-            // Wallet 입금(영구). 보존율 적용.
-            var wallet = MetaProgress.Instance != null ? MetaProgress.Instance.Wallet : null;
-            int deposited = 0;
-            if (wallet != null)
+            // E-002 현금 정산(2차): 정산액 = 납품 성사분만(탈출 = N×단가, 사망·소독 = 0).
+            // 사망은 개수 인정이 아니라 금액 보전(산재 특약) — credit = RoundToInt(N×단가×보전율).
+            // 메모리(strain)는 납품 품목 — 회사로 넘어가므로 Wallet 입금 없음.
+            int unitPrice = config != null ? config.memoryUnitPrice : 10000;
+            int equipFee = config != null ? config.equipmentFee : 30000;
+            int insurFee = config != null ? config.insuranceFee : 20000;
+            int gross = outcome == RunOutcome.Extracted ? total * unitPrice : 0;
+            int insuranceCredit = outcome == RunOutcome.Died
+                ? Mathf.RoundToInt(total * unitPrice * Mathf.Clamp01(retentionRate))
+                : 0;
+            int net = gross - equipFee - insurFee + insuranceCredit;   // 음수 가능(표기는 0 바닥)
+            int deposited = Mathf.Max(0, net);                          // 입금은 0 바닥
+
+            // 입금(영구). 변경 시 OnCashChanged → MetaProgress.Save 자동 영속화.
+            // 입금 0이면 DepositCash가 조기 반환해 Save를 안 타므로 명시 Save로 보장.
+            if (MetaProgress.Instance != null)
             {
-                int before = WalletTotal(wallet, snapshot.Keys);
-                wallet.Deposit(snapshot, retentionRate);   // 잔액 변경 시 OnBalanceChanged → MetaProgress.Save 자동 영속화
-                int after = WalletTotal(wallet, snapshot.Keys);
-                deposited = after - before;
+                if (deposited > 0) MetaProgress.Instance.DepositCash(deposited);
+                else MetaProgress.Instance.Save();
             }
 
             var report = new SettlementReport
@@ -185,19 +199,20 @@ namespace Run
                 harvest = snapshot,
                 retentionRate = retentionRate,
                 totalHarvested = total,
-                totalDeposited = deposited,
+                kills = harvest != null ? harvest.KillCount : 0,
+                gross = gross,
+                equipmentFee = equipFee,
+                insuranceFee = insurFee,
+                insuranceCredit = insuranceCredit,
+                net = net,
+                deposited = deposited,
+                opCode = _opCode,
+                insuranceDenied = outcome == RunOutcome.Swept,   // 무단 잔류 = 산재 미인정
             };
 
             Time.timeScale = 0f;
             SetPhase(RunPhase.Settled);
             OnRunSettled?.Invoke(report);
-        }
-
-        static int WalletTotal(StrainWallet wallet, IEnumerable<StrainDef> defs)
-        {
-            int sum = 0;
-            foreach (var d in defs) sum += wallet.Balance(d);
-            return sum;
         }
 
         // ───────── 재출동 ─────────

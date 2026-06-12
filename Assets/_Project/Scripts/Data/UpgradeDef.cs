@@ -3,7 +3,7 @@ using UnityEngine;
 namespace Run
 {
     /// <summary>
-    /// 사무실에서 strain으로 구매하는 무기 강화 1줄의 정의(스켈레톤=데미지·연사 2개).
+    /// 사무실에서 현금(실수령 일당)으로 구매하는 무기 강화 1줄의 정의(스켈레톤=데미지·연사 2개).
     /// 비용은 레벨별 배열 또는 base+증가량으로 계산. 효과는 레벨당 선형 누적(GetMultiplier).
     /// 저장 키 = 에셋 이름(UpgradeDef.name). id는 표시/디버그용.
     /// </summary>
@@ -19,7 +19,7 @@ namespace Run
         [Tooltip("최대 강화 레벨.")]
         [Min(1)] public int maxLevel = 5;
 
-        [Header("비용 (strain)")]
+        [Header("비용 (현금)")]
         [Tooltip("레벨별 비용 배열. 비어 있지 않으면 이 배열이 우선(인덱스=구매하려는 레벨-1).")]
         public int[] costPerLevel;
 

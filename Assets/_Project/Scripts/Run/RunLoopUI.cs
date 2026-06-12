@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -69,7 +70,7 @@ namespace Run
             var meta = MetaProgress.Instance;
             if (meta != null)
             {
-                meta.Wallet.OnBalanceChanged += RefreshOffice;
+                meta.OnCashChanged += RefreshOffice;
                 meta.Upgrades.OnChanged += RefreshOffice;
             }
 
@@ -98,7 +99,7 @@ namespace Run
             var meta = MetaProgress.Instance;
             if (meta != null)
             {
-                meta.Wallet.OnBalanceChanged -= RefreshOffice;
+                meta.OnCashChanged -= RefreshOffice;
                 meta.Upgrades.OnChanged -= RefreshOffice;
             }
 
@@ -169,25 +170,51 @@ namespace Run
         void HandleRunSettled(SettlementReport report)
         {
             if (settlementTitle != null) settlementTitle.text = OutcomeTitle(report.outcome);
+            if (settlementBody == null) return;
 
             var meta = MetaProgress.Instance;
-            var strain = meta != null ? meta.BioStrain : null;
-            int balance = (meta != null && strain != null) ? meta.Wallet.Balance(strain) : 0;
+            int cash = meta != null ? meta.Cash : 0;
 
-            if (settlementBody != null)
+            // E-002 정산서(2차, 유저 판정 반영). 골격 = "4번 항목 고정":
+            // 번호 행 1~6은 모든 결과에서 동일 순서·동일 자리. 조건부 내용은 번호 없는 들여쓴 부기(└)로만.
+            var lines = new List<string>
             {
-                string flavor = OutcomeFlavor(report.outcome);
-                // E-001: 사망 시 소실 사실 1줄 — "잃었음이 보여야 판돈이다"(스펙 §요소2).
-                string lossLine = report.outcome == RunManager.RunOutcome.Died
-                    ? $"메모리 {report.totalHarvested}개 소실\n\n"
-                    : "";
-                settlementBody.text =
-                    $"{flavor}\n\n" +
-                    lossLine +
-                    $"금일 회수 실적: {report.totalHarvested}\n" +
-                    $"본부 입금 처리: {report.totalDeposited}\n" +
-                    $"누적 보유 strain: {balance}";
+                OutcomeFlavor(report.outcome),
+                "",
+                $"작업코드 {report.opCode}",
+                "",
+                $"1. 작전 결과: {OutcomeResult(report.outcome)}",
+                $"2. 이상개체 처리: {report.kills:N0}",
+                $"3. 금일 정산액: {report.gross:N0}",
+                $"4. 메모리 회수량: {report.totalHarvested:N0}",
+            };
+
+            // 소실 부기: Died/Swept만(E-001 "잃었음이 보여야 판돈이다").
+            if (report.outcome != RunManager.RunOutcome.Extracted)
+                lines.Add($"   └ 전량 소실 -{report.totalHarvested:N0}");
+
+            lines.Add("5. 공제 내역");
+            lines.Add($"   장비 보급료: -{report.equipmentFee:N0}");
+            lines.Add($"   산재보험료: -{report.insuranceFee:N0}");
+            if (report.outcome == RunManager.RunOutcome.Died)
+            {
+                int pct = Mathf.RoundToInt(report.retentionRate * 100f);
+                lines.Add($"   산재 보전(특약 {pct}%): +{report.insuranceCredit:N0}");
             }
+            else if (report.outcome == RunManager.RunOutcome.Swept)
+            {
+                lines.Add("   산재 미인정 (구역 소독): 0");
+            }
+
+            // 실수령 표기는 0 바닥(음수 노출 금지) — 음수일 때만 보장 부기.
+            lines.Add($"6. 실수령액: {report.deposited:N0}");
+            if (report.net < 0)
+                lines.Add("   └ 최저 지급액 보장 · 이월 없음");
+
+            lines.Add("");
+            lines.Add($"잔고: {cash:N0}");
+
+            settlementBody.text = string.Join("\n", lines);
         }
 
         // ───────── 버튼 핸들러(위임만) ─────────
@@ -214,14 +241,9 @@ namespace Run
         {
             var meta = MetaProgress.Instance;
             if (meta == null) return;
-            var strain = meta.BioStrain;
-            int balance = strain != null ? meta.Wallet.Balance(strain) : 0;
 
             if (walletLabel != null)
-            {
-                string label = strain != null ? strain.DisplayName : "생체";
-                walletLabel.text = $"보유 strain — {label}: {balance}";
-            }
+                walletLabel.text = $"잔고: {meta.Cash:N0}";
 
             UpdateUpgradeButton(meta, meta.DamageUpgrade, damageBuyButton, damageBuyLabel);
             UpdateUpgradeButton(meta, meta.FireRateUpgrade, fireRateBuyButton, fireRateBuyLabel);
@@ -239,7 +261,7 @@ namespace Run
             {
                 label.text = maxed
                     ? $"{def.displayName}  Lv.{lv}  (최대)"
-                    : $"{def.displayName}  Lv.{lv} → {lv + 1}   비용 {cost}";
+                    : $"{def.displayName}  Lv.{lv} → {lv + 1}   비용 {cost:N0}";
             }
             if (btn != null) btn.interactable = !maxed && affordable;
         }
@@ -251,9 +273,20 @@ namespace Run
             switch (o)
             {
                 case RunManager.RunOutcome.Extracted: return "정산 보고서 — 탈출 성공";
-                case RunManager.RunOutcome.Died:      return "정산 보고서 — 현장 사망";
+                case RunManager.RunOutcome.Died:      return "정산 보고서 — 현장 인원 미회수";
                 case RunManager.RunOutcome.Swept:     return "정산 보고서 — 구역 소독 집행";
                 default: return "정산 보고서";
+            }
+        }
+
+        static string OutcomeResult(RunManager.RunOutcome o)
+        {
+            switch (o)
+            {
+                case RunManager.RunOutcome.Extracted: return "탈출 성공";
+                case RunManager.RunOutcome.Died:      return "현장 인원 미회수";
+                case RunManager.RunOutcome.Swept:     return "구역 소독 집행";
+                default: return "";
             }
         }
 
@@ -261,12 +294,13 @@ namespace Run
         {
             switch (o)
             {
+                // E-002 2차: 유저 확정 카피(Story 안).
                 case RunManager.RunOutcome.Extracted:
-                    return "회수 헬기 탑승이 확인되었습니다. 금일 실적이 본부에 입금됩니다.";
+                    return "회수 헬기 탑승이 확인되었습니다. 공제 후 실수령액이 익일 지급됩니다.";
                 case RunManager.RunOutcome.Died:
-                    return "현장 사망으로 회수물은 전량 유실 처리되었습니다.";
+                    return "현장 인원 미회수 처리되었습니다. 산재 특약에 따라 일부 보전됩니다.";
                 case RunManager.RunOutcome.Swept:
-                    return "구역 소독이 일정대로 집행되었습니다. 부서원 없음 처리.";
+                    return "구역 소독이 일정대로 집행되었습니다. 부서원 없음 처리. 본 건은 산재 미인정 사유에 해당합니다.";
                 default: return "";
             }
         }

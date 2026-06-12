@@ -15,5 +15,8 @@ namespace Meta
 
         public List<string> upgradeKeys = new List<string>();
         public List<int> upgradeLevels = new List<int>();
+
+        /// <summary>현금 잔고(E-002: 메모리는 납품 품목 — 정산은 현금으로).</summary>
+        public int cash;
     }
 }

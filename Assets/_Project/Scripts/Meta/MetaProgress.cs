@@ -26,6 +26,12 @@ namespace Meta
         public StrainWallet Wallet { get; private set; }
         public MetaUpgrades Upgrades { get; private set; }
 
+        /// <summary>현금 잔고(영구). E-002: 정산 실수령액 입금·업그레이드 지출 모두 현금.</summary>
+        public int Cash { get; private set; }
+
+        /// <summary>현금 잔고가 바뀔 때 발화(입금·지출). UI가 구독. Save 자동 영속화.</summary>
+        public event System.Action OnCashChanged;
+
         /// <summary>스켈레톤 단일 strain(좀비 드롭·비용·입금 기본값).</summary>
         public StrainDef BioStrain => bioStrain;
         public UpgradeDef DamageUpgrade => damageUpgrade;
@@ -44,15 +50,16 @@ namespace Meta
             BuildResolvers();
 
             Wallet = new StrainWallet();
-            Upgrades = new MetaUpgrades(Wallet, bioStrain);
+            Upgrades = new MetaUpgrades(this);   // E-002: 업그레이드 비용 = 현금
             Upgrades.RegisterEffectDefs(damageUpgrade, fireRateUpgrade);
 
             _store = new JsonFileStore();
             Load();
 
             // 변경 시 자동 저장(구매·입금). 업그레이드 레벨 변경도 저장해야 한다 —
-            // Wallet 차감(TrySpend)이 레벨 증가보다 먼저라, Wallet만 구독하면 레벨이 한 스텝 누락된다.
+            // 현금 차감(TrySpendCash)이 레벨 증가보다 먼저라, 잔고만 구독하면 레벨이 한 스텝 누락된다.
             Wallet.OnBalanceChanged += Save;
+            OnCashChanged += Save;
             Upgrades.OnChanged += Save;
         }
 
@@ -77,6 +84,27 @@ namespace Meta
         UpgradeDef ResolveUpgrade(string n) =>
             n != null && _upgradeByName.TryGetValue(n, out var d) ? d : null;
 
+        // ───────── 현금 (E-002) ─────────
+
+        /// <summary>정산 실수령액 입금. 0 이하는 무시. 변경 시 OnCashChanged → Save.</summary>
+        public void DepositCash(int amount)
+        {
+            if (amount <= 0) return;
+            Cash += amount;
+            OnCashChanged?.Invoke();
+        }
+
+        /// <summary>구매 등으로 지출. 잔고 부족이면 false(차감 안 함). 0 지출 = 무변화 성공(이벤트 발화 없음).</summary>
+        public bool TrySpendCash(int amount)
+        {
+            if (amount < 0) return false;
+            if (amount == 0) return true;
+            if (Cash < amount) return false;
+            Cash -= amount;
+            OnCashChanged?.Invoke();
+            return true;
+        }
+
         void Load()
         {
             string json = _store.Load();
@@ -91,6 +119,7 @@ namespace Meta
             if (data == null) return;
             Wallet.ReadFrom(data, ResolveStrain);
             Upgrades.ReadFrom(data, ResolveUpgrade);
+            Cash = data.cash;
         }
 
         /// <summary>디스크에 영구 저장. 구매(Wallet 변경)·입금 후 호출.</summary>
@@ -99,6 +128,7 @@ namespace Meta
             var data = new MetaSaveData();
             Wallet.WriteTo(data);
             Upgrades.WriteTo(data);
+            data.cash = Cash;
             _store.Save(JsonUtility.ToJson(data));
         }
     }

@@ -7,13 +7,12 @@ namespace Meta
 {
     /// <summary>
     /// 무기 강화 레벨(저장) + 전투 배율 산출. PlayerCombat은 배율 훅 한 줄로만 통합(헌장 부록 A).
-    /// 구매는 Wallet.TrySpend로 strain을 차감한다. UI는 OnChanged를 구독만 한다.
+    /// 구매는 MetaProgress.TrySpendCash로 현금을 차감한다(E-002). UI는 OnChanged를 구독만 한다.
     /// </summary>
     public class MetaUpgrades
     {
         readonly Dictionary<UpgradeDef, int> _levels = new Dictionary<UpgradeDef, int>();
-        readonly StrainWallet _wallet;
-        readonly StrainDef _costStrain;   // 스켈레톤: 모든 업그레이드 비용은 단일 strain(생체 1성)
+        readonly MetaProgress _owner;   // 현금 잔고의 소유자(E-002: 비용 = 현금)
 
         // 데미지/연사 배율 산출용 def 참조(있으면 그 레벨로 배율 계산). 설정에서 주입.
         UpgradeDef _damageDef;
@@ -22,10 +21,9 @@ namespace Meta
         /// <summary>레벨/잔액 변화로 배율이 바뀔 수 있을 때 발화. PlayerCombat·UI가 구독.</summary>
         public event Action OnChanged;
 
-        public MetaUpgrades(StrainWallet wallet, StrainDef costStrain)
+        public MetaUpgrades(MetaProgress owner)
         {
-            _wallet = wallet;
-            _costStrain = costStrain;
+            _owner = owner;
         }
 
         /// <summary>데미지/연사 업그레이드 def를 등록(배율 산출용).</summary>
@@ -42,24 +40,24 @@ namespace Meta
             return _levels.TryGetValue(def, out int lv) ? lv : 0;
         }
 
-        /// <summary>다음 레벨 구매 가능 여부(만렙 아님 + 잔액 충분).</summary>
+        /// <summary>다음 레벨 구매 가능 여부(만렙 아님 + 현금 잔고 충분).</summary>
         public bool CanPurchase(UpgradeDef def)
         {
-            if (def == null) return false;
+            if (def == null || _owner == null) return false;
             int cur = GetLevel(def);
             int cost = def.CostForNextLevel(cur);
             if (cost < 0) return false;   // 만렙
-            return _wallet.Balance(_costStrain) >= cost;
+            return _owner.Cash >= cost;
         }
 
-        /// <summary>다음 레벨 구매. Wallet.TrySpend로 strain 차감 후 레벨 +1. 성공 시 OnChanged.</summary>
+        /// <summary>다음 레벨 구매. TrySpendCash로 현금 차감 후 레벨 +1. 성공 시 OnChanged.</summary>
         public bool TryPurchase(UpgradeDef def)
         {
-            if (def == null) return false;
+            if (def == null || _owner == null) return false;
             int cur = GetLevel(def);
             int cost = def.CostForNextLevel(cur);
             if (cost < 0) return false;
-            if (!_wallet.TrySpend(_costStrain, cost)) return false;
+            if (!_owner.TrySpendCash(cost)) return false;
             _levels[def] = cur + 1;
             OnChanged?.Invoke();
             return true;

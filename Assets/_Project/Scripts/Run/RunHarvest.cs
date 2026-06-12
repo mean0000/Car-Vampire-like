@@ -16,6 +16,9 @@ namespace Run
 
         readonly Dictionary<StrainDef, int> _counts = new Dictionary<StrainDef, int>();
 
+        /// <summary>이번 런 처치 수. Add 호출 1회 = 처치 1(ZombieController.HarvestStrain이 킬당 1회 Add 경로를 탄다).</summary>
+        public int KillCount { get; private set; }
+
         /// <summary>strain이 수확될 때마다 발화. (def, 누적 후 총량). 드롭 세리머니/HUD가 구독.</summary>
         public event Action<StrainDef, int> OnHarvested;
 
@@ -37,10 +40,11 @@ namespace Run
             return _counts.TryGetValue(def, out int n) ? n : 0;
         }
 
-        /// <summary>strain 수확. n만큼 누적하고 OnHarvested 발화.</summary>
+        /// <summary>strain 수확. n만큼 누적하고 OnHarvested 발화. 처치 수도 1 증가(n과 무관 — 호출 1회 = 킬 1회).</summary>
         public void Add(StrainDef def, int n = 1)
         {
             if (def == null || n <= 0) return;
+            KillCount++;
             _counts.TryGetValue(def, out int cur);
             cur += n;
             _counts[def] = cur;
@@ -51,6 +55,10 @@ namespace Run
         public IReadOnlyDictionary<StrainDef, int> Snapshot() => _counts;
 
         /// <summary>새 런 시작 시 초기화.</summary>
-        public void Clear() => _counts.Clear();
+        public void Clear()
+        {
+            _counts.Clear();
+            KillCount = 0;
+        }
     }
 }
