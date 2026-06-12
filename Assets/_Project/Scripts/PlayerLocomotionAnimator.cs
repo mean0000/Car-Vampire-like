@@ -36,12 +36,19 @@ public class PlayerLocomotionAnimator : MonoBehaviour
     [Tooltip("방향(MoveX/MoveY) 댐핑 — 급격한 방향 전환을 부드럽게.")]
     [SerializeField] float dirDamp = 0.08f;
 
+    [Header("Reload (UpperBody Layer)")]
+    [Tooltip("장전 블렌드트리의 기준 클립 길이(초). Stand_Reload 길이 — Move_Reload는 트리 내 timeScale로 동일 길이 정규화됨.")]
+    [SerializeField] float reloadClipLength = 3.6666667f;
+
     static readonly int SpeedHash = Animator.StringToHash("Speed");
     static readonly int MoveXHash = Animator.StringToHash("MoveX");
     static readonly int MoveYHash = Animator.StringToHash("MoveY");
+    static readonly int ReloadHash = Animator.StringToHash("Reload");
+    static readonly int ReloadSpeedHash = Animator.StringToHash("ReloadSpeed");
 
     Animator _animator;
     Vector3 _lastPos;
+    bool _wasReloading;
 
     void Awake()
     {
@@ -116,5 +123,23 @@ public class PlayerLocomotionAnimator : MonoBehaviour
         _animator.SetFloat(SpeedHash, blendSpeed, speedDamp, dt);
         _animator.SetFloat(MoveXHash, moveX, dirDamp, dt);
         _animator.SetFloat(MoveYHash, moveY, dirDamp, dt);
+
+        // --- 상체 장전 레이어: PlayerCombat 재장전 상태 폴링(facing과 동일한 폴링 패턴, 직접 결합 없음) ---
+        // bool 구동 — 정상 종료(타이머 만료)와 중단(무기 교체로 _reloading 리셋) 모두 같은 경로로 Empty 복귀.
+        if (aimSource != null)
+        {
+            bool reloading = aimSource.IsReloading;
+            if (reloading != _wasReloading)
+            {
+                if (reloading)
+                {
+                    // 모션 길이를 게임의 reloadTime에 종속 — 게임 수치가 권위, 애니가 따라간다.
+                    float dur = aimSource.ReloadDuration;
+                    _animator.SetFloat(ReloadSpeedHash, dur > 0.01f ? reloadClipLength / dur : 1f);
+                }
+                _animator.SetBool(ReloadHash, reloading);
+                _wasReloading = reloading;
+            }
+        }
     }
 }

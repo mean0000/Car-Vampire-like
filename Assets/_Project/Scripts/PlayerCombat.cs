@@ -246,6 +246,8 @@ public class PlayerCombat : MonoBehaviour
     public int MagazineSize => _magazine;
     public bool IsReloading => _reloading;
     public float ReloadProgress01 => (_reloading && _reloadTime > 0f) ? 1f - Mathf.Clamp01(_reloadTimer / _reloadTime) : 1f;
+    /// <summary>현재 무기의 재장전 소요 시간(초) — 장전 모션 길이 동기화용(게임 수치가 권위, 애니는 종속).</summary>
+    public float ReloadDuration => _reloadTime;
 
     WeaponLoadout.Kind _kind = WeaponLoadout.Kind.Ranged;
     MeleeAttacker _melee;   // 근접일 때만 생성(원거리는 null)
