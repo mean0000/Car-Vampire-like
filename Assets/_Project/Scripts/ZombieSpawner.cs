@@ -7,6 +7,7 @@ public class ZombieSpawner : MonoBehaviour
     [Header("Prefabs")]
     [SerializeField] GameObject generalZombiePrefab;
     [SerializeField] GameObject signalZombiePrefab;
+    [SerializeField] GameObject sprinterZombiePrefab;
 
     [Header("Player")]
     [SerializeField] Transform playerTransform;
@@ -30,6 +31,9 @@ public class ZombieSpawner : MonoBehaviour
 
     [Header("Signal Zombie")]
     [SerializeField, Range(0f, 1f)] float signalSpawnChance = 0.08f;
+
+    [Header("Sprinter Zombie")]
+    [SerializeField, Range(0f, 1f)] float sprinterChance = 0.2f;
 
     [Header("Ground")]
     [SerializeField] LayerMask groundLayer = -1;
@@ -113,6 +117,10 @@ public class ZombieSpawner : MonoBehaviour
         GameObject prefab = isSignal && signalZombiePrefab != null
             ? signalZombiePrefab
             : generalZombiePrefab;
+
+        // 스프린터 혼합 — Signal 판정 우선, 잔여에서 sprinterChance 비율 (미연결 시 general 폴백)
+        if (!isSignal && sprinterZombiePrefab != null && Random.value < sprinterChance)
+            prefab = sprinterZombiePrefab;
 
         if (prefab == null) return;
 

@@ -114,3 +114,19 @@
 ## 결과
 
 - **세션 2**: B-004 게이트 = 4차 진단 플레이로 판정 완료(본게이트 불합격 — B-004는 기층 유지, 노브 5건은 노브 세션 이월, [[2026-06-12-b004-rapidfire-spec]] §8) → **일괄 커밋 완료(ZombieController 파일권 해제 — 세션 3 착수 가능)**. Feel 레이어 설계 = [[2026-06-12-feel-layer-channel-map]] — 단 카메라 킥 시공은 세션 1 리그 재심사 결론 대기.
+- **세션 1 (진행 중)**: ①카메라 프리셋 랩 완료 — `CameraPresetLab.cs` 신규, F1~F4(기준선/근접/근접+룩어헤드/저각+룩어헤드), PlayerCameraRig 무수정 샌드위치, 런타임 부트스트랩(씬 무오염) ②압박 사운드 시공 — `AmbientBedDrone.cs`(저역 드론, 옥타브만=맥놀이 0) + `ZombieVocalDirector.cs`(좀비별 3D 으르렁+어그로 절규, 런타임 부착, placeholder 합성 — 보유 에셋에 보컬/드론 0건 실측) ③무드 적용 진행 중. Stab+Codex 리뷰 후 커밋 예정.
+- **세션 3 (1차분 완료)**: 노브 맵 = [[2026-06-12-zombie-threat-knob-map]] (수치 전수 실측 — SO 라이브 조절 가능 판명, 노브 세션 최적). 치명화 시작값 적용: 대미지 35(3대 사망권, ×3=60 프리셋 병기), 그래플 전용 노브 50×2=즉사권. 스프린터 시공: 5.2m/s+적색 틴트+텔레그래프 3중(응시/윈드업/식별색), 실효 ~18.4% 혼합+CombatLab 보장조우 2기. 어그로 애니 가속(`chaseAnimSpeedMult` 워커 1.0/스프린터 1.25). Charger 재활용 불가 판정(스크립트 e05d47c94에서 소실). 투시버그 CombatLab 무해당 실측. Stab+Codex 2회전 통과(Stab "영구 Grapple 잠김" HIGH = 대입 순서 오독 오탐 판정). ⚠️CombatLab 씬 저장에 세션 1 COZY 진행분 공저장됨. 다음 = 소음→어그로 사다리 인계분.
+
+### → 세션 3 인계 (소음→어그로 정찰 결과, ZombieController 소유권과 함께 이관)
+
+- **사슬은 살아있으나 설계상 "총성→Investigate까지만"** — 소리 사다리 철칙(ZombieController.cs:427 주석, 428행 하드 라우팅). Chase 진입은 시야 게이지(410행)·AlertTo(647행)뿐. NoiseManager의 chaseThreshold(50)는 HUD만 읽는 죽은 신호.
+- **위협 테제 기준 사다리 개정 검토 = 세션 3 소관**: 임계 초과 소음(총성 90>50) → Chase 승급(또는 AlertTo 재사용). 단 "소음=벌점뿐" 실패 이력(05-31) 유의 — 노브로 켜고 끌 수 있게.
+- ⚠️**모순 데이터**: sd 라이브 실측에서 6초 연사에도 0/12 전원 Dormant — Investigate조차 미발화 의심. Dormant 상태가 인식 틱을 막는지, 좀비가 전부 반경(총성 90→22.5m) 밖이었는지 확인 필요.
+- 수치 위치: 총성 90=씬 직렬화(무기 핫스왑 시 WeaponLoadout.cs 코드 상수 95/60/105가 덮어씀), 청각반경=NoiseManager.HearingRadius×SO hearingMultiplier×개체분산.
+
+### → 세션 2 인계 (sd의 B-004 채널 점검, 수정 안 함)
+
+- ★CombatLab 씬 `shotVolume: 0.65`가 코드 default 0.185를 덮어씀 (라이브 실측 0.650 — 씬 덮어쓰기 함정 실증)
+- MeleeSfx가 아직 PlayClipAtPoint (Linear rolloff·GC·동시발성 무제한) — B-005a 대체 누락분
+- 어그로 이중 발성: ZombieController.EmitGrunt(Chase 그르렁) + sd 절규가 같은 엣지 동시 발화 — 임시 공존(screamVolume 노브로 끌 수 있음), 통합 여부는 디렉팅 판단 대기
+- 믹서 부재 확인 — 덕킹 구조 자체가 없음(볼륨 차 마스킹뿐). B-005b 믹서 도입 시 일괄 라우팅 권장

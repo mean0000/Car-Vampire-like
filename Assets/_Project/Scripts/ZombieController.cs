@@ -276,7 +276,7 @@ public class ZombieController : MonoBehaviour
         if (_hitStopTimer > 0f)
         {
             _hitStopTimer -= Time.fixedDeltaTime;
-            if (_hitStopTimer <= 0f && _animator != null) _animator.speed = 1f;
+            if (_hitStopTimer <= 0f && _animator != null) _animator.speed = BaseAnimSpeed();
             return;
         }
 
@@ -763,7 +763,7 @@ public class ZombieController : MonoBehaviour
             _state = ZombieState.Grapple;
             _velocity = Vector3.zero;
             // 잡는 순간 한 입 — 근접 피격은 HP로 아프게(§6.5 유저 판정: 싱크 비용 아님).
-            _playerController.TakeDamage(_config.attackDamage);
+            _playerController.TakeDamage(_config.grappleDamage);
             ResetVisualPose();
         }
         else
@@ -796,14 +796,22 @@ public class ZombieController : MonoBehaviour
     {
         if (_state != ZombieState.Grapple) return;
         if (_playerController != null)
-            _playerController.TakeDamage(_config.attackDamage);
+            _playerController.TakeDamage(_config.grappleDamage);
         EnterRecover();
     }
+
+    /// <summary>기본 애니 재생속도 — 어그로(Chase~Recover) 중에는 가속(연출 패스). 히트스탑/킬 프리즈의 0은 별도 경로가 소유.</summary>
+    float BaseAnimSpeed() => IsAggro ? _config.chaseAnimSpeedMult : 1f;
 
     void UpdateAnimation()
     {
         if (_animator != null)
+        {
             _animator.SetFloat(SpeedHash, _velocity.magnitude);
+            // 히트스탑 중/사망 시에는 절대 덮어쓰지 않는다(킬 프리즈 0 보호) — FixedUpdate 가드가 막지만 이중 방어.
+            if (!_dead && _hitStopTimer <= 0f)
+                _animator.speed = BaseAnimSpeed();
+        }
     }
 
     // ──────────── Combat — 피격 사다리 (§6.2) ────────────

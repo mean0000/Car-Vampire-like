@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f03a72e67110e404e9dde88d6543115a, type: 3}
-  m_Name: ZombieConfig_General
+  m_Name: ZombieConfig_Sprinter
   m_EditorClassIdentifier: Assembly-CSharp::ZombieConfig
   zombieType: 0
-  moveSpeed: 3
-  acceleration: 6
+  moveSpeed: 5.2
+  acceleration: 8
   maxHP: 2
   sightRange: 12
   sightHalfAngle: 60
@@ -29,11 +29,11 @@ MonoBehaviour:
   detectGaugePerTick: 0.34
   alertThreshold: 0.34
   detectDecayPerSec: 0.4
-  alertStareTime: 1.5
-  alertApproachSpeedMult: 0.35
+  alertStareTime: 1
+  alertApproachSpeedMult: 0.4
   senseVariance: 0.3
   gruntRadius: 8
-  chaseAnimSpeedMult: 1
+  chaseAnimSpeedMult: 1.25
   flinchDuration: 0.15
   staggerDuration: 0.4
   knockdownDuration: 1.5
@@ -43,9 +43,9 @@ MonoBehaviour:
   resistGrowth: 1.5
   resistDecayTime: 4
   downedDamageMult: 1.5
-  lungeRange: 2.6
-  lungeWindup: 0.5
-  lungeSpeed: 9
+  lungeRange: 3
+  lungeWindup: 0.45
+  lungeSpeed: 11
   lungeDuration: 0.35
   lungeRecover: 0.6
   grappleContactRadius: 1

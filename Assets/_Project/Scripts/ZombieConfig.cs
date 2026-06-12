@@ -50,6 +50,8 @@ public class ZombieConfig : ScriptableObject
     [Range(0f, 0.5f)] public float senseVariance = 0.3f;
     [Tooltip("Chase 진입 시 그르렁 전파 반경(m). 듣는 좀비는 Investigate로만 승급(떼어내기 보장).")]
     public float gruntRadius = 8f;
+    [Tooltip("어그로(Chase~Recover) 중 애니 재생속도 배수. 워커 1.0, 스프린터 1.25 시작.")]
+    public float chaseAnimSpeedMult = 1f;
 
     [Header("Hit Reaction — 피격 사다리 (§6.2)")]
     [Tooltip("flinch: 모든 풀히트가 보장하는 짧은 경직(초). 한 발 = 적 행동 1회 거부(윈드업 취소).")]
@@ -90,6 +92,8 @@ public class ZombieConfig : ScriptableObject
     public float grappleEscapeStagger = 0.8f;
     [Tooltip("탈출 성공 시 좀비 넉백(m/s).")]
     public float grappleEscapeKnockback = 4f;
+    [Tooltip("grapple 한 입 피해(잡는 순간 1회 + 타임아웃 1회). 런지 스침은 attackDamage를 따른다. 풀코스 = ×2 — '잡히면 절반~즉사권' 노브.")]
+    public float grappleDamage = 50f;
 
     [Header("Signal")]
     public bool isSignalZombie;
