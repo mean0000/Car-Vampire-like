@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>탑뷰 공격 문법 — 장판 텔레그래프 체계 (2026-06-13)</title>
+<style>
+  :root {
+    --bg:#15161c; --panel:#1d1f29; --card:#232634; --line:#32364a;
+    --txt:#e8e8ee; --dim:#9aa0b4; --cyan:#39d0d8; --amber:#ffb84d;
+    --tg:#ff5a3c; --tgdim:rgba(255,90,60,.16); --tgline:rgba(255,90,60,.85);
+    --lv1:#6fbf73; --lv2:#5b9bd5; --lv3:#e0b94f; --lv4:#e0823c; --lv5:#d9534f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:'Pretendard','Malgun Gothic',sans-serif;line-height:1.55;padding:32px 4vw 80px}
+  h1{font-size:25px} h1 small{color:var(--dim);font-size:14px;font-weight:400;margin-left:10px}
+  .thesis{margin:14px 0 24px;padding:14px 18px;background:var(--panel);border-left:4px solid var(--tg);border-radius:6px;font-size:15px}
+  .thesis b{color:var(--tg)}
+  h2{font-size:18px;margin:40px 0 14px;border-bottom:2px solid var(--line);padding-bottom:8px}
+  .principles{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+  .pr{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px;font-size:13.5px}
+  .pr b{color:var(--cyan);display:block;margin-bottom:4px;font-size:14px}
+
+  /* ── 도형 데모 ── */
+  .shapes{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+  .shape{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;text-align:center}
+  .stage{position:relative;width:170px;height:170px;margin:6px auto 10px;background:#1a1c24;border-radius:8px;overflow:hidden}
+  .shape h3{font-size:15px} .shape p{font-size:12.5px;color:var(--dim);margin-top:4px}
+  .shape .ex{font-size:12px;color:var(--amber);margin-top:5px}
+
+  /* 원 — 채움 */
+  .tg-circle{position:absolute;left:35px;top:35px;width:100px;height:100px;border:2px solid var(--tgline);border-radius:50%;background:var(--tgdim)}
+  .tg-circle .fill{position:absolute;inset:0;border-radius:50%;background:var(--tgline);opacity:.55;transform:scale(0);animation:cfill 2.2s infinite}
+  @keyframes cfill{0%{transform:scale(0)}70%{transform:scale(1);opacity:.55}78%{opacity:.95}84%{opacity:0;transform:scale(1.15)}100%{opacity:0}}
+
+  /* 레인 — 길이 채움 */
+  .tg-lane{position:absolute;left:20px;top:70px;width:130px;height:30px;border:2px solid var(--tgline);border-radius:4px;background:var(--tgdim)}
+  .tg-lane .fill{position:absolute;inset:0;background:var(--tgline);opacity:.55;transform-origin:left;transform:scaleX(0);animation:lfill 2.2s infinite}
+  @keyframes lfill{0%{transform:scaleX(0)}70%{transform:scaleX(1);opacity:.55}78%{opacity:.95}84%{opacity:0}100%{opacity:0}}
+  .actor{position:absolute;width:14px;height:14px;border-radius:50%;background:#8a90a8}
+  .tg-lane ~ .actor{left:8px;top:78px}
+
+  /* 부채꼴 */
+  .tg-cone{position:absolute;left:25px;top:25px;width:120px;height:120px;
+    background:conic-gradient(from -50deg at 0% 50%, var(--tgdim) 0 100deg, transparent 100deg);
+    border-radius:0}
+  .tg-cone .fill{position:absolute;inset:0;background:conic-gradient(from -50deg at 0% 50%, var(--tgline) 0 100deg, transparent 100deg);opacity:0;transform-origin:0 50%;transform:scale(0);animation:cofill 2.2s infinite}
+  @keyframes cofill{0%{transform:scale(0);opacity:.55}70%{transform:scale(1);opacity:.55}78%{opacity:.95}84%{opacity:0}100%{opacity:0}}
+  .cone-actor{position:absolute;left:18px;top:78px;width:14px;height:14px;border-radius:50%;background:#8a90a8}
+
+  /* 링 — 안쪽 안전 */
+  .tg-ring{position:absolute;left:25px;top:25px;width:120px;height:120px;border-radius:50%;
+    background:radial-gradient(circle, transparent 0 26%, var(--tgdim) 27% 100%);border:2px solid var(--tgline)}
+  .tg-ring .fill{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle, transparent 0 26%, var(--tgline) 27% 100%);opacity:0;animation:rfill 2.2s infinite}
+  @keyframes rfill{0%{opacity:0}55%{opacity:0}70%{opacity:.55}78%{opacity:.95}84%{opacity:0}100%{opacity:0}}
+  .ring-actor{position:absolute;left:78px;top:78px;width:14px;height:14px;border-radius:50%;background:#8a90a8}
+
+  /* 방사 — 순차 */
+  .tg-cross{position:absolute;inset:0}
+  .tg-cross .arm{position:absolute;left:75px;top:85px;width:75px;height:18px;border:2px solid var(--tgline);background:var(--tgdim);transform-origin:0 50%;border-radius:3px}
+  .tg-cross .arm i{position:absolute;inset:0;background:var(--tgline);opacity:0;display:block;animation:armfire 2.6s infinite}
+  .tg-cross .a1{transform:rotate(0deg)} .tg-cross .a2{transform:rotate(90deg)} .tg-cross .a3{transform:rotate(180deg)} .tg-cross .a4{transform:rotate(270deg)}
+  .tg-cross .a1 i{animation-delay:0s}.tg-cross .a2 i{animation-delay:.3s}.tg-cross .a3 i{animation-delay:.6s}.tg-cross .a4 i{animation-delay:.9s}
+  @keyframes armfire{0%{opacity:0}45%{opacity:0}55%{opacity:.95}65%{opacity:0}100%{opacity:0}}
+
+  /* 잔류 필드 */
+  .tg-field{position:absolute;left:30px;top:30px;width:110px;height:110px;border:2px dashed var(--tgline);border-radius:50%;background:var(--tgdim);animation:fieldpulse 2.2s infinite}
+  @keyframes fieldpulse{0%,100%{background:var(--tgdim)}50%{background:rgba(255,90,60,.28)}}
+  .tg-field .dot{position:absolute;width:5px;height:5px;border-radius:50%;background:var(--tgline);opacity:.8;animation:dotf 1.8s infinite}
+  @keyframes dotf{0%{transform:translateY(6px);opacity:0}40%{opacity:.9}100%{transform:translateY(-14px);opacity:0}}
+
+  /* 타이밍 표 + 종별 표 */
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+  th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{color:var(--dim);font-weight:600;font-size:12px}
+  td b{color:var(--amber)}
+  .glyph{font-size:15px;color:var(--tg);font-weight:700}
+  .lvtag{font-weight:800;padding:1px 10px;border-radius:5px;color:#15161c;font-size:13px;margin-right:8px}
+  .b1{background:var(--lv1)}.b2{background:var(--lv2)}.b3{background:var(--lv3)}.b4{background:var(--lv4)}.b5{background:var(--lv5)}
+  .sect{margin-top:30px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+  .sect h3{font-size:15.5px;margin-bottom:4px}
+  .note{color:var(--dim);font-size:12.5px}
+  .warn{color:var(--lv5);font-weight:700}
+  .panel{margin-top:36px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px 24px}
+  .panel h2{border:none;margin:0 0 10px;padding:0}
+  .panel li{margin:6px 0 6px 18px;font-size:14px}
+</style>
+</head>
+<body>
+
+<h1>탑뷰 공격 문법 <small>장판 텔레그래프 체계 + 30종 기술 번역 (2026-06-13) · 권위: 00_authority/2026-06-13-topdown-attack-grammar.md</small></h1>
+
+<div class="thesis">
+  탑뷰(45°/15m)에서는 몬스터의 모션을 보고 피하는 1·3인칭 문법이 죽는다. 수직 윈드업은 실루엣으로 안 읽히고, 포물선·고도는 정보가 아니다.
+  제1 분기 — <b>곡사(안 읽힘)는 바닥 장판으로 번역, 직사(완벽히 읽힘)는 탄 그 자체가 위협(탄막)</b>. 위협 형식은 총 9종이고, 각 형식은 플레이어에게 다른 동사를 요구한다.
+</div>
+
+<h2>위협 형식 9종 — 장판은 그중 하나일 뿐 (v1.1)</h2>
+<div class="sect">
+  <table>
+    <tr><th>형식</th><th>무엇을 보고 피하나</th><th>플레이어 동사</th><th>대표</th></tr>
+    <tr><td><b>A 접촉</b> — 몸이 무기</td><td>군중의 모양·밀도</td><td>카이팅, 군중 모양 관리</td><td>LV1 군체 전부</td></tr>
+    <tr><td><b>B 돌진</b> — 몸이 탄환</td><td>레인 예고+수평 윈드업</td><td>축 비키기 → 벽 그로기 반격</td><td>Fulgurodonte 램, Caniathrox 도약</td></tr>
+    <tr><td><b>C 근접 스윙</b></td><td>장판(부채꼴/링)</td><td>재배치</td><td>클로 콤보, 스톰프</td></tr>
+    <tr><td><b>D 곡사/낙하</b></td><td>장판(원) — 탄은 화면 밖</td><td>자리 비키기</td><td>Crustaspikan 투석</td></tr>
+    <tr><td><b>E 직사 탄막</b> — 보이는 탄</td><td><b>탄 그 자체</b> (예고 없음)</td><td>위빙</td><td>산성샷·부채탄·링탄·유도탄</td></tr>
+    <tr><td><b>F 빔</b> — 선의 점령</td><td>예고선 → 광선</td><td>선 넘기</td><td>Funglicane 전기</td></tr>
+    <tr><td><b>G 잔류 필드</b></td><td>점선+입자 영역</td><td>경로 재계획</td><td>가스, 산 웅덩이</td></tr>
+    <tr><td><b>H 소환</b> — 수의 공격</td><td>스포너 본체</td><td>소스 우선 사격</td><td>가족 3계보(알→유생)</td></tr>
+    <tr><td><b>I 그랩</b> — 이동권 박탈</td><td>좁고 긴 장판</td><td>절대 회피(명중=매시)</td><td>Hexateuthis 포획</td></tr>
+  </table>
+  <p class="note" style="margin-top:8px"><b>탄막 밀도 규율</b>: 우리는 탄막 게임이 아니라 서바이버(에임+군중 관리가 본업) — 화면 내 동시 직사 사수 ≤4 · 곡사 장판 소스 ≤2 · 빔 ≤1, 초과분은 디렉터가 발사권 순번 배분(공격 토큰). 나선·벽탄 등 순수 탄막 패턴 금지.
+  <br><b>공정성 캐넌 확장</b>: "본체는 정보, 위협은 공정" — 시야 콘이 숨기는 건 본체뿐, <b>발사된 모든 위협(탄·장판·예고선·잔류)은 콘 게이트 면제.</b></p>
+</div>
+
+<h2>E 직사 탄막 — 패턴 어휘 4종 (데모)</h2>
+<div class="shapes">
+  <div class="shape"><div class="stage">
+      <div class="shooter"></div><div class="player"></div>
+      <div class="blt aim"></div>
+    </div>
+    <h3>조준탄</h3><p>현재 위치로 직사 1발 — 움직이면 자동 회피, <b>멈춰 쏘면 맞는다</b>: "정지 사격의 대가"를 만드는 핵심 도구</p><div class="ex">Venodonte 산성샷 · 스핏 전반</div></div>
+  <div class="shape"><div class="stage">
+      <div class="shooter"></div>
+      <div class="blt fan f1"></div><div class="blt fan f2"></div><div class="blt fan f3"></div>
+    </div>
+    <h3>부채탄 (N-way)</h3><p>3~5way 확산 — 틈새로 위빙</p><div class="ex">Serpenopod 3way · Rostrokarck 4way · Crustaspikan 5way×2</div></div>
+  <div class="shape"><div class="stage">
+      <div class="shooter" style="left:78px;top:78px"></div>
+      <div class="blt nova n1"></div><div class="blt nova n2"></div><div class="blt nova n3"></div><div class="blt nova n4"></div>
+      <div class="blt nova n5"></div><div class="blt nova n6"></div><div class="blt nova n7"></div><div class="blt nova n8"></div>
+    </div>
+    <h3>링탄 (노바)</h3><p>전방향 동시 — 거리 벌리기/틈새</p><div class="ex">Kupolobrach 8방 · Funglicane 사망 노바(제안)</div></div>
+  <div class="shape"><div class="stage">
+      <div class="shooter"></div><div class="player" style="animation:pmove 3s infinite"></div>
+      <div class="blt homing"></div>
+    </div>
+    <h3>저속 유도탄</h3><p>느리게 따라옴 — 끌고 다니다 버리기(공간 운용 강제)</p><div class="ex">Arathrox 발광구 (탄속 3.5 · 4s 유도)</div></div>
+</div>
+<style>
+  .shooter{position:absolute;left:14px;top:78px;width:16px;height:16px;border-radius:50%;background:#7a4040;border:2px solid var(--tgline)}
+  .player{position:absolute;right:18px;top:78px;width:13px;height:13px;border-radius:50%;background:var(--cyan)}
+  .blt{position:absolute;width:9px;height:9px;border-radius:50%;background:var(--tg);box-shadow:0 0 6px var(--tg)}
+  .aim{left:24px;top:81px;animation:baim 1.6s infinite linear}
+  @keyframes baim{0%{transform:translateX(0);opacity:1}85%{transform:translateX(118px);opacity:1}90%{opacity:0}100%{opacity:0}}
+  .fan{left:24px;top:81px}
+  .f1{animation:bf1 1.8s infinite linear}.f2{animation:bf2 1.8s infinite linear}.f3{animation:bf3 1.8s infinite linear}
+  @keyframes bf1{0%{transform:translate(0,0)}85%{transform:translate(115px,-42px);opacity:1}90%,100%{opacity:0}}
+  @keyframes bf2{0%{transform:translate(0,0)}85%{transform:translate(122px,0);opacity:1}90%,100%{opacity:0}}
+  @keyframes bf3{0%{transform:translate(0,0)}85%{transform:translate(115px,42px);opacity:1}90%,100%{opacity:0}}
+  .nova{left:82px;top:82px}
+  .n1{animation:bn1 1.9s infinite linear}.n2{animation:bn2 1.9s infinite linear}.n3{animation:bn3 1.9s infinite linear}.n4{animation:bn4 1.9s infinite linear}
+  .n5{animation:bn5 1.9s infinite linear}.n6{animation:bn6 1.9s infinite linear}.n7{animation:bn7 1.9s infinite linear}.n8{animation:bn8 1.9s infinite linear}
+  @keyframes bn1{0%{transform:translate(0,0)}80%{transform:translate(70px,0);opacity:1}85%,100%{opacity:0}}
+  @keyframes bn2{0%{transform:translate(0,0)}80%{transform:translate(-70px,0);opacity:1}85%,100%{opacity:0}}
+  @keyframes bn3{0%{transform:translate(0,0)}80%{transform:translate(0,70px);opacity:1}85%,100%{opacity:0}}
+  @keyframes bn4{0%{transform:translate(0,0)}80%{transform:translate(0,-70px);opacity:1}85%,100%{opacity:0}}
+  @keyframes bn5{0%{transform:translate(0,0)}80%{transform:translate(50px,50px);opacity:1}85%,100%{opacity:0}}
+  @keyframes bn6{0%{transform:translate(0,0)}80%{transform:translate(-50px,50px);opacity:1}85%,100%{opacity:0}}
+  @keyframes bn7{0%{transform:translate(0,0)}80%{transform:translate(50px,-50px);opacity:1}85%,100%{opacity:0}}
+  @keyframes bn8{0%{transform:translate(0,0)}80%{transform:translate(-50px,-50px);opacity:1}85%,100%{opacity:0}}
+  .homing{left:24px;top:81px;animation:bhom 3s infinite linear}
+  @keyframes bhom{0%{transform:translate(0,0)}40%{transform:translate(60px,-30px)}75%{transform:translate(105px,18px)}95%{transform:translate(125px,-8px);opacity:1}100%{opacity:0}}
+  @keyframes pmove{0%{transform:translate(0,0)}33%{transform:translate(-12px,-40px)}66%{transform:translate(-20px,28px)}100%{transform:translate(0,0)}}
+</style>
+
+<h2>원칙 5</h2>
+<div class="principles">
+  <div class="pr"><b>① 모든 위협은 바닥에</b>공중·점프·포물선 전부 지면 투영 장판으로 번역. 산성침의 포물선은 안 보여준다 — 바닥의 원이 전부다.</div>
+  <div class="pr"><b>② 모양=영역, 채움=타이밍</b>외곽선 등장 → 안이 차오름 → 가득=발동. 숫자 없이 채움 속도로 본능적으로 읽는다.</div>
+  <div class="pr"><b>③ 장판 = 위치 명령</b>"여기서 비켜라"일 때만 깐다. 비킬 필요 없는 약공격(군체 물기)에 쓰면 늑대소년 — LV1 기본기는 모션 윈드업만.</div>
+  <div class="pr"><b>④ 탑뷰 윈드업 = 수평 확장</b>들어올리기(수직)는 부감에서 실루엣이 줄어 안 보임. 팔 벌림·날개 전개·몸 비틀기(수평)가 읽힌다. 수직 동작은 장판이 전담.</div>
+  <div class="pr"><b>⑤ 비행체 = 그림자 앵커</b>공중 유닛은 항상 지면 그림자 블롭으로 위치를 바닥에 묶는다. 카메라에 가까워 커 보이는 왜곡 — 그림자가 진실.</div>
+</div>
+
+<h2>장판 도형 어휘 6종 — 형식 B·C·D·F·G·I의 표기층 (실제 채움 동작)</h2>
+<div class="shapes">
+  <div class="shape"><div class="stage"><div class="tg-circle"><div class="fill"></div></div></div>
+    <h3>● 원 — 착탄/폭심</h3><p>"그 자리에 떨어진다"</p><div class="ex">산성침 · 투석 · 도약 착지</div></div>
+  <div class="shape"><div class="stage"><div class="tg-lane"><div class="fill"></div></div><div class="actor"></div></div>
+    <h3>▬ 레인 — 돌진/빔</h3><p>"이 선 위가 쓸린다"</p><div class="ex">램 돌진 · 전기 빔 · 혀 공격</div></div>
+  <div class="shape"><div class="stage"><div class="tg-cone"><div class="fill"></div></div><div class="cone-actor"></div></div>
+    <h3>◤ 부채꼴 — 전방 스윙</h3><p>"앞쪽 호가 쓸린다"</p><div class="ex">클로 콤보 · 물기 · 스윕</div></div>
+  <div class="shape"><div class="stage"><div class="tg-ring"><div class="fill"></div></div><div class="ring-actor"></div></div>
+    <h3>⊙ 링 — 자기중심 광역</h3><p>"본체 주변이 터진다" (몸쪽 안전 or 위험)</p><div class="ex">스톰프 · 스핀</div></div>
+  <div class="shape"><div class="stage"><div class="tg-cross"><div class="arm a1"><i></i></div><div class="arm a2"><i></i></div><div class="arm a3"><i></i></div><div class="arm a4"><i></i></div></div></div>
+    <h3>✚ 방사 — 다방향 순차</h3><p>안전한 사분면 찾기 퍼즐</p><div class="ex">촉수 4방 스매시 (0.3s 간격)</div></div>
+  <div class="shape"><div class="stage"><div class="tg-field"><div class="dot" style="left:30%;top:60%"></div><div class="dot" style="left:55%;top:40%;animation-delay:.5s"></div><div class="dot" style="left:70%;top:65%;animation-delay:1s"></div></div></div>
+    <h3>░ 잔류 필드 — 디나이얼</h3><p>"들어가지 마라" — 점선+입자, 회피가 아닌 경로 재계획 요구</p><div class="ex">가스 · 산 웅덩이</div></div>
+</div>
+
+<h2>타이밍 — LV별 약속 시간</h2>
+<div class="sect">
+  <table>
+    <tr><th>LV</th><th>텔레그래프</th><th>철학</th></tr>
+    <tr><td><span class="lvtag b1">LV1</span></td><td>0.4~0.5s (장판 거의 없음)</td><td>몸으로 밀려오는 위협 — 장판 시각 소음 금지</td></tr>
+    <tr><td><span class="lvtag b2">LV2</span></td><td>0.6~0.8s</td><td>짧고 빠른 약속 — 전투 리듬 생성</td></tr>
+    <tr><td><span class="lvtag b3">LV3</span></td><td>0.8~1.0s</td><td>읽고 비키는 첫 단위</td></tr>
+    <tr><td><span class="lvtag b4">LV4</span></td><td>1.0~1.4s</td><td>크고 느린 약속 — 위치 싸움</td></tr>
+    <tr><td><span class="lvtag b5">LV5</span></td><td>1.2~2.0s</td><td>거대한 예고 — 투석 2.0s는 "하늘에서 오는 시간"</td></tr>
+  </table>
+  <p class="note" style="margin-top:8px">설계 기준: 장판 탈출 거리 ≤ 플레이어 이속×텔레그래프 시간 + 대시 1회. · 콤보는 장판 연쇄(1타 발동 직후 2타 등장). · 일회 채움 장판=대시 회피 / 잔류 필드=지역 포기 — 다른 판단, 다른 시각.</p>
+</div>
+
+<h2>종별 기술 번역 — 대표 발췌</h2>
+
+<div class="sect"><h3><span class="lvtag b1">LV1</span> 군체 — 장판 최소주의</h3>
+<table>
+  <tr><th>종</th><th>기술</th><th class="glyph">도형</th><th>번역 (탑뷰에서 보이는 것)</th></tr>
+  <tr><td>Venodonte</td><td>산성샷 3연</td><td class="glyph">E</td><td><b>[조준탄]</b> 직사 산성 글롭 ×3연(0.15s 간격) · 탄속 7 — <b>멈춰 쏘면 맞는다</b>: 정지 사격 처벌 도구</td></tr>
+  <tr><td>Lacercharias</td><td>롤링 돌진</td><td class="glyph">▬</td><td><b>[B]</b> 0.8×4m 레인 · 몸을 마는 수평 수축 실루엣 → 발사</td></tr>
+  <tr><td>Funglicane</td><td>집중 전기</td><td class="glyph">F</td><td><b>[빔]</b> 0.6×8m 예고선→광선 · 부유 정지+발광 차지 · <b>(제안) 사망 시 전기 노바 6발</b></td></tr>
+  <tr><td>Rostro 유생</td><td>기본 물기</td><td class="glyph">—</td><td><b>장판 없음</b> — 들이밀기 윈드업만 (원칙 ③)</td></tr>
+</table></div>
+
+<div class="sect"><h3><span class="lvtag b2">LV2</span> 추격자 — 짧은 약속 (0.6~0.8s)</h3>
+<table>
+  <tr><th>종</th><th>기술</th><th class="glyph">도형</th><th>번역</th></tr>
+  <tr><td>Caniathrox</td><td>점프물기</td><td class="glyph">●</td><td>r1.5 착지원 · 웅크림(실루엣 수축) 후 도약</td></tr>
+  <tr><td>Kupolo 유체</td><td>대시 스파이크</td><td class="glyph">▬</td><td>1×6m · 그림자가 레인 시작점으로 미끄러진 뒤 발사</td></tr>
+  <tr><td>Arathrox</td><td>투사체</td><td class="glyph">E</td><td><b>[저속 유도탄]</b> 발광구 · 탄속 3.5, 4s 유도 — 끌고 다니다 버리는 공간 운용 강제</td></tr>
+</table></div>
+
+<div class="sect"><h3><span class="lvtag b3">LV3</span> 포식자 — 읽고 비키기 (0.8~1.0s)</h3>
+<table>
+  <tr><th>종</th><th>기술</th><th class="glyph">도형</th><th>번역</th></tr>
+  <tr><td>Hexateuthis</td><td><b>포획(그랩)</b></td><td class="glyph">◤</td><td>r3 · <b>40° 좁은 부채꼴 + 1.0s</b> — 30종 유일 그랩이라 가장 정직한 약속. 명중=그랩(매시 탈출)</td></tr>
+  <tr><td>Horridomorph</td><td>점프 4방</td><td class="glyph">●</td><td>r2 · <b>도약 출발 순간 착지원 먼저</b> — 다족 도약은 모션 예측 불가, 장판이 유일한 진실</td></tr>
+  <tr><td>〃</td><td>베놈 스핏</td><td class="glyph">●░</td><td>r1.2 착탄 + r1.5 잔류 3s</td></tr>
+  <tr><td>Feroptere</td><td>급강하 물기</td><td class="glyph">▬</td><td>1.2×6m · 그림자 블롭 가속 = 강하 신호</td></tr>
+  <tr><td>Dimaxillosaurus</td><td>클로 콤보</td><td class="glyph">◤</td><td>r2.5 좌→우 2연쇄(0.8s+0.4s) · 팔 수평 벌림 윈드업</td></tr>
+</table></div>
+
+<div class="sect"><h3><span class="lvtag b4">LV4</span> 정예 — 위치 싸움 (1.0~1.4s)</h3>
+<table>
+  <tr><th>종</th><th>기술</th><th class="glyph">도형</th><th>번역</th></tr>
+  <tr><td>Fulgurodonte</td><td><b>램 돌진</b></td><td class="glyph">▬</td><td>2×12m · 상체 수평 낮춤+발 구르기 · <b>벽에 막히면 그로기</b>(반격 창)</td></tr>
+  <tr><td>Crassorrid</td><td>양손 스매시</td><td class="glyph">⊙</td><td>r4 자기중심 링 — "근접 금지" 명령</td></tr>
+  <tr><td>Serpmare</td><td>가스 포효</td><td class="glyph">●░</td><td>r6 + 잔류 6s · 9.3m 직립이 머리를 수평으로 크게 젖힘</td></tr>
+  <tr><td>Serparmat</td><td>점프물기</td><td class="glyph">▬</td><td>1.5×7m · 몸길이 13.8m 자체가 움직이는 지형(몸통 피해=노브)</td></tr>
+</table></div>
+
+<div class="sect"><h3><span class="lvtag b5">LV5</span> 거물 — 거대한 예고 (1.2~2.0s)</h3>
+<table>
+  <tr><th>종</th><th>기술</th><th class="glyph">도형</th><th>번역</th></tr>
+  <tr><td>Crustaspikan</td><td><b>투석</b></td><td class="glyph">●</td><td>r4 · <b>2.0s(차지 0.8+체공 1.2)</b> · 수평 비틀기 → 바위가 화면 밖으로 → <b>장판만 남는 공포</b></td></tr>
+  <tr><td>Kentriplokame</td><td><b>촉수 4방</b></td><td class="glyph">✚</td><td>2×10m ×4 · <b>0.3s 간격 순차 발동</b> — 안전한 사분면 찾기</td></tr>
+  <tr><td>Gorhorrid</td><td><b>혀 공격</b></td><td class="glyph">▬</td><td>1×14m 저격 레인 — "거리=안전"을 무너뜨리는 기술</td></tr>
+  <tr><td>Xenokarce</td><td>점프 스매시</td><td class="glyph">●⊙</td><td>r5 착지 + 충격파 링 외곽 확장</td></tr>
+  <tr><td>Kupolobrach</td><td>가스 살포</td><td class="glyph">●░</td><td>r7 + 잔류 8s · <b>대형 그림자 아래 = 항상 위험</b>이라는 학습</td></tr>
+</table>
+<p class="note" style="margin-top:8px">전체 30종 × 전 기술 번역표는 권위 md(§5)에 — 여기는 문법을 정의하는 대표 발췌.</p></div>
+
+<div class="panel">
+  <h2>색·렌더 규정 + 판정 대기</h2>
+  <ul>
+    <li><b>적 장판 = 적색(레드-오렌지) 단색 신규 채널</b> — 기존 캐넌 보호: 시안=수렴/스캔 · 앰버=수신자 측 위급 경보 · 마젠타=신호붕괴. 위험 단계는 색이 아니라 채움 진행이 담당.</li>
+    <li><b>장판은 시야 콘 게이트 면제</b> — "공격 시 실물 강제 공개" 캐넌의 확장. 공격 공정성 &gt; 정보 게이트. <span class="warn">판정:</span> 콘 밖 장판 채도 -20% 변조 여부(노브).</li>
+    <li><span class="warn">구현 함정 예약</span> — 시야 콘 합성 패스가 월드 투명 VFX를 지움(후방 힌트 실측). 장판 렌더 = ①콘 이후 패스 ②오버레이 캔버스(검증된 길) ③URP Decal 중 시공 시 택1.</li>
+    <li><span class="warn">판정:</span> 투석 2.0s 체감 · 촉수 순차 0.3s · Serparmat 몸통 피해 · 잔류 지속(3~8s) — 전부 노브 세션.</li>
+  </ul>
+</div>
+
+</body>
+</html>

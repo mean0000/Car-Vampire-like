@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>몬스터 로스터 — Protofactor Vol.2 분류·레벨 (2026-06-13)</title>
+<style>
+  :root {
+    --bg: #15161c; --panel: #1d1f29; --card: #232634; --line: #32364a;
+    --txt: #e8e8ee; --dim: #9aa0b4;
+    --lv1: #6fbf73; --lv2: #5b9bd5; --lv3: #e0b94f; --lv4: #e0823c; --lv5: #d9534f;
+    --cyan: #39d0d8; --amber: #ffb84d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--txt); font-family: 'Pretendard', 'Malgun Gothic', sans-serif; line-height: 1.55; padding: 32px 4vw 80px; }
+  h1 { font-size: 26px; letter-spacing: -0.5px; }
+  h1 small { color: var(--dim); font-size: 14px; font-weight: 400; margin-left: 10px; }
+  .thesis { margin: 14px 0 6px; padding: 14px 18px; background: var(--panel); border-left: 4px solid var(--cyan); border-radius: 6px; font-size: 15px; }
+  .thesis b { color: var(--cyan); }
+  .meta { color: var(--dim); font-size: 13px; margin: 10px 0 26px; }
+  .meta b { color: var(--amber); }
+
+  .lv-section { margin-top: 38px; }
+  .lv-head { display: flex; align-items: baseline; gap: 14px; border-bottom: 2px solid var(--line); padding-bottom: 8px; margin-bottom: 18px; }
+  .lv-badge { font-size: 20px; font-weight: 800; padding: 2px 14px; border-radius: 6px; color: #15161c; }
+  .lv-title { font-size: 17px; font-weight: 700; }
+  .lv-desc { color: var(--dim); font-size: 13px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; transition: transform .12s; }
+  .card:hover { transform: translateY(-3px); border-color: #4a4f6a; }
+  .card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; background: #1a1c26; }
+  .card .body { padding: 12px 14px 14px; }
+  .name { font-weight: 700; font-size: 15.5px; display: flex; justify-content: space-between; align-items: center; }
+  .size { color: var(--amber); font-size: 12.5px; font-weight: 600; }
+  .tags { margin: 7px 0 6px; display: flex; flex-wrap: wrap; gap: 5px; }
+  .tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #2c3044; color: #c3c8dd; }
+  .tag.move { background: #1d3a4a; color: #7fd6e8; }
+  .tag.rng  { background: #4a2d1d; color: #f0b27f; }
+  .tag.tint { background: #2d2244; color: #c9a6f0; }
+  .kit { color: var(--dim); font-size: 12.5px; }
+  .note { margin-top: 6px; font-size: 12.5px; color: #b9bfd6; }
+  .note b { color: var(--cyan); font-weight: 600; }
+
+  .b1 { background: var(--lv1); } .c1 { color: var(--lv1); }
+  .b2 { background: var(--lv2); } .c2 { color: var(--lv2); }
+  .b3 { background: var(--lv3); } .c3 { color: var(--lv3); }
+  .b4 { background: var(--lv4); } .c4 { color: var(--lv4); }
+  .b5 { background: var(--lv5); } .c5 { color: var(--lv5); }
+
+  .panel { margin-top: 44px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px 24px; }
+  .panel h2 { font-size: 17px; margin-bottom: 12px; }
+  .panel ul { margin-left: 18px; }
+  .panel li { margin: 6px 0; font-size: 14px; }
+  .panel img { max-width: 100%; border-radius: 8px; margin-top: 12px; border: 1px solid var(--line); }
+  .warn { color: var(--lv5); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<h1>몬스터 로스터 <small>Protofactor Monster Full Pack Vol.2 — 30종 분류·레벨 지정 (2026-06-13)</small></h1>
+
+<div class="thesis">
+  테제: <b>"위협적 이상개체를 빠르고 화려하게 처리하고 살아서 퇴근"</b> — 적은 좀비가 아니라 <b>사람이 변한 이상개체</b>.
+  LV = 인카운터 위협 등급(출현 깊이/시간과 결합). 미니 게이트 "한 마리 보고 심박이 바뀌는가"의 단위는 LV2부터.
+</div>
+<div class="meta">
+  실측 3축: 프리팹 바운즈 + 애니메이션 동사 전수 + 인게임 렌더 · <b>★머티리얼 48종 Standard→URP/Lit 변환 완료</b>(마젠타 지뢰 제거) ·
+  레벨은 시작값(노브 세션 조정) · 톤게이트 유저 판정 대기 · 권위 문서: <code>00_authority/2026-06-12-monster-roster-classification.md</code>
+</div>
+
+<!-- ───────── LV1 ───────── -->
+<div class="lv-section">
+  <div class="lv-head"><span class="lv-badge b1">LV1</span><span class="lv-title c1">군체 — 쓸어담는 연료</span><span class="lv-desc">떼(6~15)로만 출현 · 화려한 대량 정화의 재료 · 단독 출현 금지</span></div>
+  <div class="grid">
+    <div class="card"><img src="assets/monster_previews/RostrokarckLarvae.png"><div class="body">
+      <div class="name">Rostrokarck 유생 <span class="size">0.7m</span></div>
+      <div class="tags"><span class="tag move">지상</span><span class="tag">근접</span></div>
+      <div class="kit">물기 · 점프물기</div>
+      <div class="note"><b>알 프롭 동봉</b> — 부화 연출 가능. LV5 거미게의 새끼</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/Lacercharias.png"><div class="body">
+      <div class="name">Lacercharias <span class="size">1.1m</span></div>
+      <div class="tags"><span class="tag move">지상·저자세</span><span class="tag">근접</span></div>
+      <div class="kit">물기 · <b>롤링 돌진</b></div>
+      <div class="note">발밑을 파고드는 타입 — 시야 하단 압박</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/Venodonte.png"><div class="body">
+      <div class="name">Venodonte <span class="size">1.3m</span></div>
+      <div class="tags"><span class="tag move">지상</span><span class="tag rng">산성샷</span><span class="tag tint">×4 틴트</span></div>
+      <div class="kit">물기 · 산성샷(3연 콤보)</div>
+      <div class="note">원거리 쫄 — 군체에 사선 압박을 섞는 양념</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/Funglicane.png"><div class="body">
+      <div class="name">Funglicane <span class="size">1.6m</span></div>
+      <div class="tags"><span class="tag move">부유</span><span class="tag rng">전기</span></div>
+      <div class="kit">발톱 · 집중 전기 블래스트</div>
+      <div class="note">풍선 균류 — 공중 쫄, 터지는 맛 후보</div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ───────── LV2 ───────── -->
+<div class="lv-section">
+  <div class="lv-head"><span class="lv-badge b2">LV2</span><span class="lv-title c2">추격자 — 한두 발에 끊는 견제</span><span class="lv-desc">2~5기 혼성 · 리듬을 만드는 속도 위협 · 심박 단위 시작</span></div>
+  <div class="grid">
+    <div class="card"><img src="assets/monster_previews/Kupolobrach_Juvenile.png"><div class="body">
+      <div class="name">Kupolobrach 유체 <span class="size">1.7m</span></div>
+      <div class="tags"><span class="tag move">비행</span><span class="tag rng">전기샷</span><span class="tag tint">×3 틴트</span></div>
+      <div class="kit">대시 스파이크 · 전기샷 · 스프린트 비행</div>
+      <div class="note">LV5 공중 돔의 새끼 — 가족 예고 문법</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/Caniathrox.png"><div class="body">
+      <div class="name">Caniathrox <span class="size">2.0m</span></div>
+      <div class="tags"><span class="tag move">지상·쾌속</span><span class="tag rng">스핏</span></div>
+      <div class="kit">돌진물기 · 점프물기 · 스핏</div>
+      <div class="note"><b>사냥개 포지션</b> — 스프린터 본대 1순위</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/Arathrox.png"><div class="body">
+      <div class="name">Arathrox <span class="size">2.3m</span></div>
+      <div class="tags"><span class="tag move">지상·거미</span><span class="tag rng">투사체</span></div>
+      <div class="kit">물기 · 점프물기 · 투사체 발사</div>
+      <div class="note">발광 머리주머니 — 불쾌 실루엣 담당</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/Cephalonops.png"><div class="body">
+      <div class="name">Cephalonops <span class="size">2.9m</span></div>
+      <div class="tags"><span class="tag move">지상</span><span class="tag">근접</span></div>
+      <div class="kit">물기 · 점프물기</div>
+      <div class="note">볏 달린 곤충형 — 추격 본대의 살집</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/CrustaspikanLarvae.png"><div class="body">
+      <div class="name">Crustaspikan 유생 <span class="size">2.9m</span></div>
+      <div class="tags"><span class="tag move">지상</span><span class="tag">근접</span></div>
+      <div class="kit">물기 · 점프물기</div>
+      <div class="note">돛 실루엣 — LV5 투석 보스의 새끼</div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ───────── LV3 ───────── -->
+<div class="lv-section">
+  <div class="lv-head"><span class="lv-badge b3">LV3</span><span class="lv-title c3">포식자 — 무빙+집중 사격</span><span class="lv-desc">1~3기, 군체 동반 · 첫 "심박" 본대 · 방향 전환을 강제</span></div>
+  <div class="grid">
+    <div class="card"><img src="assets/monster_previews/Occisodonte.png"><div class="body">
+      <div class="name">Occisodonte <span class="size">3.1m · 길이 7.3m</span></div>
+      <div class="tags"><span class="tag move">지상</span><span class="tag move">수영</span><span class="tag">근접</span></div>
+      <div class="kit">물기 · 점프물기 · 수중 물기</div>
+      <div class="note">악어형 — 수변 매복 후보</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/Dimaxillosaurus.png"><div class="body">
+      <div class="name">Dimaxillosaurus <span class="size">3.2m</span></div>
+      <div class="tags"><span class="tag move">지상·직립</span><span class="tag">근접 콤보</span></div>
+      <div class="kit">클로 콤보 · 점프 클로</div>
+      <div class="note"><b>갈라진 턱 + 직립 실루엣</b> — "사람이 변했다" 앵커 후보 ①</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/Scolokarck.png"><div class="body">
+      <div class="name">Scolokarck <span class="size">3.2m</span></div>
+      <div class="tags"><span class="tag move">지상</span><span class="tag rng">스핏</span><span class="tag tint">×3 틴트</span></div>
+      <div class="kit">클로 · 점프 클로 · 스핏</div>
+      <div class="note">전갈게 — 중거리 견제 포식자</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/Hexateuthis.png"><div class="body">
+      <div class="name">Hexateuthis <span class="size">3.4m</span></div>
+      <div class="tags"><span class="tag move">부유</span><span class="tag">포획</span><span class="tag tint">×4 틴트</span></div>
+      <div class="kit">클로 · <b>포획(CatchPrey)</b></div>
+      <div class="note">부유 오징어 — <b>그랩 계열 유일 후보</b>(구 Grapple 계승)</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/Venosaur.png"><div class="body">
+      <div class="name">Venosaur <span class="size">3.6m</span></div>
+      <div class="tags"><span class="tag move">지상</span><span class="tag rng">스핏</span><span class="tag tint">×5 틴트</span></div>
+      <div class="kit">클로 콤보 · 점프 클로 · 스핏</div>
+      <div class="note">가시 수각류 — <b>LV3 물량 주력</b>(틴트 최다)</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/Horridomorph.png"><div class="body">
+      <div class="name">Horridomorph <span class="size">4.1m</span></div>
+      <div class="tags"><span class="tag move">지상·다족</span><span class="tag rng">베놈</span><span class="tag">도약 4방향</span></div>
+      <div class="kit">물기 · 점프 4방향 · 베놈 스핏</div>
+      <div class="note">도약 거미 — 측면 침투, 후방 힌트 시스템과 궁합</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/Feroptere.png"><div class="body">
+      <div class="name">Feroptere <span class="size">1.4m · 익장 5.3m</span></div>
+      <div class="tags"><span class="tag move">비행</span><span class="tag rng">스핏</span></div>
+      <div class="kit">급강하 물기 · 정지 비행 스핏 · 착지</div>
+      <div class="note">공중 주력 — 위에서 꽂히는 압박</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/Limadon.png"><div class="body">
+      <div class="name">Limadon <span class="size">2.8m · 길이 6.4m</span></div>
+      <div class="tags"><span class="tag move">지상·저속</span><span class="tag">근접 콤보</span></div>
+      <div class="kit">클로 콤보 · 물기</div>
+      <div class="note">발광 주머니 민달팽이 — <b>탱키 장애물</b> (LV4 경계 후보)</div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ───────── LV4 ───────── -->
+<div class="lv-section">
+  <div class="lv-head"><span class="lv-badge b4">LV4</span><span class="lv-title c4">정예 — 패턴 읽고 처치</span><span class="lv-desc">단독+호위 · 방 하나의 주인 · 자원을 강제 지출시킨다</span></div>
+  <div class="grid">
+    <div class="card"><img src="assets/monster_previews/Pistriptere.png"><div class="body">
+      <div class="name">Pistriptere <span class="size">4.5m · 길이 9.2m</span></div>
+      <div class="tags"><span class="tag move">비행</span><span class="tag move">수영</span><span class="tag">근접 콤보</span></div>
+      <div class="kit">클로 콤보 · 물기</div>
+      <div class="note">가오리 익룡 — 수륙공 3계 이동</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/Carcinoptera.png"><div class="body">
+      <div class="name">Carcinoptera <span class="size">4.8m</span></div>
+      <div class="tags"><span class="tag move">비행</span><span class="tag">근접</span></div>
+      <div class="kit">물기 · 클로 · 급강하 점프물기</div>
+      <div class="note">말벌게 — 공중 정예</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/Fulgurodonte.png"><div class="body">
+      <div class="name">Fulgurodonte <span class="size">5.4m</span></div>
+      <div class="tags"><span class="tag move">지상·직립</span><span class="tag">램 돌진</span><span class="tag rng">스핏</span></div>
+      <div class="kit"><b>램 돌진</b> · 클로 콤보 · 스핏</div>
+      <div class="note">"벼락니" — 돌진 정예(구 Charger 계승), 변이 앵커 후보 ②</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/Serpenopod.png"><div class="body">
+      <div class="name">Serpenopod <span class="size">5.6m</span></div>
+      <div class="tags"><span class="tag move">지상</span><span class="tag rng">스핏 ×2종</span></div>
+      <div class="kit">더블 클로 · 스핏 2종</div>
+      <div class="note">뱀 몸통 + 클로 다리 — 혼합 사거리 정예</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/Crassorrid.png"><div class="body">
+      <div class="name">Crassorrid <span class="size">7.0m</span></div>
+      <div class="tags"><span class="tag move">지상·직립</span><span class="tag">스매시</span></div>
+      <div class="kit">양손 스매시 · 클로</div>
+      <div class="note">두꺼비 트롤 — <b>브루트</b>, 변이 앵커 후보 ③</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/Serparmat.png"><div class="body">
+      <div class="name">Serparmat <span class="size">2.8m · 길이 13.8m</span></div>
+      <div class="tags"><span class="tag move">지상</span><span class="tag rng">스핏</span></div>
+      <div class="kit">점프물기 · 스핏</div>
+      <div class="note">장갑 대사(大蛇) — <b>통로 점거</b> 전용 정예</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/Serpmare.png"><div class="body">
+      <div class="name">Serpmare <span class="size">높이 9.3m</span></div>
+      <div class="tags"><span class="tag move">지상·직립</span><span class="tag rng">가스</span><span class="tag">광역</span></div>
+      <div class="kit"><b>가스 포효</b> · 스핀 · 스윕 · 3연 클로</div>
+      <div class="note">직립 지네 악몽 — 광역 디나이얼 (LV5 경계 후보)</div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ───────── LV5 ───────── -->
+<div class="lv-section">
+  <div class="lv-head"><span class="lv-badge b5">LV5</span><span class="lv-title c5">거물 — 조우 자체가 사건</span><span class="lv-desc">단독 · 디제틱 예고 필수 · 건물을 넘는 스케일</span></div>
+  <div class="grid">
+    <div class="card"><img src="assets/monster_previews/Rostrokarck.png"><div class="body">
+      <div class="name">Rostrokarck <span class="size">8.9m · 폭 15.8m</span></div>
+      <div class="tags"><span class="tag move">지상·다족</span><span class="tag rng">스피터</span></div>
+      <div class="kit">클로 콤보 · 더블 클로 · 스피터</div>
+      <div class="note"><b>가족 시스템</b>: 알 → 유생(LV1) → 성체</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/Kentriplokame.png"><div class="body">
+      <div class="name">Kentriplokame <span class="size">9.0m · 폭 17.7m</span></div>
+      <div class="tags"><span class="tag move">크롤</span><span class="tag move">수영</span><span class="tag">촉수 4방</span></div>
+      <div class="kit">촉수 스매시 4방향 · 스팅어 · 물기</div>
+      <div class="note">크라켄 — 수변/특수존 보스</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/Xenokarce.png"><div class="body">
+      <div class="name">Xenokarce <span class="size">10.1m</span></div>
+      <div class="tags"><span class="tag move">지상</span><span class="tag">스매시+클로</span></div>
+      <div class="kit">양손 스매시 · 클로 콤보 · 점프 스매시</div>
+      <div class="note">다완 타이탄 — 순수 물리 거물</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/Gorhorrid.png"><div class="body">
+      <div class="name">Gorhorrid <span class="size">11.1m</span></div>
+      <div class="tags"><span class="tag move">지상</span><span class="tag rng">스피터</span><span class="tag">혀 공격</span></div>
+      <div class="kit">스매시 · <b>혀 공격</b> · 스피터</div>
+      <div class="note">타이탄 — 근/원거리 혼합 거물</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/Crustaspikan.png"><div class="body">
+      <div class="name">Crustaspikan <span class="size">13.2m</span></div>
+      <div class="tags"><span class="tag move">지상·직립</span><span class="tag rng">투석</span><span class="tag">스톰프</span></div>
+      <div class="kit"><b>바위 던지기</b> · 스피터샷 ×2 · 발 스톰프 · 양손 스매시</div>
+      <div class="note"><b>데모 최종 보스 1순위</b> — 원거리 보유 + 가족(유생 LV2)</div>
+    </div></div>
+    <div class="card"><img src="assets/monster_previews/Kupolobrach.png"><div class="body">
+      <div class="name">Kupolobrach <span class="size">13.9m</span></div>
+      <div class="tags"><span class="tag move">비행</span><span class="tag rng">전기·가스·투사체</span><span class="tag tint">×3 틴트</span></div>
+      <div class="kit">전기샷 · <b>가스 살포</b> · 투사체 스핏 · 클로</div>
+      <div class="note">공중 돔 보스 — 가족(유체 LV2)과 예고 문법</div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ───────── 부록 ───────── -->
+<div class="panel">
+  <h2>인카운터 훅 — 분류에서 나온 공짜 재료</h2>
+  <ul>
+    <li><b>가족 3계보</b>: Rostrokarck(알→유생→성체) / Crustaspikan(유생→성체) / Kupolobrach(유체→성체) — "거물 영역에 들어가면 새끼가 먼저 나온다" = 디제틱 보스 예고가 에셋에 내장.</li>
+    <li><b>원거리 속성 스펙트럼</b>: 산성(Venodonte) · 전기(Funglicane/Kupolo계) · 가스(Serpmare/Kupolobrach) · 투석(Crustaspikan) · 스핏 다수 — 속성별 시각 언어 분화 가능.</li>
+    <li><b>인간 변이 앵커</b>: 직립 실루엣(Dimaxillosaurus·Fulgurodonte·Crassorrid)이 "사람이 변했다"의 시각 다리. 완전 이형(게·오징어·크라켄)은 변이 말기로 배치 → 스펙트럼 성립.</li>
+  </ul>
+</div>
+
+<div class="panel">
+  <h2>인게임 스케일 검증 (CombatLab 라이팅 실측)</h2>
+  <p style="color:var(--dim); font-size:13.5px;">좌측 방 안 Venosaur(LV3) · 중앙 하단 Caniathrox(LV2) · 우측 Crustaspikan(LV5, 13.2m) — 거물은 건물을 넘는다. URP 변환 후 마젠타 0 확인.</p>
+  <img src="assets/monster_previews/_urp_scene_check.png" alt="in-scene URP check">
+</div>
+
+<div class="panel">
+  <h2>판정 대기 / 미결</h2>
+  <ul>
+    <li><span class="warn">톤게이트(유저)</span> — 리얼 크리처 톤 vs 로우폴리 도시: 실제 도시 블록 + 베이스라인 라이팅에서 룩데브 캡처로 판정. 위 그레이박스 컷은 참고용.</li>
+    <li>레벨 경계 2건: Limadon LV3↔4 · Serpmare LV4↔5 — 노브 세션에서.</li>
+    <li>기존 좀비 60종(ithappy) · ZombieController 계열 거취 — 별도 판정.</li>
+    <li>명명/로어(이상개체 코드명 등) — Story 에이전트, 렉시콘 경유 후속.</li>
+    <li>데이터화(MonsterDef SO · 스포너 연동) — 분류 동결 후 다음 단계.</li>
+  </ul>
+</div>
+
+</body>
+</html>
