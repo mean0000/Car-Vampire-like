@@ -1,5 +1,7 @@
 # 그래픽 스타일 작업 핸드오프 — 2026-06-05
 
+> ⚠️ **이력 문서.** 그래픽 방향은 2026-06-10 베이스라인 v1로 잠금 — 현행 [[2026-06-10_그래픽_베이스라인_v1]] (COZY = Sky Authority 복귀 포함). 이 세션의 방법론(복원점·캡처 검증)은 유효.
+
 **브랜치:** `feat/graphics` · **무대:** `Assets/_Project/Scenes/StyleLab.unity` (중립 테스트 씬) · **레퍼런스:** Hell Express (Screenshot01 풀밭/갓레이, Screenshot03 젖은 아스팔트)
 **상세 작업로그(이미지+커밋):** `docs/03_reference/2026-06-05-style-reproduction-log.html`
 

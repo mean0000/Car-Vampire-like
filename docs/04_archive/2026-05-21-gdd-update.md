@@ -1,5 +1,7 @@
 # ZombieCrush — GDD 업데이트 (2026-05-21)
 
+> 🟥 **폐기** — GDD v0.2 (차량 액션 피벗 이전·이후 모두 무효). 대체: [[2026-05-27-new-direction-gdd]] → 현행 [[2026-06-09-postprocessing-core-design]].
+
 > 작성일: 2026-05-21
 > 기준 문서: [2026-05-19 GDD 기초](./2026-05-19-gdd-foundations.md)
 > 상태: Phase 0.2 — 정체성 확정 (자동차 액션 로그라이트 + 뱀서 코어 전투)

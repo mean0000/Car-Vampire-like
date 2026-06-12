@@ -1,5 +1,7 @@
 # ZombieCrush — 기초 기획 문서
 
+> 🟥 **폐기** — GDD v0.1. 대체: [[2026-05-27-new-direction-gdd]] (그것도 06-09 이후 역사 참고용 → [[2026-06-09-postprocessing-core-design]]).
+
 > 작성일: 2026-05-19  
 > 상태: 확정 (Phase 0 결정사항 완료)
 

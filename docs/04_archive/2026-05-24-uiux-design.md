@@ -1,4 +1,7 @@
 # ZombieCrush — UI/UX 설계 문서
+
+> 🟥 **폐기** — 차량 HUD(HULL·SUPPRESS·NANO HARVEST) 전제 무효. 현행 HUD 권위: [[2026-06-08-ingame-hud]]. 재참조 금지.
+
 **작성일:** 2026-05-24  
 **상태:** 확정 (구현 전)
 
