@@ -31,6 +31,7 @@ namespace Run
 
         bool _fired;
         Transform _player;
+        float _minSpawnDistEffective;   // TTC 가드 반영 실효 최소 스폰 거리 — SpawnWave에서 산출
         readonly List<GameObject> _spawned = new List<GameObject>();   // 스폰 클론 추적(향후 정리 핸들 — 지금은 추적만)
 
         void Update()
@@ -71,6 +72,11 @@ namespace Run
                 yield break;
             }
 
+            // 스폰 가드 TTC 확장(2026-06-12 후방 힌트 짝 규칙) — 도달 3초 이내 지점 스폰 금지.
+            // 가청 힌트가 "거짓말"하지 않으려면 힌트 반응 창 안쪽에서 좀비가 물질화되면 안 된다.
+            var prefabZombie = zombiePrefab.GetComponent<ZombieController>();
+            _minSpawnDistEffective = Mathf.Max(minSpawnDistance, (prefabZombie != null ? prefabZombie.MoveSpeed : 3f) * 3f);
+
             for (int i = 0; i < waveCount; i++)
             {
                 // 페이즈 가드 — 탈출 정산/사망 후 잔여 스폰 차단.
@@ -96,7 +102,8 @@ namespace Run
         int PickFairIndex(int preferred)
         {
             if (_player == null) return preferred;
-            float minSqr = minSpawnDistance * minSpawnDistance;
+            float eff = _minSpawnDistEffective > 0f ? _minSpawnDistEffective : minSpawnDistance;
+            float minSqr = eff * eff;
             for (int k = 0; k < spawnPoints.Length; k++)
             {
                 int idx = (preferred + k) % spawnPoints.Length;
@@ -132,6 +139,7 @@ namespace Run
             // 시야 게이트 즉시 편입 — LKP 리스캔(0.3s 주기)까지의 노출 공백 차단.
             var lkp = ZombieLKPSilhouette.Instance;
             if (lkp != null) lkp.RegisterImmediate(zombie);
+            RearThreatHint.RegisterImmediate(zombie);   // 후방 힌트도 즉시 편입 — 어그로 스폰 힌트 공백 차단
 
             if (_player == null) return;
             zombie.Init(_player, pos);

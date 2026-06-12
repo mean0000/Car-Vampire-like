@@ -125,6 +125,10 @@ public class ZombieController : MonoBehaviour
     public bool IsDead => _dead || _state == ZombieState.Dead;
     /// <summary>Investigate~Alert 구간(어그로 전 의심 단계) — TensionAudioDirector의 Alert 판정용(B-005a).</summary>
     public bool IsAlerted => _state == ZombieState.Investigate || _state == ZombieState.Alert;
+    /// <summary>공격 사이클(Windup/Lunge/Grapple) — 시야 게이트 공정성 바닥(공격 중 실물 강제 공개)용.</summary>
+    public bool IsAttacking => _state == ZombieState.Windup || _state == ZombieState.Lunge || _state == ZombieState.Grapple;
+    /// <summary>설정 이동속도(m/s) — 스폰 가드 TTC 계산용(런타임 속도 아님). config 부재 시 코드 기본 3.</summary>
+    public float MoveSpeed => _config != null ? _config.moveSpeed : 3f;
 
     // 전투 질감 랩 관측용 — 상태/설정 가시화(에디터 자동화·디버그 HUD가 읽는다. 게임 로직에서 사용 금지).
     public string DebugState => _downTimer > 0f ? "Downed" : _state.ToString();

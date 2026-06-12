@@ -118,7 +118,7 @@ public class ZombieLKPSilhouette : MonoBehaviour
 
             if (hideOutOfSight)
             {
-                bool vis = CanSee(drv, pos);
+                bool vis = t.z.IsAttacking || CanSee(drv, pos);   // 공격 중 실물 강제 공개(공정성 바닥)
                 if (t.inCone && !vis)
                 {
                     // 시야 상실 — 기억(회색 잔상)을 남기고 실물 숨김. 정지 좀비도 잔상(실물이 사라지므로).
@@ -135,6 +135,13 @@ public class ZombieLKPSilhouette : MonoBehaviour
                 {
                     SetRenderers(t, true);
                     RemoveGhostOf(t.z);   // 기억이 실물로 대체
+                }
+                else if (t.renderers != null && t.renderers.Length > 0 && t.renderers[0] != null
+                         && t.renderers[0].enabled != vis)
+                {
+                    // 외부 시스템(사망 FX·리스폰·스폰 연출)이 렌더러를 직접 만져 게이트와 어긋난 경우 재동기화.
+                    // 엣지 토글만으로는 어긋남이 영구 고착된다 — 06-12 실측: 죽인 좀비 재소환 시 콘 밖인데 계속 보임.
+                    SetRenderers(t, vis);
                 }
                 t.inCone = vis;
             }
@@ -195,7 +202,7 @@ public class ZombieLKPSilhouette : MonoBehaviour
         };
         if (hideOutOfSight)
         {
-            t.inCone = CanSee(drv, z.transform.position);
+            t.inCone = z.IsAttacking || CanSee(drv, z.transform.position);
             // 등록 시 가시 상태와 렌더러를 양방향 동기화 — 꺼진 채 저장된 씬 상태도 치유.
             // (본 적 없는 좀비는 잔상 없이 즉시 숨김 — "기억"은 본 것에만 생긴다.)
             SetRenderers(t, t.inCone);
@@ -229,6 +236,17 @@ public class ZombieLKPSilhouette : MonoBehaviour
             if (_player == null) return;
         }
         Register(z, drv);
+    }
+
+    /// <summary>정보 게이트 기준 "실물이 숨겨진" 좀비인가 — 외부 힌트 채널(RearThreatHint 등)용
+    /// 단일 진실. 콘∩LOS 판정을 바깥에 중복 구현하지 않기 위한 조회 전용 API.
+    /// 미추적/게이트 비활성 = false(보임) — 힌트가 보이는 좀비에 발화하지 않게 보수적으로.</summary>
+    public bool IsHiddenFromPlayer(ZombieController z)
+    {
+        if (z == null) return false;
+        for (int i = 0; i < _tracked.Count; i++)
+            if (_tracked[i].z == z) return _tracked[i].hidden;
+        return false;
     }
 
     void SetRenderers(Tracked t, bool visible)
