@@ -16,6 +16,7 @@ public class GunFlashLight : MonoBehaviour
     Light _light;
     float _timer;
     bool _active;
+    float _peak;   // 이번 점멸의 피크 — B-004 C2 발당 스트로브 지터가 배수로 변조
 
     void Awake()
     {
@@ -32,12 +33,16 @@ public class GunFlashLight : MonoBehaviour
     }
 
     /// <summary>발사 순간 호출 — 플래시 시작.</summary>
-    public void Trigger()
+    public void Trigger() => Trigger(1f);
+
+    /// <summary>강도 배수 변형 — B-004 C2 발당 스트로브 지터·강조발 배수용(PlayerCombat이 전달).</summary>
+    public void Trigger(float intensityMult)
     {
         _timer = duration;
         _active = true;
+        _peak = peakIntensity * intensityMult;
         _light.enabled = true;
-        _light.intensity = peakIntensity;
+        _light.intensity = _peak;
     }
 
     void Update()
@@ -46,7 +51,7 @@ public class GunFlashLight : MonoBehaviour
 
         _timer -= Time.deltaTime;
         float t = Mathf.Clamp01(_timer / Mathf.Max(0.0001f, duration));
-        _light.intensity = peakIntensity * t;
+        _light.intensity = _peak * t;
 
         if (_timer <= 0f)
         {

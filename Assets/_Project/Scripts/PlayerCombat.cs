@@ -285,7 +285,7 @@ public class PlayerCombat : MonoBehaviour
     int _tracerLineEvict;
 
     // 발사체 1발의 상태. ★즉착 — 발사된 프레임에 UpdateBullets가 전체 경로를 세그먼트 캐스트로 판정.
-    struct Bullet { public bool active; public Vector3 pos; public Vector3 dir; public float remaining; public int damage; public bool pierce; public float knockback; public bool converged; public Vector3 origin; }
+    struct Bullet { public bool active; public Vector3 pos; public Vector3 dir; public float remaining; public int damage; public bool pierce; public float knockback; public bool converged; public bool emphasis; public Vector3 origin; }
     Bullet[] _bullets;
     HashSet<ZombieController>[] _bulletHits;   // 슬롯별 관통 중복타 방지(pierce 탄만 사용).
     int _bulletEvict;                          // 풀 고갈 시 라운드로빈 강제 재사용 인덱스(데미지 유실 방지).
@@ -316,6 +316,18 @@ public class PlayerCombat : MonoBehaviour
     AudioSource _reloadAudio;
     GunSfx.GunClass _gunClass = GunSfx.GunClass.Pistol;   // 미선택 폴백은 권총류
 
+    // B-004 트랜지언트의 행렬 — 연사 박자 런타임 상태(수치는 전부 CombatFeelConfig 노브).
+    int _shotIndex;            // 발사 누적 카운터 — tracerCadence마다 강조발(C1 트레이서·C2 머즐 동기)
+    int _burstShots;           // 현재 연사에서 쏜 발 수 — 테일(C3②) 판정용
+    float _lastShotTime;       // 마지막 발사 시각(Time.time)
+    float _burstGap;           // 이 간격(초)보다 발사가 비면 연사 종료로 판정
+    float _muzzleLightPeak;    // 이번 발의 라이트 피크(C2 지터 적용분) — 폴오프 기준값
+    AudioSource _tailAudio;    // 연사 테일 전용 소스 — 발사 소스와 분리(서로 안 끊고 피치 독립)
+    const int TailMinShots = 3;   // 이 발수 이상 이어진 연사만 테일 — 단발·두 발은 연사가 아니다
+
+    /// <summary>에디터 자동화 전용 — 게임 로직 사용 금지. true면 좌클릭 홀드로 간주(B-004 연사 검증 훅).</summary>
+    public static bool DebugFireHeld = false;
+
     // 피 튀김 프리팹(Resources 코드 로드 — 무와이어링, 모든 씬 동작). 좀비 명중에 검은 피.
     GameObject _bloodPrefab;
 
@@ -326,6 +338,7 @@ public class PlayerCombat : MonoBehaviour
     void Awake()
     {
         _cam = Camera.main;
+        DebugFireHeld = false;   // Domain Reload 꺼진 에디터에서 이전 자동화 세션의 잔류 true 방지
 
         // 3계층 판정/히트스탑 수치 — SO 미와이어링이어도 기본값으로 동작(랩에선 에셋을 꽂아 튜닝).
         if (feel == null) feel = ScriptableObject.CreateInstance<CombatFeelConfig>();
@@ -506,6 +519,10 @@ public class PlayerCombat : MonoBehaviour
             _reloadAudio = gameObject.AddComponent<AudioSource>();
             _reloadAudio.playOnAwake = false;
             _reloadAudio.spatialBlend = 0f;
+            // B-004 C3②: 연사 테일 전용 소스 — 발사음을 피치 절반으로 내려 잔향처럼 쓰므로 피치 독립 소스가 필요.
+            _tailAudio = gameObject.AddComponent<AudioSource>();
+            _tailAudio.playOnAwake = false;
+            _tailAudio.spatialBlend = 0f;
 
             // 피 튀김 프리팹 코드 로드(좀비 명중). 실패 시 코드 플래시 폴백.
             _bloodPrefab = Resources.Load<GameObject>("FX/blood_hit");
@@ -541,6 +558,13 @@ public class PlayerCombat : MonoBehaviour
         HideChargeBrackets();
 
         _gunClass = ClassifyGun(w);   // 발사음 분류(권총/라이플/샷건)
+    }
+
+    /// <summary>에디터 자동화 전용 — 게임 로직 사용 금지. 원거리 무기 즉시 장착(ApplyRanged 래퍼, B-004 검증 훅).</summary>
+    public void DebugEquip(WeaponLoadout.Weapon w)
+    {
+        if (w.kind == WeaponLoadout.Kind.Melee) return;   // 래퍼는 원거리 전용 — 근접 전환은 게임 경로로만
+        ApplyRanged(w);
     }
 
     /// <summary>무기 특성으로 발사음 분류: 산탄=샷건, 빠른 연사(쿨≤0.2)=라이플, 그 외=권총류.</summary>
@@ -705,7 +729,7 @@ public class PlayerCombat : MonoBehaviour
         bool crafting = CraftingSystem.Instance != null && CraftingSystem.Instance.IsCrafting;
         bool grappled = PlayerController.Instance != null && PlayerController.Instance.IsGrappled;
         bool locked = crafting || grappled;
-        bool attackHeld = Input.GetMouseButton(0);
+        bool attackHeld = Input.GetMouseButton(0) || DebugFireHeld;   // DebugFireHeld = 에디터 자동화 전용 훅
 
         // 주시/정조준(이원 카메라, 2026-06-11): 우클릭 홀드 = 카메라가 커서 방향을 주시(리드 강화+FOV 수축).
         // B-009 정조준 의식이 이 입력 위에 얹힌다. 보조사격은 Q로 임시 이양(최종 배치는 B-009 게이트에서).
@@ -751,6 +775,7 @@ public class PlayerCombat : MonoBehaviour
             else if (!locked && !altBusy && attackHeld && !_reloading && _ammo <= 0 && _magazine > 0)
                 StartReload();
 
+            TickBurstTail();         // B-004 C3②: 연사 종료 감지 — 발사가 끊기면 테일(잔향) 1회
             UpdateBullets();
             UpdateImpactFlashes();   // 명중 플래시 팝→페이드 + 카메라 빌보드
             UpdateMuzzleLight();     // 머즐 라이트 펀치 폴오프
@@ -811,7 +836,7 @@ public class PlayerCombat : MonoBehaviour
         _fanTimer -= Time.deltaTime;
         if (_fanTimer > 0f) return;
 
-        FireShot(fanSpread, damage, range, 1, false, gunshotNoise);
+        FireShot(fanSpread, damage, range, 1, false, gunshotNoise, primary: false);
         _fanShotsLeft--;
         if (_fanShotsLeft > 0) _fanTimer = fanInterval;
         else { _cooldownTimer = fanReload; _altCooldownTimer = fanReload; }   // 난사 후 장전 — 좌·우 모두 잠금
@@ -828,7 +853,7 @@ public class PlayerCombat : MonoBehaviour
         if (!valid) return;   // 최소 차지 미달 → 오발 없이 취소(쿨다운도 안 걸림)
 
         int dmg = Mathf.RoundToInt(damage * Mathf.Lerp(1f, pierceDamageMult, charge01));
-        FireShot(0f, dmg, range * pierceRangeMult, 1, true, gunshotNoise);
+        FireShot(0f, dmg, range * pierceRangeMult, 1, true, gunshotNoise, primary: false);
         _altCooldownTimer = pierceCooldown;
     }
 
@@ -1103,7 +1128,7 @@ public class PlayerCombat : MonoBehaviour
     /// ★즉착(레퍼런스 3종 표준) — 같은 프레임에 UpdateBullets가 전체 경로를 세그먼트 캐스트로 판정.
     /// 데미지·사거리·관통 여부는 발사 순간 스냅해 발사체에 싣는다(강선 카드 보너스도 여기서 가산).
     /// </summary>
-    void FireShot(float spread, int baseDmg, float rng, int pellets, bool pierce, float noise)
+    void FireShot(float spread, int baseDmg, float rng, int pellets, bool pierce, float noise, bool primary = true)
     {
         Vector3 origin = transform.position + Vector3.up * muzzleHeight;
         pellets = Mathf.Max(1, pellets);
@@ -1123,13 +1148,20 @@ public class PlayerCombat : MonoBehaviour
             kb *= convergedKnockbackMult;
         }
 
+        // B-004 트랜지언트의 행렬(C1·C2 동기): N발당 1발이 강조발 — 트레이서가 굵은 글로우로, 머즐도 같은 발에 배수.
+        // 균질 루프(매 발 동일 플래시·소리·잔광)가 무게를 죽인다 — 박자로 "세어지는 연사"를 만든다.
+        // 박자는 주발사 연사 전용 — alt-fire(패닝·차지샷)가 카운터를 오염시키면 4:1 리듬이 깨진다(리뷰).
+        bool matrix = feel.transientMatrixEnabled;
+        bool emphasis = primary && matrix && (_shotIndex % Mathf.Max(1, feel.tracerCadence) == 0);
+        if (primary) _shotIndex++;
+
         for (int p = 0; p < pellets; p++)
         {
             // 펠릿마다 좌우(yaw) 랜덤 산포. spread=0이면 정확히 조준 방향.
             Vector3 dir = spread > 0f
                 ? Quaternion.AngleAxis(Random.Range(-spread, spread), Vector3.up) * _aimDir
                 : _aimDir;
-            SpawnBullet(origin, dir, rng, dmg, pierce, kb, converged);
+            SpawnBullet(origin, dir, rng, dmg, pierce, kb, converged, emphasis);
         }
 
         // 소음·머즐 연출·사운드는 발사 1회당 한 번(펠릿 수와 무관).
@@ -1137,11 +1169,21 @@ public class PlayerCombat : MonoBehaviour
 
         // 총구 끝(조준 방향으로 앞당김) — 화염 VFX·라이트가 총신 끝에 오도록. 수렴샷은 화염도 크게.
         Vector3 muzzleTip = origin + _aimDir * muzzleForward;
+        // B-004 C2 머즐 변조: 발당 크기·광량 지터 + 강조발(C1과 같은 발) 배수 — 부감에선 바닥에
+        // 깜빡이는 광원이 본체(The Ascent 증거)라 라이트 스트로브가 박자의 주력 채널.
+        float flashMult = 1f, lightMult = 1f;
+        if (matrix)
+        {
+            flashMult = 1f + Random.Range(-feel.flashSizeJitter, feel.flashSizeJitter);
+            lightMult = 1f + Random.Range(-feel.lightIntensityJitter, feel.lightIntensityJitter);
+            if (emphasis) { flashMult *= feel.emphasisMuzzleMult; lightMult *= feel.emphasisMuzzleMult; }
+        }
         PlayFlash(muzzleTip, muzzleFlashColor,
-                  converged ? muzzleFlashSize * 1.5f : muzzleFlashSize,
+                  (converged ? muzzleFlashSize * 1.5f : muzzleFlashSize) * flashMult,
                   converged ? muzzleFlashTime * 1.3f : muzzleFlashTime);
-        TriggerMuzzle(muzzleTip);                                                   // 주위 밝기(라이트)
-        PlayShotSound();
+        TriggerMuzzle(muzzleTip, lightMult);                                        // 주위 밝기(라이트) — C2 스트로브
+        PlayShotSound(jitter: primary);                       // C3① 피치 지터도 주발사 전용
+        if (primary) RegisterBurstShot();   // C3②: 연사 추적 — 발사가 끊기면 TickBurstTail이 테일 재생. alt-fire 1발은 연사가 아니다
         // 발사 화면 반응 — 예약제(2026-06-11): 무거운 단발(산탄 or 발사간격≥heavyKickMinCooldown)만
         // 방향성 킥+쉐이크로 카메라를 친다. 연사류는 카메라 충격 0 — 커서 리드 위에 충격이 겹치는
         // 복합 움직임(멀미 원인)을 끊고, "모든 발이 무거우면 무게는 소멸"의 무기 단위 적용.
@@ -1162,25 +1204,58 @@ public class PlayerCombat : MonoBehaviour
         rig?.BreakConvergence();
     }
 
-    /// <summary>머즐 라이트 점멸: 씬에 꽂힌 gunFlashLight가 있으면 그걸, 없으면 코드 라이트를 muzzleTip에서 번쩍.</summary>
-    void TriggerMuzzle(Vector3 muzzleTip)
+    /// <summary>머즐 라이트 점멸: 씬에 꽂힌 gunFlashLight가 있으면 그걸, 없으면 코드 라이트를 muzzleTip에서 번쩍.
+    /// intensityMult = B-004 C2 발당 스트로브 지터·강조발 배수(기본 1 — 밀치기 등 비발사 호출은 변조 없음).</summary>
+    void TriggerMuzzle(Vector3 muzzleTip, float intensityMult = 1f)
     {
-        if (gunFlashLight != null) { gunFlashLight.Trigger(); return; }
+        if (gunFlashLight != null) { gunFlashLight.Trigger(intensityMult); return; }
         if (_muzzleLight == null) return;
         _muzzleLight.transform.position = muzzleTip;
-        _muzzleLight.intensity = muzzleLightIntensity;
+        _muzzleLightPeak = muzzleLightIntensity * intensityMult;
+        _muzzleLight.intensity = _muzzleLightPeak;
         _muzzleLight.enabled = true;
         _muzzleLightActive = true;
         _muzzleLightTimer = muzzleLightDuration;
     }
 
+    /// <summary>B-004 C3②: 발사 1회를 연사 추적에 등록. 다음 발이 제때 안 오면 TickBurstTail이 연사 종료로 판정.</summary>
+    void RegisterBurstShot()
+    {
+        _burstShots++;
+        _lastShotTime = Time.time;
+        // 연사 지속 판정 간격 — 주발사 실효 쿨다운과 패닝 간격 중 큰 쪽 + 여유. 이보다 비면 "연사가 끝났다".
+        float effCooldown = fireCooldown / Mathf.Max(0.01f, PlayerStats.FireRateMult * _metaFireRateMult);
+        _burstGap = Mathf.Max(effCooldown, fanInterval) + 0.1f;
+    }
+
+    /// <summary>B-004 C3②: 연사 종료 감지 — 마지막 발 이후 간격이 비면 테일(잔향) 1회. 단발은 연사가 아니라 제외.</summary>
+    void TickBurstTail()
+    {
+        if (_burstShots <= 0) return;
+        if (Time.time - _lastShotTime < _burstGap) return;
+        int shots = _burstShots;
+        _burstShots = 0;
+        if (!feel.transientMatrixEnabled || feel.tailVolume <= 0f || shots < TailMinShots) return;
+        if (_tailAudio == null) return;
+        // 신규 클립 금지 제약 — 발사음 자체를 피치 절반으로 내려 둔탁한 저역 잔향으로 재사용("연사가 끝났다"의 마침표).
+        var clip = GunSfx.Shot(_gunClass);
+        if (clip == null) return;
+        _tailAudio.pitch = 0.5f;
+        _tailAudio.PlayOneShot(clip, feel.tailVolume);
+    }
+
     /// <summary>발사음 1회 재생(무기 분류별 변형 랜덤 + 살짝 피치 흔들기로 반복 피로 완화).</summary>
-    void PlayShotSound()
+    void PlayShotSound(bool jitter = true)
     {
         if (_gunAudio == null) return;
         var clip = GunSfx.Shot(_gunClass);
         if (clip == null) return;
         // 오프셋 재생: 완만한 어택 앞부분을 건너뛰어 트리거 즉시 타격. Play()는 재생 중이면 자동 재시작 → 연사 누적도 차단.
+        // B-004 C3①: 발당 피치 지터 — 같은 샘플의 기계적 반복이 연사를 루프로 뭉개는 것을 차단(SfxOneShot과 같은 문법.
+        // 오프셋 재생(clip.time) 때문에 SfxOneShot 경유가 불가능해 소스 피치에 직접 적용). jitter=false(alt-fire)는 변조 없음.
+        _gunAudio.pitch = jitter && feel.transientMatrixEnabled
+            ? 1f + Random.Range(-feel.shotPitchJitter, feel.shotPitchJitter)
+            : 1f;
         _gunAudio.volume = shotVolume;
         _gunAudio.clip = clip;
         _gunAudio.time = Mathf.Clamp(GunSfx.ShotSkip(_gunClass), 0f, Mathf.Max(0f, clip.length - 0.02f));
@@ -1198,7 +1273,7 @@ public class PlayerCombat : MonoBehaviour
     }
 
     /// <summary>착탄 순간 총구→착탄점의 온전한 궤적 라인(블라인드 스팟) — 균일 알파 페이드로 천천히 소멸.</summary>
-    void SpawnTracerLine(Vector3 from, Vector3 to, bool converged)
+    void SpawnTracerLine(Vector3 from, Vector3 to, bool converged, bool emphasis)
     {
         if (_tracerLines == null) return;
         int idx = -1;
@@ -1207,8 +1282,14 @@ public class PlayerCombat : MonoBehaviour
 
         var lr = _tracerLines[idx];
         // 일반=중성 흰색 HDR 얇은 선, 수렴샷=시안 굵은 선 — 색·폭으로 "의도된 한 발"을 가른다. 세선화(궤적은 속삭임).
-        lr.sharedMaterial = converged && _tracerMatConverged != null ? _tracerMatConverged : _tracerMatLine;
-        float baseWidth = converged ? 0.035f : 0.015f;   // 유저 픽(2026-06-11): 일반 0.015
+        // B-004 C1: 강조발(N발당 1)은 따뜻한 가산 글로우(예광탄 _tracerMat) + 굵은 폭 — 연사의 시각 박자.
+        // 위계: 수렴(의도된 한 발) > 강조(박자의 한 발) > 일반(잔광).
+        lr.sharedMaterial = converged && _tracerMatConverged != null ? _tracerMatConverged
+                          : emphasis && _tracerMat != null ? _tracerMat
+                          : _tracerMatLine;
+        float baseWidth = converged ? 0.035f
+                        : emphasis ? feel.tracerEmphasisWidth
+                        : feel.tracerNormalWidth;   // 유저 픽(2026-06-11) 일반 0.015 — SO 노브로 이전
         lr.widthMultiplier = baseWidth;
         _tracerLineWidth[idx] = baseWidth;
         lr.SetPosition(0, from);
@@ -1239,11 +1320,11 @@ public class PlayerCombat : MonoBehaviour
     }
 
     /// <summary>날아가는 탄 1발을 풀에 생성. 판정은 비행 중(UpdateBullets)에서 처리한다.</summary>
-    void SpawnBullet(Vector3 origin, Vector3 dir, float range, int damage, bool pierce, float knockback, bool converged = false)
+    void SpawnBullet(Vector3 origin, Vector3 dir, float range, int damage, bool pierce, float knockback, bool converged = false, bool emphasis = false)
     {
         if (_bullets == null) return;
         int i = AcquireBulletSlot();
-        _bullets[i] = new Bullet { active = true, pos = origin, dir = dir, remaining = Mathf.Max(0.15f, range), damage = damage, pierce = pierce, knockback = knockback, converged = converged, origin = origin };
+        _bullets[i] = new Bullet { active = true, pos = origin, dir = dir, remaining = Mathf.Max(0.15f, range), damage = damage, pierce = pierce, knockback = knockback, converged = converged, emphasis = emphasis, origin = origin };
         _bulletHits[i].Clear();   // 3계층 판정은 그레이즈(비정지)가 있어 비관통 탄도 중복타 방지 셋이 필요
 
         // 비행 꼬리(TrailRenderer)는 사용 중단 — 즉착이라 비행 구간이 없어 꼬리가 무의미하고,
@@ -1323,6 +1404,10 @@ public class PlayerCombat : MonoBehaviour
                     z.TakeBulletHit(_bullets[i].damage, dir, _bullets[i].knockback, feel.hitStopNormal, BulletHitTier.Full, false, _bullets[i].converged);
                     PlayImpact(hitPoint, dir, true);
                     _dotHitTimer = 0.09f;   // 디제틱 히트마커 — 조준 도트가 "박혔다"를 확인
+                    // B-004 C3③: 명중 thud — 발사음과 분리된 확인 채널(CoD 히트마커 문법). 풀히트만(도트 히트마커와 동기).
+                    // 클립은 MeleeSfx 절차 생성 "퍽" 재사용(신규 클립 금지) — SfxOneShot 기존 피치 지터로 반복 피로 완화.
+                    if (feel.transientMatrixEnabled && feel.thudVolume > 0f)
+                        SfxOneShot.Play(MeleeSfx.ThudClip, hitPoint, feel.thudVolume);
                     // 수렴샷 풀히트 — 전역 마이크로 히트스탑. 킬이면 110ms("이 킬은 달랐다"), 비킬 60ms.
                     // 연사는 converged=false라 절대 안 걸림.
                     if (_bullets[i].converged)
@@ -1369,7 +1454,7 @@ public class PlayerCombat : MonoBehaviour
             {
                 _bullets[i].active = false;
                 // 궤적 라인: 총구→착탄점 온전한 한 줄 — 쏘는 동시에 남고 빠르게 사라지는 잔광(인과의 기록).
-                SpawnTracerLine(_bullets[i].origin, to, _bullets[i].converged);
+                SpawnTracerLine(_bullets[i].origin, to, _bullets[i].converged, _bullets[i].emphasis);
                 // 좀비에 멈춘 게 아니라 벽에 멈췄으면 벽 스파크(사거리 소진=허공이면 무생성).
                 if (!hitZombie && !float.IsPositiveInfinity(wallDist)) PlayImpact(wallPoint, dir, false);
             }
@@ -1422,7 +1507,7 @@ public class PlayerCombat : MonoBehaviour
         if (!_muzzleLightActive || _muzzleLight == null) return;
         _muzzleLightTimer -= Time.deltaTime;
         float t = Mathf.Clamp01(_muzzleLightTimer / Mathf.Max(0.0001f, muzzleLightDuration));
-        _muzzleLight.intensity = muzzleLightIntensity * t * t;   // 빠른 폴오프 = 펀치감
+        _muzzleLight.intensity = _muzzleLightPeak * t * t;   // 빠른 폴오프 = 펀치감(피크는 C2 발당 지터 반영)
         if (_muzzleLightTimer <= 0f)
         {
             _muzzleLightActive = false;

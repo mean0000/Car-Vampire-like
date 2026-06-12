@@ -44,6 +44,37 @@ public class CombatFeelConfig : ScriptableObject
     [Tooltip("킬 링 펄스 최대 지름(m) — '죽였다'의 원거리 확인 신호(시안).")]
     public float killRingSize = 1.8f;
 
+    // ── B-004 트랜지언트의 행렬 (2026-06-12-b004-rapidfire-spec) ──
+    // 연사가 균질 루프(매 발 동일 플래시·소리·잔광)면 무게가 죽는다 — 발당 개별성 + 주기적 박자.
+    // ★기존 .asset에 없는 신규 필드 — 이니셜라이저 값으로 디시리얼라이즈된다(0으로 안 떨어짐).
+    [Header("B-004 트랜지언트의 행렬 — 마스터 토글(C1~C3 일괄 롤백)")]
+    [Tooltip("끄면 C1(트레이서 박자)·C2(머즐 변조)·C3(사운드 행렬)이 전부 꺼져 볼트 이전 연사로 롤백.")]
+    public bool transientMatrixEnabled = true;
+
+    [Header("C1 — 트레이서 박자 (N발당 1발 강조)")]
+    [Tooltip("N발당 1발이 강조발(굵은 글로우 궤적 + 머즐 강조 동기). 1이면 매 발 강조 = 박자 소멸.")]
+    [Min(1)] public int tracerCadence = 4;
+    [Tooltip("강조발 궤적 폭(m) — 굵은 가산 글로우(예광탄).")]
+    [Min(0.001f)] public float tracerEmphasisWidth = 0.07f;
+    [Tooltip("일반발 궤적 폭(m) — 얇은 잔광(유저 픽 2026-06-11 값의 재배치).")]
+    [Min(0.001f)] public float tracerNormalWidth = 0.015f;
+
+    [Header("C2 — 머즐 변조 + 광원 스트로브")]
+    [Tooltip("머즐 플래시 크기 발당 지터(±비율).")]
+    [Range(0f, 1f)] public float flashSizeJitter = 0.2f;
+    [Tooltip("머즐 라이트 강도 발당 지터(±비율) — 부감에선 바닥에 깜빡이는 광원이 본체.")]
+    [Range(0f, 1f)] public float lightIntensityJitter = 0.25f;
+    [Tooltip("강조발(C1과 같은 발) 머즐 크기·광량 배수.")]
+    [Min(1f)] public float emphasisMuzzleMult = 1.3f;
+
+    [Header("C3 — 사운드 행렬")]
+    [Tooltip("발사음 발당 피치 지터(±비율) — 기계적 반복 제거(SfxOneShot과 같은 문법).")]
+    [Range(0f, 0.5f)] public float shotPitchJitter = 0.05f;
+    [Tooltip("연사 종료 테일(잔향) 볼륨 — '연사가 끝났다'의 마침표. 0이면 끔.")]
+    [Range(0f, 1f)] public float tailVolume = 0.08f;
+    [Tooltip("명중 thud 볼륨 — 발사음과 분리된 확인 채널(CoD 히트마커 문법). 보수적(못 듣는 원칙). 0이면 끔.")]
+    [Range(0f, 1f)] public float thudVolume = 0.06f;
+
     void OnValidate()
     {
         // 판정 반경의 순서(풀히트 ≤ 스침 ≤ 그레이즈)가 무너지면 계층이 사라진다 — 에디터에서 강제.

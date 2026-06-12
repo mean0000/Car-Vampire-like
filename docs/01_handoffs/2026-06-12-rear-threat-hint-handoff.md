@@ -39,10 +39,12 @@
 
 ## 잔무 / 미결
 
-- **빌드 전 필수**: `ZombieCrush/ThreatArc` → Graphics > Always Included Shaders 등록 (미등록 시 경고 로그+자동 비활성)
+- ~~**빌드 전 필수**: `ZombieCrush/ThreatArc` → Graphics > Always Included Shaders 등록~~ ✅ 06-12 완료 (GraphicsSettings 9번째 슬롯 실측 확인)
 - 렉시콘 §5.1 "진동 감지/진동 기록" 등재 — 유저 동결 대기
 - 호드 면제(LOS 완충 ④) 전역 구현 — 별도 항목, 힌트는 섹터 캡 3으로 자체 방어 중
-- 별건 버그 2건 추적 대기: 출처 미상 앰비언트 스폰(첫 테스트에서 tracked 19→31 실측 — 스포너 살아있음), 랩 좀비 1기 Chase 상태 이동 동결(`Zombie_LabA_Corner`, 컴포넌트 전부 정상)
+- ~~별건 버그 2건 추적 대기~~ ✅ 06-12 양건 종결:
+  - 출처 미상 앰비언트 스폰 = **Chest 가드 오인**. 씬 체스트 8개 × guardCount=12 — 가드존 진입 시 정확히 +12(실측 19→31과 일치). ZombieSpawner는 GO 비활성+런타임 활성화 경로 없음. ⚠️상자당 12기가 의도값인지 설계 검토 권장
+  - LabA 동결 = **씬 손배치 좀비 Init 누락 구조 버그**. `_player`는 Init()으로만 주입되는데 손배치 좀비를 Init하는 프로덕션 코드가 전무 → FixedUpdate 가드 영구 동결(외부 AlertTo로 Chase만 박히면 "Chase인데 동결" 증상). `ZombieController.Start()` 자가 부트스트랩 폴백으로 수정, 수동 Init 없는 플레이 실측으로 추격·공격 검증, Stab+Codex 리뷰 이슈 0. **사전배치 스폰 모델 전체의 지뢰였음**
 - 상체 글랜스(A1 — 캐릭터가 소리 방향으로 흘끗): 다음 볼트 후보, Animation Rigging 필요·15m 가독 미검증
 
 ## 최종 리뷰 결과 (Stab + Codex 대타, 06-12)

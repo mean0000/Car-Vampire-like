@@ -177,6 +177,18 @@ public class ZombieController : MonoBehaviour
                 { _hasAttackTrigger = true; break; }
     }
 
+    void Start()
+    {
+        // 씬 손배치 좀비 자가 부트스트랩 — 스포너 경로는 Instantiate 직후 Init이 호출되지만,
+        // 사전배치 개체는 호출처가 없어 _player가 비면 FixedUpdate 가드에 걸려 영구 동결된다.
+        // (Instantiate 경로는 Start 전에 Init이 이미 끝나므로 이 폴백을 타지 않는다.)
+        if (_player == null)
+        {
+            var pc = FindFirstObjectByType<PlayerController>();
+            if (pc != null) Init(pc.transform, transform.position);
+        }
+    }
+
     void OnDestroy()
     {
         transform.DOKill();

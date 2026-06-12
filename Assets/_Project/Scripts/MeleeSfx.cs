@@ -26,6 +26,9 @@ public static class MeleeSfx
         AudioSource.PlayClipAtPoint(Whiff, pos, volume);
     }
 
+    /// <summary>둔탁한 "퍽" 클립 공유 접근자 — B-004 명중 thud(PlayerCombat)가 재사용(신규 클립 제작 금지 제약).</summary>
+    public static AudioClip ThudClip => Thud;
+
     static AudioClip Thud => _thud ??= BuildThud();
     static AudioClip Clang => _clang ??= BuildClang();
     static AudioClip Whiff => _whiff ??= BuildWhiff();
