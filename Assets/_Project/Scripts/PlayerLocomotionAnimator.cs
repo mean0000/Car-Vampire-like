@@ -45,6 +45,10 @@ public class PlayerLocomotionAnimator : MonoBehaviour
     [Header("Reload (UpperBody Layer)")]
     [Tooltip("장전 블렌드트리의 기준 클립 길이(초). Stand_Reload 길이 — Move_Reload는 트리 내 timeScale로 동일 길이 정규화됨.")]
     [SerializeField] float reloadClipLength = 3.6666667f;
+    [Tooltip("장전 모션 재생 배속 상한. 게임 reloadTime이 클립보다 짧아도 이 배속까지만 가속 — " +
+             "bool 구동이라 타이머 종료 시 모션이 조기 컷되어 '조작하다 마는' 그림이 되며, 그게 고배속 경련보다 낫다(유저 판정). " +
+             "하한 보호는 없음 — reloadTime이 클립보다 훨씬 긴 저속 장전 무기는 기존식대로 자연히 느려진다.")]
+    [SerializeField] float maxReloadAnimSpeed = 1.35f;
 
     static readonly int SpeedHash = Animator.StringToHash("Speed");
     static readonly int MoveXHash = Animator.StringToHash("MoveX");
@@ -171,8 +175,12 @@ public class PlayerLocomotionAnimator : MonoBehaviour
                 if (reloading)
                 {
                     // 모션 길이를 게임의 reloadTime에 종속 — 게임 수치가 권위, 애니가 따라간다.
+                    // 단 가속은 maxReloadAnimSpeed까지만(예: 리볼버 1.1s → 3.33배속 경련 방지).
                     float dur = aimSource.ReloadDuration;
-                    _animator.SetFloat(ReloadSpeedHash, dur > 0.01f ? reloadClipLength / dur : 1f);
+                    float animSpeed = dur > 0.01f
+                        ? Mathf.Min(maxReloadAnimSpeed, reloadClipLength / dur)
+                        : 1f;
+                    _animator.SetFloat(ReloadSpeedHash, animSpeed);
                 }
                 _animator.SetBool(ReloadHash, reloading);
                 _wasReloading = reloading;
