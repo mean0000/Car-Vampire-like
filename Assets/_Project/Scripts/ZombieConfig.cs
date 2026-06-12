@@ -21,6 +21,8 @@ public class ZombieConfig : ScriptableObject
 
     [Header("Detection - Hearing")]
     public float hearingMultiplier = 1f;
+    [Tooltip("이 값 이상의 소음(충격음 — 총성급)을 들으면 Chase 직승급. 이동 소음은 70에 점근하므로 80이면 물리적으로 분리(런/대시 미승급, 소음기 60 미승급, 총성 90+ 승급). 0 이하 = 기능 off. 노브 세션 슬라이더.")]
+    public float loudNoiseChaseThreshold = 80f;
 
     [Header("Combat")]
     public float attackRange = 1.5f;

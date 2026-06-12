@@ -35,3 +35,10 @@ ZombieCrush(Unity URP 톱다운) QA 리뷰 시 반복 점검 항목.
 - FirePulse/FireFootprint에서 SetActive(true) 전에 PositionPulse가 카메라 null로 갱신을 skip하면 위치 (0,0,0)에서 1프레임 렌더 가능 — SetActive를 위치 갱신 성공 후로 순서 교체 필요(씬 전환 첫 프레임 함정).
 - _stepQueue(시간차 발자국): scaled Time.time 기반이라 씬 전환+DDOL 구조에서 이전 런의 큐가 잔존할 수 있음 — SceneManager.sceneLoaded 구독으로 Clear가 올바른 위치. dt<=0f 조기 리턴은 timeScale=0 구간을 정확히 동결하지만 씬 전환 클리어 경로를 막기도 함.
 - B-004 리뷰(2026-06-12) 검증 전제: ①SO 신규 필드는 생성자(필드 이니셜라이저)→YAML 덮어쓰기 순이라 기존 .asset에서 default 적용(0 안 떨어짐) — PlayerCombat/CombatFeelConfig에서 확인. ②SfxOneShot MaxSameClip=3 클램프가 동일 클립 스팸(샷건 8펠릿 동시 풀히트 thud 등)을 자동 방어 — 오디오 스팸 지적 전 이 클램프 경유 여부 확인. ③GunSfx는 SubsystemRegistration 캐시 리셋 보유, MeleeSfx는 미보유 — Enter Play Mode Options 활성화 시(현재 EditorSettings는 domain reload ON이라 휴면) MeleeSfx 절차 클립이 2회차 플레이부터 fake-non-null로 무음. ④PlayerCombat Awake의 원거리 전용 풀 생성(_bullets/_gunAudio 등)은 근접 시작 세션에서 전부 null — 런타임에 _kind를 Ranged로 바꾸는 신규 경로(DebugEquip 등)는 총이 무음·무탄으로 동작(널가드로 NPE는 없음).
+- 세션3 "굉음 Chase 직승급" 리뷰(2026-06-12): 
+  ①소음 수치 정합 확인(실측): 런 70(runNoiseLevel)은 SetMovementNoise 경로라 CurrentNoise는 80 미달로 점근 — 80 임계 교차 불가. 대시 impulse=30, 방망이=25, 쇠지렛대=32 전부 80 미달. 리볼버=95, 샷건=105 즉시 초과. 라이플=60 미달, 소음기 미할당 기본=90(인스펙터). 크래프팅 hitNoiseEnd=75 미달. 임계 수치 분리 의도는 완전히 달성됨.
+  ②CanHearPlayer()의 레이캐스트: 굉음 창(~0.05s, 50Hz FixedUpdate = 2~3프레임)에서 좀비 60기가 동시 호출하면 레이캐스트 최대 180회 — 일반적 게임 규모에서는 허용 가능하나 밀집 씬에서 스파이크 잠재성.
+  ③DirectShotNoise(라이플 60): 소음기 미장착 라이플 60 < 80 임계 → 라이플로는 굉음 Chase 직승급 안 됨. 이것이 의도인지(라이플=스텔스 가능 총기) 확인 필요.
+  ④ZombieConfig_Signal.asset은 git diff에 미포함(미수정) — loudNoiseChaseThreshold 필드가 없으므로 Unity가 C# default 80으로 읽음. 시그널 좀비도 굉음 시 Chase 직승급. 허용/차단 설계 의도 확인 필요(낮은 우선순위).
+  ⑤Alert 비대칭 해소 확인: `_state != ZombieState.Alert && CanHearPlayer()` 가드(평시 청각 블록)에서 Alert가 제외 = Alert 상태에서 평시 소음(Investigate 강등 방지). 굉음 즉시 판정은 Chase 조기 탈출(`_state >= Chase`) 이후에 배치 = Alert에서도 굉음 즉시 Chase 도달 가능. 이전 회차 [3] 지적 해소됨.
+  ⑥금지 파일 혼입 없음 — 워킹트리 diff는 정확히 4파일(ZombieConfig.cs, ZombieController.cs, General.asset, Sprinter.asset)+핸드오프 md만.

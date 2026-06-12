@@ -43,6 +43,7 @@
 | 런지 사거리/윈드업/속도/지속/후딜 | `ZombieConfig_General` › `lungeRange / lungeWindup / lungeSpeed / lungeDuration / lungeRecover` | 2.6 / 0.5 / 9 / 0.35 / 0.6 | 유지 | ✅ | `lungeWindup` = 텔레그래프 그 자체. 줄일수록 위협↑·억울함↑ |
 | 그래플 접촉 반경 | `ZombieConfig_General` › `grappleContactRadius` | 1.0 | 1.0 | ✅ | 키우면 회피 난도↑ |
 | 인지(발각) 속도 | `ZombieConfig_General` › `detectBaseChance / detectGaugePerTick / alertStareTime` | 0.45 / 0.34 / 1.5 | 유지 | ✅ (`senseVariance`만 개체 Init 캐시) | Alert 응시 = 스프린터 포함 전 좀비의 1차 텔레그래프 |
+| **굉음→Chase 직승급** | `ZombieConfig_*` › `loudNoiseChaseThreshold` (신규, 06-12 사다리 개정) | —(소리=Investigate까지 철칙) | **80** (≤0=off) | ✅ | 임계 이상 충격음을 들으면 즉시 추격. **제약 사슬 필독**: 지속 소음은 점근 캡(런 60~70)이라 80 미초과 보장 → 슬라이더 유효 구간 **(70, 90]**. 리볼버 95·샷건 105 승급 / 라이플 60·제작 펄스 75·근접 25~32 면제. Alert(응시 중)에서도 승급. 단발 창 ~0.05s라 인식 틱이 아닌 매 FixedUpdate 즉시 판정(임계 비교 선행 조기탈출 = 평시 비용 0). 범위 캡 = 청각 반경(총성 시 ~22.5m·벽 뒤 ×0.5·개체분산). 스폰/히트스탑/다운 중엔 창 소실 = 수용(피격 중인 좀비는 피격으로 어그로) |
 | 스폰 인구 | **씬** ZombieSpawner › `minZombies / maxZombies / signalSpawnChance` | 35 / 60 / 0.08 | 유지 | ✅ (Update 참조) | 위협 = 밀도가 아니라 개체. 이번 패스에서 안 올림 |
 | 스프린터 혼합률 | **씬** ZombieSpawner › `sprinterChance` (신규) | — | **0.2** | ✅ | §4 참조. Signal(0.08) 우선 후 잔여 롤 → 실효 ~18.4% |
 | 어그로 애니 가속 | `ZombieConfig_*` › `chaseAnimSpeedMult` (신규, Phase B) | — | 워커 **1.0** / 스프린터 **1.25** | ✅ | Chase~Recover 중 애니 재생속도 배수. 히트스탑·킬 프리즈와 충돌 없음(리뷰 검증) |
@@ -53,6 +54,9 @@
 - 옛 `ZombieCharger.prefab` / `ZombieLaser.prefab`은 **죽은 프리팹** (05-25 스크립트가 e05d47c94 재작성에서 소실). 재활용 불가 — 스프린터는 신규 제작이 정답이었음.
 - 투시버그(obstacleMask=0)는 CombatLab 해당 없음 — 씬 내 좀비 전원 + `Zombie.prefab` 모두 256(Obstacle) 확인.
 - 손배치 좀비 Init 누락 → 미커밋 ZombieController의 Start 자가 부트스트랩 폴백이 처리 (세션 2 일괄 커밋에 포함될 분).
+- **sd 실측 모순(6초 연사에 0/12 Dormant) 해명**: Dormant는 인식을 막지 않음(코드 확정 — 전이는 전부 TickPerception 소관). 원인 = 반경 스케일: 총성 반경 캡 25m × 벽 뒤 ×0.5 × 개체분산 ↓0.7 ⇒ 최악 ~8m. 상태 버그 아님.
+- **HUD 소음 경고(50) ≠ 게임플레이 임계(80)**: NoiseManager.chaseThreshold(50)는 HUD 표시 전용으로 잔존 — 런 소음(60~70)에도 "CHASE!" 경고가 뜨는 거짓말. NoiseManager 계열 = 세션 1 소유라 인계: 씬 chaseThreshold 50→80 정렬 권고.
+- Signal 좀비도 굉음 승급(코드 default 80) = **의도** — 총성 한 방이 신호좀비를 깨워 소환 연쇄가 터지는 것이 위협 테제의 극적 결과. 끄려면 §3 절차(Signal 에셋 직렬화)로.
 
 ## 4. 스프린터 — 시공 명세 (이번 세션 시공분)
 

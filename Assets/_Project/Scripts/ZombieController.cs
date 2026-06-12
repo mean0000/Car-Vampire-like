@@ -374,12 +374,26 @@ public class ZombieController : MonoBehaviour
 
     /// <summary>
     /// 인식 틱(스태거드 — perceptionTickInterval 주기 + 거리 LOD). 시야는 틱당 확률 누적 게이지로:
-    /// 일부 누적 = Alert(응시 텔레그래프), 만충 = Chase. 소리는 Investigate로만(떼어내기 보장 — §3.2 철칙).
+    /// 일부 누적 = Alert(응시 텔레그래프), 만충 = Chase. 평시 소음은 Investigate까지, 굉음(loudNoiseChaseThreshold 이상 — 충격음만 도달)은 틱 게이트 밖 즉시 판정으로 Chase 직승급(06-12 개정).
     /// Chase 이후 상태에선 판정하지 않는다(이미 확정).
     /// </summary>
     void TickPerception()
     {
         if (_state >= ZombieState.Chase) return;
+
+        // 굉음 즉시 판정(06-12 개정): 충격음의 임계 초과 창이 짧아(90→80 ≈0.05s) 인식 틱과 별개로 매 FixedUpdate 체크.
+        // 임계 비교가 선행 조기 탈출이라 평시 비용은 float 비교 1회. Alert(응시 중)에서도 승급(옆에서 총성인데 무반응 방지).
+        // 범위는 청각 반경(벽 감쇄·개체분산)이 자연 캡, 2차 전파는 그르렁(Investigate만) — 그룹 어그로 불가는 유지.
+        // 발사 EmitImpulse는 Update에서 발생하므로 같은 프레임의 FixedUpdate는 발사 전 값을 읽는다 —
+        // 1물리프레임(~0.02s) 지연은 허용 설계(총성 decay ~1.5s). 실행 순서 변경 시 이 전제 재검토.
+        if (_config.loudNoiseChaseThreshold > 0f
+            && NoiseManager.Instance != null
+            && NoiseManager.Instance.CurrentNoise >= _config.loudNoiseChaseThreshold
+            && CanHearPlayer())
+        {
+            EnterChase();
+            return;
+        }
 
         _perceptTimer -= Time.fixedDeltaTime;
         if (_perceptTimer > 0f) return;
@@ -424,7 +438,8 @@ public class ZombieController : MonoBehaviour
             return;
         }
 
-        // 청각: 어떤 크기의 소리든 Investigate까지만(시야 확정 없이는 Chase 금지 — 소리 사다리 철칙).
+        // 청각: 평시 소음은 Investigate까지(떼어내기 보장 — §3.2 철칙). Alert 가드 = Investigate 강등 방지.
+        // 굉음 승급은 위(틱 게이트 밖) 즉시 판정이 담당.
         if (_state != ZombieState.Alert && CanHearPlayer())
             EnterInvestigate(_player.position);
     }
