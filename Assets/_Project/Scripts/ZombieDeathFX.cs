@@ -71,6 +71,85 @@ public class ZombieDeathFX : MonoBehaviour
     MaterialPropertyBlock _mpb;
     int _ringEvict;
 
+    // ── artist Vefects 킬 버스트 풀(일반/수렴) — 프리팹 없으면 null로 두고 조용히 스킵 ──
+    const int BurstPoolSize = 6;
+    BurstPool _burstNormal;       // VFX/KillBurst
+    BurstPool _burstConverged;    // VFX/KillBurstConverged (대형)
+
+    /// <summary>
+    /// 프리팹 1종을 풀링하는 인스턴스 링버퍼. 빈 슬롯 없으면 가장 오래된 것 재사용(_evict 방식).
+    /// artist 프리팹은 루트에 PS가 없고 형제 자식(Sparks/Core_Cyan/Edge_Magenta)에만 PS가 있다 —
+    /// 그래서 슬롯 = { root Transform, 자식 PS 배열 }. GetComponentsInChildren는 루트 PS가 있든 없든 모두 포함하므로 범용.
+    /// </summary>
+    class BurstPool
+    {
+        readonly Transform[] _roots;     // 위치 이동용(슬롯별 인스턴스 루트)
+        readonly ParticleSystem[][] _systems;   // 슬롯별 자식 PS 배열(형제 포함 전부)
+        int _evict;
+
+        public BurstPool(GameObject prefab, Transform parent, int size)
+        {
+            _roots = new Transform[size];
+            _systems = new ParticleSystem[size][];
+            for (int i = 0; i < size; i++)
+            {
+                var inst = Instantiate(prefab, parent);
+                inst.transform.localPosition = Vector3.zero;
+                _roots[i] = inst.transform;
+                var systems = inst.GetComponentsInChildren<ParticleSystem>(true);
+                if (systems.Length == 0)
+                {
+                    // 루트·자식 어디에도 PS 없는 프리팹 — 무효 슬롯. 빈 배열로 두고 Play에서 스킵.
+                    Debug.LogError("ZombieDeathFX.BurstPool: prefab '" + prefab.name + "' 어디에도 ParticleSystem이 없음 — 슬롯 비활성");
+                    _systems[i] = systems;   // length 0
+                    continue;
+                }
+                // 히트스탑(timeScale 0.05) 중에도 버스트가 얼지 않게 — 모든 PS를 unscaled로(기존 수정1 유지).
+                // EchoRing이 WaitForSecondsRealtime로 히트스탑 독립을 택한 전례와 일관.
+                foreach (var p in systems)
+                {
+                    var m = p.main; m.useUnscaledTime = true;
+                    p.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                }
+                _systems[i] = systems;
+            }
+        }
+
+        static bool IsBusy(ParticleSystem[] systems)
+        {
+            // 형제 PS를 직접 순회하므로 withChildren 불필요 — 하나라도 살아 있으면 점유 중.
+            for (int i = 0; i < systems.Length; i++)
+                if (systems[i] != null && systems[i].IsAlive(false)) return true;
+            return false;
+        }
+
+        public void Play(Vector3 pos)
+        {
+            int idx = -1;
+            for (int i = 0; i < _systems.Length; i++)
+                if (_systems[i].Length > 0 && !IsBusy(_systems[i])) { idx = i; break; }   // 비어있지 않고(유효) 한가한 슬롯
+            if (idx < 0) { idx = _evict; _evict = (_evict + 1) % _systems.Length; }
+
+            var systems = _systems[idx];
+            if (systems.Length == 0) return;   // 무효 슬롯(PS 전무) — MissingReferenceException/노옵 방지
+
+            if (_roots[idx] != null) _roots[idx].position = pos;
+            // 형제는 각자 Play. 재사용 잔상 차단 위해 PS마다 Clear 선행 필수(함정 전파).
+            foreach (var p in systems)
+            {
+                if (p == null) continue;
+                p.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                p.Play();
+            }
+        }
+
+        public void DestroyAll()
+        {
+            for (int i = 0; i < _roots.Length; i++)
+                if (_roots[i] != null) Destroy(_roots[i].gameObject);
+        }
+    }
+
     // 시체/프롭 잔류 관리 — 상한 초과 시 오래된 것부터 와해
     readonly List<ZombieController> _corpses = new List<ZombieController>();
     readonly List<GameObject> _props = new List<GameObject>();
@@ -110,6 +189,15 @@ public class ZombieDeathFX : MonoBehaviour
             _ringTr[i] = go.transform;
             _ringMR[i] = mr;
         }
+
+        // artist Vefects 킬 버스트 — Resources에 없으면 null 유지(기존 시안 버스트·킬 링만으로 폴백, 크래시 0).
+        // 단, 빌드에서 경로 오기재 시 추적 가능하게 1회 경고(무음 스킵이면 "왜 버스트가 안 보이지"를 못 잡는다).
+        var burstPrefab = Resources.Load<GameObject>("VFX/KillBurst");
+        var burstConvPrefab = Resources.Load<GameObject>("VFX/KillBurstConverged");
+        if (burstPrefab != null) _burstNormal = new BurstPool(burstPrefab, transform, BurstPoolSize);
+        else Debug.LogWarning("ZombieDeathFX: VFX/KillBurst not found in Resources — 킬 버스트 스킵");
+        if (burstConvPrefab != null) _burstConverged = new BurstPool(burstConvPrefab, transform, BurstPoolSize);
+        else Debug.LogWarning("ZombieDeathFX: VFX/KillBurst(Converged) not found in Resources — 킬 버스트 스킵");
     }
 
     void OnDestroy()
@@ -125,6 +213,9 @@ public class ZombieDeathFX : MonoBehaviour
         if (_ringMat != null) Destroy(_ringMat);
         if (_ringTex != null) Destroy(_ringTex);
         if (_quadMesh != null) Destroy(_quadMesh);
+        // artist 버스트 풀 인스턴스 명시 정리(부모 파괴로 함께 정리되나 일관성 유지).
+        _burstNormal?.DestroyAll();
+        _burstConverged?.DestroyAll();
     }
 
     // ──────────── 공개 API (전부 static — 호출부 단순) ────────────
@@ -161,6 +252,10 @@ public class ZombieDeathFX : MonoBehaviour
             StartCoroutine(EchoRing(pos));
         }
         else SpawnRing(pos, s_killRingSize, RingLife);
+
+        // artist 킬 버스트 증강(순수 추가) — 화려함은 새 버스트를 위에 얹어서. 풀 없으면(프리팹 미존재) 조용히 스킵.
+        var pool = converged ? _burstConverged : _burstNormal;
+        if (pool != null) pool.Play(pos);
     }
 
     System.Collections.IEnumerator EchoRing(Vector3 pos)
