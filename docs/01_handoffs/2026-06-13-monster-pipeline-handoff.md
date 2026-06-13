@@ -30,8 +30,8 @@
 
 ## 4. 다음 큐 (권장 순서)
 
-1. **톤게이트 캡처** — 도시 블록+베이스라인 라이팅에서 몬스터 대표종+Vefects 투사체 동시 캡처 → 유저 판정. [[2026-06-13-shader-direction]]의 톤게이트 A/B 캡처와 **한 세션으로 합류 권장**(리얼 크리처+플립북 VFX+로우폴리 도시+셀셰이드 주인공 4자 동거를 한 번에).
-2. **장판 셰이더 시공** — 도형 4종 SDF+채움. TA 트랙 정합 존.
+1. **톤게이트 캡처** — ✅**완료(2026-06-13 오전)**: `docs/captures/2026-06-13-monster-tonegate/` 14장 + 캡처 씬 `Assets/_Project/Scenes/ToneGateLab.unity`(ScanLit_v2 라이팅 스택 + Greybox_City CityMap 이식, 원본 무손상). 유저 판정 대기. ★신규 함정: **Vefects 3팩도 URP 비호환**(BIRP ×241 + "URP" 명명 셰이더조차 Unity 6에서 마젠타, ShaderHasError=False는 거짓 신호) → 캡처는 인스턴스 한정 URP/Particles/Unlit 가산 변환으로 우회. **FX 실채택 시 영구 변환·포팅 작업 필요**. 또: SampleAnimation이 루트 트랜스폼을 클립 원점으로 덮음 → 포즈 샘플 **후** 배치 순서 필수.
+2. **장판 셰이더 시공** — ✅**완료(06-13)**: ThreatArc 스타일 3~6(원/레인/부채꼴/링, 월드미터 SDF — 외곽선 두께 크기 무관), 렌더 경로=함정③ 택① **PickupInfo 레이어 AfterPost 재드로우**(TiltShift 뒤 RenderObjects, 콘 면제 — StrainHarvestFX 검증로 재사용, 이벤트 600에 깊이 살아있어 ZTest LEqual 성립), 검증 캡처 `docs/03_reference/assets/telegraph_lab/` 3컷, 랩=Greybox_TelegraphLab. ⚠️부채꼴 전각 상한 180°(셰이더 클램프, 초과 수요=원/링으로 설계 전환). 최종 색·채움 톤=유저 노브.
 3. **MonsterDef SO 데이터화** — 분류표+§6 번역표가 스키마 원천(LV/역할/킷→형식/도형/크기/타이밍/탄속). 스포너·AI 연동 토대.
 4. 기존 좀비 60종(ithappy)·ZombieController 계열 거취 — [[2026-06-13-shader-direction]]이 ithappy 은퇴를 동결했으므로 실행 계획(씬 정리·코드 계승 범위) 수립 필요. MonsterController가 ZombieController를 포크할지 계승할지 판정.
 5. 명명/로어 — "사람이 변한 이상개체" 코드명 체계, Story 에이전트·렉시콘 경유.
