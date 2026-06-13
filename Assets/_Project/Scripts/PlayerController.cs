@@ -54,6 +54,9 @@ public class PlayerController : MonoBehaviour
     /// <summary>대시 중이면 true — 잔상 컴포넌트가 폴링한다.</summary>
     public bool IsDashing => _dashTimer > 0f;
 
+    /// <summary>대시 지속 시간(초) — 대시 모션 배속 동기용(PlayerLocomotionAnimator가 읽는다).</summary>
+    public float DashDuration => dashDuration;
+
     /// <summary>현재 보유한 대시 스택 수 — HUD가 폴링.</summary>
     public int DashCharges => _dashCharges;
     /// <summary>최대 대시 스택 수 — HUD 아이콘 개수.</summary>

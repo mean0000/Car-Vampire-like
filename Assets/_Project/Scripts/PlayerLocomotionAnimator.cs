@@ -50,15 +50,26 @@ public class PlayerLocomotionAnimator : MonoBehaviour
              "하한 보호는 없음 — reloadTime이 클립보다 훨씬 긴 저속 장전 무기는 기존식대로 자연히 느려진다.")]
     [SerializeField] float maxReloadAnimSpeed = 1.35f;
 
+    [Header("Dash (Base Layer)")]
+    [Tooltip("대시 클립(Corkscrew Evade) 길이(초) — 실측 2.5s@30fps. 배속 = min(상한, 클립길이/dashDuration).")]
+    [SerializeField] float dashClipLength = 2.5f;
+    [Tooltip("대시 모션 재생 배속 상한 — 장전 배속 상한과 동일 패턴. dashDuration(0.18s)이 클립보다 훨씬 짧아 " +
+             "상한이 항상 걸리고, bool 조기 컷으로 모션이 끊긴다(고배속 경련보다 낫다는 기존 판정 준용).")]
+    [SerializeField] float maxDashAnimSpeed = 1.35f;
+
     static readonly int SpeedHash = Animator.StringToHash("Speed");
     static readonly int MoveXHash = Animator.StringToHash("MoveX");
     static readonly int MoveYHash = Animator.StringToHash("MoveY");
     static readonly int ReloadHash = Animator.StringToHash("Reload");
     static readonly int ReloadSpeedHash = Animator.StringToHash("ReloadSpeed");
     static readonly int FiringHash = Animator.StringToHash("Firing");
+    static readonly int DashHash = Animator.StringToHash("Dash");
+    static readonly int DashSpeedHash = Animator.StringToHash("DashSpeed");
 
     Animator _animator;
     Vector3 _lastPos;
+    PlayerController _dashSource;   // 대시 상태 폴링 소스 — moveSource(Player 루트)에서 캐시
+    bool _wasDashing;
     bool _wasReloading;
     bool _wasFiring;
     bool _hasFiringParam;        // 현재 컨트롤러에 Firing 파라미터가 있는가 — 권총 스탠스엔 없음(발사 클립 부재)
@@ -92,6 +103,7 @@ public class PlayerLocomotionAnimator : MonoBehaviour
         // 장전 중 스왑이어도(무기 교체가 _reloading을 리셋) 다음 폴링이 올바른 엣지를 본다.
         _wasReloading = false;
         _wasFiring = false;
+        _wasDashing = false;   // Dash bool도 스왑으로 리셋 — 대시 중 스왑이면 다음 폴링이 엣지를 다시 본다
         _firingParamChecked = false;   // 컨트롤러가 바뀌었으니 Firing 파라미터 존재 여부 재검사
     }
 
@@ -101,6 +113,7 @@ public class PlayerLocomotionAnimator : MonoBehaviour
         _animator.applyRootMotion = false;   // 위치는 PlayerController가 주도, 애니는 표현용
         if (moveSource == null) moveSource = transform.parent;
         if (aimSource == null && moveSource != null) aimSource = moveSource.GetComponentInParent<PlayerCombat>();
+        if (moveSource != null) _dashSource = moveSource.GetComponentInParent<PlayerController>();
     }
 
     void OnEnable()
@@ -209,6 +222,27 @@ public class PlayerLocomotionAnimator : MonoBehaviour
                     _animator.SetBool(FiringHash, firing);
                     _wasFiring = firing;
                 }
+            }
+        }
+
+        // --- 베이스 레이어 대시: PlayerController.IsDashing 폴링(장전과 동일한 엣지 패턴) ---
+        // bool 구동 — dashDuration 만료/벽 충돌 조기 종료 모두 같은 경로로 로코모션 복귀.
+        if (_dashSource != null)
+        {
+            bool dashing = _dashSource.IsDashing;
+            if (dashing != _wasDashing)
+            {
+                if (dashing)
+                {
+                    // 모션 배속을 게임의 dashDuration에 종속 — 단 가속은 maxDashAnimSpeed까지만(장전 상한 패턴).
+                    float dur = _dashSource.DashDuration;
+                    float animSpeed = dur > 0.01f
+                        ? Mathf.Min(maxDashAnimSpeed, dashClipLength / dur)
+                        : 1f;
+                    _animator.SetFloat(DashSpeedHash, animSpeed);
+                }
+                _animator.SetBool(DashHash, dashing);
+                _wasDashing = dashing;
             }
         }
     }
