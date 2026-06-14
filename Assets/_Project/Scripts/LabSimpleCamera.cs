@@ -17,6 +17,7 @@ public class LabSimpleCamera : MonoBehaviour
     [SerializeField, Min(0f)] float followSmoothTime = 0.15f;
 
     Vector3 _baseOffset;     // 시작 시 카메라-타겟 월드 오프셋(45°/15m 프레이밍 보존)
+    Vector3 _followPos;      // ★추종값 내부 보존(transform.position을 안 읽음) — 쉐이크 오프셋이 SmoothDamp에 피드백되는 것 차단.
     float _velX, _velZ;      // 축별 SmoothDamp 속도 상태(Y 변위가 XZ에 안 섞이게 분리)
     bool _ready;
 
@@ -26,6 +27,7 @@ public class LabSimpleCamera : MonoBehaviour
         target = t;
         if (target == null) { _ready = false; return; }
         _baseOffset = transform.position - target.position;
+        _followPos = transform.position;
         _ready = true;
     }
 
@@ -41,6 +43,7 @@ public class LabSimpleCamera : MonoBehaviour
 
         // 현재 카메라 트랜스폼이 곧 프레이밍(빌더가 45°/15m로 배치). 그 오프셋을 보존.
         _baseOffset = transform.position - target.position;
+        _followPos = transform.position;
         _ready = true;
     }
 
@@ -55,11 +58,13 @@ public class LabSimpleCamera : MonoBehaviour
         Vector3 desired = p + _baseOffset;
         desired.y = p.y + _baseOffset.y;   // 높이 즉시 고정(상하 흔들림 방지)
 
-        Vector3 cur = transform.position;
         float smooth = Mathf.Max(0.0001f, followSmoothTime);
-        float nx = Mathf.SmoothDamp(cur.x, desired.x, ref _velX, smooth, Mathf.Infinity, dt);
-        float nz = Mathf.SmoothDamp(cur.z, desired.z, ref _velZ, smooth, Mathf.Infinity, dt);
-        transform.position = new Vector3(nx, desired.y, nz);
+        // ★추종은 내부 _followPos에만 한다(transform.position을 안 읽음) — 쉐이크 오프셋이 다음 프레임 SmoothDamp 소스로 피드백되는 것 차단.
+        _followPos.x = Mathf.SmoothDamp(_followPos.x, desired.x, ref _velX, smooth, Mathf.Infinity, dt);
+        _followPos.z = Mathf.SmoothDamp(_followPos.z, desired.z, ref _velZ, smooth, Mathf.Infinity, dt);
+        _followPos.y = desired.y;
+        // ★쉐이크 = 순수 시각 오프셋(추종값 위에 얹음). XZ만, unscaledTime(히트스탑 중에도 진동).
+        transform.position = _followPos + LabCameraShake.Evaluate();
         // 회전은 빌더가 잡은 피치 그대로 유지 — 건드리지 않는다.
     }
 }

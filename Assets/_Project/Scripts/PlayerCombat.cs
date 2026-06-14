@@ -106,8 +106,7 @@ public class PlayerCombat : MonoBehaviour
     [SerializeField] Color muzzleLightColor = new Color(1f, 0.72f, 0.34f, 1f);
 
     [Header("Audio (발사·재장전 사운드 — Resources/SFX/Guns)")]
-    [Tooltip("발사 사운드 볼륨.")]
-    [SerializeField, Range(0f, 1f)] float shotVolume = 0.185f;
+    // shotVolume은 CombatFeelConfig(feel.shotVolume)로 이주 — 씬 0.65가 라이브 값(Feel 레이어 2026-06-12).
     [Tooltip("재장전 사운드 볼륨.")]
     [SerializeField, Range(0f, 1f)] float reloadVolume = 0.25f;
 
@@ -128,26 +127,16 @@ public class PlayerCombat : MonoBehaviour
     [ColorUsage(true, true)][SerializeField] Color sparkColor = new Color(9f, 7.5f, 3.5f, 1f);
     [Tooltip("명중 1회당 튀는 스파크 줄기 개수.")]
     [SerializeField, Min(1)] int sparkBurstCount = 16;
-    [Tooltip("발사 시 카메라 쉐이크 세기(m). 작게 — 연사 시 잔잔한 럼블. 샷건은 자동 2배.")]
-    [SerializeField, Min(0f)] float fireShake = 0.06f;
-    [Tooltip("발사 시 카메라 킥(m) — 반동 반대 방향으로 밀렸다 복귀. 묵직함의 주력 채널. 샷건은 자동 1.8배.")]
-    [SerializeField, Min(0f)] float fireKick = 0.1f;
-    [Tooltip("카메라 충격 예약제: 발사간격이 이 값(초) 이상인 무거운 단발(또는 산탄)만 카메라를 친다. " +
-             "연사류는 카메라 충격 0 — 손맛은 히트스탑·머즐·사운드 채널 담당(Hades/DOOM 모델). " +
-             "충격 유무 자체가 무기 계열의 촉각 언어(묵직=킥/속사=무킥).")]
-    [SerializeField, Min(0f)] float heavyKickMinCooldown = 0.3f;
+    // fireShake·fireKick·heavyKickMinCooldown은 CombatFeelConfig로 이주(Feel 레이어 2026-06-12)
+    // — 씬 SerializeField 덮어쓰기(히트스탑 0 사망 사고)를 SO 이니셜라이저로 해독.
 
     [Header("수렴샷 (B-009 — 정조준 수렴 완료 후의 한 발)")]
     [Tooltip("수렴샷 데미지 배수. 탄퍼짐도 0이 된다 — '모아서 쏜 한 발'의 기계적 보상.")]
     [SerializeField, Min(1f)] float convergedDamageMult = 2f;
     [Tooltip("수렴샷 넉백 배수 — 임팩트의 물리 언어.")]
     [SerializeField, Min(1f)] float convergedKnockbackMult = 2f;
-    [Tooltip("수렴샷 '풀히트' 순간 전역 히트스탑(초). 연사엔 절대 안 걸림 — 시간의 사다리 최하단(60ms<Zone 0.2s<산데).")]
-    [SerializeField, Range(0f, 0.15f)] float convergedHitStop = 0.06f;
-    [Tooltip("수렴샷 카메라 킥 배수 — 예약제 무관, 의도된 한 발은 항상 묵직.")]
-    [SerializeField, Min(1f)] float convergedKickMult = 1.4f;
-    [Tooltip("수렴샷 '킬' 히트스탑(초) — 일반 명중 60ms와 차별되는 110ms. '이 킬은 달랐다'.")]
-    [SerializeField, Range(0f, 0.2f)] float convergedKillHitStop = 0.11f;
+    // convergedHitStop·convergedKickMult·convergedKillHitStop은 CombatFeelConfig로 이주(Feel 레이어 2026-06-12)
+    // — 씬이 convergedHitStop=0으로 덮어써 히트스탑이 죽어 있었다. SO 신규 필드는 이니셜라이저가 진실.
     [Tooltip("수렴 킬 직후 조준이 강제로 풀리는 시간(초) — 줌이 탁 풀리며 '일이 끝났다'(날숨). 홀드 유지 시 자동 재진입.")]
     [SerializeField, Min(0f)] float aimReleaseAfterKill = 0.35f;
 
@@ -215,6 +204,18 @@ public class PlayerCombat : MonoBehaviour
     [Tooltip("밀치기 둔기 소음(총성보다 낮음).")]
     [SerializeField] float bashNoise = 30f;
 
+    [Header("Katana (증명 슬라이스 Phase1 — 거합/참격 손맛 노브)")]
+    [Tooltip("거합 모드 노브(평타 공속·충전·발도·환류). 손맛 튜닝은 여기서.")]
+    [SerializeField] KatanaController.IaiKnobs iaiKnobs = new KatanaController.IaiKnobs();
+    [Tooltip("참격 모드 노브(콤보·가속·참격파). 손맛 튜닝은 여기서.")]
+    [SerializeField] KatanaController.SlashKnobs slashKnobs = new KatanaController.SlashKnobs();
+    [Tooltip("켜면 게임 시작 시 카타나 강제 장착(증명 슬라이스 테스트 하네스). 켜져 있으면 WeaponSelect 무시. ★슬라이스 종료 시 false로 원복(모든 씬 강제 카타나 방지).")]
+    [SerializeField] bool forceKatanaForTest = true;   // ★TEST HARNESS — 슬라이스 종료 시 false 원복
+    [Tooltip("거합 모드 토글 키.")]
+    [SerializeField] KeyCode iaiModeKey = KeyCode.Alpha1;
+    [Tooltip("참격 모드 토글 키.")]
+    [SerializeField] KeyCode slashModeKey = KeyCode.Alpha2;
+
     [Header("Debug")]
     [SerializeField] KeyCode evolveKey = KeyCode.T;   // 데모용: 방망이 → 쇠지렛대 라이브 진화
     [Tooltip("보조사격 키. 우클릭은 주시/정조준에 이양(2026-06-11) — Q 임시, 최종 배치는 B-009 게이트에서.")]
@@ -240,6 +241,19 @@ public class PlayerCombat : MonoBehaviour
     /// <summary>마우스 지면 투영으로 계산된 조준 방향(수평, 정규화). 로코모션 facing 등에서 공유.</summary>
     public Vector3 AimDirection => _aimDir;
 
+    // ── 카타나 검증 전용 읽기 접근자(에디터 자동화 — 리플렉션 회피). 게임 로직 의존 금지. ──
+    public bool DebugHasKatana => _katana != null;
+    public string DebugKatanaMode => _katana != null ? _katana.ModeName : "none";
+    public int DebugKatanaComboTier => _katana != null ? _katana.DebugComboTier : -1;
+    public float DebugKatanaCharge01 => _katana != null ? _katana.DebugCharge01 : -1f;
+    public bool DebugKatanaLunging => _katana != null && _katana.DebugLunging;
+    public bool DebugKatanaWaveActive => _katana != null && _katana.DebugWaveActive;
+    public bool DebugKatanaCharging => _katana != null && _katana.DebugCharging;
+    /// <summary>검증 전용: 카타나 모드 강제 전환(디버그키 대체).</summary>
+    public void DebugSetKatanaMode(int mode) { _katana?.SetMode((KatanaController.Mode)mode); }
+    /// <summary>검증 전용: 대시 self-cancel 강제 발화.</summary>
+    public void DebugKatanaForceDashCancel() { _katana?.DebugForceDashCancel(); }
+
     // HUD가 읽는 읽기 전용 탄약 API.
     public bool UsesAmmo => _kind == WeaponLoadout.Kind.Ranged && _magazine > 0;
     public int CurrentAmmo => _ammo;
@@ -256,6 +270,7 @@ public class PlayerCombat : MonoBehaviour
 
     WeaponLoadout.Kind _kind = WeaponLoadout.Kind.Ranged;
     MeleeAttacker _melee;   // 근접일 때만 생성(원거리는 null)
+    KatanaController _katana;   // 카타나 장착 시에만 생성(_melee 대신 — 거합/참격 분기 구동)
 
     // 원거리 런타임 스탯(무기에서 채워짐). 미선택 시 인스펙터 기본 + hipfireSpread.
     int _pelletCount = 1;   // 1발당 펠릿 수(샷건은 다수)
@@ -340,6 +355,12 @@ public class PlayerCombat : MonoBehaviour
     /// <summary>에디터 자동화 전용 — 게임 로직 사용 금지. true면 좌클릭 홀드로 간주(B-004 연사 검증 훅).</summary>
     public static bool DebugFireHeld = false;
 
+    /// <summary>에디터 자동화 전용 — 게임 로직 사용 금지. 카타나 RMB(거합 충전/참격파) 홀드 시뮬.
+    /// 0=무입력, 1=홀드(아래 _katanaDebugAimReleased로 뗌 엣지 1프레임 주입).</summary>
+    public static bool DebugAimHeld = false;
+    /// <summary>에디터 자동화 전용 — 다음 프레임 RMB 뗌 엣지를 1회 주입(거합 발도 릴리스 트리거).</summary>
+    public static bool DebugAimReleaseOnce = false;
+
     // 피 튀김 프리팹(Resources 코드 로드 — 무와이어링, 모든 씬 동작). 좀비 명중에 검은 피.
     GameObject _bloodPrefab;
 
@@ -369,8 +390,15 @@ public class PlayerCombat : MonoBehaviour
         _altFire = WeaponLoadout.AltFire.FanFire;
         _magazine = magazineSize; _reloadTime = reloadTime; _ammo = _magazine; _reloading = false; _reloadTimer = 0f;
 
+        // 증명 슬라이스 테스트 하네스: 카타나 강제 장착(WeaponSelect 무시).
+        if (forceKatanaForTest)
+        {
+            // ★슬라이스 종료 시 이 필드를 false로 원복할 것 — 켜져 있으면 모든 씬이 강제 카타나가 된다.
+            Debug.LogWarning("[TEST HARNESS] forceKatanaForTest ON — 카타나 강제 장착(WeaponSelect 무시). 슬라이스 종료 시 false 원복.");
+            EquipKatana(WeaponLoadout.Katana);
+        }
         // 시작 무기 선택(WeaponSelect 화면)이 있으면 그 스탯으로 덮어쓴다.
-        if (WeaponLoadout.HasSelection)
+        else if (WeaponLoadout.HasSelection)
         {
             var w = WeaponLoadout.Selected;
             if (w.kind == WeaponLoadout.Kind.Melee)
@@ -548,6 +576,8 @@ public class PlayerCombat : MonoBehaviour
     /// <summary>원거리 무기 스탯을 적용(시작 선택·데모 핫스왑 공용).</summary>
     void ApplyRanged(WeaponLoadout.Weapon w)
     {
+        // 카타나→원거리 스왑 시 살아있는 카타나 정리(H-2 — 정적 이벤트 구독+LineRenderer 누수 방지).
+        if (_katana != null) { _katana.Cleanup(); _katana = null; }
         _kind = WeaponLoadout.Kind.Ranged;
         damage = w.damage;
         fireCooldown = w.fireCooldown;
@@ -581,6 +611,17 @@ public class PlayerCombat : MonoBehaviour
     {
         if (w.kind == WeaponLoadout.Kind.Melee) return;   // 래퍼는 원거리 전용 — 근접 전환은 게임 경로로만
         ApplyRanged(w);
+    }
+
+    /// <summary>카타나 장착(증명 슬라이스). _melee 대신 KatanaController를 만들어 거합/참격 분기 구동.</summary>
+    void EquipKatana(WeaponLoadout.Weapon w)
+    {
+        // 선제 정리(H-2): 이전 카타나가 살아있으면 static 이벤트 구독+LineRenderer를 먼저 해제(누수 방지).
+        // 카드 시스템으로 라이브 무기 스왑이 붙기 전 선제 — 같은 무기 재장착 시에도 안전.
+        _katana?.Cleanup(); _katana = null;
+        _kind = WeaponLoadout.Kind.Melee;
+        _magazine = 0;   // 근접: 무탄약(UsesAmmo=false)
+        _katana = new KatanaController(transform, w, muzzleHeight, zombieMask, obstacleMask, iaiKnobs, slashKnobs);
     }
 
     /// <summary>무기 특성으로 발사음 분류: 산탄=샷건, 빠른 연사(쿨≤0.2)=라이플, 그 외=권총류.</summary>
@@ -640,6 +681,7 @@ public class PlayerCombat : MonoBehaviour
         if (_sparkPS != null) Destroy(_sparkPS.gameObject);
         if (_sparkMat != null) Destroy(_sparkMat);
         _melee?.Cleanup();
+        _katana?.Cleanup();
     }
 
     LineRenderer CreateLine(string name, float width)
@@ -769,12 +811,28 @@ public class PlayerCombat : MonoBehaviour
 
         if (_kind == WeaponLoadout.Kind.Melee)
         {
-            // 근접: 입력/조준/잠금만 넘기고 쿨·판정·연출은 MeleeAttacker가 전담.
-            _melee.Tick(attackHeld, _aimDir, locked);
+            if (_katana != null)
+            {
+                // 카타나: 거합/참격 모드 토글(디버그키 1/2 — 카드 시스템 전 하드코딩).
+                if (Input.GetKeyDown(iaiModeKey)) _katana.SetMode(KatanaController.Mode.Iai);
+                else if (Input.GetKeyDown(slashModeKey)) _katana.SetMode(KatanaController.Mode.Slash);
 
-            // 데모: 디버그키로 방망이 → 쇠지렛대 라이브 진화.
-            if (Input.GetKeyDown(evolveKey) && _melee != null)
-                _melee.Evolve(WeaponLoadout.EvolvedCrowbar);
+                // RMB = 거합 충전 / 참격파(임계 시). 홀드·누름·뗌 엣지를 넘긴다.
+                bool aimHeld = !locked && (Input.GetMouseButton(1) || DebugAimHeld);
+                bool aimPressed = !locked && Input.GetMouseButtonDown(1);
+                bool aimReleased = !locked && (Input.GetMouseButtonUp(1) || DebugAimReleaseOnce);
+                DebugAimReleaseOnce = false;   // 1프레임 엣지 소비
+                _katana.Tick(attackHeld, aimHeld, aimPressed, aimReleased, _aimDir, locked);
+            }
+            else
+            {
+                // 근접: 입력/조준/잠금만 넘기고 쿨·판정·연출은 MeleeAttacker가 전담.
+                _melee.Tick(attackHeld, _aimDir, locked);
+
+                // 데모: 디버그키로 방망이 → 쇠지렛대 라이브 진화.
+                if (Input.GetKeyDown(evolveKey) && _melee != null)
+                    _melee.Evolve(WeaponLoadout.EvolvedCrowbar);
+            }
         }
         else
         {
@@ -899,6 +957,11 @@ public class PlayerCombat : MonoBehaviour
 
         int dmg = Mathf.RoundToInt(damage * Mathf.Lerp(1f, pierceDamageMult, charge01));
         FireShot(0f, dmg, range * pierceRangeMult, 1, true, gunshotNoise, primary: false);
+        // 킥 예약 ③ 차지샷 — charge01 비례(최소차지 0.2배 약킥 → 풀차지 전량). FireShot 내부 킥 블록은
+        // 라이플(연사 쿨다운<0.3·펠릿1·pierce는 수렴 제외)이라 불발 — 이중 킥 없음.
+        // ⚠️미래에 무기 쿨다운이 0.3 이상으로 바뀌면 내부 킥과 이중 킥 가능성 있음.
+        // 셀프 넉백("반동은 몸이 먹는다")은 보류 — PlayerController 임펄스 API 필요.
+        PlayerCameraRig.Instance?.TriggerKick(-_aimDir, feel.chargeKick * charge01);
         _altCooldownTimer = pierceCooldown;
     }
 
@@ -1271,14 +1334,14 @@ public class PlayerCombat : MonoBehaviour
         // fireCooldown은 버프 미적용 기준값으로 비교 — 의도적(무기 정체성 고정: 연사 버프가 킥 유무를
         // 바꾸지 않는다). 버프로 실제 간격이 내려가는 케이스는 림의 어택-서스테인이 안전망(리뷰 M-1).
         // 수렴샷은 예약제 무관하게 항상 묵직 — 의도된 한 발.
-        bool heavyKick = _pelletCount > 1 || fireCooldown >= heavyKickMinCooldown;
+        bool heavyKick = _pelletCount > 1 || fireCooldown >= feel.heavyKickMinCooldown;
         if ((heavyKick || converged) && rig != null)
         {
-            float kick = _gunClass == GunSfx.GunClass.Shotgun ? fireKick * 1.8f : fireKick;
-            if (converged) kick = Mathf.Max(kick, fireKick * convergedKickMult);
+            float kick = _gunClass == GunSfx.GunClass.Shotgun ? feel.fireKick * 1.8f : feel.fireKick;
+            if (converged) kick = Mathf.Max(kick, feel.fireKick * feel.convergedKickMult);
             rig.TriggerKick(-_aimDir, kick);
             if (!rig.IsSustainedFire)
-                rig.TriggerShake(_gunClass == GunSfx.GunClass.Shotgun ? fireShake * 2f : fireShake);
+                rig.TriggerShake(_gunClass == GunSfx.GunClass.Shotgun ? feel.fireShake * 2f : feel.fireShake);
         }
         // 발사 반동은 수렴을 깨뜨린다 — 콘이 22°로 튕겨 돌아갔다 다시 무너지는 "한 발 한 발의 리듬".
         rig?.BreakConvergence();
@@ -1336,7 +1399,7 @@ public class PlayerCombat : MonoBehaviour
         _gunAudio.pitch = jitter && feel.transientMatrixEnabled
             ? 1f + Random.Range(-feel.shotPitchJitter, feel.shotPitchJitter)
             : 1f;
-        _gunAudio.volume = shotVolume;
+        _gunAudio.volume = feel.shotVolume;
         _gunAudio.clip = clip;
         _gunAudio.time = Mathf.Clamp(GunSfx.ShotSkip(_gunClass), 0f, Mathf.Max(0f, clip.length - 0.02f));
         _gunAudio.Play();
@@ -1496,7 +1559,7 @@ public class PlayerCombat : MonoBehaviour
                     if (convOnTarget)
                     {
                         bool kill = wasAlive && z.IsDead;
-                        HitStop.Do(kill ? convergedKillHitStop : convergedHitStop);
+                        HitStop.Do(kill ? feel.convergedKillHitStop : feel.convergedHitStop);
                         if (kill) _aimSuppressUntil = Time.unscaledTime + aimReleaseAfterKill;   // 날숨 — 줌 해제 스냅
                         if (kill) PurgeSnapshotFX.Play(z.transform.position, dir);   // 처리 스냅샷 — 엘의 처리 기록 1컷(임팩트 프레임)
                     }

@@ -17,9 +17,15 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
     /// UI Toolkit container that provides controls for changing the layout and visibility
     /// of the configuration panel inside the animation preview window.
     /// </summary>
+    #if UNITY_2023_2_OR_NEWER
     [UxmlElement]
+    #endif
     public partial class LayoutButtonsContainerVisualElement : VisualElement
     {
+        #if !UNITY_2023_2_OR_NEWER
+        public new class UxmlFactory : UxmlFactory<LayoutButtonsContainerVisualElement, UxmlTraits> { }
+        #endif
+
         #region Template GUID
 
         /// <summary>

@@ -38,7 +38,11 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         /// <summary>
         /// The GUID of the UXML layout asset used to build the editor interface.
         /// </summary>
+        #if UNITY_2023_2_OR_NEWER
         private const string guid = "3cf3cb3af2849894db27dab966b6cbf2";
+        #else
+        private const string guid = "3a28e6bec5f85304f8166f19ad1003d9";
+        #endif
 
         /// <summary>
         /// Cached path to the UXML layout asset resolved from the GUID.
@@ -48,7 +52,6 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         /// <summary>
         /// The UXML file used to define the editor's layout.
         /// </summary>
-        [Tooltip("The UXML file used to define the editor's layout.")]
         private readonly VisualTreeAsset m_UXML = null;
 
         #endregion
@@ -195,6 +198,7 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         private VisualElement actionBlockDataContainer = null;
         private VisualElement tracksVisual = null;
         private Label timeValue = null;
+        private Label normalizedTimeValue = null;
         private Label frameValue = null;
         private CursorElement customCursor = null;
         private ActionBlockElement selectedActionBlock = null;
@@ -230,6 +234,8 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
             CreateAndStoreVisualElements();
             InitializePreview(true);
             BuildActionTracks();
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
 
             Root.schedule.Execute(()=> PerformBindings()).StartingIn(50);
         }
@@ -257,6 +263,11 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         {
             Root.schedule.Execute(() =>
             {
+                //TODO: Do this on initialization and every time a new Animation Clip is assigned.
+                float clipFrameRate = animComposer.AnimationClip.frameRate;
+                float clipLength = animComposer.AnimationClip.length;
+                int frameCount = Mathf.FloorToInt(clipLength * clipFrameRate);
+
                 if(animComposer.AnimationClip == null || animComposer.PreviewModel == null)
                 {
                     return;
@@ -264,12 +275,19 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
 
                 previewWindow.UpdateManualCamera();
 
-                if (timeValue != null)
+                if (timeValue != null && normalizedTimeValue != null)
                 {
-                    string timeText = $"{animationTime:F2} sec";
+                    float normalizedTime = clipLength > 0f ? animationTime / clipLength : 0f;
+                    string timeText = $"{animationTime:F2} / {clipLength:F2} sec";
+                    string normalizedTimeText = $"{normalizedTime:F2} / 1.00";
+                    
                     if (timeValue.text != timeText)
                     {
                         timeValue.text = timeText;
+                    }
+                    if (normalizedTimeValue.text != normalizedTimeText)
+                    {
+                        normalizedTimeValue.text = normalizedTimeText;
                     }
                 }
 
@@ -286,11 +304,6 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
                 {
                     timelineBar.SetTime(animationTime);
                 }
-
-                //TODO: Do this on initialization and every time a new Animation Clip is assigned.
-                float clipFrameRate = animComposer.AnimationClip.frameRate;
-                float clipLength = animComposer.AnimationClip.length;
-                int frameCount = Mathf.FloorToInt(clipLength * clipFrameRate);
 
                 if (frameCount > 2 && isPlaying)
                 {
@@ -396,6 +409,7 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
             timelineSlider = Root.Q<Slider>("TimelineSlider");
             tracksVisual = Root.Q<VisualElement>("TracksVisual");
             timeValue = Root.Q<Label>("TimeValueVisual");
+            normalizedTimeValue = Root.Q<Label>("NormalizedTimeValueVisual");
             frameValue = Root.Q<Label>("FrameValueVisual");
             actionBlockDataContainer = Root.Q<VisualElement>("ActionBlockDataContainer");
             addTrackButton = Root.Q<Button>("AddTrackButton");
@@ -442,6 +456,8 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
 
                 trackElement.OnActionBlockCopied += CopyActionBlock;
                 trackElement.OnActionBlockDeleted += DeleteActionBlock;
+                trackElement.OnActionBlockEnabled += EnableActionBlock;
+                trackElement.OnActionBlockDisabled += DisableActionBlock;
                 trackElement.OnTrackMenuClickDelete += DeleteTrack;
                 trackElement.OnTrackMenuClickInsert += InsertNewTrack;
                 trackElement.OnTrackMenuClickMoveUp += MoveUpTrack;
@@ -812,16 +828,23 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
                 playableGraph.Evaluate();
             }
 
-            if (timeValue != null)
+            if (timeValue != null && normalizedTimeValue != null)
             {
-                string timeText = $"{animationTime:F2} sec";
+                float normalizedTime = clipLength > 0f ? animationTime / clipLength : 0f;
+                string timeText = $"{animationTime:F2} / {clipLength:F2} sec";
+                string normalizedTimeText = $"{normalizedTime:F2} / 1.00";
+
                 if (timeValue.text != timeText)
                     timeValue.text = timeText;
+
+                if (normalizedTimeValue.text != normalizedTimeText)
+                    normalizedTimeValue.text = normalizedTimeText;
             }
 
             if (frameValue != null)
             {
                 string frameText = $"{currentFrame} ";
+
                 if (frameValue.text != frameText)
                     frameValue.text = frameText;
             }
@@ -1005,6 +1028,18 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
             CleanupSelectionAndPropertyPanel();
             animComposer.Tracks[trackIndex].ActionBlocks.RemoveAt(blockIndex);
             BuildActionTracks();
+        }
+
+        private void EnableActionBlock(ActionBlockElement actionBlockToEnable)
+        {
+            actionBlockToEnable.ActionBlockData.IsDisabled = false;
+            actionBlockToEnable.style.opacity = 1f; // visually indicate enabled state
+        }
+
+        private void DisableActionBlock(ActionBlockElement actionBlockToDisable)
+        {
+            actionBlockToDisable.ActionBlockData.IsDisabled = true;
+            actionBlockToDisable.style.opacity = 0.3f; // visually indicate disabled state
         }
 
         private void DeleteTrack(ActionTrackElement trackToDelete)
@@ -1238,6 +1273,20 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
                         CopyActionBlock(selectedActionBlock);
                     }
                 }
+                else if (evt.keyCode == KeyCode.E)
+                {
+                    if (selectedActionBlock != null)
+                    {
+                        if(selectedActionBlock.ActionBlockData.IsDisabled)
+                        {
+                            EnableActionBlock(selectedActionBlock);
+                        }
+                        else
+                        {
+                            DisableActionBlock(selectedActionBlock);
+                        }
+                    }
+                }
                 else if (evt.keyCode == KeyCode.V &&
                         selectedActionTrack != null &&
                         copiedActionBlock != null)
@@ -1392,6 +1441,7 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
             if (playableGraph.IsValid())
             {
                 playableGraph.Destroy();
+                playableGraph = default;
             }
 
             playableGraph = PlayableGraph.Create("PreviewGraph");
@@ -1562,6 +1612,15 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
 
         #region Cleanup
 
+        private void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.ExitingPlayMode)
+            {
+                Dispose();
+                EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            }
+        }
+
         /// <summary>
         /// Called when the editor window is disabled or updated.
         /// Cleans up all preview objects, event handlers, and UI elements to prevent memory leaks.
@@ -1600,6 +1659,7 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
                 }
 
                 playableGraph.Destroy();
+                playableGraph = default;
             }
 
             if (debugAudioGO != null)
@@ -1623,6 +1683,7 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
             if (playableGraph.IsValid())
             {
                 playableGraph.Destroy();
+                playableGraph = default;
             }
 
             if (debugAudioGO != null)
@@ -1639,9 +1700,14 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         /// </summary>
         private void CleanupTrackContainers()
         {
-            foreach (VisualElement actionTrack in actionTrackContainers)
+            foreach (ActionTrackElement actionTrack in actionTrackContainers)
             {
+                actionTrack.CleanupDelegates();
+
+                #if UNITY_2023_2_OR_NEWER
                 actionTrack.ClearBindings();
+                #endif
+                
                 actionTrack.Clear();
             }
 
@@ -1688,8 +1754,19 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
                 {
                     presentActionBlocks.Add(block);
 
-                    if (block.Action == null || !block.Action.DebugEnabled)
+                    if (block.Action == null)
+                    {
                         continue;
+                    }
+                    else if(!block.Action.DebugEnabled || block.IsDisabled)
+                    {
+                        if(activeActionBlocks.Contains(block))
+                        {
+                            block.Action.OnDebugExit();
+                            activeActionBlocks.Remove(block);
+                        }
+                        continue;
+                    }
 
                     bool shouldStart = ((previousFrame == 0 && block.StartFrame == 0 && !activeActionBlocks.Contains(block)) ||
                                         previousFrame < block.StartFrame ||
@@ -1699,6 +1776,7 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
                     if (shouldStart)
                     {
                         block.Action.OnDebugStart(
+                            previewWindow.PreviewAttachedItems,
                             previewWindow.PreviewRenderUtility,
                             previewObject,
                             debugAudioSource,

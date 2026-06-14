@@ -42,13 +42,12 @@ public class CameraPresetLab : MonoBehaviour
         public bool baseline = false;
     }
 
-    [Header("프리셋 (F1~F4 — 플레이 중 인스펙터 실시간 조정 가능)")]
+    [Header("프리셋 (F1=45° / F2=55° 토글 — 플레이 중 전환·판정. 둘 다 15m, 각도만 차이)")]
     [SerializeField] Preset[] presets =
     {
-        new Preset { label = "기준선 — 현행 그대로",        baseline = true,  pitch = 45f, distance = 15f, lookAhead = 0f },
-        new Preset { label = "근접",                        pitch = 40f, distance = 11f, lookAhead = 0f },
-        new Preset { label = "근접+룩어헤드",               pitch = 42f, distance = 12f, lookAhead = 2.5f },
-        new Preset { label = "저각+룩어헤드",               pitch = 35f, distance = 13f, lookAhead = 3f },
+        new Preset { label = "45° 현행 (액션 이소)",       pitch = 45f, distance = 15f, lookAhead = 0f },
+        new Preset { label = "55° 눕힘 (플로우 헤지)",      pitch = 55f, distance = 15f, lookAhead = 0f },
+        new Preset { label = "기준선(현행 패시브 — 안전망)", baseline = true, pitch = 45f, distance = 15f, lookAhead = 0f },
     };
 
     [Header("전환 댐핑")]

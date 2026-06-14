@@ -1,0 +1,50 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>덕코프식 맵 레이아웃 v1</title>
+<style>
+:root{--bg:#0f1014;--panel:#1a1d24;--edge:#3a3f49;--txt:#e6e8ec;--dim:#9aa0a8;--sub:#c2c6cc;--gold:#fac95a;--green:#7ad6a0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 700px at 50% -10%,#161922,#0f1014 60%);color:var(--txt);
+font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo","Segoe UI",sans-serif;line-height:1.55;padding:36px 24px 70px}
+.wrap{max-width:1100px;margin:0 auto}
+.stamp{display:inline-block;border:1px solid var(--edge);border-radius:4px;padding:3px 10px;font-size:11px;letter-spacing:.12em;color:var(--dim);margin-bottom:14px}
+h1{font-size:27px;font-weight:800;margin-bottom:6px}
+.lede{color:var(--dim);font-size:14px;max-width:960px;margin-bottom:20px}.lede b{color:var(--sub)}
+.shot{background:var(--panel);border:1px solid var(--edge);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.shot.hero{border-color:var(--gold)}
+.shot img{width:100%;display:block;background:#000}
+.cap{padding:11px 15px;font-size:13px;color:var(--sub)}.cap b{color:var(--green)}.cap .t{font-weight:800;color:var(--txt);font-size:15px}
+.box{background:var(--panel);border:1px solid var(--edge);border-radius:10px;padding:16px 18px;margin-top:8px}
+.box h3{font-size:15px;color:var(--gold);margin-bottom:10px}
+.box li{font-size:13px;color:var(--sub);margin-bottom:7px;list-style:none;padding-left:16px;position:relative}
+.box li::before{content:"›";position:absolute;left:0;color:var(--gold)}.box b{color:var(--txt)}
+.warn{margin-top:16px;border:1px solid #6a5326;background:rgba(250,201,90,.07);border-radius:10px;padding:14px 17px;font-size:12.5px;color:#e7c98a}
+footer{margin-top:20px;font-size:11px;color:#6c727c;border-top:1px solid var(--edge);padding-top:12px}footer code{color:#9aa0a8}
+</style></head><body><div class="wrap">
+<div class="stamp">ZombieCrush · 덕코프식 맵 레이아웃 v1 · 보유 POLYGON 에셋 · 2026-06-14</div>
+<h1>맵을 쫙 깔았습니다 — 덕코프식 바운디드 구역 v1</h1>
+<p class="lede">보유 <b>POLYGON 단일 가족</b>으로 ~116×116m 바운디드 오픈 존. 길 규약 적용: <b>베이지 지면=외곽, 검정 아스팔트=도로망</b>(십자 대로 + 사각 링). 동심원 구조(외곽 흙·fodder → 코어 광장·크레인 비콘·정예).</p>
+
+<div class="shot hero">
+  <img src="../03_reference/assets/angle_test/map_overview.png">
+  <div class="cap"><span class="t">전경 (톱다운)</span> · <b>베이지 흙 지면 + 검정 아스팔트 도로망</b>(십자 대로+사각 링) + 블록 건물 + 코어 광장·크레인 비콘 + 폐허·괴수 산포. 길 규약 그대로 — 도로망이 또렷.</div>
+</div>
+<div class="shot">
+  <img src="../03_reference/assets/angle_test/map_45.png">
+  <div class="cap"><span class="t">같은 맵 · 45° 거리감</span> · 건물·괴수·폐허가 또렷이 읽히는 스타일라이즈드 도심. <b>조잡하지 않음.</b> 크레인 비콘+괴수가 코어에.</div>
+</div>
+
+<div class="box">
+<h3>이 v1이 검증한 것</h3>
+<ul>
+<li><b>길 규약 작동</b> — 베이지 외곽 + 검정 아스팔트 도로망이 탑다운서 또렷이 읽힘(당신 규칙 그대로).</li>
+<li><b>한 가족(POLYGON) = 클래시 0</b> — 도로·건물·컨테이너·폐허·벽이 한 톤.</li>
+<li><b>동심원 구조 성립</b> — 외곽 흙/봉쇄벽 → 블록 → 코어 광장·크레인 비콘. 덕코프식 바운디드 존.</li>
+<li><b>45°서도 폴리시</b> — 건물·괴수·폐허 읽힘, 빈 공간 없음 = 초등학생 게임 아님.</li>
+</ul>
+</div>
+
+<div class="warn">⚠️ 한계(정직): <b>클래리티 라이팅</b>(다크무드/아웃라인/그레이드 미적용 — 최종 룩 아님) · <b>1196 오브젝트 손배치 v1</b>(절차 조립 아님, 캡처 후 삭제됨) · 지면=임시 솔리드 베이지(최종은 Synty 흙 타일 디테일) · 링 도로 약간 블록키(Synty 직선 타일) · 괴수 바인드포즈. "레이아웃·길 규약·조잡 여부"까지 증명.</div>
+
+<footer>렌더 <code>docs/03_reference/assets/angle_test/map_overview.png · map_45.png</code> · 가족=POLYGON(셰이더 GUID 검증) · 다음=영속 씬화 + 다크무드/처리 적용 최종 룩</footer>
+</div></body></html>

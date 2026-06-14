@@ -1,0 +1,63 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>무료 맵젠 엔진 v1 작동</title>
+<style>
+:root{--bg:#0f1014;--panel:#1a1d24;--edge:#3a3f49;--txt:#e6e8ec;--dim:#9aa0a8;--sub:#c2c6cc;--gold:#fac95a;--green:#7ad6a0;--red:#e8857a;--amber:#e6b455}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 700px at 50% -10%,#161922,#0f1014 60%);color:var(--txt);
+font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo","Segoe UI",sans-serif;line-height:1.55;padding:36px 24px 70px}
+.wrap{max-width:1120px;margin:0 auto}
+.stamp{display:inline-block;border:1px solid var(--edge);border-radius:4px;padding:3px 10px;font-size:11px;letter-spacing:.12em;color:var(--dim);margin-bottom:14px}
+h1{font-size:27px;font-weight:800;margin-bottom:6px}
+.lede{color:var(--dim);font-size:14px;max-width:960px;margin-bottom:18px}.lede b{color:var(--sub)}
+.shot{background:var(--panel);border:1px solid var(--edge);border-radius:12px;overflow:hidden;margin-bottom:14px}
+.shot.hero{border-color:var(--green)}.shot img{width:100%;display:block;background:#000}
+.cap{padding:11px 15px;font-size:13px;color:var(--sub)}.cap .t{font-weight:800;color:var(--txt);font-size:15px}.cap b{color:var(--green)}
+.box{background:var(--panel);border:1px solid var(--edge);border-radius:10px;padding:16px 18px;margin-top:8px}
+.box h3{font-size:15px;margin-bottom:10px}.box.good h3{color:var(--green)}.box.rev h3{color:var(--amber)}
+.box li{font-size:13px;color:var(--sub);margin-bottom:7px;list-style:none;padding-left:18px;position:relative}.box li::before{content:"›";position:absolute;left:0;color:var(--gold)}.box b{color:var(--txt)}
+.sev{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:4px;border:1px solid;margin-right:6px}
+.h{color:var(--red);border-color:#6a4040}.m{color:var(--amber);border-color:#6a5326}.l{color:var(--dim);border-color:var(--edge)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:760px){.two{grid-template-columns:1fr}}
+footer{margin-top:18px;font-size:11px;color:#6c727c;border-top:1px solid var(--edge);padding-top:12px}footer code{color:#9aa0a8}
+</style></head><body><div class="wrap">
+<div class="stamp">ZombieCrush · 무료 맵젠 엔진 v1 · 코드로 유기적 맵 생성 · 2026-06-14</div>
+<h1>무료 맵젠 엔진이 작동합니다 — 던지기 손배치 졸업</h1>
+<p class="lede">유료 PCG툴(Edgar/Tessera) 없이 <b>우리가 짠 C# 엔진</b>이 데이터 스펙 → <code>Tools/MapGen/Generate Map</code> 메뉴 → 유기적 맵을 *코드로* 생성. 아래는 그 엔진이 뽑은 결과(엔진서 실제 Generate→캡처).</p>
+
+<div class="shot hero">
+  <img src="../03_reference/assets/angle_test/mapgen_overview.png">
+  <div class="cap"><span class="t">엔진 생성 — 전경</span> · 데이터 스펙(RuinCity_Compound_01, seed 7741)에서 자동 생성: 베이지 지면 + 굽은 아스팔트(S자+분기) + 비대칭 컴파운드 + 크레인 비콘 + 봉쇄벽. <b>재생성 가능·시드 결정론.</b></div>
+</div>
+<div class="shot">
+  <img src="../03_reference/assets/angle_test/mapgen_45.png">
+  <div class="cap"><span class="t">엔진 생성 — 45°</span> · 건물 <b>바닥 flush</b>(높이 수정 코드로 자동) · 굽은 도로 · 괴수 · 크레인. 손배치 아님 — 전부 코드.</div>
+</div>
+
+<div class="two">
+  <div class="box good"><h3>✅ 검증된 것 (라이브)</h3>
+    <ul>
+      <li>데이터 스펙 → 메뉴 → 맵 자동 생성 (<b>재사용·시드 결정론</b>)</li>
+      <li>높이 flush = 코드로(prefab bounds.min.y→y=0). 도로 묻힘 해결</li>
+      <li>POLYGON 단일 가족 18/18 프리팹 해소(클래시 0)</li>
+      <li>유기적 비대칭(컴파운드+굽은 도로) — 격자 아님</li>
+      <li><b>$0</b> — 우리 C# + 보유 에셋만</li>
+    </ul></div>
+  <div class="box rev"><h3>⚠️ 리뷰 발견 → 수정 예정</h3>
+    <ul>
+      <li><span class="sev h">HIGH</span>Clear가 이름으로만 삭제 → 동명 오브젝트 오삭제 위험(소유 마커로 식별)</li>
+      <li><span class="sev m">MED</span>프리팹 중복명 tie-break 비결정 / Road 타일 stretch(균등분할) / 컴파운드 겹침 무검사 / null 리스트 NRE</li>
+      <li><span class="sev l">LOW</span>렌더러 없는 프리팹 바닥정렬 폴백</li>
+      <li><small>Codex 완료. Stab 리뷰 곧 합류 → 합쳐서 Gameplay가 일괄 수정</small></li>
+    </ul></div>
+</div>
+
+<div class="box"><h3 style="color:var(--gold)">다음</h3>
+<ul>
+<li><b>리뷰 수정</b>(Stab 합류 후 Gameplay 일괄) — Clear 소유마커·Road spacing·null가드·겹침검사</li>
+<li><b>밀도 + 시드 변주</b> — 매번 다른 맵(시드)·공백 메우기(식생/소품, 빈 베이지 줄이기)</li>
+<li><b>WFC 변주 레이어</b>(선택, 더 다양한 조립) · 데스트랩0·NavMesh 라이브 검증</li>
+</ul></div>
+
+<footer>엔진 파일 <code>Assets/_Project/Scripts/MapGen/</code> (MapGenKit·MapSpec·CompoundMapGenerator·RuinCitySpec·MapGenSpawnMarker) · 렌더 <code>docs/03_reference/assets/angle_test/mapgen_*.png</code> · 호출=Tools/MapGen/Generate Map</footer>
+</div></body></html>

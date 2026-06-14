@@ -27,6 +27,8 @@ namespace Jorjouto.AnimComposerSystem
         [SerializeReference]
         public ActionBlock_Base Action = null;
 
+        public bool IsDisabled;
+
         /// <summary>
         /// The starting frame of the action block within the animation.
         /// </summary>
@@ -59,7 +61,8 @@ namespace Jorjouto.AnimComposerSystem
                 EndFrame = EndFrame,
                 StartTime = StartTime,
                 EndTime = EndTime,
-                Action = Action.Clone()
+                Action = Action.Clone(),
+                IsDisabled = IsDisabled
             };
         }
 
@@ -169,9 +172,266 @@ namespace Jorjouto.AnimComposerSystem
         /// A list of <see cref="ActionBlockData"/> instances on this track.
         /// </summary>
         public List<ActionBlockData> ActionBlocks = new();
-
     }
 
+    public class RuntimeAnimComposer
+    {
+        /// <summary>
+        /// Gets a value indicating whether the animation is currently playing.
+        /// </summary>
+        public bool IsPlaying { get; private set; } 
+
+        /// <summary>
+        /// Determines whether the animation clip should loop.
+        /// </summary>
+        public bool Loop { get; private set; } 
+
+        /// <summary>
+        /// Gets the total length of the animation clip in seconds, as defined by the source <see cref="ScriptableObject_AnimComposer"/>.
+        /// </summary>
+        public float AnimationLength  { get; private set; }
+
+        /// <summary>
+        /// Gets the total number of frames in the animation clip, calculated from the clip's length and frame rate.
+        /// </summary>
+        public int AnimationFrameCount { get; private set; } 
+
+        /// <summary>
+        /// An additional duration to extend the animation's total playback time for a more controlled blend-out, as defined by the source <see cref="ScriptableObject_AnimComposer"/>.
+        /// </summary>
+        public float BlendOutOffset { get; private set; }
+
+        /// <summary>
+        /// The duration over which the animation will fade in.
+        /// </summary>
+        public float BlendInTime { get; private set; }
+
+        /// <summary>
+        /// The custom curve used to control the blend-in progression.
+        /// </summary>
+        public AnimationCurve BlendInCurve { get; private set; }
+
+        /// <summary>
+        /// The duration over which the animation will fade out.
+        /// </summary>
+        public float BlendOutTime { get; private set; }
+
+        /// <summary>
+        /// The custom curve used to control the blend-out progression.
+        /// </summary>
+        public AnimationCurve BlendOutCurve { get; private set; }
+
+        /// <summary>
+        /// The playback rate of the animation clip.
+        /// </summary>
+        public float PlayRate = 1.0f;
+
+        public WrapMode WrapMode { get; private set; }
+
+        /// <summary>
+        /// Gets the current elapsed time of the animation playback.
+        /// </summary>
+        public float ElapsedTime {get; private set;} = 0.0f;
+
+        /// <summary>
+        /// Gets the current playback weight of this animation composer within its layer.
+        /// </summary>
+        public float CurrentWeight { get; private set; } = 0.0f;
+
+        /// <summary>
+        /// Gets the GameObject that is "owning" or playing this animation composer.
+        /// </summary>
+        public GameObject Owner { get; private set; } = null;
+
+        /// <summary>
+        /// Sets the current playback weight of this animation composer.
+        /// </summary>
+        /// <param name="weight">The new weight value.</param>
+        public void SetCurrentWeight(float weight) => CurrentWeight = weight;
+
+
+        /// <summary>
+        /// Gets the current elapsed blend-in time.
+        /// </summary>
+        public float CurrentBlendInTime { get; private set; } = 0.0f;
+
+        /// <summary>
+        /// Gets the current elapsed blend-out time.
+        /// </summary>
+        public float CurrentBlendOutTime { get; private set; } = 0.0f;
+
+
+        /// <summary>
+        /// Gets the source <see cref="ScriptableObject_AnimComposer"/> asset that this runtime instance is based on.
+        /// </summary>
+        public ScriptableObject_AnimComposer SourceAnimComposer { get; private set; }
+
+
+        /// <summary>
+        /// Gets all of the action blocks from all the tracks in the source
+        /// </summary>
+        public List<ActionBlockData> ActionBlocks { get; private set; }
+
+        /// <summary>
+        /// Initializes the animation composer for playback, setting its initial state.
+        /// </summary>
+        /// <param name="owner">The GameObject that will own this animation.</param>
+        public RuntimeAnimComposer(ScriptableObject_AnimComposer sourceAnimComposer, GameObject owner, 
+                        float ? customBlendInTime = null, 
+                        AnimationCurve customBlendInCurve = null,
+                        bool shouldForceLoop = false)
+        {
+            IsPlaying = true;
+            SourceAnimComposer = sourceAnimComposer;
+            ElapsedTime = 0.0f;
+            CurrentWeight = 0.0f;
+            CurrentBlendInTime = 0f;
+            CurrentBlendOutTime = 0f;
+            AnimationLength = sourceAnimComposer.AnimationClip.length;
+            AnimationFrameCount = Mathf.RoundToInt(AnimationLength * sourceAnimComposer.AnimationClip.frameRate);
+            PlayRate = sourceAnimComposer.PlayRate;
+            Owner = owner;
+            
+            BlendInTime = customBlendInTime ?? sourceAnimComposer.BlendInTime;
+            BlendInCurve = customBlendInCurve ?? sourceAnimComposer.BlendInCurve;
+            BlendOutTime = sourceAnimComposer.BlendOutTime;
+            BlendOutCurve = sourceAnimComposer.BlendOutCurve;
+            BlendOutOffset = sourceAnimComposer.BlendOutOffset;
+            Loop = shouldForceLoop || sourceAnimComposer.Loop;
+            WrapMode = sourceAnimComposer.AnimationClip.wrapMode;
+
+            ActionBlocks = new List<ActionBlockData>();
+
+            foreach (var track in sourceAnimComposer.Tracks)
+            {
+                foreach (var actionBlock in track.ActionBlocks)
+                {
+                    ActionBlocks.Add(actionBlock.Clone());
+                }
+            }
+        }
+
+        /// <summary>
+        /// Updates the state of the animation and processes any active action blocks.
+        /// </summary>
+        /// <param name="deltaTime">The time elapsed since the last frame.</param>
+        public void Tick(float deltaTime)
+        {
+            float previousElapsedTime = ElapsedTime;
+
+            if (CurrentBlendInTime < BlendInTime)
+            {
+                CurrentBlendInTime = Mathf.Min(CurrentBlendInTime + deltaTime, BlendInTime);
+            }
+            if (!IsPlaying)
+            {
+                CurrentBlendOutTime = Mathf.Min(CurrentBlendOutTime + deltaTime, BlendOutTime);
+            }
+
+            ElapsedTime += deltaTime * PlayRate;
+
+            if (Loop && AnimationFrameCount > 2)
+            {
+                ElapsedTime %= AnimationLength;
+            }
+            else
+            {
+                ElapsedTime = Mathf.Min(ElapsedTime, AnimationLength + Math.Max(0, BlendOutOffset));
+            }
+
+            if (!IsPlaying)
+            {
+                return;
+            }
+
+            foreach (var actionBlock in ActionBlocks)
+            {
+                ActionBlock_Base actionInstance = actionBlock.Action;
+
+                if (actionInstance == null || actionBlock.IsDisabled)
+                {
+                    continue;
+                }
+
+                bool frameOverlapsBlock = CheckFrameOverlapsBlock(previousElapsedTime, ElapsedTime, actionBlock);
+
+                bool actionStartedThisFrame = false;
+
+                if (!actionInstance.IsActive && frameOverlapsBlock)
+                {
+                    actionInstance.OnStart(Owner, actionBlock.StartTime, actionBlock.EndTime, PlayRate);
+
+                    if (actionInstance.IsActive)
+                    {
+                        actionInstance.OnUpdate(0.0f);
+                        actionStartedThisFrame = true;
+                    }
+                }
+
+                if (actionInstance.IsActive)
+                {
+                    if (ElapsedTime >= actionBlock.EndTime ||
+                        ElapsedTime < actionBlock.StartTime)
+                    {
+                        actionInstance.OnExit();
+                    }
+                    else if (!actionStartedThisFrame)
+                    {
+                        actionInstance.OnUpdate(deltaTime);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Stops the animation playback and triggers an optional blend-out.
+        /// </summary>
+        /// <param name="blendOutTime">The optional duration for the blend-out. If null, the asset's default BlendOutTime is used.</param>
+        public void Stop(float? blendOutTime = null)
+        {
+            if (blendOutTime != null)
+            {
+                BlendOutTime = (float)blendOutTime;
+            }
+
+            if (ElapsedTime < (AnimationLength - BlendOutTime + BlendOutOffset))
+            {
+                ElapsedTime = AnimationLength - BlendOutTime + BlendOutOffset;
+                CurrentBlendOutTime = 0f;
+            }
+
+            foreach (var actionBlock in ActionBlocks)
+            {
+                ActionBlock_Base actionInstance = actionBlock.Action;
+
+                if (actionInstance != null && actionInstance.IsActive)
+                {
+                    actionInstance.OnExit();
+                }
+            }
+
+            IsPlaying = false;        
+        }
+
+        /// <summary>
+        /// Determines whether the transition from a previous frame time to the current frame time crosses
+        /// into the specified action block.
+        /// </summary>
+        /// <param name="previousElapsedTime">The elapsed animation time at the previous frame.</param>
+        /// <param name="currentElapsedTime">The elapsed animation time at the current frame.</param>
+        /// <param name="block">The action block to check for overlap.</param>
+        /// <returns><c>true</c> if the time interval between frames overlaps the block; otherwise, <c>false</c>.</returns>
+        private static bool CheckFrameOverlapsBlock(float previousElapsedTime, float currentElapsedTime, ActionBlockData block)
+        {
+            if (currentElapsedTime >= previousElapsedTime)
+            {
+                return previousElapsedTime < block.EndTime && currentElapsedTime >= block.StartTime;
+            }
+
+            return previousElapsedTime < block.EndTime || currentElapsedTime >= block.StartTime;
+        }
+    }
+    
     [CreateAssetMenu(fileName = "ScriptableObject_AnimComposer", menuName = "ScriptableObjects/AnimComposer")]
     public class ScriptableObject_AnimComposer : ScriptableObject
     {
@@ -295,192 +555,5 @@ namespace Jorjouto.AnimComposerSystem
         /// The number of samples to use for normalizing the root motion curves.
         /// </summary>
         public int NormalizationSamples = 300;
-
-        /// <summary>
-        /// Gets a value indicating whether the animation is currently playing.
-        /// </summary>
-        public bool IsPlaying { get; private set; } = false;
-
-        /// <summary>
-        /// Gets the current elapsed time of the animation playback.
-        /// </summary>
-        public float ElapsedTime {get; private set;} = 0.0f;
-
-        /// <summary>
-        /// Gets the current playback weight of this animation composer within its layer.
-        /// </summary>
-        public float CurrentWeight { get; private set; } = 0.0f;
-
-        /// <summary>
-        /// Gets the GameObject that is "owning" or playing this animation composer.
-        /// </summary>
-        public GameObject Owner { get; private set; } = null;
-
-        /// <summary>
-        /// Sets the current playback weight of this animation composer.
-        /// </summary>
-        /// <param name="weight">The new weight value.</param>
-        public void SetCurrentWeight(float weight) => CurrentWeight = weight;
-
-
-        /// <summary>
-        /// Gets the current elapsed blend-in time.
-        /// </summary>
-        public float CurrentBlendInTime { get; private set; } = 0.0f;
-
-        /// <summary>
-        /// Gets the current elapsed blend-out time.
-        /// </summary>
-        public float CurrentBlendOutTime { get; private set; } = 0.0f;
-
-        /// <summary>
-        /// Initializes the animation composer for playback, setting its initial state.
-        /// </summary>
-        /// <param name="owner">The GameObject that will own this animation.</param>
-        public void Init(GameObject owner, 
-                        float ? customBlendInTime = null, 
-                        AnimationCurve customBlendInCurve = null,
-                        bool ? shouldLoop = null)
-        {
-            IsPlaying = true;
-            ElapsedTime = 0.0f;
-            CurrentWeight = 0.0f;
-            CurrentBlendInTime = 0f;
-            CurrentBlendOutTime = 0f;
-            Owner = owner;
-            BlendInTime = customBlendInTime ?? BlendInTime;
-            BlendInCurve = customBlendInCurve ?? BlendInCurve;
-
-            if(shouldLoop != null)
-            {
-                Loop = shouldLoop.Value;
-            }
-        }
-
-        /// <summary>
-        /// Updates the state of the animation and processes any active action blocks.
-        /// </summary>
-        /// <param name="deltaTime">The time elapsed since the last frame.</param>
-        public void Tick(float deltaTime)
-        {
-            float previousElapsedTime = ElapsedTime;
-
-            if (CurrentBlendInTime < BlendInTime)
-            {
-                CurrentBlendInTime = Mathf.Min(CurrentBlendInTime + deltaTime, BlendInTime);
-            }
-            if (!IsPlaying)
-            {
-                CurrentBlendOutTime = Mathf.Min(CurrentBlendOutTime + deltaTime, BlendOutTime);
-            }
-
-            ElapsedTime += deltaTime * PlayRate;
-
-            if (Loop && Mathf.RoundToInt(AnimationClip.length * AnimationClip.frameRate) > 2)
-            {
-                ElapsedTime %= AnimationClip.length;
-            }
-            else
-            {
-                ElapsedTime = Mathf.Min(ElapsedTime, AnimationClip.length + Math.Max(0, BlendOutOffset));
-            }
-
-            if (!IsPlaying)
-            {
-                return;
-            }
-
-            foreach (var track in Tracks)
-            {
-                foreach (var actionBlock in track.ActionBlocks)
-                {
-                    ActionBlock_Base actionInstance = actionBlock.Action;
-
-                    if (actionInstance == null)
-                    {
-                        continue;
-                    }
-
-                    bool frameOverlapsBlock = CheckFrameOverlapsBlock(previousElapsedTime, ElapsedTime, actionBlock);
-
-                    bool actionStartedThisFrame = false;
-
-                    if (!actionInstance.IsActive && frameOverlapsBlock)
-                    {
-                        actionInstance.OnStart(Owner, actionBlock.StartTime, actionBlock.EndTime, PlayRate);
-
-                        if (actionInstance.IsActive)
-                        {
-                            actionInstance.OnUpdate(0.0f);
-                            actionStartedThisFrame = true;
-                        }
-                    }
-
-                    if (actionInstance.IsActive)
-                    {
-                        if (ElapsedTime >= actionBlock.EndTime ||
-                            ElapsedTime < actionBlock.StartTime)
-                        {
-                            actionInstance.OnExit();
-                        }
-                        else if (!actionStartedThisFrame)
-                        {
-                            actionInstance.OnUpdate(deltaTime);
-                        }
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Stops the animation playback and triggers an optional blend-out.
-        /// </summary>
-        /// <param name="blendOutTime">The optional duration for the blend-out. If null, the asset's default BlendOutTime is used.</param>
-        public void Stop(float? blendOutTime = null)
-        {
-            if (blendOutTime != null)
-            {
-                BlendOutTime = (float)blendOutTime;
-            }
-
-            if (ElapsedTime < (AnimationClip.length - BlendOutTime + BlendOutOffset))
-            {
-                ElapsedTime = AnimationClip.length - BlendOutTime + BlendOutOffset;
-                CurrentBlendOutTime = 0f;
-            }
-
-            foreach (var track in Tracks)
-            {
-                foreach (var actionBlock in track.ActionBlocks)
-                {
-                    ActionBlock_Base actionInstance = actionBlock.Action;
-
-                    if (actionInstance != null && actionInstance.IsActive)
-                    {
-                        actionInstance.OnExit();
-                    }
-                }
-            }
-
-            IsPlaying = false;        
-        }
-
-        /// <summary>
-        /// Determines whether the transition from a previous frame time to the current frame time crosses
-        /// into the specified action block.
-        /// </summary>
-        /// <param name="previousElapsedTime">The elapsed animation time at the previous frame.</param>
-        /// <param name="currentElapsedTime">The elapsed animation time at the current frame.</param>
-        /// <param name="block">The action block to check for overlap.</param>
-        /// <returns><c>true</c> if the time interval between frames overlaps the block; otherwise, <c>false</c>.</returns>
-        private static bool CheckFrameOverlapsBlock(float previousElapsedTime, float currentElapsedTime, ActionBlockData block)
-        {
-            if (currentElapsedTime >= previousElapsedTime)
-            {
-                return previousElapsedTime < block.EndTime && currentElapsedTime >= block.StartTime;
-            }
-
-            return previousElapsedTime < block.EndTime || currentElapsedTime >= block.StartTime;
-        }
     }
 }

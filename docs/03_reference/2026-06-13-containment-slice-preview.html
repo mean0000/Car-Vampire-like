@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ContainmentZone 슬라이스 미리보기 — 액션 돌파</title>
+<style>
+  :root{ --bg:#11151a; --panel:#1a2027; --ink:#dfe6ec; --dim:#8b97a3; --acid:#6fcf57; --cyan:#46c7e0; --amber:#e8843c; --pale:#d9cf6a; --lane:#ffcf4d; --cone:#46c7e0; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:"Segoe UI",sans-serif; }
+  header{ padding:18px 24px; border-bottom:1px solid #2a323b; }
+  h1{ margin:0 0 4px; font-size:19px; }
+  .sub{ color:var(--dim); font-size:13px; }
+  .wrap{ display:flex; gap:20px; padding:20px 24px; flex-wrap:wrap; align-items:flex-start; }
+  .col-map{ flex:0 0 auto; }
+  .col-info{ flex:1 1 320px; min-width:300px; }
+  canvas#top{ background:#0c1014; border:1px solid #2a323b; border-radius:6px; }
+  #three{ width:100%; height:440px; background:#0c1014; border:1px solid #2a323b; border-radius:6px; margin:0 24px 24px; }
+  h2{ font-size:14px; margin:18px 0 8px; color:#cfd8e0; border-left:3px solid var(--amber); padding-left:8px;}
+  .legend{ display:grid; grid-template-columns:auto 1fr; gap:6px 10px; font-size:13px; align-items:center;}
+  .sw{ width:16px; height:16px; border-radius:3px; }
+  .dot{ width:14px; height:14px; border-radius:50%; }
+  ul{ margin:6px 0; padding-left:18px; font-size:13px; line-height:1.55; }
+  li b{ color:#fff; }
+  .enc{ background:var(--panel); border:1px solid #2a323b; border-radius:6px; padding:10px 12px; margin:8px 0; font-size:13px; }
+  .enc .e{ color:var(--amber); font-weight:700; }
+  .note{ color:var(--dim); font-size:12px; margin-top:6px;}
+  code{ background:#0c1014; padding:1px 5px; border-radius:3px; color:var(--pale); }
+</style>
+</head>
+<body>
+<header>
+  <h1>ContainmentZone — 슬라이스 미리보기 (Z0 인서션 · Z1 돌파회랑 · Z2 광장)</h1>
+  <div class="sub">액션 돌파 앵커 · 축척 정확(4m 그리드) · 좌표 출처 = <code>docs/02_logs/2026-06-13-containment-zone-graybox-build-spec.md</code> · Unity 없이 빌드 의도를 보는 도면</div>
+</header>
+
+<div class="wrap">
+  <div class="col-map"><canvas id="top" width="430" height="900"></canvas></div>
+  <div class="col-info">
+    <h2>읽는 법</h2>
+    <ul>
+      <li><b>위 = 안쪽(+Z)</b>. 플레이어는 아래 헬기(Z0)에서 위로 <b>돌파</b>한다.</li>
+      <li><b>노란 화살 띠 = 대시 관통 레인</b> — 멈추지 않고 흘러가는 동선.</li>
+      <li><b>빨강 빗금 = 매복 포켓(A1·A2)</b> — 컨테이너가 시야를 끊어 <b>콘 사각</b>. 지나치는 순간 측면 기습.</li>
+      <li><b>청록 부채꼴 = 시야 콘</b>(전방 넓힘) — 앞은 학살 가시화, <b>뒤·옆은 블라인드=매복</b>.</li>
+      <li>몬스터 점 = Dormant 배치, 꼬리 = facing(깨어 튀어나오는 방향).</li>
+    </ul>
+    <h2>범례</h2>
+    <div class="legend">
+      <span class="dot" style="background:#d9cf6a"></span><span>Lacercharias (LV1, 롤링 돌진)</span>
+      <span class="dot" style="background:#6fcf57"></span><span>Venodonte (LV1, 산성 조준탄)</span>
+      <span class="dot" style="background:#e8843c"></span><span>Caniathrox (LV2, 사냥개 쾌속)</span>
+      <span class="dot" style="background:#46c7e0"></span><span>Kupolojuve (LV2, 비행·전기샷)</span>
+      <span class="sw" style="background:#37485a"></span><span>Z0 인서션 (개방·안전 기준선)</span>
+      <span class="sw" style="background:#3d4a3a"></span><span>Z1 돌파회랑 (폭 5~6m)</span>
+      <span class="sw" style="background:#2f3f4f"></span><span>Z2 광장 (개방·처단 무대)</span>
+    </div>
+    <h2>인카운터 (E1~E4)</h2>
+    <div class="enc"><span class="e">E1</span> 대시-관통 튜토리얼 — Lacercharias 흩어진 3, 다가가면 롤링 돌진 → 대시로 흘리고 처단. <b>동사 교육(엿보기 ❌)</b>.</div>
+    <div class="enc"><span class="e">E2</span> 측면 매복 돌파 — 회랑 진입 순간 A1·A2 알코브에서 측면 기습 + 전방 산성탄 = 3방향 압박 → 대시로 틈 뚫고 관통.</div>
+    <div class="enc"><span class="e">E3</span> 매복 파동 — 작은 방 입장 시 사방 3마리 0.3~0.5s 순차 매복. 출구 항상 보임(데스트랩 아님).</div>
+    <div class="enc"><span class="e">E4</span> 처단 비트 — Caniathrox 3 + Kupolojuve 2 시차쇄도. 무리를 베어넘기며 흐름 = 핵심 처단 판타지. 둘레 엄폐가 등 한 면 닫음.</div>
+    <div class="note">※ Z2 북단 초크(Z=68)는 슬라이스라 봉인 — Z3 목표방/Z4 탈출은 가독성 통과 후 다음 페이즈.</div>
+  </div>
+</div>
+
+<div id="three"></div>
+
+<script>
+const M = {
+  zones:[
+    {x0:-12,x1:12,z0:0,z1:24, col:'#37485a', label:'Z0 인서션'},
+    {x0:-3,x1:3,z0:24,z1:31, col:'#3d4a3a'},
+    {x0:1,x1:7,z0:29,z1:34, col:'#3d4a3a'},
+    {x0:-5,x1:5,z0:34,z1:40, col:'#3d4a3a', label:'E3 방'},
+    {x0:-10,x1:10,z0:40,z1:68, col:'#2f3f4f', label:'Z2 광장'},
+  ],
+  z1label:{x:9,z:30,t:'Z1 회랑'},
+  alcoves:[
+    {x0:-10,x1:-3,z0:25,z1:31, label:'A1'},
+    {x0:7,x1:11,z0:31,z1:37, label:'A2'},
+  ],
+  blocks:[ {x:-3.2,z:28,w:1.4,d:2.6}, {x:7,z:33,w:1.4,d:2.6} ],
+  cover:[ {x:-9,z:46},{x:9,z:52},{x:-8,z:60},{x:8,z:58},{x:0,z:66} ],
+  monsters:[
+    {x:-6,z:14,fx:0,fz:1,sp:'Lacercharias',lv:1,r:0.55},
+    {x:5,z:16,fx:0,fz:1,sp:'Lacercharias',lv:1,r:0.55},
+    {x:0,z:19,fx:0,fz:-1,sp:'Lacercharias',lv:1,r:0.55},
+    {x:-5,z:28,fx:1,fz:0,sp:'Lacercharias',lv:1,r:0.55},
+    {x:8,z:33,fx:-1,fz:0,sp:'Lacercharias',lv:1,r:0.55},
+    {x:2,z:37,fx:0,fz:-1,sp:'Venodonte',lv:1,r:0.7},
+    {x:-3,z:36,fx:-0.7,fz:0.7,sp:'Lacercharias',lv:1,r:0.55},
+    {x:3,z:37,fx:0.7,fz:0.5,sp:'Lacercharias',lv:1,r:0.55},
+    {x:0,z:39,fx:0,fz:1,sp:'Lacercharias',lv:1,r:0.55},
+    {x:-7,z:50,fx:1,fz:0,sp:'Caniathrox',lv:2,r:1.0},
+    {x:7,z:54,fx:-1,fz:0,sp:'Caniathrox',lv:2,r:1.0},
+    {x:0,z:62,fx:0,fz:-1,sp:'Caniathrox',lv:2,r:1.0},
+    {x:-9,z:46,fx:1,fz:0,sp:'Kupolojuve',lv:2,r:0.85,fly:true},
+    {x:6,z:64,fx:0,fz:-1,sp:'Kupolojuve',lv:2,r:0.85,fly:true},
+  ],
+  spawn:{x:0,z:4},
+  dash:[{x:0,z:4},{x:0,z:23},{x:0,z:29},{x:4,z:33},{x:1,z:40},{x:0,z:54},{x:0,z:67}],
+  cone:{x:0,z:26,fx:0,fz:1,half:55,range:15},
+  choke:{x0:-2.5,x1:2.5,z:68},
+  encs:[
+    {x:-13.5,z:13,t:'E1'},{x:-13.5,z:29,t:'E2'},{x:12,z:38,t:'E3'},{x:-13.5,z:53,t:'E4'},
+  ],
+};
+const SPC={ Lacercharias:'#d9cf6a', Venodonte:'#6fcf57', Caniathrox:'#e8843c', Kupolojuve:'#46c7e0' };
+
+// ---------- TOP-DOWN CANVAS ----------
+(function(){
+  const cv=document.getElementById('top'), g=cv.getContext('2d');
+  const S=12, MX=-15, MZ0=0, MZ1=70, mar=30;
+  const px=(x)=> mar + (x-MX)*S;
+  const py=(z)=> mar + (MZ1-z)*S;
+  // grid
+  g.strokeStyle='#1b242c'; g.lineWidth=1;
+  for(let x=-12;x<=12;x+=4){ g.beginPath(); g.moveTo(px(x),py(MZ0)); g.lineTo(px(x),py(MZ1)); g.stroke(); }
+  for(let z=0;z<=68;z+=4){ g.beginPath(); g.moveTo(px(-15),py(z)); g.lineTo(px(15),py(z)); g.stroke(); }
+  // zones
+  M.zones.forEach(zn=>{
+    g.fillStyle=zn.col; g.fillRect(px(zn.x0),py(zn.z1),(zn.x1-zn.x0)*S,(zn.z1-zn.z0)*S);
+    g.strokeStyle='#536170'; g.lineWidth=2.5; g.strokeRect(px(zn.x0),py(zn.z1),(zn.x1-zn.x0)*S,(zn.z1-zn.z0)*S);
+  });
+  // zone labels
+  g.fillStyle='#9fb0bf'; g.font='bold 12px Segoe UI'; g.textAlign='center';
+  g.fillText('Z0 인서션',px(0),py(4)); g.fillText('Z2 광장',px(0),py(56));
+  g.save(); g.translate(px(M.z1label.x),py(M.z1label.z)); g.fillText(M.z1label.t,0,0); g.restore();
+  g.fillText('E3 방',px(0),py(37));
+  // alcoves (ambush pockets) hatched red
+  M.alcoves.forEach(a=>{
+    const x=px(a.x0),y=py(a.z1),w=(a.x1-a.x0)*S,h=(a.z1-a.z0)*S;
+    g.fillStyle='rgba(214,64,64,0.16)'; g.fillRect(x,y,w,h);
+    g.strokeStyle='rgba(232,90,90,0.8)'; g.lineWidth=1.5; g.setLineDash([4,3]); g.strokeRect(x,y,w,h); g.setLineDash([]);
+    g.fillStyle='#e85a5a'; g.font='bold 11px Segoe UI'; g.fillText(a.label+' 매복',x+w/2,y+h/2);
+  });
+  // sight-block containers
+  M.blocks.forEach(b=>{ g.fillStyle='#6b5536'; g.fillRect(px(b.x-b.w/2),py(b.z+b.d/2),b.w*S,b.d*S); });
+  // cover props (plaza)
+  M.cover.forEach(c=>{ g.fillStyle='#54606b'; g.fillRect(px(c.x-0.9),py(c.z+0.9),1.8*S,1.8*S); });
+  // vision cone (forward-wide)
+  (function(){
+    const c=M.cone, ang=Math.atan2(-c.fz,c.fx); // canvas angle (y down)
+    const a0=ang-c.half*Math.PI/180, a1=ang+c.half*Math.PI/180;
+    const cx=px(c.x), cy=py(c.z), R=c.range*S;
+    const grd=g.createRadialGradient(cx,cy,4,cx,cy,R);
+    grd.addColorStop(0,'rgba(70,199,224,0.28)'); grd.addColorStop(1,'rgba(70,199,224,0.02)');
+    g.fillStyle=grd; g.beginPath(); g.moveTo(cx,cy); g.arc(cx,cy,R,a0,a1); g.closePath(); g.fill();
+    g.strokeStyle='rgba(70,199,224,0.5)'; g.lineWidth=1; g.stroke();
+    g.fillStyle='#46c7e0'; g.font='10px Segoe UI'; g.fillText('전방 콘(학살 가시화)',cx,cy-R-6);
+  })();
+  // dash lane
+  g.strokeStyle='rgba(255,207,77,0.55)'; g.lineWidth=10; g.lineCap='round'; g.lineJoin='round';
+  g.beginPath(); M.dash.forEach((p,i)=> i? g.lineTo(px(p.x),py(p.z)) : g.moveTo(px(p.x),py(p.z))); g.stroke();
+  // dash arrow head
+  (function(){ const a=M.dash[M.dash.length-2], b=M.dash[M.dash.length-1];
+    const ang=Math.atan2(py(b.z)-py(a.z),px(b.x)-px(a.x)); const hx=px(b.x),hy=py(b.z);
+    g.fillStyle='rgba(255,207,77,0.85)'; g.beginPath();
+    g.moveTo(hx,hy); g.lineTo(hx-12*Math.cos(ang-0.4),hy-12*Math.sin(ang-0.4)); g.lineTo(hx-12*Math.cos(ang+0.4),hy-12*Math.sin(ang+0.4)); g.closePath(); g.fill();
+  })();
+  // choke sealed
+  g.strokeStyle='#c44'; g.lineWidth=4; g.setLineDash([6,4]);
+  g.beginPath(); g.moveTo(px(M.choke.x0),py(M.choke.z)); g.lineTo(px(M.choke.x1),py(M.choke.z)); g.stroke(); g.setLineDash([]);
+  g.fillStyle='#e88'; g.font='10px Segoe UI'; g.fillText('초크 봉인 → Z3',px(0),py(69));
+  // spawn
+  g.fillStyle='#fff'; g.strokeStyle='#46c7e0'; g.lineWidth=2;
+  g.beginPath(); g.arc(px(M.spawn.x),py(M.spawn.z),7,0,7); g.fill(); g.stroke();
+  g.fillStyle='#cfe8f2'; g.font='10px Segoe UI'; g.fillText('헬기 인서션',px(M.spawn.x),py(M.spawn.z)+18);
+  // monsters
+  M.monsters.forEach(m=>{
+    const x=px(m.x),y=py(m.z),rad=Math.max(5,m.r*S);
+    // facing tail
+    g.strokeStyle=SPC[m.sp]; g.lineWidth=3; g.beginPath(); g.moveTo(x,y);
+    g.lineTo(x+m.fx*rad*1.9, y-m.fz*rad*1.9); g.stroke();
+    g.beginPath(); g.arc(x,y,rad,0,7); g.fillStyle=SPC[m.sp]; g.globalAlpha=m.fly?0.65:1; g.fill(); g.globalAlpha=1;
+    g.lineWidth=1.5; g.strokeStyle=m.fly?'#fff':'#0c1014'; g.stroke();
+    if(m.fly){ g.fillStyle='#0c1014'; g.font='9px Segoe UI'; g.fillText('✈',x,y+3); }
+  });
+  // encounter tags
+  g.font='bold 12px Segoe UI'; g.fillStyle='#e8843c';
+  M.encs.forEach(e=> g.fillText(e.t,px(e.x),py(e.z)));
+  // scale bar
+  g.strokeStyle='#9fb0bf'; g.lineWidth=2; g.beginPath();
+  g.moveTo(px(-14),py(1)); g.lineTo(px(-14)+10*S,py(1)); g.stroke();
+  g.fillStyle='#9fb0bf'; g.font='10px Segoe UI'; g.textAlign='left'; g.fillText('10 m',px(-14),py(1)-5);
+})();
+
+// ---------- 3D GREYBOX ----------
+(function(){
+  const host=document.getElementById('three');
+  const tag=(u)=>new Promise((res,rej)=>{const s=document.createElement('script');s.src=u;s.onload=res;s.onerror=rej;document.head.appendChild(s);});
+  tag('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js')
+    .then(()=>tag('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js'))
+    .then(build)
+    .catch(()=>{ host.innerHTML='<div style="padding:18px;color:#8b97a3">3D 뷰는 인터넷(THREE.js CDN)이 필요합니다. 위 톱다운 도면이 빌드 의도를 그대로 담고 있습니다.</div>'; });
+
+  function build(){
+    const W=host.clientWidth,H=host.clientHeight;
+    const sc=new THREE.Scene(); sc.background=new THREE.Color(0x0c1014); sc.fog=new THREE.Fog(0x0c1014,60,160);
+    const cam=new THREE.PerspectiveCamera(45,W/H,0.1,500);
+    cam.position.set(40,52,-6); // look down the facility at ~45deg
+    const rnd=new THREE.WebGLRenderer({antialias:true}); rnd.setSize(W,H); rnd.setPixelRatio(devicePixelRatio); host.appendChild(rnd.domElement);
+    const ctl=new THREE.OrbitControls(cam,rnd.domElement); ctl.target.set(0,0,34); ctl.update();
+    sc.add(new THREE.HemisphereLight(0xbfd0e0,0x20262e,0.9));
+    const sun=new THREE.DirectionalLight(0xffd9a0,1.1); sun.position.set(30,50,10); sc.add(sun);
+    const grp=new THREE.Group(); sc.add(grp);
+    const box=(w,h,d,x,y,z,col,op)=>{ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({color:col,transparent:op<1,opacity:op})); m.position.set(x,y,z); grp.add(m); return m; };
+    // floors + auto side walls
+    M.zones.forEach(zn=>{ const w=zn.x1-zn.x0,d=zn.z1-zn.z0,cx=(zn.x0+zn.x1)/2,cz=(zn.z0+zn.z1)/2;
+      box(w,0.2,d,cx,0,cz, new THREE.Color(zn.col).getHex(),1);
+      box(0.3,3,d, zn.x0,1.5,cz, 0x44505c,1); box(0.3,3,d, zn.x1,1.5,cz, 0x44505c,1);
+    });
+    // back wall Z0, choke wall
+    box(24,3,0.3, 0,1.5,0, 0x44505c,1);
+    box(5,3.4,0.4, 0,1.7,68, 0x7a3a3a,1); // sealed choke (reddish)
+    // sight-block containers
+    M.blocks.forEach(b=> box(b.w,2.6,b.d, b.x,1.3,b.z, 0x6b5536,1));
+    // cover
+    M.cover.forEach(c=> box(1.8,1.4,1.8, c.x,0.7,c.z, 0x54606b,1));
+    // spawn pad
+    box(3,0.05,3, M.spawn.x,0.12,M.spawn.z, 0x46c7e0,0.8);
+    // monsters as cylinders + facing nub
+    M.monsters.forEach(m=>{ const h=m.r*2.4, col=new THREE.Color(SPC[m.sp]).getHex();
+      const cy=new THREE.Mesh(new THREE.CylinderGeometry(m.r,m.r,h,12),new THREE.MeshLambertMaterial({color:col,transparent:m.fly,opacity:m.fly?0.7:1}));
+      cy.position.set(m.x, (m.fly?2.2:0)+h/2, m.z); grp.add(cy);
+      const nub=new THREE.Mesh(new THREE.ConeGeometry(0.28,0.7,8),new THREE.MeshLambertMaterial({color:col}));
+      nub.position.set(m.x+m.fx*(m.r+0.5),(m.fly?2.2:0)+h*0.7,m.z+m.fz*(m.r+0.5));
+      nub.rotation.x=Math.PI/2; nub.lookAt(m.x+m.fx*3,nub.position.y,m.z+m.fz*3); grp.add(nub);
+    });
+    // dash lane ribbon
+    const pts=M.dash.map(p=>new THREE.Vector3(p.x,0.15,p.z));
+    const dl=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0xffcf4d}));
+    grp.add(dl);
+    (function loop(){ requestAnimationFrame(loop); ctl.update(); rnd.render(sc,cam); })();
+    addEventListener('resize',()=>{ const w=host.clientWidth,h=host.clientHeight; cam.aspect=w/h; cam.updateProjectionMatrix(); rnd.setSize(w,h); });
+  }
+})();
+</script>
+</body>
+</html>

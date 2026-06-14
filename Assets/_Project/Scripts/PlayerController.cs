@@ -82,8 +82,16 @@ public class PlayerController : MonoBehaviour
 
     /// <summary>좀비에게 잡혀 있는가 — 이동·대시·사격이 잠긴다.</summary>
     public bool IsGrappled => _grappler != null;
-    /// <summary>대시 무적 중인가 — 런지 접촉이 헛손질로 빠진다(회피 보상).</summary>
-    public bool IsUntouchable => _dashTimer > 0f && dashInvulnerable;
+    /// <summary>대시 무적 중인가 — 런지 접촉이 헛손질로 빠진다(회피 보상).
+    /// 발도 돌진 구간도 같은 무적 채널을 공유한다(KatanaController가 BeginLungeMotion으로 켬 — 충전 중은 무방비).</summary>
+    public bool IsUntouchable => (_dashTimer > 0f && dashInvulnerable) || _lungeMoveActive;
+
+    // ── 발도 돌진 이동 채널 (KatanaController 전용) ──────────────────
+    // ★위치 단일 소유: 발도 이동도 *PlayerController가* 위치를 쓴다(WallGuardedStep+지면 샘플링 경유).
+    //   KatanaController(실행순서 -10)는 같은 프레임 UpdateMovement(순서 0)보다 먼저 돌아 MoveLungeStep을
+    //   직접 호출 → PlayerController가 즉시 가드 이동을 수행하고, _lungeMoveActive 플래그로 이번 프레임
+    //   일반 이동을 건너뛴다(대시와 동형). 이로써 C-1/C-2(위치 이중 소유) + M-2(지면 미정렬)가 한 번에 해소.
+    bool _lungeMoveActive;     // 발도 돌진 중 — UpdateMovement 일반 이동 차단 + i-frame
 
     /// <summary>좀비 시야 인식의 노출 배수 — 뛰면 잘 보이고, 앉으면 덜 보인다. ZombieController 인식 틱이 읽는다.</summary>
     public float SightExposureMult { get; private set; } = 1f;
@@ -195,6 +203,15 @@ public class PlayerController : MonoBehaviour
 
     void UpdateMovement()
     {
+        // 발도 돌진 중엔 일반 이동을 통째로 건너뛴다 — KatanaController가 이번 프레임 위치를 *단일 소유*
+        // (MoveLungeStep으로 이미 가드 이동 수행). 대시 차단과 동형. 노출 배수만 갱신.
+        if (_lungeMoveActive)
+        {
+            SightExposureMult = 1.5f;
+            NoiseManager.Instance?.SetMovementNoise(runNoiseLevel);
+            return;
+        }
+
         Vector3 input = new Vector3(Input.GetAxisRaw("Horizontal"), 0f, Input.GetAxisRaw("Vertical"));
         if (input.sqrMagnitude > 1f) input.Normalize();
 
@@ -382,7 +399,7 @@ public class PlayerController : MonoBehaviour
     public void TakeDamage(float amount)
     {
         if (_currentHP <= 0f) return;   // 이미 사망 — 같은 프레임 다중 타격 시 OnPlayerDied 중복 발화 방지
-        if (_dashTimer > 0f && dashInvulnerable) return;   // 대시 무적 프레임 — 회피기로 동작
+        if (IsUntouchable) return;   // 대시 무적 OR 발도 돌진 무적 — 회피/돌진 구간은 안 잡힌다(충전 중은 무방비)
         _currentHP -= amount;
         PlayerCameraRig.Instance?.TriggerShake(damageShake);   // 피격 화면 펀치(발사보다 크게)
         OnPlayerDamaged?.Invoke(amount);   // 화면 히트 플래시(HudV2Controller가 구독) — 피해량으로 강타 판정
@@ -415,5 +432,46 @@ public class PlayerController : MonoBehaviour
         if (_currentHP <= 0f) return;   // 사망 상태에선 최대치만 오르고 부활시키지 않는다
         float added = maxHP * (newMult - oldMult);
         if (added > 0f) _currentHP = Mathf.Min(MaxHP, _currentHP + added);
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  발도 돌진 이동 채널 (KatanaController 호출 — 위치 단일 소유 + i-frame)
+    // ════════════════════════════════════════════════════════════
+
+    /// <summary>발도 돌진 시작 — 일반 이동 잠금 + 돌진 구간 무적(IsUntouchable). 충전 중은 켜지 않는다(무방비).
+    /// KatanaController.StartLunge에서 호출. 잡힌 상태에선 무시(grapple 우선).</summary>
+    public void BeginLungeMotion()
+    {
+        if (IsGrappled) return;
+        _lungeMoveActive = true;
+        _velocity = Vector3.zero;   // 돌진은 고정 속도 — 잔여 일반 속도 꼬리 제거
+        _dashTimer = 0f;            // 대시와 동시 진행 방지(둘 다 위치 소유 시도 금지)
+    }
+
+    /// <summary>발도 돌진 한 스텝 — 요청 step을 WallGuardedStep+지면 샘플링으로 *PlayerController가* 이동시킨다.
+    /// KatanaController.StepLunge가 실행순서 -10이라 UpdateMovement(순서 0)보다 먼저 호출 → 같은 프레임 즉시 반영.
+    /// 반환: 요청 방향으로의 *전진 거리*(벽 슬라이드의 옆 성분 제외) — 벽에 막히면 0에 가깝다 → 호출자 벽정지 판정.</summary>
+    public float MoveLungeStep(Vector3 worldStep)
+    {
+        if (!_lungeMoveActive) return 0f;
+        worldStep.y = 0f;
+        float reqDist = worldStep.magnitude;
+        if (reqDist < 1e-5f) return 0f;
+        Vector3 reqDir = worldStep / reqDist;
+
+        Vector3 guarded = WallGuardedStep(worldStep);   // 벽 앞 클램프 + 벽면 슬라이드(일반 이동과 동일 가드)
+        Vector3 next = transform.position + guarded;
+        next.y = SampleGroundHeight(next) + _groundOffset;   // 지면 정렬(M-2 — 평면 이동의 지면 미정렬 해소)
+        transform.position = next;
+
+        // 전진 성분만 반환 — 벽면 슬라이드의 옆 이동을 진행으로 오인하지 않게(벽 만나면 전진≈0 → 돌진 정지).
+        Vector3 guardedXZ = guarded; guardedXZ.y = 0f;
+        return Mathf.Max(0f, Vector3.Dot(guardedXZ, reqDir));
+    }
+
+    /// <summary>발도 돌진 종료 — 일반 이동/무적 복귀. KatanaController가 돌진 완료·벽정지·하드캔슬 시 호출.</summary>
+    public void EndLungeMotion()
+    {
+        _lungeMoveActive = false;
     }
 }

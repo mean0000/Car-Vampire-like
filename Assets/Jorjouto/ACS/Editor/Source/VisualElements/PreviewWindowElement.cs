@@ -17,9 +17,67 @@ using Object = UnityEngine.Object;
 
 namespace Jorjouto.AnimComposerSystem.ACSEditor
 {
+    #if UNITY_2023_2_OR_NEWER
     [UxmlElement]
+    #endif
     public partial class PreviewWindowElement : VisualElement
     {
+        #if !UNITY_2023_2_OR_NEWER
+        public new class UxmlFactory : UxmlFactory<PreviewWindowElement, UxmlTraits> { }
+
+        public new class UxmlTraits : VisualElement.UxmlTraits
+        {
+            private static readonly UxmlFloatAttributeDescription mouseYawSensitivity =
+                new UxmlFloatAttributeDescription
+                {
+                    name = "mouse-yaw-sensitivity",
+                    defaultValue = 0.3f
+                };
+
+            private static readonly UxmlFloatAttributeDescription mousePitchSensitivity =
+                new UxmlFloatAttributeDescription
+                {
+                    name = "mouse-pitch-sensitivity",
+                    defaultValue = 0.1f
+                };
+
+            private static readonly UxmlFloatAttributeDescription mousePanSensitivity =
+                new UxmlFloatAttributeDescription
+                {
+                    name = "mouse-pan-sensitivity",
+                    defaultValue = 0.003f
+                };
+
+            private static readonly UxmlFloatAttributeDescription fpsCameraMovementSpeed =
+                new UxmlFloatAttributeDescription
+                {
+                    name = "camera-movement-speed",
+                    defaultValue = 5f
+                };
+
+            private static readonly UxmlFloatAttributeDescription cameraZoomSpeed =
+                new UxmlFloatAttributeDescription
+                {
+                    name = "camera-zoom-speed",
+                    defaultValue = 0.1f
+                };
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+
+                var element = (PreviewWindowElement)ve;
+
+                element.mouseYawSensitivity = mouseYawSensitivity.GetValueFromBag(bag, cc);
+                element.mousePitchSensitivity = mousePitchSensitivity.GetValueFromBag(bag, cc);
+                element.mousePanSensitivity = mousePanSensitivity.GetValueFromBag(bag, cc);
+                element.fpsCameraMovementSpeed = fpsCameraMovementSpeed.GetValueFromBag(bag, cc);
+                element.cameraZoomSpeed = cameraZoomSpeed.GetValueFromBag(bag, cc);
+            }
+        }
+
+        #endif
+
         #region Template GUID
 
         private const string guid = "2dff5750baec7b44e9065818214283cb";
@@ -42,6 +100,7 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         private VisualElement backgroundColorSettings = null;
         private ColorField previewBackgroundColor = null;
         private Button screeenHeightOptionsButton = null;
+        private VisualElement screenHeightSettings = null;
         private SliderInt previewHeightSlider = null;
 
         #endregion
@@ -50,6 +109,8 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         /// Utility for rendering the animation preview in a separate space.
         /// </summary>
         public PreviewRenderUtility PreviewRenderUtility {get; private set; } = null;
+
+
 
         private ScriptableObject_AnimComposer animComposer = null;
 
@@ -76,7 +137,7 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         /// <summary>
         /// A list of GameObjects attached to the preview.
         /// </summary>
-        private readonly List<GameObject> previewAttachedItems = new();
+        public List<GameObject> PreviewAttachedItems { get; private set; } = new();
 
         /// <summary>
         /// Whether the camera is currently in pure FPS rotation mode (from right mouse button dragging).
@@ -131,40 +192,50 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         /// </summary>
         [SerializeField]
         [Min(0.0f)]
+        #if UNITY_2023_2_OR_NEWER
         [UxmlAttribute("mouse-yaw-sensitivity")]
-        private float mouseYawSensitivity = 0.2f;
+        #endif
+        public float mouseYawSensitivity = 0.2f;
 
         /// <summary>
         /// Sensitivity for vertical mouse rotation.
         /// </summary>
         [SerializeField]
         [Min(0.0f)]
+        #if UNITY_2023_2_OR_NEWER
         [UxmlAttribute("mouse-pitch-sensitivity")]
-        private float mousePitchSensitivity = 0.2f;
+        #endif
+        public float mousePitchSensitivity = 0.2f;
 
         /// <summary>
         /// Sensitivity for panning with mouse.
         /// </summary>
         [SerializeField]
         [Min(0.0f)]
+        #if UNITY_2023_2_OR_NEWER   
         [UxmlAttribute("mouse-pan-sensitivity")]
-        private float mousePanSensitivity = 0.01f;
+        #endif
+        public float mousePanSensitivity = 0.01f;
 
         /// <summary>
         /// Movement speed for FPS camera.
         /// </summary>
         [SerializeField]
         [Min(0.0f)]
+        #if UNITY_2023_2_OR_NEWER
         [UxmlAttribute("camera-movement-speed")]
-        private float fpsCameraMovementSpeed = 2f;
+        #endif
+        public float fpsCameraMovementSpeed = 2f;
 
         /// <summary>
         /// Movement speed for FPS camera.
         /// </summary>
         [SerializeField]
         [Min(0.0f)]
+        #if UNITY_2023_2_OR_NEWER
         [UxmlAttribute("camera-zoom-speed")]
-        private float cameraZoomSpeed = 0.1f;
+        #endif
+        public float cameraZoomSpeed = 0.1f;
 
         /// <summary>
         /// Whether the right mouse button is currently held down.
@@ -245,6 +316,7 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
             previewWindowImage.tooltip = "Right Mouse Button + Drag: Rotate Camera \nRight Mouse Button + WASD: Free Camera Movement \nMiddle Mouse Button + Drag: Pan Camera \nScroll Wheel: Zoom In/Out";
             previewBackgroundColor = this.Q<ColorField>("ScreenBackgroundSelector");
             previewHeightSlider = this.Q<SliderInt>("PreviewHeightSelector");
+            screenHeightSettings = this.Q<VisualElement>("ScreenVisualSettings");
         }
 
         public void UpdatePreviewRenderUtility(ref GameObject previewObject, bool bResetCamera)
@@ -413,8 +485,8 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         {
             screeenHeightOptionsButton.clicked += () =>
             {
-                previewHeightSlider.style.display =
-                                                        previewHeightSlider.resolvedStyle.display == DisplayStyle.None ?
+                screenHeightSettings.style.display =
+                                                        screenHeightSettings.resolvedStyle.display == DisplayStyle.None ?
                                                         DisplayStyle.Flex : DisplayStyle.None;
             };
 
@@ -454,12 +526,12 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
 
         private bool CheckPreviewItemAtIndexIsValid(int itemIndex)
         {
-            if (itemIndex < 0 || itemIndex >= previewAttachedItems.Count)
+            if (itemIndex < 0 || itemIndex >= PreviewAttachedItems.Count)
             {
                 return false;
             }
 
-            return previewAttachedItems[itemIndex] != null;
+            return PreviewAttachedItems[itemIndex] != null;
         }
 
         /// <summary>
@@ -689,15 +761,15 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         {
             var previewItems = animComposer.PreviewItems;
 
-            if (previewAttachedItems.Count > 0)
+            if (PreviewAttachedItems.Count > 0)
             {
-                for (int i = previewAttachedItems.Count - 1; i >= 0; i--)
+                for (int i = PreviewAttachedItems.Count - 1; i >= 0; i--)
                 {
-                    Object.DestroyImmediate(previewAttachedItems[i]);
-                    previewAttachedItems[i] = null;
+                    Object.DestroyImmediate(PreviewAttachedItems[i]);
+                    PreviewAttachedItems[i] = null;
                 }
 
-                previewAttachedItems.Clear();
+                PreviewAttachedItems.Clear();
             }
 
             if (previewObject == null)
@@ -719,7 +791,7 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
                 cachedPreviewRenderers.AddRange(newObject.GetComponentsInChildren<Renderer>(true));
                 ApplyPreviewItemTransform(newObject, previewItem);
                 newObject.SetActive(previewItem.Visible);
-                previewAttachedItems.Add(newObject);
+                PreviewAttachedItems.Add(newObject);
             }
 
             ReinitializePreviewTexture();
@@ -734,7 +806,7 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
                 return;
             }
 
-            var previewItemInstance = previewAttachedItems[itemIndex];
+            var previewItemInstance = PreviewAttachedItems[itemIndex];
 
             cachedPreviewTransformByName.TryGetValue(socket, out var attachSocket);
             previewItemInstance.transform.SetParent(attachSocket, false);
@@ -899,7 +971,7 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
             unlitToOriginalMaterial.Clear();
             cachedPreviewRenderers.Clear();
 
-            previewAttachedItems.Clear();
+            PreviewAttachedItems.Clear();
 
             // Clear cached component arrays
             cachedPreviewTransformByName = null;
@@ -914,7 +986,7 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         {
             if (CheckPreviewItemAtIndexIsValid(itemIndex))
             {
-                previewAttachedItems[itemIndex].transform.localPosition = offsetPosition;
+                PreviewAttachedItems[itemIndex].transform.localPosition = offsetPosition;
                 ReinitializePreviewTexture();
             }
         }
@@ -923,7 +995,7 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         {
             if (CheckPreviewItemAtIndexIsValid(itemIndex))
             {
-                previewAttachedItems[itemIndex].transform.localEulerAngles = offsetRotation;
+                PreviewAttachedItems[itemIndex].transform.localEulerAngles = offsetRotation;
                 ReinitializePreviewTexture();
             }
         }
@@ -932,7 +1004,7 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         {
             if (CheckPreviewItemAtIndexIsValid(itemIndex))
             {
-                previewAttachedItems[itemIndex].transform.localScale = scale;
+                PreviewAttachedItems[itemIndex].transform.localScale = scale;
                 ReinitializePreviewTexture();
             }
         }
@@ -941,7 +1013,7 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         {
             if (CheckPreviewItemAtIndexIsValid(itemIndex))
             {
-                previewAttachedItems[itemIndex].SetActive(visibility);
+                PreviewAttachedItems[itemIndex].SetActive(visibility);
                 ReinitializePreviewTexture();
             }
         }

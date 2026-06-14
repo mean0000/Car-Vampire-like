@@ -1,0 +1,62 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>카메라 각도 테스트 — 45 / 58 / 65</title>
+<style>
+:root{--bg:#0f1014;--panel:#1a1d24;--edge:#3a3f49;--txt:#e6e8ec;--dim:#9aa0a8;--sub:#c2c6cc;--gold:#fac95a;--green:#7ad6a0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 700px at 50% -10%,#161922,#0f1014 60%);color:var(--txt);
+font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo","Segoe UI",sans-serif;line-height:1.55;padding:36px 24px 70px}
+.wrap{max-width:1280px;margin:0 auto}
+.stamp{display:inline-block;border:1px solid var(--edge);border-radius:4px;padding:3px 10px;font-size:11px;letter-spacing:.12em;color:var(--dim);margin-bottom:14px}
+h1{font-size:28px;font-weight:800;margin-bottom:6px}
+.lede{color:var(--dim);font-size:14px;max-width:980px;margin-bottom:22px}.lede b{color:var(--sub)}
+h2{font-size:16px;color:var(--gold);margin:24px 0 10px}
+.row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.cell{background:var(--panel);border:1px solid var(--edge);border-radius:10px;overflow:hidden}
+.cell.pick{border-color:var(--green);box-shadow:0 0 0 1px rgba(122,214,160,.25)}
+.cell img{width:100%;display:block;background:#000}
+.cap{padding:9px 12px}
+.cap .deg{font-size:15px;font-weight:800}
+.cell.pick .deg{color:var(--green)}
+.cap p{font-size:12px;color:var(--dim);margin-top:3px}
+.small img{filter:none}.small .deg{font-size:13px}
+.find{margin-top:26px;background:var(--panel);border:1px solid var(--edge);border-radius:10px;padding:18px 20px}
+.find h3{font-size:15px;color:var(--gold);margin-bottom:10px}
+.find li{font-size:13px;color:var(--sub);margin-bottom:8px;list-style:none;padding-left:18px;position:relative}
+.find li::before{content:"›";position:absolute;left:0;color:var(--gold)}
+.find b{color:var(--txt)} .find .y{color:var(--green)} .find .r{color:#e88}
+.warn{margin-top:18px;border:1px solid #6a5326;background:rgba(250,201,90,.07);border-radius:10px;padding:14px 17px;font-size:12.5px;color:#e7c98a}
+footer{margin-top:22px;font-size:11px;color:#6c727c;border-top:1px solid var(--edge);padding-top:12px}footer code{color:#9aa0a8}
+</style></head><body><div class="wrap">
+<div class="stamp">ZombieCrush · 카메라 각도 실측 · Greybox_CombatLab · 2026-06-14</div>
+<h1>카메라 각도 테스트 — 45° vs 58° vs 65°</h1>
+<p class="lede">실제 엔진 렌더(에디트 모드, 같은 거리·요, 피치만 변경). 윗줄=<b>실제 Synty 건물·컨테이너 + Protofactor 괴수</b>(잠깐 세웠다 삭제), 아랫줄=그레이박스 프레이밍. ⚠️ <b>디폴트 셰이딩</b> — 툰/아웃라인/최종 그레이드 미적용(그게 들어가면 더 또렷·더 너그러움).</p>
+
+<h2>실제 에셋 (Synty + 괴수)</h2>
+<div class="row">
+  <div class="cell"><img src="../03_reference/assets/angle_test/realasset_45.png"><div class="cap"><span class="deg">45°</span><p>건물 파사드·괴수 측면 실루엣 보임(드라마↑). 차폐↑.</p></div></div>
+  <div class="cell pick"><img src="../03_reference/assets/angle_test/realasset_58.png"><div class="cap"><span class="deg">58° · 추천 절충</span><p>정수리로 기울며 플로우↑, 괴수 실루엣 아직 남음.</p></div></div>
+  <div class="cell"><img src="../03_reference/assets/angle_test/realasset_65.png"><div class="cap"><span class="deg">65°</span><p>깨끗한 정수리·필드 가독 최고. 단 괴수가 토큰처럼 납작.</p></div></div>
+</div>
+
+<h2>그레이박스 프레이밍</h2>
+<div class="row small">
+  <div class="cell"><img src="../03_reference/assets/angle_test/angle_45.png"><div class="cap"><span class="deg">45°</span></div></div>
+  <div class="cell pick"><img src="../03_reference/assets/angle_test/angle_58.png"><div class="cap"><span class="deg">58°</span></div></div>
+  <div class="cell"><img src="../03_reference/assets/angle_test/angle_65.png"><div class="cap"><span class="deg">65°</span></div></div>
+</div>
+
+<div class="find">
+<h3>실측 결론 (예상과 다른 점 포함)</h3>
+<ul>
+<li><span class="y">Synty 에셋은 어느 각도서도 조잡하지 않다.</span> 45°에서도 깔끔(프로 스타일). <b>"45=조잡" 우려는 십중팔구 *그레이박스*를 본 인상</b> — 실제 에셋은 다름.</li>
+<li><span class="r">진짜 문제는 조잡함이 아니라 다크무드 *가독성*</span> — 괴수가 어둠에 묻혀 작게 안 보임(톤게이트 기존 결론과 일치). <b>해결책 = 아웃라인/툰 처리지 각도가 아님.</b></li>
+<li><b>각도의 진짜 차이 = 프레이밍.</b> 45°=파사드+괴수 측면(캐릭터 드라마)·차폐↑ / 65°=정수리·필드 플로우 최고·괴수 토큰화(생명감↓) / <span class="y">58°=절충(플로우 얻고 괴수 실루엣 유지)</span>.</li>
+<li>→ 액션-플로우(서바이버즈)엔 더 가파른 게 맞다는 당신 말은 유효. 단 65°는 괴수 생명감을 깎으니 <b>58° 권고</b>. 당신 눈으로 정하세요.</li>
+</ul>
+</div>
+
+<div class="warn">⚠️ 한계: <b>디폴트 셰이딩</b>(툰+아웃라인+다크 그레이드 미적용)·정적·괴수 바인드포즈·디오라마는 게임 거리보다 약간 넓게 프레이밍. <b>최종 룩·움직임의 속도감은 플레이로만</b> 확정. 이 테스트가 답하는 건 "각도별 프레이밍 + 실제 에셋 조잡 여부"까지.</div>
+
+<footer>렌더: 에디트 모드 RT→PNG (MCP 캡처 죽은프레임 우회) · 원본 <code>docs/03_reference/assets/angle_test/</code> · 카메라 권위 <code>docs/00_authority/2026-06-10-camera-system.md</code></footer>
+</div></body></html>

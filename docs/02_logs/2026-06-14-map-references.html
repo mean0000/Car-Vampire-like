@@ -1,0 +1,99 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>맵 레퍼런스 — ZombieCrush</title>
+<style>
+:root{--bg:#0f1014;--panel:#1a1d24;--edge:#3a3f49;--txt:#e6e8ec;--dim:#9aa0a8;--sub:#c2c6cc;--gold:#fac95a;--green:#7ad6a0;--red:#e88}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 700px at 50% -10%,#161922,#0f1014 60%);color:var(--txt);
+font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo","Segoe UI",sans-serif;line-height:1.55;padding:38px 24px 70px}
+.wrap{max-width:1180px;margin:0 auto}
+.stamp{display:inline-block;border:1px solid var(--edge);border-radius:4px;padding:3px 10px;font-size:11px;letter-spacing:.12em;color:var(--dim);margin-bottom:14px}
+h1{font-size:29px;font-weight:800;margin-bottom:6px}
+.lede{color:var(--dim);font-size:14px;max-width:920px;margin-bottom:24px}
+.lede b{color:var(--sub)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:880px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--edge);border-radius:12px;overflow:hidden}
+.hero{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;border-bottom:1px solid var(--edge)}
+.thumbs{display:flex;gap:0;border-bottom:1px solid var(--edge)}
+.thumbs img{width:33.33%;aspect-ratio:16/9;object-fit:cover;display:block;opacity:.62;border-right:1px solid var(--edge)}
+.thumbs img:last-child{border-right:0} .thumbs img:hover{opacity:1}
+.body{padding:14px 16px 16px}
+h2{font-size:18px;font-weight:800;margin-bottom:10px} .yr{color:var(--dim);font-weight:600;font-size:12.5px;margin-left:8px}
+.row{display:flex;gap:10px;margin-bottom:8px;align-items:flex-start}
+.k{flex:none;font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;white-space:nowrap;margin-top:1px}
+.k.took{color:var(--green);border:1px solid var(--green);background:rgba(122,214,160,.08)}
+.k.no{color:var(--red);border:1px solid #6a4040;background:rgba(232,136,136,.07)}
+.k.ours{color:var(--gold);border:1px solid var(--gold);background:rgba(250,201,90,.08)}
+.row p{font-size:12.8px;color:var(--sub)} .row p b{color:var(--txt)} .row p i{color:var(--dim);font-style:normal}
+.note{margin-top:24px;background:var(--panel);border:1px solid var(--edge);border-radius:10px;padding:16px 18px;font-size:12.8px;color:var(--dim)}
+.note b{color:var(--sub)} .note h3{font-size:14px;color:var(--gold);margin-bottom:8px}
+footer{margin-top:22px;font-size:11px;color:#6c727c;border-top:1px solid var(--edge);padding-top:12px} footer code{color:#9aa0a8}
+</style></head><body><div class="wrap">
+<div class="stamp">ZombieCrush · 맵 레퍼런스 추적 · 임의설계 금지 · 2026-06-14</div>
+<h1>맵을 무엇으로 레퍼런스 삼았나</h1>
+<p class="lede">우리 맵 설계는 감이 아니라 <b>검증된 최신 게임</b>에 박혀 있다(레퍼 추적 의무). 단일 게임을 베끼지 않고 <b>층위별 차용</b> — 공간 골격·호드 흐름·방 craft·생성법을 각기 다른 앵커에서. 이미지=각 게임 실제 스토어 스크린샷.</p>
+<div class="grid">
+<div class="card">
+      <img class="hero" src="../03_reference/assets/map_refs/duckov_0.jpg" loading="lazy">
+      <div class="thumbs"><img src="../03_reference/assets/map_refs/duckov_3.jpg" loading="lazy"><img src="../03_reference/assets/map_refs/duckov_2.jpg" loading="lazy"><img src="../03_reference/assets/map_refs/duckov_1.jpg" loading="lazy"></div>
+      <div class="body">
+        <h2>Escape from Duckov<span class="yr">2025 · ★1등 앵커 (맵/추출 골격)</span></h2>
+        <div class="row"><span class="k took">훔친 것</span><p>맵·추출 <b>구조</b> — 동심원 보상(중앙 고노출·고보상 ↔ 외곽 안전)·난이도 띠·비대칭 추출구 3종·★시야 콘 탐색 긴장.</p></div>
+        <div class="row no"><span class="k">안 훔침</span><p>전투(엄폐 사격=택티컬). 우리 전투=대시 처단(액션). <b>공간 골격만</b> 취함, 좀보이드 회귀 금지.</p></div>
+        <div class="row"><span class="k ours">→ 우리</span><p>동심원 LV 밴드 + 단일 LZ + 콘 릴레이 공개 + 동결 시야 콘</p></div>
+      </div></div>
+<div class="card">
+      <img class="hero" src="../03_reference/assets/map_refs/drgsurvivor_1.jpg" loading="lazy">
+      <div class="thumbs"><img src="../03_reference/assets/map_refs/drgsurvivor_2.jpg" loading="lazy"><img src="../03_reference/assets/map_refs/drgsurvivor_3.jpg" loading="lazy"><img src="../03_reference/assets/map_refs/drgsurvivor_0.jpg" loading="lazy"></div>
+      <div class="body">
+        <h2>Deep Rock Galactic: Survivor<span class="yr">2025</span></h2>
+        <div class="row"><span class="k took">훔친 것</span><p>호드 흐름 — 지형을 <b>능동 도구</b>로: 무리를 회랑으로 몰아 한 줄 압축·학살. 이동·포지셔닝이 빌드만큼 중요.</p></div>
+        
+        <div class="row"><span class="k ours">→ 우리</span><p>집하장 회랑 압축 카빙 + 스폰 디렉터 수렴</p></div>
+      </div></div>
+<div class="card">
+      <img class="hero" src="../03_reference/assets/map_refs/megabonk_2.jpg" loading="lazy">
+      <div class="thumbs"><img src="../03_reference/assets/map_refs/megabonk_0.jpg" loading="lazy"><img src="../03_reference/assets/map_refs/megabonk_3.jpg" loading="lazy"><img src="../03_reference/assets/map_refs/megabonk_1.jpg" loading="lazy"></div>
+      <div class="body">
+        <h2>Megabonk<span class="yr">2025 · 솔로 1인 개발</span></h2>
+        <div class="row"><span class="k took">훔친 것</span><p>고저차 시야선·도주선·압박 그라데이션. 솔로 1인이 뱀서류 대히트 가능 <b>증명</b>(94% 긍정).</p></div>
+        <div class="row no"><span class="k">안 훔침</span><p>우리는 <b>단일 전투 평면</b> → 고저차는 <i>시각/비콘 실루엣</i>으로만 차용(전투 고저차 ❌).</p></div>
+        <div class="row"><span class="k ours">→ 우리</span><p>비콘 상시중력(45° 틸트) + 밀도 그라데이션</p></div>
+      </div></div>
+<div class="card">
+      <img class="hero" src="../03_reference/assets/map_refs/hades2_0.jpg" loading="lazy">
+      <div class="thumbs"><img src="../03_reference/assets/map_refs/hades2_2.jpg" loading="lazy"><img src="../03_reference/assets/map_refs/hades2_3.jpg" loading="lazy"><img src="../03_reference/assets/map_refs/hades2_1.jpg" loading="lazy"></div>
+      <div class="body">
+        <h2>Hades II<span class="yr">2025</span></h2>
+        <div class="row"><span class="k took">훔친 것</span><p>방·인카운터 craft — <b>레벨이 적을 규정</b>(공간 먼저, 적이 거기 맞춤)·벽으로 둘러싼 방=벽치기 데미지·방 크기 점층.</p></div>
+        
+        <div class="row"><span class="k ours">→ 우리</span><p>Fulgurodonte 램-벽-그로기 + 코어 아레나 craft</p></div>
+      </div></div>
+<div class="card">
+      <img class="hero" src="../03_reference/assets/map_refs/vampiresurvivors_2.jpg" loading="lazy">
+      <div class="thumbs"><img src="../03_reference/assets/map_refs/vampiresurvivors_0.jpg" loading="lazy"><img src="../03_reference/assets/map_refs/vampiresurvivors_1.jpg" loading="lazy"><img src="../03_reference/assets/map_refs/vampiresurvivors_3.jpg" loading="lazy"></div>
+      <div class="body">
+        <h2>Vampire Survivors<span class="yr">장르 원형 (genre baseline)</span></h2>
+        <div class="row"><span class="k took">훔친 것</span><p>개활 아레나 카이팅·<b>무한 스폰 수렴</b>·레벨업 도파민. 우리 스폰 디렉터·카이팅 루프의 장르 베이스라인.</p></div>
+        
+        <div class="row"><span class="k ours">→ 우리</span><p>밴드=젠존 무한 수렴 + 카이팅 링(림/중간/코어)</p></div>
+      </div></div>
+<div class="card">
+      <img class="hero" src="../03_reference/assets/map_refs/zerosievert_0.jpg" loading="lazy">
+      <div class="thumbs"><img src="../03_reference/assets/map_refs/zerosievert_1.jpg" loading="lazy"><img src="../03_reference/assets/map_refs/zerosievert_2.jpg" loading="lazy"><img src="../03_reference/assets/map_refs/zerosievert_3.jpg" loading="lazy"></div>
+      <div class="body">
+        <h2>ZERO Sievert<span class="yr">2023</span></h2>
+        <div class="row"><span class="k took">훔친 것</span><p><b>고정 골격 + 절차 디테일</b>(완전 손배치도 완전 절차도 아닌 중간)·경계 추출·줍는 순간 위치 노출.</p></div>
+        
+        <div class="row"><span class="k ours">→ 우리</span><p>모듈 라이브러리 + 수동 시드 MVP + 잭팟 노출</p></div>
+      </div></div>
+</div>
+<div class="note">
+<h3>맵 레이아웃 외 레퍼 (별도 레이어)</h3>
+<b>The Legend of Zelda: BotW</b> — 맵 *레이아웃*이 아니라 <b>자연스러운 끌림(引き)</b> 철학(비콘 상시중력·리딩라인·사선 공개). 독트린 §2 끌림의 출처. ·
+<b>Death Must Die</b>(반례) — 91% 호평작도 "평면 반복 지형"으로 비판 → <b>평면 반복 아레나는 우리가 피할 정확한 함정.</b> ·
+<b>MY.GAMES LD · Level Design Book</b>(원론) — 시야선(부감=캐릭터 키 제한)·가독성(차폐 더 어둡게)·밀도 40/30/30·고저 강도 교대.
+</div>
+<footer>출처: 각 게임 Steam 스토어 스크린샷(appdetails API) · 레퍼 추적 권위 <code>docs/02_logs/2026-06-13-topdown-map-reference-research.md</code> · 독트린 <code>docs/00_authority/2026-06-14-natural-pull-doctrine.md</code></footer>
+</div></body></html>

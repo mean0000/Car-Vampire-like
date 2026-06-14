@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1차 스테이지 몬스터 배역표 — 폐허 도심</title>
+<style>
+  :root{
+    --bg:#0f1014; --panel:#1a1d24; --panel2:#22262f; --edge:#3a3f49;
+    --txt:#e6e8ec; --dim:#9aa0a8; --sub:#c2c6cc;
+    --rim:#60a0e6; --mid:#e49646; --core:#e45646; --gold:#fac95a;
+    --thumbbg:#141826;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:radial-gradient(1200px 700px at 50% -10%, #161922 0%, var(--bg) 60%);
+    color:var(--txt);
+    font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo","Segoe UI",sans-serif;
+    line-height:1.55; padding:40px 24px 80px; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1280px;margin:0 auto}
+  .stamp{display:inline-block;border:1px solid var(--edge);border-radius:4px;
+    padding:3px 10px;font-size:11px;letter-spacing:.12em;color:var(--dim);margin-bottom:14px}
+  h1{font-size:30px;font-weight:800;letter-spacing:-.01em;margin-bottom:6px}
+  h1 .sub{color:var(--dim);font-weight:600;font-size:18px;margin-left:8px}
+  .lede{color:var(--dim);font-size:14.5px;max-width:900px;margin-bottom:8px}
+  .axis{display:flex;gap:8px;align-items:center;margin:18px 0 28px;font-size:12.5px;color:var(--dim)}
+  .axis .bar{flex:1;height:8px;border-radius:4px;
+    background:linear-gradient(90deg,var(--rim),var(--mid),var(--core))}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:start}
+  @media(max-width:960px){.grid{grid-template-columns:1fr}}
+  .col h2{font-size:15px;font-weight:700;padding:8px 12px;border-radius:6px;margin-bottom:12px}
+  .col.rim h2{color:var(--rim);background:rgba(96,160,230,.10);border:1px solid var(--rim)}
+  .col.mid h2{color:var(--mid);background:rgba(228,150,70,.10);border:1px solid var(--mid)}
+  .col.core h2{color:var(--core);background:rgba(228,86,70,.10);border:1px solid var(--core)}
+  .card{background:var(--panel);border:1px solid var(--edge);border-radius:10px;
+    margin-bottom:14px;overflow:hidden}
+  .card.hook{border-color:var(--gold);box-shadow:0 0 0 1px rgba(250,201,90,.18)}
+  .thumb{height:165px;background:var(--thumbbg);display:flex;align-items:center;
+    justify-content:center;border-bottom:1px solid var(--edge);position:relative}
+  .thumb img{height:100%;width:100%;object-fit:contain;display:block}
+  .thumb .lv{position:absolute;top:10px;right:10px}
+  .body{padding:13px 15px 15px}
+  .card .name{font-size:17.5px;font-weight:700}
+  .card.hook .name{color:var(--gold)}
+  .lv{font-size:11px;font-weight:700;padding:2px 9px;border-radius:5px;white-space:nowrap;
+    backdrop-filter:blur(2px)}
+  .rim .lv{color:var(--rim);border:1px solid var(--rim);background:rgba(20,24,38,.7)}
+  .mid .lv{color:var(--mid);border:1px solid var(--mid);background:rgba(20,24,38,.7)}
+  .core .lv{color:var(--core);border:1px solid var(--core);background:rgba(20,24,38,.7)}
+  .role{font-size:12.5px;color:var(--sub);font-weight:600;margin:5px 0 8px}
+  .call{font-size:12.5px;color:var(--dim);margin-bottom:7px}
+  .call b{color:var(--sub);font-weight:600}
+  .call .talk{color:#b08fd0;font-style:italic}
+  .mut{font-size:12.5px;color:#b6bcc4;border-top:1px dashed var(--edge);padding-top:8px}
+  .card.hook .mut{color:#d6dae0}
+  .mut .star{color:var(--gold);font-weight:700}
+  .sig{font-size:11.5px;color:var(--dim);margin-top:6px}
+  .sig b{color:var(--sub)}
+  section.block{margin-top:34px;background:var(--panel);border:1px solid var(--edge);
+    border-radius:10px;padding:20px 22px}
+  section.block h3{font-size:16px;margin-bottom:12px;color:var(--gold)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:760px){.two{grid-template-columns:1fr}}
+  .ax{background:var(--panel2);border:1px solid var(--edge);border-radius:8px;padding:12px 14px}
+  .ax h4{font-size:13.5px;margin-bottom:5px;color:var(--txt)}
+  .ax p{font-size:12.5px;color:var(--dim)}
+  ul{list-style:none;display:flex;flex-direction:column;gap:8px}
+  li{font-size:13px;color:var(--sub);padding-left:18px;position:relative}
+  li::before{content:"›";position:absolute;left:0;color:var(--gold)}
+  .trim{font-size:13px;color:var(--dim)}
+  .trim b{color:var(--sub)}
+  .judge li::before{content:counter(j);counter-increment:j;color:#0f1014;
+    background:var(--gold);border-radius:50%;width:17px;height:17px;font-size:11px;
+    font-weight:700;display:flex;align-items:center;justify-content:center;top:2px}
+  .judge{counter-reset:j}.judge li{padding-left:25px}
+  .warn{margin-top:28px;border:1px solid #6a5326;background:rgba(250,201,90,.07);
+    border-radius:10px;padding:16px 18px;font-size:13px;color:#e7c98a}
+  footer{margin-top:30px;font-size:11.5px;color:#6c727c;border-top:1px solid var(--edge);padding-top:14px}
+  footer code{color:#9aa0a8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="stamp">사후처리부 · 1차 처리구역 이상개체 분류 · 내부참고 · 2026-06-14</div>
+  <h1>1차 스테이지 몬스터 배역표<span class="sub">폐허 도심 · 9종</span></h1>
+  <p class="lede">서바이버즈 농성(할당량+무한스폰+15분). 동심원 = LV = <b style="color:var(--sub)">변이 진행도(= 인간성 잔존도)</b>.
+  역할 겹침 0 · 전부 단일 전투 평면(고지 사격·등반 없음, 비행은 평면 다이브/텔레그래프). <span style="color:#6c727c">이미지 = Protofactor 실제 에셋 프리뷰.</span></p>
+  <div class="axis">
+    <span>외곽 · 사람 잔존</span><span class="bar"></span><span>코어 · 완전 이형</span>
+  </div>
+
+  <div class="grid">
+    <!-- 외곽 -->
+    <div class="col rim">
+      <h2>외곽 LV1 · 파밍/안전</h2>
+      <div class="card">
+        <div class="thumb"><img src="_img/monsters/Lacercharias.png" alt="Lacercharias"><span class="lv">LV1</span></div>
+        <div class="body">
+          <div class="name">Lacercharias</div>
+          <div class="role">fodder / 스웜</div>
+          <div class="call"><b>「하급 이상개체」</b> · <span class="talk">잡것들</span></div>
+          <div class="mut">보행자 인파 → 무리로만 존재하던 게 무리로만 위협</div>
+          <div class="sig"><b>쓰임</b> 전 구역 외곽 카이팅 연료</div>
+        </div>
+      </div>
+      <div class="card hook">
+        <div class="thumb"><img src="_img/monsters/Venodonte.png" alt="Venodonte"><span class="lv">LV1</span></div>
+        <div class="body">
+          <div class="name">Venodonte</div>
+          <div class="role">원거리 / 조너 (산성 · 지상 엄폐)</div>
+          <div class="call"><b>「산성 분사형 이상개체」</b> · <span class="talk">소독반</span></div>
+          <div class="mut"><span class="star">★</span> 방역 소독반 → 분무하던 손이 산성을 뱉음 <b style="color:var(--gold)">(주인공 직종 거울상)</b></div>
+          <div class="sig"><b>쓰임</b> 컨테이너/벽 <b>뒤</b> 엄폐 사격 — 턴치기 처벌</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 중간 -->
+    <div class="col mid">
+      <h2>중간 LV2~3 · 카이팅 본전장</h2>
+      <div class="card">
+        <div class="thumb"><img src="_img/monsters/Caniathrox.png" alt="Caniathrox"><span class="lv">LV2</span></div>
+        <div class="body">
+          <div class="name">Caniathrox</div>
+          <div class="role">근접 러셔 (속도감 1순위)</div>
+          <div class="call"><b>「쾌속 추격형 이상개체」</b> · <span class="talk">순찰개</span></div>
+          <div class="mut">경비·순찰 → 두 발로 돌던 자가 네 발로 쫓는다</div>
+          <div class="sig"><b>쓰임</b> 집하장 회랑 깔때기 돌진(떼)</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="thumb"><img src="_img/monsters/Kupolojuve.png" alt="Kupolojuve"><span class="lv">LV2</span></div>
+        <div class="body">
+          <div class="name">Kupolojuve</div>
+          <div class="role">비행 / 하라서 (다이브 · 텔레그래프)</div>
+          <div class="call"><b>「부유 전격형 이상개체」</b> · <span class="talk">전기 박쥐</span></div>
+          <div class="mut">배전·고소 인력 → 전선에 매달리던 자가 전기 체내화·부유</div>
+          <div class="sig"><b>쓰임</b> 분수광장 공중 군집 = 비콘 / 평면 다이브로 해소</div>
+        </div>
+      </div>
+      <div class="card hook">
+        <div class="thumb"><img src="_img/monsters/Dimaxillosaurus.png" alt="Dimaxillosaurus"><span class="lv">LV3</span></div>
+        <div class="body">
+          <div class="name">Dimaxillosaurus</div>
+          <div class="role">브루저 / 클로 매복</div>
+          <div class="call"><b>「직립 포식형 이상개체」</b> · <span class="talk">양복</span></div>
+          <div class="mut"><span class="star">★</span> 사무직 → 입으로 일하던 자의 입이 무기가 됨</div>
+          <div class="sig"><b>쓰임</b> 컨테이너 틈 / 고가 잔해 포켓 매복(왈칵)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 코어 -->
+    <div class="col core">
+      <h2>코어 LV4~5 · 잭팟</h2>
+      <div class="card">
+        <div class="thumb"><img src="_img/monsters/Venosaur.png" alt="Venosaur"><span class="lv">LV3</span></div>
+        <div class="body">
+          <div class="name">Venosaur</div>
+          <div class="role">호위 / 물량</div>
+          <div class="call"><b>「중장 호위형 이상개체」</b> · <span class="talk">조끼들</span></div>
+          <div class="mut">건설 작업조 → 도심을 짓던 손 (×5 틴트 = 작업조 색)</div>
+          <div class="sig"><b>쓰임</b> 코어 정예 호위 물량</div>
+        </div>
+      </div>
+      <div class="card hook">
+        <div class="thumb"><img src="_img/monsters/Fulgurodonte.png" alt="Fulgurodonte"><span class="lv">LV4</span></div>
+        <div class="body">
+          <div class="name">Fulgurodonte</div>
+          <div class="role">엘리트 / 헤비 (램 · 벽그로기 = 뽕 타겟)</div>
+          <div class="call"><b>「돌진 정예 고위험군」</b> · <span class="talk">기사님</span></div>
+          <div class="mut"><span class="star">★</span> 운전·중장비 → 몰던 쇳덩이가 제 몸이 됨 <b style="color:var(--gold)">(코어 비콘 윤곽)</b></div>
+          <div class="sig"><b>쓰임</b> 집하장·고가·광장 코어 램 엘리트</div>
+        </div>
+      </div>
+      <div class="card hook">
+        <div class="thumb"><img src="_img/monsters/Carcinoptera.png" alt="Carcinoptera"><span class="lv">LV4</span></div>
+        <div class="body">
+          <div class="name">Carcinoptera</div>
+          <div class="role">공중 정예 (분수광장 전용)</div>
+          <div class="call"><b>「공중 정예 고위험군」</b> · <span class="talk">말벌</span></div>
+          <div class="mut"><span class="star">★</span> 항공 방역·통신 → 본사 드론과 시각 혼선 <b style="color:var(--gold)">(소급 떡밥)</b></div>
+          <div class="sig"><b>쓰임</b> 분수광장 코어(개활=공중 정예 빛남)</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="thumb"><img src="_img/monsters/CrustaspikanLarvae.png" alt="Crustaspikan 유생"><span class="lv">LV5</span></div>
+        <div class="body">
+          <div class="name">Crustaspikan 유생</div>
+          <div class="role">보스 스포너 (발원 격리)</div>
+          <div class="call"><b>「특별관리대상 — 유생 단계」</b></div>
+          <div class="mut">정체성 소실 — 변이 말기 종착, 누구였는지 추적 불가</div>
+          <div class="sig"><b>쓰임</b> 발원 격리 크레이터서 디제틱 분출 → 보스 예고</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="block">
+    <h3>디제틱 응집 — 2축</h3>
+    <div class="two">
+      <div class="ax"><h4>① 직종 = 한 도시 노동 인구의 단면</h4>
+        <p>소독 · 경비 · 배전 · 사무 · 건설 · 운전 · 항공 + 익명 보행자. 로스터 자체가 "도심이 사람을 어떻게 먹었나"를 그린다.</p></div>
+      <div class="ax"><h4>② 변이 진행도 = 인간성 잔존도</h4>
+        <p>직립+팔(LV3, 사람 잔존) → 사족·다족 → 완전 이형(LV5, 0). 카피 0줄, 실루엣만. 행간: 약한 LV3가 인간성 최대(최근에 사람).</p></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h3>트림 — 1차 제외 (→ 2차)</h3>
+    <p class="trim"><b>Arathrox · Horridomorph</b> (원거리/공중 슬롯 과포화) · <b>Hexateuthis</b> (그랩 = 첫 인상 학습 부담) ·
+    <b>Cephalonops</b> (LV2 잉여) · <b>Occisodonte</b> (수변 매복 악어 = 도심 4구역 디제틱 부재)</p>
+  </section>
+
+  <section class="block">
+    <h3>escalation (지연 시 강화)</h3>
+    <p class="trim">로스터 <b>내부</b> 4단계 — 밀도↑ → 능력치↑ → 유생 분출 → Crustaspikan 보스. <b>신규 종 발명 0.</b></p>
+  </section>
+
+  <section class="block">
+    <h3>판정 필요 — 동결은 유저</h3>
+    <ul class="judge">
+      <li>9종 + 트림 5종 동의? (lv 권고 = 예, 동사 적정)</li>
+      <li>Venodonte <b style="color:var(--sub)">LV1 확정</b> (후보엔 LV1~2, 권위는 LV1 군체 → 정정)</li>
+      <li>Carcinoptera = <b style="color:var(--sub)">분수광장 전용</b> (집하장 회랑은 Fulgurodonte 단독)</li>
+      <li>입말 통칭(순찰개·양복·기사님) <b style="color:var(--sub)">블랙코미디 강도</b> OK? — 취향이라 당신 콜</li>
+      <li>escalation = 로스터 내 4단계(신규 종 0)</li>
+    </ul>
+  </section>
+
+  <div class="warn">
+    ⚠️ <b>이건 배역표</b>입니다. "쫄깃한가"는 <b>게이트0 전투감</b>(인식 3상태·피격 사다리·히트스탑) + 종별 애니(Animation)가 선행 판정.
+    로스터 = 배역, 연기 = 전투감. 캐넌 충돌 0건 · 구현 가드: 공문 통칭(HUD/정산서)엔 직종 금지, 직종은 입말(무전)·실루엣으로만.
+  </div>
+
+  <footer>
+    이미지: <code>docs/03_reference/assets/monster_previews/</code> (Protofactor Monster Full Pack Vol.2) ·
+    출처: <code>docs/02_logs/2026-06-14-stage1-monster-roster.md</code> (역할, LevelDesign) ·
+    <code>2026-06-14-stage1-monster-diegetic.md</code> (디제틱, Story) ·
+    권위 <code>docs/00_authority/2026-06-12-monster-roster-classification.md</code> · <code>2026-06-14-natural-pull-doctrine.md</code>
+  </footer>
+</div>
+</body>
+</html>

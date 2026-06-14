@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -320,14 +321,16 @@ namespace Jorjouto.AnimComposerSystem.Sample
         /// <param name="startTime">The debug start time.</param>
         /// <param name="endTime">The debug end time.</param>
         /// <param name="rate">The debug playback rate.</param>
-        public override void OnDebugStart(PreviewRenderUtility previewRenderUtility,
+        public override void OnDebugStart(
+                                        List<GameObject> previewAttachedItems,
+                                        PreviewRenderUtility previewRenderUtility,
                                         GameObject previewObject,
                                         AudioSource debugAudioSource,
                                         float startTime,
                                         float endTime,
                                         float rate)
         {
-            base.OnDebugStart(previewRenderUtility, previewObject, debugAudioSource, startTime, endTime, rate);
+            base.OnDebugStart(previewAttachedItems, previewRenderUtility, previewObject, debugAudioSource, startTime, endTime, rate);
 
             if (particleSystem != null)
             {

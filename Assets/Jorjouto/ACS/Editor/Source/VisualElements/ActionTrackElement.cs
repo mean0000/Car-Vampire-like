@@ -40,6 +40,16 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         /// </summary>
         public event Action<ActionBlockElement> OnActionBlockDeleted;
 
+        /// <summary>
+        /// Event triggered when an action block is enabled.
+        /// </summary>
+        public event Action<ActionBlockElement> OnActionBlockEnabled;
+
+        /// <summary>
+        /// Event triggered when an action block is disabled.
+        /// </summary>
+        public event Action<ActionBlockElement> OnActionBlockDisabled;
+
         //Menu options
         /// <summary>
         /// Event triggered when the "Copy Track" context menu option is clicked.
@@ -204,6 +214,8 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
                 blockElement.OnMouseMoveInBlock += OnMouseMoveInsideBlock;
                 blockElement.OnActionBlockCopied += (actionBlock) => OnActionBlockCopied?.Invoke(actionBlock);
                 blockElement.OnActionBlockDeleted += (actionBlock) => OnActionBlockDeleted?.Invoke(actionBlock);
+                blockElement.OnActionBlockEnabled += (actionBlock) => OnActionBlockEnabled?.Invoke(actionBlock);
+                blockElement.OnActionBlockDisabled += (actionBlock) => OnActionBlockDisabled?.Invoke(actionBlock);
 
                 Add(blockElement);
                 blockElements.Add(blockElement);
@@ -221,6 +233,32 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
             }
             customCursor.SetHasItemSelected(false);
             RemoveFromClassList("action-track-selected");
+        }
+
+        /// <summary>
+        /// Cleans up all event delegates to prevent memory leaks and unintended behavior when the track is destroyed or recreated.
+        /// </summary>
+        public void CleanupDelegates()
+        {
+            OnActionBlockSelected = null;
+            OnActionTrackSelected = null;
+            OnActionBlockCopied = null;
+            OnActionBlockEnabled = null;
+            OnActionBlockDisabled = null;
+            OnActionBlockDeleted = null;
+            OnTrackMenuClickCopy = null;
+            OnTrackMenuClickPasteBlock = null;
+            OnTrackMenuClickPasteTrack = null;
+            OnTrackMenuClickAddBlock = null;
+            OnTrackMenuClickDelete = null;
+            OnTrackMenuClickInsert = null;
+            OnTrackMenuClickMoveUp = null;
+            OnTrackMenuClickMoveDown = null;
+
+            foreach (var blockElement in blockElements)
+            {
+                blockElement.CleanupDelegates();
+            }
         }
 
         #endregion

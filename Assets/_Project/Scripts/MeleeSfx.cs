@@ -13,25 +13,27 @@ public static class MeleeSfx
     static AudioClip _clang;   // 쇠지렛대: 금속성 타격음
     static AudioClip _whiff;   // 헛스윙: 공기 가르는 소리
 
-    /// <summary>무기별 죽음/타격 연출에 맞춘 타격음.</summary>
+    /// <summary>무기별 죽음/타격 연출에 맞춘 타격음.
+    /// SfxOneShot 경유(B-005a) — 풀링 + Logarithmic 롤오프(1.5/25) + 동일클립 3개 클램프 + 피치 지터 ±5%(기계 반복 제거).</summary>
     public static void PlayHit(WeaponLoadout.DeathStyle style, Vector3 pos, float volume = 0.7f)
     {
         AudioClip clip = style == WeaponLoadout.DeathStyle.Crunch ? Clang : Thud;
-        AudioSource.PlayClipAtPoint(clip, pos, volume);
+        SfxOneShot.Play(clip, pos, volume);
     }
 
     /// <summary>아무것도 못 맞힌 스윙 — 공기 가르는 소리.</summary>
     public static void PlayWhiff(Vector3 pos, float volume = 0.35f)
     {
-        AudioSource.PlayClipAtPoint(Whiff, pos, volume);
+        SfxOneShot.Play(Whiff, pos, volume);
     }
 
     /// <summary>둔탁한 "퍽" 클립 공유 접근자 — B-004 명중 thud(PlayerCombat)가 재사용(신규 클립 제작 금지 제약).</summary>
     public static AudioClip ThudClip => Thud;
 
-    static AudioClip Thud => _thud ??= BuildThud();
-    static AudioClip Clang => _clang ??= BuildClang();
-    static AudioClip Whiff => _whiff ??= BuildWhiff();
+    // ??= 금지 — 플레이 종료로 절차 클립이 파괴되면 Unity 가짜 null이라 ??=가 못 잡아 2회차 무음(B-004 §8). 파괴 시 재생성.
+    static AudioClip Thud { get { if (_thud != null) return _thud; return _thud = BuildThud(); } }
+    static AudioClip Clang { get { if (_clang != null) return _clang; return _clang = BuildClang(); } }
+    static AudioClip Whiff { get { if (_whiff != null) return _whiff; return _whiff = BuildWhiff(); } }
 
     // ── 생성기 ───────────────────────────────────────────────
 

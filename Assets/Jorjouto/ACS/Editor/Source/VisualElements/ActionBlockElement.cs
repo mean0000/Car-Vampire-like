@@ -52,9 +52,24 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         public event Action<ActionBlockElement> OnActionBlockCopied;
 
         /// <summary>
+        /// Event triggered when the action block is enabled via the context menu.
+        /// </summary>
+        public event Action<ActionBlockElement> OnActionBlockEnabled;
+
+        /// <summary>
+        /// Event triggered when the action block is disabled via the context menu.
+        /// </summary>
+        public event Action<ActionBlockElement> OnActionBlockDisabled;
+
+        /// <summary>
         /// Event triggered when the action block is deleted via the context menu.
         /// </summary>
         public event Action<ActionBlockElement> OnActionBlockDeleted;
+
+        /// <summary>
+        /// The underlying data object for this action block.
+        /// </summary>
+        public ActionBlockData ActionBlockData { get; private set; }
 
         #endregion
               
@@ -81,11 +96,6 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         /// </summary>
         /// <returns>The edge threshold in pixels.</returns>
         private const float edgeThreshold = 10f;
-
-        /// <summary>
-        /// The underlying data object for this action block.
-        /// </summary>
-        private readonly ActionBlockData actionBlockData;
         
         /// <summary>
         /// The total length of the animation clip in seconds.
@@ -174,7 +184,7 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         {
             this.customCursor = customCursor;
             this.actionBlockDataPanel = actionBlockDataPanel;
-            actionBlockData = data;
+            ActionBlockData = data;
             this.clipLength = clipLength;
             clipFrames = Mathf.CeilToInt(clipLength * frameRate);
             this.frameRate = frameRate;
@@ -189,11 +199,12 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
             if(data.Action != null)
             {
                 style.backgroundColor = GetColorForType(data.Action.GetType());
+                style.opacity = data.IsDisabled ? 0.3f : 1.0f;
 
                 string actionType = data.Action.GetType().Name;
                 actionName = actionType.StartsWith("ActionBlock_") ? actionType["ActionBlock_".Length..] : actionType;
 
-                label = new(actionName + " (" + actionBlockData.StartFrame + " - " + actionBlockData.EndFrame + ")");
+                label = new(actionName + " (" + ActionBlockData.StartFrame + " - " + ActionBlockData.EndFrame + ")");
                 label.AddToClassList("action-block-label");
                 label.pickingMode = PickingMode.Ignore;
                 tooltip = "ActionBlock element. Click to open details. Drag to move. Drag edges to resize. Right-click for options.";
@@ -230,6 +241,22 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         }
 
         /// <summary>
+        /// Cleans up all event delegates to prevent memory leaks or unintended behavior when the block is destroyed or reused.
+        /// </summary>
+        public void CleanupDelegates()
+        {
+            OnActionBlockSelected = null;
+            OnActionBlockHovered = null;
+            OnActionBlockUnHovered = null;
+            OnActionBlockReleased = null;
+            OnMouseMoveInBlock = null;
+            OnActionBlockCopied = null;
+            OnActionBlockDeleted = null;
+            OnActionBlockEnabled = null;
+            OnActionBlockDisabled = null;
+        }
+
+        /// <summary>
         /// Updates the position and size of the block based on mouse movement.
         /// </summary>
         /// <param name="deltaX">The horizontal mouse movement delta.</param>
@@ -255,28 +282,28 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
             {
                  int deltaFrameInt = Mathf.Clamp(
                                                     deltaFrame,
-                                                    -actionBlockData.StartFrame,
-                                                    clipFrames - actionBlockData.EndFrame
+                                                    -ActionBlockData.StartFrame,
+                                                    clipFrames - ActionBlockData.EndFrame
                                                     );
 
-                actionBlockData.StartFrame += deltaFrameInt;
-                actionBlockData.EndFrame += deltaFrameInt;
-                actionBlockData.StartTime = actionBlockData.StartFrame / frameRate;
-                actionBlockData.EndTime = actionBlockData.EndFrame / frameRate;
+                ActionBlockData.StartFrame += deltaFrameInt;
+                ActionBlockData.EndFrame += deltaFrameInt;
+                ActionBlockData.StartTime = ActionBlockData.StartFrame / frameRate;
+                ActionBlockData.EndTime = ActionBlockData.EndFrame / frameRate;
                 UpdatePosition();
                 UpdateBlockLabel();
-                label.text = actionName + " (" + actionBlockData.StartFrame + " - " + actionBlockData.EndFrame + ")";
+                label.text = actionName + " (" + ActionBlockData.StartFrame + " - " + ActionBlockData.EndFrame + ")";
             }
             else if (resizingLeft)
             {
                 // Clamp so that start frame never goes below 0 and block never shrinks below 1 frame
-                int minDelta = -actionBlockData.StartFrame;
-                int maxDelta = actionBlockData.EndFrame - actionBlockData.StartFrame - 1;
+                int minDelta = -ActionBlockData.StartFrame;
+                int maxDelta = ActionBlockData.EndFrame - ActionBlockData.StartFrame - 1;
 
                 int deltaFrameInt = Mathf.Clamp(deltaFrame, minDelta, maxDelta);
 
-                actionBlockData.StartFrame += deltaFrameInt;
-                actionBlockData.StartTime = actionBlockData.StartFrame / frameRate;
+                ActionBlockData.StartFrame += deltaFrameInt;
+                ActionBlockData.StartTime = ActionBlockData.StartFrame / frameRate;
 
                 UpdatePosition();
                 UpdateBlockLabel();
@@ -284,13 +311,13 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
             else if (resizingRight)
             {
                 // Clamp so that end frame never goes beyond clipFrames and block never shrinks below 1 frame
-                int minDelta = -(actionBlockData.EndFrame - actionBlockData.StartFrame - 1);
-                int maxDelta = clipFrames - actionBlockData.EndFrame;
+                int minDelta = -(ActionBlockData.EndFrame - ActionBlockData.StartFrame - 1);
+                int maxDelta = clipFrames - ActionBlockData.EndFrame;
 
                 int deltaFrameInt = Mathf.Clamp(deltaFrame, minDelta, maxDelta);
 
-                actionBlockData.EndFrame += deltaFrameInt;
-                actionBlockData.EndTime = actionBlockData.EndFrame / frameRate;
+                ActionBlockData.EndFrame += deltaFrameInt;
+                ActionBlockData.EndTime = ActionBlockData.EndFrame / frameRate;
 
                 UpdatePosition();
                 UpdateBlockLabel();
@@ -335,19 +362,15 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
                     label = actionName
                 };
 
-                float desiredAlpha = 0.8f;
-
-                var originalColor = style.backgroundColor.value;
-                Color finalBackgroundColor = new(originalColor.r, originalColor.g, originalColor.b, desiredAlpha);
-
                 var panelStyle = actionBlockDataPanel.style;
 
-                panelStyle.backgroundColor = finalBackgroundColor;
+                var color = style.backgroundColor.value;
+
+                panelStyle.backgroundColor = new Color(color.r, color.g, color.b, 0.6f);
                 actionBlockPropertyField.AddToClassList("action-blockData");
 
                 actionBlockPropertyField.BindProperty(actionProp);
                 actionBlockDataPanel.Add(actionBlockPropertyField);
-                actionBlockDataPanel.style.display = DisplayStyle.Flex;
             }
         }
 
@@ -399,6 +422,8 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
 
                 menu.AddItem(new GUIContent("Copy Action Block (C)"), false, () => OnActionBlockCopied?.Invoke(this));
                 menu.AddItem(new GUIContent("Delete Action Block (Del or - or BackSpace)"), false, () => OnActionBlockDeleted?.Invoke(this));
+                menu.AddItem(new GUIContent("Enable Action Block (E)"), false, () => OnActionBlockEnabled?.Invoke(this));
+                menu.AddItem(new GUIContent("Disable Action Block (E)"), false, () => OnActionBlockDisabled?.Invoke(this));
 
                 // Show the menu at the current mouse position
                 menu.DropDown(new Rect(evt.mousePosition, Vector2.zero));
@@ -406,7 +431,6 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
 
             evt.StopPropagation();
         }
-
 
         /// <summary>
         /// Handles the MouseEnter event to notify that the block is being hovered.
@@ -454,23 +478,23 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         private void UpdatePosition()
         {
             // Clamp Start and End Times inside the full clip
-            actionBlockData.StartTime = Mathf.Clamp(actionBlockData.StartTime, 0f, clipLength);
-            actionBlockData.EndTime = Mathf.Clamp(actionBlockData.EndTime, 0f, clipLength);
+            ActionBlockData.StartTime = Mathf.Clamp(ActionBlockData.StartTime, 0f, clipLength);
+            ActionBlockData.EndTime = Mathf.Clamp(ActionBlockData.EndTime, 0f, clipLength);
 
             // Ensure block is at least 1 frame wide
             float minDuration = 1f / frameRate;
-            if (actionBlockData.EndTime - actionBlockData.StartTime < minDuration)
+            if (ActionBlockData.EndTime - ActionBlockData.StartTime < minDuration)
             {
-                actionBlockData.EndTime = actionBlockData.StartTime + minDuration;
-                if (actionBlockData.EndTime > clipLength)
+                ActionBlockData.EndTime = ActionBlockData.StartTime + minDuration;
+                if (ActionBlockData.EndTime > clipLength)
                 {
-                    actionBlockData.EndTime = clipLength;
-                    actionBlockData.StartTime = actionBlockData.EndTime - minDuration;
+                    ActionBlockData.EndTime = clipLength;
+                    ActionBlockData.StartTime = ActionBlockData.EndTime - minDuration;
                 }
             }
 
-            float startPercent = actionBlockData.StartFrame / (float)clipFrames;
-            float widthPercent = (actionBlockData.EndFrame - actionBlockData.StartFrame) / (float)clipFrames;
+            float startPercent = ActionBlockData.StartFrame / (float)clipFrames;
+            float widthPercent = (ActionBlockData.EndFrame - ActionBlockData.StartFrame) / (float)clipFrames;
 
             style.left = Length.Percent(startPercent * 100f);
             style.width = Length.Percent(widthPercent * 100f);
@@ -481,7 +505,7 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         /// </summary>
         private void UpdateBlockLabel()
         {
-            label.text = actionName + " (" + actionBlockData.StartFrame + " - " + actionBlockData.EndFrame + ")";
+            label.text = actionName + " (" + ActionBlockData.StartFrame + " - " + ActionBlockData.EndFrame + ")";
         }
 
         /// <summary>

@@ -13,4 +13,6 @@ Unity MCP `Unity_RunCommand` 사용 시 재발성 함정 2건 (2026-06-12 확인
 
 3. **동적 MonoBehaviour 프로브 패턴 (2026-06-12 실증, 2번 함정의 정공 우회)** — RunCommand 스크립트 파일에 `internal class XxxProbe : MonoBehaviour`를 같이 정의하고 `AddComponent<XxxProbe>()` 하면 플레이 모드에서 정상 작동(동적 어셈블리 타입도 OK). 덮어쓰기 함정은 프로브 Start에서 `PlayerCombat.enabled=false`로 차단(종료 시 원복). RunCommand 호출 간 상태 전달은 static이 안 됨(매 호출 새 어셈블리) → **결과를 GameObject.name 문자열에 기록**하고 다음 RunCommand에서 이름 prefix로 찾아 회수. `Application.runInBackground=true`는 프로브 주입 커맨드에서 설정. 수렴 게이트 검증에 사용: 위상별 수치를 `PROBE|p1=…|done` 형식으로 리드백.
 
+4. **컴파일 반영 검증 = 신규 멤버 직접 참조 (2026-06-13 실증)** — 스크립트 편집 후 "Unity가 진짜 내 코드를 컴파일했나"는 콘솔 에러 0만으로 부족(에디터 미포커스 시 리프레시 안 됨). ①RunCommand에서 `AssetDatabase.Refresh()` → ②새 RunCommand에서 방금 추가한 필드/메서드를 **직접 참조**(`so.chargeKick` 등)해 값 로깅. 컴파일 성공+이니셜라이저 값 리드백이면 반영 확정. 리플렉션 불필요(즉사 함정 회피) — Assembly-CSharp 타입은 RunCommand에서 직접 참조 가능(벤더 asmdef만 불가).
+
 관련: Greybox_CombatLab의 COZY 앰비언스는 CozyAmbienceModule 컴포넌트 비활성(씬 프리팹 override)으로 음소거됨 — 벤더 코드 무수정 원칙.

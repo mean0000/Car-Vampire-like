@@ -1,0 +1,50 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>보유 도시팩 스타일 비교</title>
+<style>
+:root{--bg:#0f1014;--panel:#1a1d24;--edge:#3a3f49;--txt:#e6e8ec;--dim:#9aa0a8;--sub:#c2c6cc;--gold:#fac95a;--green:#7ad6a0;--red:#e88}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 700px at 50% -10%,#161922,#0f1014 60%);color:var(--txt);
+font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo","Segoe UI",sans-serif;line-height:1.55;padding:36px 24px 70px}
+.wrap{max-width:1200px;margin:0 auto}
+.stamp{display:inline-block;border:1px solid var(--edge);border-radius:4px;padding:3px 10px;font-size:11px;letter-spacing:.12em;color:var(--dim);margin-bottom:14px}
+h1{font-size:27px;font-weight:800;margin-bottom:6px}
+.lede{color:var(--dim);font-size:14px;max-width:980px;margin-bottom:22px}.lede b{color:var(--sub)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:820px){.row{grid-template-columns:1fr}}
+.cell{background:var(--panel);border:1px solid var(--edge);border-radius:10px;overflow:hidden}
+.cell img{width:100%;display:block;background:#000}
+.cap{padding:11px 14px}.cap h2{font-size:16px;font-weight:800}.cap p{font-size:12.5px;color:var(--dim);margin-top:4px}
+.find{margin-top:24px;background:var(--panel);border:1px solid var(--edge);border-radius:10px;padding:18px 20px}
+.find h3{font-size:15px;color:var(--gold);margin-bottom:10px}
+.find li{font-size:13px;color:var(--sub);margin-bottom:8px;list-style:none;padding-left:18px;position:relative}
+.find li::before{content:"›";position:absolute;left:0;color:var(--gold)}
+.find b{color:var(--txt)}.find .y{color:var(--green)}.find .r{color:#e88}
+.warn{margin-top:18px;border:1px solid #6a5326;background:rgba(250,201,90,.07);border-radius:10px;padding:14px 17px;font-size:12.5px;color:#e7c98a}
+.run{margin-top:16px;font-size:12.5px;color:var(--dim)}.run b{color:var(--sub)}
+footer{margin-top:22px;font-size:11px;color:#6c727c;border-top:1px solid var(--edge);padding-top:12px}footer code{color:#9aa0a8}
+</style></head><body><div class="wrap">
+<div class="stamp">ZombieCrush · 보유 도시팩 스타일 실측 · 같은 45° · 2026-06-14</div>
+<h1>보유 도시팩 스타일 — Toon City vs POLYGON BattleRoyale</h1>
+<p class="lede">우리가 *실제로 보유*한 두 도시 골격 후보를 같은 45°로 렌더. ⚠️ 현재 <b>다크 콤뱃랩 라이팅</b>(불리·임시)이라 어둑함 — 최종 룩 아님. 보는 건 "조잡한가 + 스타일이 충돌하나 + 어느 건물 타입".</p>
+<div class="row">
+  <div class="cell"><img src="../03_reference/assets/angle_test/style_tooncity.png"><div class="cap"><h2>Toon City (Toon Series)</h2><p>고층 도시 블록(높이 ~37m). 다층 아파트·상가. 현대 도심.</p></div></div>
+  <div class="cell"><img src="../03_reference/assets/angle_test/style_polygonbr.png"><div class="cap"><h2>POLYGON BattleRoyale (Synty)</h2><p>소형 건물·하우스(높이 ~7.6m). 배틀로열 톤(약간 낡음).</p></div></div>
+</div>
+
+<div class="find">
+<h3>실측이 말해주는 것 (예상과 다름)</h3>
+<ul>
+<li><span class="y">둘 다 프로 스타일라이즈드 로우폴리 — 어느 쪽도 "초등학생 조잡" 아님.</span> 에셋 자체는 멀쩡합니다.</li>
+<li><span class="y">두 팩이 생각보다 *안 충돌*합니다</span> — 둘 다 플랫 로우폴리·비슷한 팔레트(오렌지/크림/테라코타). "Toon=툰셰이드라 클래시"는 과한 걱정이었음(둘 다 결국 로우폴리 계열).</li>
+<li><span class="r">진짜 어둑함·칙칙함은 *라이팅*(다크 콤뱃랩)이지 에셋이 아님.</span> → 조잡 방지의 핵심 레버 = 라이팅·포스트·아웃라인 처리(artist 작업 중).</li>
+<li><b>진짜 선택지는 "스타일 충돌"이 아니라:</b> ①건물 타입 — Toon City=<b>고층 현대 도심</b>(우리 "도심 구역"에 정합) vs BR=<b>소형 낡은 건물</b>(외곽·산업) ②<b>폐허(ruined) 커버리지</b> — 둘 다 여기선 깨끗해 보임. 폐허감은 손상 변형+잔해 소품+처리로 만들어야 함.</li>
+</ul>
+</div>
+
+<div class="warn">⚠️ 한계: 디폴트 셰이딩·다크 콤뱃랩 라이팅·정적·폐허 소품 미배치. <b>이건 "에셋이 조잡한가/충돌하나"까지만 답함.</b> 최종 폴리시는 라이팅+처리+구성 후 캡처로 확정.</div>
+
+<div class="run">🔄 <b>지금 백그라운드 가동 중:</b> <b>LevelDesign</b> — 두 팩 실제 프리팹 전수 감사 + 폐허 커버리지 + 한 가족 통일 구성안(요소별 프리팹 매핑). <b>artist</b> — 조잡 방지 처리 스택(라이팅·포스트·아웃라인 통일). 돌아오면 종합해서 "이 팩으로 이렇게 짜면 이렇게 보인다"를 확정 캡처로 보여드리겠습니다.</div>
+
+<footer>렌더: 에디트 모드 RT→PNG · 원본 <code>docs/03_reference/assets/angle_test/style_*.png</code> · 보유 카탈로그 메모리 <code>reference_owned_assets</code></footer>
+</div></body></html>

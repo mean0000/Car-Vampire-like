@@ -13,9 +13,15 @@ using UnityEngine.UIElements;
 
 namespace Jorjouto.AnimComposerSystem.ACSEditor
 {
+    #if UNITY_2023_2_OR_NEWER
     [UxmlElement]
+    #endif
     public partial class TimelineBar : VisualElement
     {
+        #if !UNITY_2023_2_OR_NEWER
+        public new class UxmlFactory : UxmlFactory<TimelineBar, UxmlTraits> { }
+        #endif
+
         private const string guid = "beaa8212836a3d345bfbd97429a7ea91";
         private readonly string templatePath = AssetDatabase.GUIDToAssetPath(guid);
         private VisualElement timelineBar = null;

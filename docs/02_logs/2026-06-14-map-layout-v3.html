@@ -1,0 +1,48 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>맵 레이아웃 v3 — 높이 수정 + 정밀 배치</title>
+<style>
+:root{--bg:#0f1014;--panel:#1a1d24;--edge:#3a3f49;--txt:#e6e8ec;--dim:#9aa0a8;--sub:#c2c6cc;--gold:#fac95a;--green:#7ad6a0;--red:#e88}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 700px at 50% -10%,#161922,#0f1014 60%);color:var(--txt);
+font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo","Segoe UI",sans-serif;line-height:1.55;padding:36px 24px 70px}
+.wrap{max-width:1100px;margin:0 auto}
+.stamp{display:inline-block;border:1px solid var(--edge);border-radius:4px;padding:3px 10px;font-size:11px;letter-spacing:.12em;color:var(--dim);margin-bottom:14px}
+h1{font-size:26px;font-weight:800;margin-bottom:6px}
+.lede{color:var(--dim);font-size:14px;max-width:960px;margin-bottom:18px}.lede b{color:var(--sub)}
+.fixes{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+@media(max-width:820px){.fixes{grid-template-columns:1fr}}
+.fix{background:var(--panel);border:1px solid var(--green);border-radius:10px;padding:13px 15px}
+.fix h3{font-size:14px;color:var(--green);margin-bottom:6px}.fix p{font-size:12.5px;color:var(--sub)}.fix b{color:var(--txt)}
+.shot{background:var(--panel);border:1px solid var(--edge);border-radius:12px;overflow:hidden;margin-bottom:14px}
+.shot.hero{border-color:var(--gold)}
+.shot img{width:100%;display:block;background:#000}
+.cap{padding:11px 15px;font-size:13px;color:var(--sub)}.cap .t{font-weight:800;color:var(--txt);font-size:15px}.cap b{color:var(--green)}
+.warn{margin-top:14px;border:1px solid #6a5326;background:rgba(250,201,90,.07);border-radius:10px;padding:14px 17px;font-size:12.5px;color:#e7c98a}
+.next{margin-top:14px;background:var(--panel);border:1px solid var(--edge);border-radius:10px;padding:14px 17px;font-size:12.8px;color:var(--sub)}.next b{color:var(--txt)}
+footer{margin-top:18px;font-size:11px;color:#6c727c;border-top:1px solid var(--edge);padding-top:12px}footer code{color:#9aa0a8}
+</style></head><body><div class="wrap">
+<div class="stamp">ZombieCrush · 맵 레이아웃 v3 (측정 기반 정밀) · 2026-06-14</div>
+<h1>맵 v3 — 도로 높이 수정 + 건물 정밀 배치</h1>
+<p class="lede">두 지적 반영. 더는 눈으로 안 깔았습니다 — <b>실측 풋프린트·피벗 기반</b>으로 블록 안에 정렬 배치.</p>
+
+<div class="fixes">
+  <div class="fix"><h3>① 도로 높이 — 베이지 y=0 플러시</h3><p>실측: 도로 표면 y≈0(base −0.67~top +0.04). v1은 지면을 −0.05에 깔아 <b>단차=묻힘</b>이 생김 → <b>지면·도로 둘 다 y=0</b>으로 플러시. 베이지가 땅에 안 묻힘.</p></div>
+  <div class="fix"><h3>② 건물 — 측정 기반 정밀 배치</h3><p>전 건물 <b>피벗=중심·바닥 y=0</b> 실측. 풋프린트(House_01 11×10.4 등)로 <b>블록 안 거리 변 따라 정렬·패킹·무겹침</b>. 랜덤 회전·부유 제거.</p></div>
+</div>
+
+<div class="shot hero">
+  <img src="../03_reference/assets/angle_test/map_overview.png">
+  <div class="cap"><span class="t">전경 (톱다운)</span> · 십자 대로+사각 링(검정 아스팔트) + <b>베이지 지면 플러시</b> + 블록마다 정렬된 건물 행 + 코어 광장·크레인 + 외곽 창고 4동.</div>
+</div>
+<div class="shot">
+  <img src="../03_reference/assets/angle_test/map_45.png">
+  <div class="cap"><span class="t">45° 거리감</span> · <b>건물이 블록 안에 거리 따라 줄지어</b> 앉음(정렬·무겹침). 베이지 지면이 도로와 플러시. 진짜 도심 블록처럼 읽힘.</div>
+</div>
+
+<div class="warn">⚠️ 남은 거친 부분(정직): 클래리티 라이팅(최종 다크무드 아님) · 도로 위 폐허 잔해가 약간 산만(밀도 조정 필요) · 건물 정면이 다 같은 방향(도로 향하게 돌리는 건 다음 다듬기) · 링 도로 약간 블록키 · 손배치 v3(절차 아님, 캡처 후 삭제).</div>
+
+<div class="next"><b>다음:</b> ⓐ 정면 도로 향하게 회전 + 잔해 밀도 정리 등 마감 다듬기 / ⓑ 이 레이아웃 <b>실제 씬 영속화</b> / ⓒ 다크무드+아웃라인 처리 입혀 최종 룩. — 레이아웃 골격 OK면 ⓐ→ⓑ.</div>
+
+<footer>렌더 <code>docs/03_reference/assets/angle_test/map_overview.png · map_45.png</code> (v3 덮어씀) · 측정값=도로 base−0.67/top+0.04, 건물 피벗중심·base0</footer>
+</div></body></html>

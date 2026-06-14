@@ -1,0 +1,122 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI 맵 까기 도구·파이프라인 완전 보고서</title>
+<style>
+:root{--bg:#0f1014;--panel:#1a1d24;--panel2:#22262f;--edge:#3a3f49;--txt:#e6e8ec;--dim:#9aa0a8;--sub:#c2c6cc;--gold:#fac95a;--green:#7ad6a0;--red:#e8857a;--blue:#6fb0ec}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 700px at 50% -10%,#161922,#0f1014 60%);color:var(--txt);
+font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo","Segoe UI",sans-serif;line-height:1.6;padding:38px 24px 80px}
+.wrap{max-width:1180px;margin:0 auto}
+.stamp{display:inline-block;border:1px solid var(--edge);border-radius:4px;padding:3px 10px;font-size:11px;letter-spacing:.12em;color:var(--dim);margin-bottom:14px}
+h1{font-size:29px;font-weight:800;margin-bottom:8px}
+.lede{color:var(--dim);font-size:14.5px;max-width:1000px;margin-bottom:8px}.lede b{color:var(--sub)}
+h2{font-size:19px;color:var(--gold);margin:30px 0 12px;border-bottom:1px solid var(--edge);padding-bottom:6px}
+h3{font-size:15px;color:var(--sub);margin:16px 0 8px}
+.bl{background:linear-gradient(180deg,rgba(250,201,90,.10),rgba(250,201,90,.02));border:1px solid var(--gold);border-radius:12px;padding:18px 20px;margin:18px 0}
+.bl h2{border:0;margin:0 0 10px;color:var(--gold)}
+.pipe{font-family:ui-monospace,Consolas,monospace;font-size:12.5px;color:var(--sub);background:#11131a;border:1px solid var(--edge);border-radius:8px;padding:14px 16px;white-space:pre-wrap;line-height:1.7}
+.pipe b{color:var(--green)}.pipe .h{color:var(--gold)}
+table{width:100%;border-collapse:collapse;margin:8px 0;font-size:12.8px}
+th,td{border:1px solid var(--edge);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--panel2);color:var(--sub);font-weight:700}
+td b{color:var(--txt)} .pick{color:var(--green);font-weight:700} .out{color:var(--red)}
+.tag{font-size:11px;padding:1px 7px;border-radius:4px;border:1px solid;white-space:nowrap}
+.t1{color:var(--green);border-color:var(--green)} .t2{color:var(--gold);border-color:var(--gold)} .t3{color:var(--red);border-color:#6a4040}
+ul{list-style:none;display:flex;flex-direction:column;gap:7px;margin:6px 0}
+li{font-size:13px;color:var(--sub);padding-left:18px;position:relative}li::before{content:"›";position:absolute;left:0;color:var(--gold)}
+li b{color:var(--txt)}
+ol.steps{counter-reset:s;list-style:none;display:flex;flex-direction:column;gap:10px;margin:8px 0}
+ol.steps li{counter-increment:s;padding-left:30px;font-size:13.5px}
+ol.steps li::before{content:counter(s);background:var(--gold);color:#0f1014;border-radius:50%;width:20px;height:20px;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;top:1px}
+.warn{margin-top:14px;border:1px solid #6a5326;background:rgba(250,201,90,.07);border-radius:10px;padding:14px 17px;font-size:12.5px;color:#e7c98a}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}@media(max-width:820px){.cols{grid-template-columns:1fr}}
+footer{margin-top:26px;font-size:11px;color:#6c727c;border-top:1px solid var(--edge);padding-top:12px}footer a{color:#7a9ec0;text-decoration:none}
+small{color:var(--dim)}
+</style></head><body><div class="wrap">
+<div class="stamp">ZombieCrush · AI 맵 까기 도구·파이프라인 완전 조사 · 2026-06-14 · 3에이전트+오케 종합</div>
+<h1>AI로 탑뷰 맵을 까는 법 — 도구·MCP·모델 전수 + 우리 파이프라인</h1>
+<p class="lede">에이전트 3종(에셋·레이아웃·MCP) + 코어 웹조사 종합. <b>한 줄 결론: "AI 맵 생성기" 단일 도구는 우리 게임에 없다. 정답은 *계층 파이프라인* — 설계자가 그래프로 의도를 박고, PCG/WFC가 모듈을 조립하고, AI 에셋이 빈칸을 채우고, 우리 MCP가 실행·검증한다.</b></p>
+
+<div class="bl">
+<h2>★ 우리 추천 파이프라인 (한눈에)</h2>
+<div class="pipe"><span class="h">[설계자 의도]</span> 그래프 = 비대칭 컴파운드 + 동심원 난이도 + 추출 (덕코프 골격, 페이싱은 사람이)
+        ↓  <b>Edgar Pro / Dungeon Architect</b> (그래프 PCG, Unity 네이티브)
+<span class="h">[모듈 조립]</span> Synty 모듈을 룸 템플릿으로 배치  →  <b>Tessera (WFC)</b> 사이 통로/필러
+        ↓
+<span class="h">[경계]</span> 자연 장벽(잔해·벽 + 필요시 Gaea 한 장)  ·  높이=가독성 적이라 터레인 최소
+        ↓
+<span class="h">[에셋 빈칸]</span> <b>Sloyd</b>(파라메트릭 모듈 키트) + <b>Tripo MCP</b>(스타일 소품) + Hunyuan 로컬
+                 → Blender MCP로 그리드스냅·피벗 정규화 → 셀셰이드 한 머티리얼 통합
+        ↓
+<span class="h">[실행]</span> Unity 공식 MCP <b>RunCommand</b> + 프로젝트 배치 DSL(PlaceModule/StampDistrict)
+        ↓
+<span class="h">[검증]</span> 디스크 렌더 캡처 → 판정 루프  <b>(필수 강제 스텝 — 에이전트는 뷰포트 못 봄)</b></div>
+</div>
+
+<h2>A. 방법론 — 탑뷰 맵을 AI로 *어떻게* 까나</h2>
+<p class="lede"><b>AI 터레인/도시 생성기는 우리에게 틀린 패러다임.</b> Gaea·World Creator·CityEngine·Marble은 전부 *리얼리즘 오픈월드/하이트맵* — 탑뷰 바운디드 존(높이=가독성의 적)과 충돌. 맞는 건 4계층 조합:</p>
+<table>
+<tr><th>계층</th><th>무엇</th><th>도구</th><th>왜 우리에 맞나</th></tr>
+<tr><td><b>③ 그래프 POI 배치</b> (1순위)</td><td>거점·난이도·추출을 *위상*으로 설계</td><td>Edgar Pro · Dungeon Architect</td><td>덕코프 비대칭 추출구·동심원 보상·난이도 띠 = 전부 그래프 결정. <b>페이싱=재미 뼈대는 AI에 안 맡김</b></td></tr>
+<tr><td><b>② 모듈러 키트 조립</b></td><td>거점을 Synty 모듈로 채움</td><td>Edgar 룸 템플릿 / 우리 DSL</td><td>보유 Synty 모듈 그대로 룸으로</td></tr>
+<tr><td><b>④ WFC 사이채움</b></td><td>거점 사이 통로·변주</td><td>Tessera · 2025 WFC 비주얼툴</td><td>매 런 다른 오픈존(우리 "수동시드→조립기")</td></tr>
+<tr><td><b>① 경계 자연장벽</b></td><td>봉쇄/가독</td><td>잔해·벽 프롭 (+Gaea 1장)</td><td>높이 최소 — 터레인은 경계만</td></tr>
+</table>
+
+<h2>B. 레이아웃/PCG 도구 랭킹</h2>
+<table>
+<tr><th>도구</th><th>등급</th><th>무엇</th><th>비용·통합</th></tr>
+<tr><td class="pick">Edgar Pro</td><td><span class="tag t1">1순위</span></td><td>그래프+룸 템플릿 PCG. Synty 모듈을 룸으로, 비대칭 거점 탑뷰에 정확</td><td>유료 · Unity 네이티브</td></tr>
+<tr><td><b>Dungeon Architect</b></td><td><span class="tag t1">보완</span></td><td>그래프 그래머, 굽은 길·런타임 변주</td><td>유료 · Unity</td></tr>
+<tr><td><b>Tessera (WFC)</b></td><td><span class="tag t2">레이어</span></td><td>타일 인접 "칠하기" WFC, 코딩 0. 거점 사이 절차화</td><td>유료 · Unity</td></tr>
+<tr><td>Houdini PDG + Engine</td><td><span class="tag t2">후순위</span></td><td>도시 블록 대량 양산, 인엔진 절차. 러닝커브 큼</td><td>플러그인 무료 · MCP `fxhoudinimcp`(179툴)</td></tr>
+<tr><td>Gaea 2 Community</td><td><span class="tag t2">경계만</span></td><td>경계 자연장벽 한 장</td><td>무료(커뮤니티) · 3.0 Unity플러그인 예정</td></tr>
+<tr><td class="out">CityEngine / World Creator / Gaia</td><td><span class="tag t3">탈락</span></td><td>리얼 GIS·오픈월드 지형</td><td>CityEngine 렌탈 $2,200/yr</td></tr>
+<tr><td class="out">텍스트→씬 AI 전부</td><td><span class="tag t3">탈락</span></td><td>Holodeck·SceneCraft·3D-GPT=연구물 / Marble=splat(게임플레이 메시 부적합) / Unity AI=2D에셋만 / Promethean=배치가속(생성 아님)</td><td>—</td></tr>
+</table>
+
+<h2>C. AI 에셋 생성 도구 랭킹 (맵 콘텐츠)</h2>
+<p class="lede">★진단: <b>모듈러 키트는 단발 생성형(Hunyuan/Meshy/Tripo)의 약점</b> — 치수·피벗·톤이 매번 미세하게 달라 그리드 정합 불가. 모듈은 *파라메트릭*, 소품은 *단발*로 역할 분담.</p>
+<table>
+<tr><th>도구</th><th>등급</th><th>용도</th><th>비용·통합</th></tr>
+<tr><td class="pick">Sloyd</td><td><span class="tag t1">1순위(모듈)</span></td><td>★파라메트릭(슬라이더) → 건물·벽·도로 변종 *치수 정합 보장* 양산 = 모듈러 정답</td><td>$15/mo 무제한 · Unity SDK <small>(⚠️API 접근 재개 확인)</small></td></tr>
+<tr><td class="pick">Tripo</td><td><span class="tag t1">소품·공식MCP</span></td><td>2초 생성, 카툰/voxel/clay 스타일 = 우리 룩 직결</td><td>무료 2,000cr · <b>공식 MCP</b></td></tr>
+<tr><td><b>Hunyuan3D 로컬</b></td><td><span class="tag t2">보유유지</span></td><td>무료·무제한 단발 메시. Blender MCP 후처리</td><td>무료(자체GPU) · 보유</td></tr>
+<tr><td><b>Scenario</b></td><td><span class="tag t2">텍스처</span></td><td>Hunyuan 텍스처 OFF 보완, 톤 고정 PBR</td><td>유료 · 공식 Unity 플러그인</td></tr>
+<tr><td>Meshy</td><td><span class="tag t2">리그/애니</span></td><td>오토리그·애니 필요 시. <b>MCP 있음</b>(`@meshy-ai/meshy-mcp-server`)</td><td>유료 · MCP+Unity</td></tr>
+<tr><td class="out">Rodin/Hyper3D · CSM.ai</td><td><span class="tag t3">비권장</span></td><td>키 고갈·고폴리 과잉 / CSM=Google 인수 로드맵 불확실</td><td>—</td></tr>
+</table>
+
+<h2>D. MCP / 파이프라인 — 우리는 양끝을 이미 최선으로 보유</h2>
+<div class="cols">
+<div>
+<h3>현 상태 (재평가됨)</h3>
+<ul>
+<li><b>Unity MCP = 공식 1st-party</b>(`com.unity.ai.assistant`) — 커뮤니티판보다 안정. `RunCommand`=임의 C# 실행=배치 만능</li>
+<li><b>Blender MCP = ahujasid(22.7k★ 표준)</b> + Hunyuan 로컬</li>
+<li>→ 에셋생성(Blender)→배치(Unity) 황금 워크플로 *양끝 확보*</li>
+</ul>
+</div>
+<div>
+<h3>개선 = 새 서버 ❌, 레이어 ✓</h3>
+<ul>
+<li><b>배치 DSL</b> — RunCommand 위에 `PlaceModule/StampDistrict` 헬퍼 → LLM은 좌표/스펙만(raw C# 통째 ❌ = 타임아웃·실수 제거)</li>
+<li><b>in-process 커스텀 툴</b>(Agent SDK `@tool`) — 스펙 생성·검증</li>
+<li><b>디스크 렌더 검증 루프 강제</b> — 에이전트 뷰포트 못 봄(우리 "찰흙" 교훈)</li>
+</ul>
+</div>
+</div>
+<div class="warn">⚠️ MCP 한계(확정): ①SDK 연결 60초 타임아웃 → 큰 맵 <b>청크 배치</b> ②여러 엔진 MCP 쌓으면 ~50% 오선택 → Unity 단일 유지 ③에이전트 비용 빠름 → 규율. ④computer use 불필요(RunCommand가 더 정확·쌈).</div>
+
+<h2>E. 우리 액션플랜 (순서)</h2>
+<ol class="steps">
+<li><b>즉시(무료/보유):</b> Tripo 공식 MCP 연결(무료 2,000cr) + RunCommand <b>배치 DSL 초안</b>(PlaceModule/StampDistrict) + 디스크 렌더 검증 루프 박제(이미 절반). → LevelDesign 스펙(modular_assembly·build_spec)을 *실행 가능*하게.</li>
+<li><b>레이아웃 PCG 도입:</b> <b>Edgar Pro</b> 평가 — Synty 모듈을 룸 템플릿화, 그래프에 덕코프 의도(비대칭 거점·동심원) 박기. "수동 시드 3장" → Edgar 그래프로 진화.</li>
+<li><b>에셋 키트 보강:</b> <b>Sloyd</b> 접근 확인($15/mo) — Synty 빈칸(폐허 변종·우리 전용 구조물) 파라메트릭 양산. Scenario로 톤 고정 텍스처.</li>
+<li><b>(선택·후순위):</b> 절차 지오메트리 대량 필요 시 <b>Houdini MCP</b>(`fxhoudinimcp`). 우리 손모듈 방침과 결 다르니 방향 분기 판단 후.</li>
+</ol>
+<div class="warn">★변하지 않는 원칙: <b>레이아웃 미적·페이싱 판단은 AI/PCG에 안 맡긴다</b>(CLAUDE.md D항 + 자연끌림 독트린). AI는 *실행기·양산기*, 의도는 오케스트레이터+LevelDesign. 3개 레인이 독립적으로 같은 결론에 도달함.</div>
+
+<footer>전체 문서: <a href="2026-06-14-ai-map-tooling-assets.md">에셋</a> · <a href="2026-06-14-ai-map-tooling-layout.md">레이아웃</a> · MCP(레인3 인라인) ·
+출처: Edgar/Dungeon Architect/Tessera(Unity Asset Store) · Sloyd · Tripo MCP · Meshy MCP · ahujasid blender-mcp(22.7k★) · Unity com.unity.ai.assistant · World Labs Marble/World API · Unity AI(2026) · StraySpark MCP 가이드 · fxhoudinimcp</footer>
+</div></body></html>

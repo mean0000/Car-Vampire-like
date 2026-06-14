@@ -1,0 +1,75 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>맵 구상 확정 — 보유 에셋으로 어떻게 짜나</title>
+<style>
+:root{--bg:#0f1014;--panel:#1a1d24;--edge:#3a3f49;--txt:#e6e8ec;--dim:#9aa0a8;--sub:#c2c6cc;--gold:#fac95a;--green:#7ad6a0;--red:#e88}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 700px at 50% -10%,#161922,#0f1014 60%);color:var(--txt);
+font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo","Segoe UI",sans-serif;line-height:1.55;padding:36px 24px 70px}
+.wrap{max-width:1120px;margin:0 auto}
+.stamp{display:inline-block;border:1px solid var(--edge);border-radius:4px;padding:3px 10px;font-size:11px;letter-spacing:.12em;color:var(--dim);margin-bottom:14px}
+h1{font-size:27px;font-weight:800;margin-bottom:6px}
+.lede{color:var(--dim);font-size:14px;max-width:960px;margin-bottom:20px}.lede b{color:var(--sub)}
+.hero{background:var(--panel);border:1px solid var(--gold);border-radius:12px;overflow:hidden;margin-bottom:8px}
+.hero img{width:100%;display:block;background:#000}
+.herocap{padding:11px 15px;font-size:13px;color:var(--sub)}.herocap b{color:var(--green)}
+.cav{font-size:11.5px;color:#8a9098;margin:8px 2px 24px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.box{background:var(--panel);border:1px solid var(--edge);border-radius:10px;padding:16px 18px}
+.box h3{font-size:15px;color:var(--gold);margin-bottom:10px}
+.box li{font-size:12.8px;color:var(--sub);margin-bottom:7px;list-style:none;padding-left:16px;position:relative}
+.box li::before{content:"›";position:absolute;left:0;color:var(--gold)}
+.box b{color:var(--txt)}.box .y{color:var(--green)}.box .r{color:#e88}
+.box code{color:#9aa0a8;font-size:11.5px}
+.next{margin-top:18px;background:var(--panel);border:1px solid var(--edge);border-radius:10px;padding:16px 18px}
+.next h3{font-size:15px;color:var(--gold);margin-bottom:8px}.next li{font-size:13px;color:var(--sub);margin-bottom:6px;list-style:none;padding-left:16px;position:relative}.next li::before{content:"→";position:absolute;left:0;color:var(--gold)}
+footer{margin-top:22px;font-size:11px;color:#6c727c;border-top:1px solid var(--edge);padding-top:12px}footer code{color:#9aa0a8}
+</style></head><body><div class="wrap">
+<div class="stamp">ZombieCrush · 맵 구상 가능성 검증 · 보유 에셋 · 2026-06-14</div>
+<h1>맵을 보유 에셋으로 어떻게 짜나 — 그리고 조잡한가</h1>
+<p class="lede">에이전트 2종(LevelDesign 에셋 감사 · artist 처리 스택) + 오케 실측 캡처로 검증. 결론: <b>POLYGON 단일 가족 + 폐허 어휘 + 처리</b>로 조잡하지 않은 폐허 도심이 됩니다. 신규 구매·임포트 불요.</p>
+
+<div class="hero">
+  <img src="../03_reference/assets/angle_test/ruin_street.png">
+  <div class="herocap"><b class="y">증거:</b> POLYGON BR+Construction을 <b>폐허 어휘</b>(손상 도로·잔해·파손차량·컨테이너 회랑·크레인 비콘)로 구성 + 클래리티 라이팅. 손배치 디오라마인데도 <b>코히어런트한 폐허 야드로 읽힘 — "초등학생 게임" 아님.</b></div>
+</div>
+<p class="cav">⚠️ 캡처 한계: <b>클래리티 라이팅</b>(다크 포스트 OFF·키/필 추가 = 에셋 가독용)이지 최종 다크무드 아님 · 손배치 디오라마(절차 조립 아님) · 괴수 바인드포즈. "에셋/구성이 조잡한가"까지 증명, 최종 무드는 처리 후 별도 확정.</p>
+
+<div class="grid">
+  <div class="box">
+    <h3>LevelDesign — 가족 판정 (셰이더 GUID 실측)</h3>
+    <ul>
+      <li><span class="y">도심 골격 = POLYGON (BattleRoyale + Construction) 단일 가족.</span> 두 팩이 <b>같은 셰이더 GUID 공유</b> → 섞어도 클래시 0. 기존 빌드스펙(BR+CN)이 이미 안전했음.</li>
+      <li><span class="r">Toon City 탈락.</span> 다른 셰이더 + 에셋별 디퓨즈 70개(POLYGON은 단일 아틀라스) = 한 화면 클래시 = <b>유저가 경고한 그 조잡</b>. 결정타: <b>폐허 어휘 0개</b>(ruin/destroyed/damaged grep=0) → 폐허를 못 짬.</li>
+      <li>폐허 커버리지: BR = 손상도로 3·잔해 9·부서진 다리·파손차량 5 — <b>빈칸 없음.</b></li>
+      <li><span class="y">신규 구매·임포트 전부 불요.</span> (POLYBOX City 5.7GB·Top_Down_Post-Apoc PBR 모두 비권장)</li>
+      <li>★빌드스펙 변경 = 골격 안 바뀜(검증만). 추가: <b>폐허 어휘 산포 의무</b> + Toon City 배제 명시 + Fountain 미사용(가족 다름).</li>
+    </ul>
+    <code>docs/02_logs/2026-06-14-asset-driven-map-composition.md</code>
+  </div>
+  <div class="box">
+    <h3>artist — 조잡 방지 처리 스택</h3>
+    <ul>
+      <li>조잡함 = <b>6개 독립 신호의 합</b>(C1 납작·C2 빈공간·C3 클래시·C4 머드·C5 VFX빈약·C6 raw). 하나만 잘해도 나머지가 더 도드라짐 → 6개 다 쳐야.</li>
+      <li><span class="y">★50%는 셰이더 아닌 라이팅/포스트</span> — C1(납작)+C6(raw). <b>쿨 그늘 vs 웜 키 색온도 대비 = 최대 백신.</b></li>
+      <li><b>환경 포스트 아웃라인</b>(depth/normal) = 클래시 최강 백신 — 도시+괴수+VFX를 "한 손으로 그린 그림"으로 묶음.</li>
+      <li>가독성(톤게이트 진짜 약점): 색온도 대비(공짜)→Fresnel 림(보유)→이미시브→접지 순. 1·2로 대부분 해결.</li>
+      <li><b>빈 공간 = 조잡</b> → 안개 3깊이 + 드레싱/잔해 점유(빈 칸 ≤2). 위 캡처가 이미 그걸 함.</li>
+    </ul>
+    <code>docs/02_logs/2026-06-14-anti-crude-treatment.md</code>
+  </div>
+</div>
+
+<div class="next">
+<h3>이렇게 짜면 됩니다 (정리)</h3>
+<ul>
+<li><b>한 가족(POLYGON BR+CN)으로 통일</b> — 다른 셰이더(Toon·PBR) 1개라도 들어오면 즉시 제거 = 클래시 차단</li>
+<li><b>폐허 어휘 적극 산포</b>(손상도로·잔해·파손차량) — 깨끗 바닥+어둠만이면 폐허 안 읽힘 = 그게 초등학생 게임</li>
+<li><b>처리 스택</b>: 색온도 대비 + 환경 아웃라인 + 이중온도 그레이드 + 안개 3깊이 + VFX 점유 = 머드·납작·클래시 제거</li>
+<li><b>구성 밀도</b>(빈 공간 0) + 3단 높이 위계 + 밀도 역구배(오브젝트 배치 독트린)</li>
+</ul>
+</div>
+
+<footer>증거 캡처 <code>docs/03_reference/assets/angle_test/ruin_street.png</code> · 가족 감사 + 처리 스택 문서 위 링크 · 다음 = 최종 다크무드+처리 적용 톤게이트 캡처로 미적 확정</footer>
+</div></body></html>

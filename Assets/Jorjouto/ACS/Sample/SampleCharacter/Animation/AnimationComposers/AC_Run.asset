@@ -12,8 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9887673fcdd2326479cb68651544629d, type: 3}
   m_Name: AC_Run
   m_EditorClassIdentifier: Assembly-CSharp::Jorjouto.AnimComposerSystem.ScriptableObject_AnimComposer
-  AnimationClip: {fileID: -9094835232657333338, guid: 910e50cf09ebca04d9d29271a0b6feac, type: 3}
-  PreviewModel: {fileID: 919132149155446097, guid: 910e50cf09ebca04d9d29271a0b6feac, type: 3}
+  AnimationClip: {fileID: -9094835232657333338, guid: 910e50cf09ebca04d9d29271a0b6feac,
+    type: 3}
+  PreviewModel: {fileID: 919132149155446097, guid: 910e50cf09ebca04d9d29271a0b6feac,
+    type: 3}
   PreviewItems:
   - Item: {fileID: 395494194743491360, guid: 3f863337e8e1f9d43b22b099fdb906e4, type: 3}
     AttachSocket: 
@@ -25,12 +27,14 @@ MonoBehaviour:
   - ActionBlocks:
     - Action:
         rid: 7602220388008067078
+      IsDisabled: 0
       StartFrame: 0
       EndFrame: 3
       StartTime: 0
       EndTime: 0.1
     - Action:
         rid: 7602220388008067079
+      IsDisabled: 0
       StartFrame: 10
       EndFrame: 13
       StartTime: 0.33333334
@@ -104,7 +108,8 @@ MonoBehaviour:
     version: 2
     RefIds:
     - rid: 7602220388008067078
-      type: {class: ActionBlock_PlaySound, ns: Jorjouto.AnimComposerSystem.Sample, asm: Jorjouto.AnimComposerSystem.Sample}
+      type: {class: ActionBlock_PlaySound, ns: Jorjouto.AnimComposerSystem.Sample,
+        asm: Jorjouto.AnimComposerSystem.Sample}
       data:
         DebugEnabled: 1
         DebugExitOnAnimationEnd: 0
@@ -113,7 +118,8 @@ MonoBehaviour:
         SoundVolume: 0.2
         IsLooped: 0
     - rid: 7602220388008067079
-      type: {class: ActionBlock_PlaySound, ns: Jorjouto.AnimComposerSystem.Sample, asm: Jorjouto.AnimComposerSystem.Sample}
+      type: {class: ActionBlock_PlaySound, ns: Jorjouto.AnimComposerSystem.Sample,
+        asm: Jorjouto.AnimComposerSystem.Sample}
       data:
         DebugEnabled: 1
         DebugExitOnAnimationEnd: 0

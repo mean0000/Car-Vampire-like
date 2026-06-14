@@ -1,0 +1,140 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>몬스터 배치 — 1차 스테이지 인카운터 맵</title>
+<style>
+:root{--bg:#0f1014;--panel:#1a1d24;--edge:#3a3f49;--txt:#e6e8ec;--dim:#9aa0a8;--sub:#c2c6cc;--gold:#fac95a;--rim:#60a0e6;--mid:#e49646;--core:#e45646}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 700px at 50% -10%,#161922,#0f1014 60%);color:var(--txt);
+font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo","Segoe UI",sans-serif;line-height:1.55;padding:38px 24px 80px}
+.wrap{max-width:1280px;margin:0 auto}
+.stamp{display:inline-block;border:1px solid var(--edge);border-radius:4px;padding:3px 10px;font-size:11px;letter-spacing:.12em;color:var(--dim);margin-bottom:14px}
+h1{font-size:29px;font-weight:800;margin-bottom:6px} h1 .s{color:var(--dim);font-weight:600;font-size:17px;margin-left:8px}
+.lede{color:var(--dim);font-size:14px;max-width:980px;margin-bottom:6px}
+.logic{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0 26px}
+@media(max-width:860px){.logic{grid-template-columns:1fr 1fr}}
+.logic .b{background:var(--panel);border:1px solid var(--edge);border-radius:8px;padding:11px 13px}
+.logic h4{font-size:13px;color:var(--gold);margin-bottom:4px} .logic p{font-size:12px;color:var(--dim)}
+.maps{display:grid;grid-template-columns:1fr 1fr;gap:22px} @media(max-width:900px){.maps{grid-template-columns:1fr}}
+.mapcard{background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:16px 17px}
+.mapcard h2{font-size:18px;font-weight:800;margin-bottom:2px} .mapcard .one{font-size:12.5px;color:var(--dim);margin-bottom:12px}
+svg.map{width:100%;height:auto;background:#11131a;border:1px solid var(--edge);border-radius:8px;display:block;
+font-family:"Pretendard","Malgun Gothic","Segoe UI",sans-serif}
+.relay{font-size:12px;color:var(--sub);margin:12px 0 6px} .relay b{color:var(--gold)}
+ul.place{list-style:none;display:flex;flex-direction:column;gap:6px;margin-top:6px}
+ul.place li{font-size:12.5px;color:var(--sub)} ul.place b{color:var(--txt)}
+.d{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:middle}
+.d.rim{background:var(--rim)} .d.mid{background:var(--mid)} .d.core{background:var(--core)}
+.leg{margin-top:24px;background:var(--panel);border:1px solid var(--edge);border-radius:10px;padding:14px 18px;font-size:12.5px;color:var(--dim)}
+.leg b{color:var(--sub)}
+.warn{margin-top:20px;border:1px solid #6a5326;background:rgba(250,201,90,.07);border-radius:10px;padding:14px 17px;font-size:12.5px;color:#e7c98a}
+footer{margin-top:26px;font-size:11px;color:#6c727c;border-top:1px solid var(--edge);padding-top:12px}
+footer code{color:#9aa0a8}
+</style></head><body><div class="wrap">
+<div class="stamp">사후처리부 · 1차 처리구역 배치 운용도 · 2026-06-14</div>
+<h1>몬스터 배치 — 인카운터 맵<span class="s">집하장 · 분수광장 (150×150)</span></h1>
+<p class="lede">빌드 스펙 좌표 그대로. 토큰=실제 에셋 프리뷰, 링 색=밴드(LV), ×N=동시 수, ①②③=콘 릴레이 공개 순서. 전부 단일 평면(비행=다이브).</p>
+
+<div class="logic">
+<div class="b"><h4>구심 전진</h4><p>외곽 LV1 파밍→레벨업→안으로 밀어 코어 LV4~5 잭팟. 밴드=난이도=보상.</p></div>
+<div class="b"><h4>릴레이 공개</h4><p>진입(0,+70)→코어. 콘이 ①캐시→②중간 떼→③코어 정예를 차례로 깐다.</p></div>
+<div class="b"><h4>역할 분담</h4><p>외곽=fodder+엄폐 사수 / 중간=러셔·비행·매복 / 코어=램 엘리트+호위.</p></div>
+<div class="b"><h4>단일 평면</h4><p>고지 사격·등반 0. 비행(Kupolojuve·Carcinoptera)=평면 다이브/텔레그래프.</p></div>
+</div>
+
+<div class="maps">
+ <div class="mapcard">
+  <h2>집하장 <span style="color:var(--gold);font-size:13px">★추천</span></h2>
+  <div class="one">회랑 코너 왈칵 — 컨테이너 미로를 누비다 ③에서 야드가 터진다. 강한 reveal.</div>
+  <svg viewBox="0 0 150 150" class="map">
+<defs><radialGradient id="heat" cx="50%" cy="50%" r="52%"><stop offset="0%" stop-color="#5a2a24"/><stop offset="38%" stop-color="#5a4530"/><stop offset="72%" stop-color="#2a3445"/><stop offset="100%" stop-color="#1a2230"/></radialGradient></defs>
+<circle cx="75" cy="75" r="73" fill="url(#heat)"/>
+<circle cx="75" cy="75" r="73" fill="none" stroke="#4a443c" stroke-width="2"/>
+<circle cx="75" cy="75" r="22" fill="none" stroke="#e45646" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.7"/>
+<circle cx="75" cy="75" r="50" fill="none" stroke="#e49646" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.7"/>
+<line x1="75" y1="5" x2="75" y2="57" stroke="#f0d27a" stroke-width="1.4" opacity="0.30"/>
+<line x1="75" y1="145" x2="75" y2="93" stroke="#f0d27a" stroke-width="1.4" opacity="0.30"/>
+<line x1="145" y1="75" x2="93" y2="75" stroke="#f0d27a" stroke-width="1.4" opacity="0.30"/>
+<line x1="5" y1="75" x2="57" y2="75" stroke="#f0d27a" stroke-width="1.4" opacity="0.30"/>
+<rect x="98.5" y="20.0" width="9" height="6" rx="0.8" fill="#23272f" stroke="#555c66" stroke-width="0.4"/>
+<rect x="42.5" y="20.0" width="9" height="6" rx="0.8" fill="#23272f" stroke="#555c66" stroke-width="0.4"/>
+<rect x="112.0" y="40.5" width="6" height="9" rx="0.8" fill="#23272f" stroke="#555c66" stroke-width="0.4"/>
+<rect x="32.0" y="40.5" width="6" height="9" rx="0.8" fill="#23272f" stroke="#555c66" stroke-width="0.4"/>
+<rect x="98.5" y="102.0" width="9" height="6" rx="0.8" fill="#23272f" stroke="#555c66" stroke-width="0.4"/>
+<rect x="42.5" y="102.0" width="9" height="6" rx="0.8" fill="#23272f" stroke="#555c66" stroke-width="0.4"/>
+<rect x="117.0" y="82.5" width="6" height="9" rx="0.8" fill="#23272f" stroke="#555c66" stroke-width="0.4"/>
+<rect x="27.0" y="82.5" width="6" height="9" rx="0.8" fill="#23272f" stroke="#555c66" stroke-width="0.4"/>
+<rect x="91.5" y="54.5" width="7" height="5" rx="0.8" fill="#23272f" stroke="#555c66" stroke-width="0.4"/>
+<rect x="51.5" y="54.5" width="7" height="5" rx="0.8" fill="#23272f" stroke="#555c66" stroke-width="0.4"/>
+<circle cx="75" cy="75" r="62" fill="none" stroke="#56d4e4" stroke-width="0.7" opacity="0.55"/>
+<circle cx="75" cy="75" r="36" fill="none" stroke="#56d4e4" stroke-width="0.7" opacity="0.55"/>
+<circle cx="75" cy="75" r="13" fill="none" stroke="#56d4e4" stroke-width="0.7" opacity="0.55"/>
+<circle cx="75" cy="75" r="13" fill="#ffc456" opacity="0.16"/><circle cx="75" cy="75" r="8" fill="#ffc456" opacity="0.28"/><circle cx="75" cy="75" r="4" fill="#ffc456" opacity="0.55"/><line x1="75" y1="75" x2="75" y2="74" stroke="#9aa" stroke-width="2"/><rect x="73.6" y="73.6" width="2.8" height="2.8" fill="#caa" transform="rotate(45 75 75)"/><text x="75" y="76.4" font-size="3" fill="#10131a" text-anchor="middle">⌁</text><text x="75" y="94" font-size="3.2" font-weight="700" fill="#faca5a" text-anchor="middle">코어 비콘</text>
+<circle cx="75" cy="13" r="3.6" fill="#faca5a" stroke="#10131a" stroke-width="0.8"/><text x="75" y="14.4" font-size="4" font-weight="800" fill="#10131a" text-anchor="middle">1</text>
+<circle cx="75" cy="35" r="3.6" fill="#faca5a" stroke="#10131a" stroke-width="0.8"/><text x="75" y="36.4" font-size="4" font-weight="800" fill="#10131a" text-anchor="middle">2</text>
+<circle cx="83" cy="57" r="3.6" fill="#faca5a" stroke="#10131a" stroke-width="0.8"/><text x="83" y="58.4" font-size="4" font-weight="800" fill="#10131a" text-anchor="middle">3</text>
+<circle cx="75" cy="143" r="5" fill="#58d076" stroke="#0c100c" stroke-width="1"/><text x="75" y="144.6" font-size="4.2" font-weight="800" fill="#0c180e" text-anchor="middle">퇴</text><text x="75" y="153" font-size="3.1" font-weight="700" fill="#58d076" text-anchor="middle">추출 LZ</text>
+<circle cx="75" cy="5" r="3" fill="#e6e8ec"/><text x="75" y="0" font-size="3" fill="#e6e8ec" text-anchor="middle">진입</text>
+<clipPath id="clip_A_0"><circle cx="75" cy="15" r="5.6"/></clipPath><image href="_img/monsters/Lacercharias.png" x="69.4" y="9.4" width="11.2" height="11.2" clip-path="url(#clip_A_0)" preserveAspectRatio="xMidYMid slice"/><circle cx="75" cy="15" r="5.6" fill="none" stroke="#60a0e6" stroke-width="1.1"/><circle cx="79.1" cy="9.9" r="3.4" fill="#10131a" stroke="#60a0e6" stroke-width="0.7"/><text x="79.1" y="11.200000000000001" font-size="3.4" font-weight="700" fill="#60a0e6" text-anchor="middle">3</text><text x="75" y="24.6" font-size="3.1" font-weight="700" fill="#dfe2e6" text-anchor="middle">Lacercharias</text>
+<clipPath id="clip_A_1"><circle cx="87" cy="21" r="5.6"/></clipPath><image href="_img/monsters/Venodonte.png" x="81.4" y="15.4" width="11.2" height="11.2" clip-path="url(#clip_A_1)" preserveAspectRatio="xMidYMid slice"/><circle cx="87" cy="21" r="5.6" fill="none" stroke="#60a0e6" stroke-width="1.1"/><text x="87" y="30.6" font-size="3.1" font-weight="700" fill="#dfe2e6" text-anchor="middle">Venodonte</text>
+<clipPath id="clip_A_2"><circle cx="73" cy="35" r="6.6"/></clipPath><image href="_img/monsters/Caniathrox.png" x="66.4" y="28.4" width="13.2" height="13.2" clip-path="url(#clip_A_2)" preserveAspectRatio="xMidYMid slice"/><circle cx="73" cy="35" r="6.6" fill="none" stroke="#e49646" stroke-width="1.1"/><circle cx="78.1" cy="28.9" r="3.4" fill="#10131a" stroke="#e49646" stroke-width="0.7"/><text x="78.1" y="30.2" font-size="3.4" font-weight="700" fill="#e49646" text-anchor="middle">4</text><text x="73" y="45.6" font-size="3.1" font-weight="700" fill="#dfe2e6" text-anchor="middle">Caniathrox</text>
+<clipPath id="clip_A_3"><circle cx="62" cy="43" r="6.6"/></clipPath><image href="_img/monsters/Dimaxillosaurus.png" x="55.4" y="36.4" width="13.2" height="13.2" clip-path="url(#clip_A_3)" preserveAspectRatio="xMidYMid slice"/><circle cx="62" cy="43" r="6.6" fill="none" stroke="#e49646" stroke-width="1.1"/><circle cx="67.1" cy="36.9" r="3.4" fill="#10131a" stroke="#e49646" stroke-width="0.7"/><text x="67.1" y="38.199999999999996" font-size="3.4" font-weight="700" fill="#e49646" text-anchor="middle">2</text><text x="62" y="53.6" font-size="3.1" font-weight="700" fill="#dfe2e6" text-anchor="middle">Dimax.</text>
+<clipPath id="clip_A_4"><circle cx="91" cy="53" r="6.6"/></clipPath><image href="_img/monsters/Kupolojuve.png" x="84.4" y="46.4" width="13.2" height="13.2" clip-path="url(#clip_A_4)" preserveAspectRatio="xMidYMid slice"/><circle cx="91" cy="53" r="6.6" fill="none" stroke="#e49646" stroke-width="1.1"/><circle cx="96.1" cy="46.9" r="3.4" fill="#10131a" stroke="#e49646" stroke-width="0.7"/><text x="96.1" y="48.199999999999996" font-size="3.4" font-weight="700" fill="#e49646" text-anchor="middle">2</text><text x="91" y="63.6" font-size="3.1" font-weight="700" fill="#dfe2e6" text-anchor="middle">Kupolojuve</text>
+<clipPath id="clip_A_5"><circle cx="85" cy="68" r="8.2"/></clipPath><image href="_img/monsters/Venosaur.png" x="76.8" y="59.8" width="16.4" height="16.4" clip-path="url(#clip_A_5)" preserveAspectRatio="xMidYMid slice"/><circle cx="85" cy="68" r="8.2" fill="none" stroke="#e45646" stroke-width="1.1"/><circle cx="91.7" cy="60.3" r="3.4" fill="#10131a" stroke="#e45646" stroke-width="0.7"/><text x="91.7" y="61.599999999999994" font-size="3.4" font-weight="700" fill="#e45646" text-anchor="middle">4</text><text x="85" y="80.2" font-size="3.1" font-weight="700" fill="#dfe2e6" text-anchor="middle">Venosaur</text>
+<clipPath id="clip_A_6"><circle cx="57" cy="75" r="8.2"/></clipPath><image href="_img/monsters/Fulgurodonte.png" x="48.8" y="66.8" width="16.4" height="16.4" clip-path="url(#clip_A_6)" preserveAspectRatio="xMidYMid slice"/><circle cx="57" cy="75" r="8.2" fill="none" stroke="#e45646" stroke-width="1.1"/><text x="57" y="87.2" font-size="3.1" font-weight="700" fill="#dfe2e6" text-anchor="middle">Fulguro.</text>
+</svg>
+  <div class="relay"><b>① (0,+62)</b> 크레인등만 머리 위 + 회랑 글린트 → <b>② (0,+40)</b> 컨테이너 틈으로 정예 윤곽 슬쩍 → <b>③ (±8,+18) 왈칵</b> 야드 전모(잭팟+Fulguro+Venosaur)</div>
+  <ul class="place"><li><span class="d rim"></span><b>Lacercharias</b> ×3 — 회랑 입구 (외곽)</li><li><span class="d rim"></span><b>Venodonte</b> ×1 — 컨테이너 뒤 지상 엄폐 사격</li><li><span class="d mid"></span><b>Caniathrox</b> ×4 — 회랑 깔때기 직선 돌진(떼)</li><li><span class="d mid"></span><b>Dimaxillosaurus</b> ×2 — 컨테이너 틈 매복=③왈칵</li><li><span class="d mid"></span><b>Kupolojuve</b> ×2 — 상공→평면 다이브</li><li><span class="d core"></span><b>Venosaur</b> ×4 — 코어 잭팟 호위</li><li><span class="d core"></span><b>Fulgurodonte</b> ×1 — 야드 가장자리→잭팟 램(벽그로기)</li></ul>
+ </div>
+ <div class="mapcard">
+  <h2>분수광장 <span style="color:var(--dim);font-size:13px">대조군</span></h2>
+  <div class="one">방사 정조준 — 단상+공중 군집이 처음부터 또렷. 트임 reveal·광역 학살 무대.</div>
+  <svg viewBox="0 0 150 150" class="map">
+<defs><radialGradient id="heat" cx="50%" cy="50%" r="52%"><stop offset="0%" stop-color="#5a2a24"/><stop offset="38%" stop-color="#5a4530"/><stop offset="72%" stop-color="#2a3445"/><stop offset="100%" stop-color="#1a2230"/></radialGradient></defs>
+<circle cx="75" cy="75" r="73" fill="url(#heat)"/>
+<circle cx="75" cy="75" r="73" fill="none" stroke="#4a443c" stroke-width="2"/>
+<circle cx="75" cy="75" r="22" fill="none" stroke="#e45646" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.7"/>
+<circle cx="75" cy="75" r="50" fill="none" stroke="#e49646" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.7"/>
+<line x1="145.0" y1="75.0" x2="85.0" y2="75.0" stroke="#f0d27a" stroke-width="1.4" opacity="0.30"/>
+<line x1="124.49747468305833" y1="25.50252531694167" x2="82.07106781186548" y2="67.92893218813452" stroke="#f0d27a" stroke-width="1.4" opacity="0.30"/>
+<line x1="75.0" y1="5.0" x2="75.0" y2="65.0" stroke="#f0d27a" stroke-width="1.4" opacity="0.30"/>
+<line x1="25.50252531694168" y1="25.50252531694167" x2="67.92893218813452" y2="67.92893218813452" stroke="#f0d27a" stroke-width="1.4" opacity="0.30"/>
+<line x1="5.0" y1="74.99999999999999" x2="65.0" y2="75.0" stroke="#f0d27a" stroke-width="1.4" opacity="0.30"/>
+<line x1="25.502525316941664" y1="124.49747468305833" x2="67.92893218813452" y2="82.07106781186548" stroke="#f0d27a" stroke-width="1.4" opacity="0.30"/>
+<line x1="74.99999999999999" y1="145.0" x2="75.0" y2="85.0" stroke="#f0d27a" stroke-width="1.4" opacity="0.30"/>
+<line x1="124.49747468305831" y1="124.49747468305833" x2="82.07106781186548" y2="82.07106781186548" stroke="#f0d27a" stroke-width="1.4" opacity="0.30"/>
+<rect x="101.0" y="16.5" width="8" height="7" rx="0.8" fill="#23272f" stroke="#555c66" stroke-width="0.4"/>
+<rect x="41.0" y="16.5" width="8" height="7" rx="0.8" fill="#23272f" stroke="#555c66" stroke-width="0.4"/>
+<rect x="126.5" y="41.0" width="7" height="8" rx="0.8" fill="#23272f" stroke="#555c66" stroke-width="0.4"/>
+<rect x="16.5" y="41.0" width="7" height="8" rx="0.8" fill="#23272f" stroke="#555c66" stroke-width="0.4"/>
+<rect x="126.5" y="101.0" width="7" height="8" rx="0.8" fill="#23272f" stroke="#555c66" stroke-width="0.4"/>
+<rect x="16.5" y="101.0" width="7" height="8" rx="0.8" fill="#23272f" stroke="#555c66" stroke-width="0.4"/>
+<rect x="101.0" y="126.5" width="8" height="7" rx="0.8" fill="#23272f" stroke="#555c66" stroke-width="0.4"/>
+<rect x="41.0" y="126.5" width="8" height="7" rx="0.8" fill="#23272f" stroke="#555c66" stroke-width="0.4"/>
+<circle cx="75" cy="75" r="62" fill="none" stroke="#56d4e4" stroke-width="0.7" opacity="0.55"/>
+<circle cx="75" cy="75" r="36" fill="none" stroke="#56d4e4" stroke-width="0.7" opacity="0.55"/>
+<circle cx="75" cy="75" r="13" fill="none" stroke="#56d4e4" stroke-width="0.7" opacity="0.55"/>
+<circle cx="75" cy="75" r="13" fill="#ffc456" opacity="0.16"/><circle cx="75" cy="75" r="8" fill="#ffc456" opacity="0.28"/><circle cx="75" cy="75" r="4" fill="#ffc456" opacity="0.55"/><rect x="71" y="72" width="8" height="6" rx="1" fill="#2a2f3a" stroke="#caa" stroke-width="0.6"/><path d="M67.6,67.2 L69.0,68.60000000000001 L70.4,67.2" stroke="#b88fd0" stroke-width="0.9" fill="none"/><path d="M69.6,67.8 L71.0,69.2 L72.4,67.8" stroke="#b88fd0" stroke-width="0.9" fill="none"/><path d="M71.6,68.4 L73.0,69.80000000000001 L74.4,68.4" stroke="#b88fd0" stroke-width="0.9" fill="none"/><path d="M73.6,69.0 L75.0,70.4 L76.4,69.0" stroke="#b88fd0" stroke-width="0.9" fill="none"/><path d="M75.6,68.4 L77.0,69.80000000000001 L78.4,68.4" stroke="#b88fd0" stroke-width="0.9" fill="none"/><path d="M77.6,67.8 L79.0,69.2 L80.4,67.8" stroke="#b88fd0" stroke-width="0.9" fill="none"/><path d="M79.6,67.2 L81.0,68.60000000000001 L82.4,67.2" stroke="#b88fd0" stroke-width="0.9" fill="none"/><text x="75" y="94" font-size="3.2" font-weight="700" fill="#faca5a" text-anchor="middle">코어 비콘</text>
+<circle cx="75" cy="13" r="3.6" fill="#faca5a" stroke="#10131a" stroke-width="0.8"/><text x="75" y="14.4" font-size="4" font-weight="800" fill="#10131a" text-anchor="middle">1</text>
+<circle cx="75" cy="45" r="3.6" fill="#faca5a" stroke="#10131a" stroke-width="0.8"/><text x="75" y="46.4" font-size="4" font-weight="800" fill="#10131a" text-anchor="middle">2</text>
+<circle cx="75" cy="63" r="3.6" fill="#faca5a" stroke="#10131a" stroke-width="0.8"/><text x="75" y="64.4" font-size="4" font-weight="800" fill="#10131a" text-anchor="middle">3</text>
+<circle cx="75" cy="145" r="5" fill="#58d076" stroke="#0c100c" stroke-width="1"/><text x="75" y="146.6" font-size="4.2" font-weight="800" fill="#0c180e" text-anchor="middle">퇴</text><text x="75" y="155" font-size="3.1" font-weight="700" fill="#58d076" text-anchor="middle">추출 LZ</text>
+<circle cx="75" cy="5" r="3" fill="#e6e8ec"/><text x="75" y="0" font-size="3" fill="#e6e8ec" text-anchor="middle">진입</text>
+<clipPath id="clip_B_0"><circle cx="73" cy="15" r="5.6"/></clipPath><image href="_img/monsters/Lacercharias.png" x="67.4" y="9.4" width="11.2" height="11.2" clip-path="url(#clip_B_0)" preserveAspectRatio="xMidYMid slice"/><circle cx="73" cy="15" r="5.6" fill="none" stroke="#60a0e6" stroke-width="1.1"/><circle cx="77.1" cy="9.9" r="3.4" fill="#10131a" stroke="#60a0e6" stroke-width="0.7"/><text x="77.1" y="11.200000000000001" font-size="3.4" font-weight="700" fill="#60a0e6" text-anchor="middle">3</text><text x="73" y="24.6" font-size="3.1" font-weight="700" fill="#dfe2e6" text-anchor="middle">Lacercharias</text>
+<clipPath id="clip_B_1"><circle cx="89" cy="27" r="5.6"/></clipPath><image href="_img/monsters/Venodonte.png" x="83.4" y="21.4" width="11.2" height="11.2" clip-path="url(#clip_B_1)" preserveAspectRatio="xMidYMid slice"/><circle cx="89" cy="27" r="5.6" fill="none" stroke="#60a0e6" stroke-width="1.1"/><text x="89" y="36.6" font-size="3.1" font-weight="700" fill="#dfe2e6" text-anchor="middle">Venodonte</text>
+<clipPath id="clip_B_2"><circle cx="63" cy="43" r="6.6"/></clipPath><image href="_img/monsters/Caniathrox.png" x="56.4" y="36.4" width="13.2" height="13.2" clip-path="url(#clip_B_2)" preserveAspectRatio="xMidYMid slice"/><circle cx="63" cy="43" r="6.6" fill="none" stroke="#e49646" stroke-width="1.1"/><circle cx="68.1" cy="36.9" r="3.4" fill="#10131a" stroke="#e49646" stroke-width="0.7"/><text x="68.1" y="38.199999999999996" font-size="3.4" font-weight="700" fill="#e49646" text-anchor="middle">5</text><text x="63" y="53.6" font-size="3.1" font-weight="700" fill="#dfe2e6" text-anchor="middle">Caniathrox</text>
+<clipPath id="clip_B_3"><circle cx="92" cy="49" r="6.6"/></clipPath><image href="_img/monsters/Dimaxillosaurus.png" x="85.4" y="42.4" width="13.2" height="13.2" clip-path="url(#clip_B_3)" preserveAspectRatio="xMidYMid slice"/><circle cx="92" cy="49" r="6.6" fill="none" stroke="#e49646" stroke-width="1.1"/><circle cx="97.1" cy="42.9" r="3.4" fill="#10131a" stroke="#e49646" stroke-width="0.7"/><text x="97.1" y="44.199999999999996" font-size="3.4" font-weight="700" fill="#e49646" text-anchor="middle">2</text><text x="92" y="59.6" font-size="3.1" font-weight="700" fill="#dfe2e6" text-anchor="middle">Dimax.</text>
+<clipPath id="clip_B_4"><circle cx="75" cy="55" r="6.6"/></clipPath><image href="_img/monsters/Kupolojuve.png" x="68.4" y="48.4" width="13.2" height="13.2" clip-path="url(#clip_B_4)" preserveAspectRatio="xMidYMid slice"/><circle cx="75" cy="55" r="6.6" fill="none" stroke="#e49646" stroke-width="1.1"/><circle cx="80.1" cy="48.9" r="3.4" fill="#10131a" stroke="#e49646" stroke-width="0.7"/><text x="80.1" y="50.199999999999996" font-size="3.4" font-weight="700" fill="#e49646" text-anchor="middle">3</text><text x="75" y="65.6" font-size="3.1" font-weight="700" fill="#dfe2e6" text-anchor="middle">Kupolojuve</text>
+<clipPath id="clip_B_5"><circle cx="115" cy="75" r="8.2"/></clipPath><image href="_img/monsters/Fulgurodonte.png" x="106.8" y="66.8" width="16.4" height="16.4" clip-path="url(#clip_B_5)" preserveAspectRatio="xMidYMid slice"/><circle cx="115" cy="75" r="8.2" fill="none" stroke="#e45646" stroke-width="1.1"/><text x="115" y="87.2" font-size="3.1" font-weight="700" fill="#dfe2e6" text-anchor="middle">Fulguro.램</text>
+<clipPath id="clip_B_6"><circle cx="66" cy="66" r="8.2"/></clipPath><image href="_img/monsters/Carcinoptera.png" x="57.8" y="57.8" width="16.4" height="16.4" clip-path="url(#clip_B_6)" preserveAspectRatio="xMidYMid slice"/><circle cx="66" cy="66" r="8.2" fill="none" stroke="#e45646" stroke-width="1.1"/><text x="66" y="78.2" font-size="3.1" font-weight="700" fill="#dfe2e6" text-anchor="middle">Carcinop.</text>
+</svg>
+  <div class="relay"><b>① (0,+62)</b> 단상·군집 또렷(기준선) → <b>② (0,+30) 트임</b> 콘 확 넓어짐·광장 개활 → <b>③ (0,+12)</b> 단상 도달·정예 전모</div>
+  <ul class="place"><li><span class="d rim"></span><b>Lacercharias</b> ×3 — 방사 거리 입구</li><li><span class="d rim"></span><b>Venodonte</b> ×1 — 차량/바리케이드 뒤 엄폐</li><li><span class="d mid"></span><b>Caniathrox</b> ×5 — 방사 거리로 쇄도</li><li><span class="d mid"></span><b>Dimaxillosaurus</b> ×2 — 파사드 코너 매복</li><li><span class="d mid"></span><b>Kupolojuve</b> ×3 — 공중 군집=비콘→다이브</li><li><span class="d core"></span><b>Fulgurodonte</b> ×1 — 개활 런웨이 직선 램</li><li><span class="d core"></span><b>Carcinoptera</b> ×1 — 공중 정예 다이브(분수광장 전용)</li></ul>
+ </div>
+</div>
+
+<div class="leg"><b>범례</b> &nbsp; 🟦 외곽 LV1 (파밍/안전) &nbsp; 🟧 중간 LV2~3 (카이팅 본전장) &nbsp; 🟥 코어 LV4~5 (잭팟) &nbsp;|&nbsp; 토큰 크기 = LV(클수록 큼) &nbsp;|&nbsp; 시안 원=카이팅 루프(림62/중간36/코어13) &nbsp;|&nbsp; 금색 점선=밴드 경계 &nbsp;|&nbsp; 노란 선=리딩 라인 &nbsp;|&nbsp; ⌁=크레인·단상 비콘 &nbsp;|&nbsp; 퇴=추출 LZ</div>
+
+<div class="warn">⚠️ 이 수(×N)는 <b>한 비트의 동시 노출 의도</b>지 총 스폰이 아님 — 무한 스폰은 디렉터가 밴드 인구예산·스태거로 채움. 정면 팝인 0(디제틱 출처). 실제 동시 alive 캡·스태거·풀사이즈 = Gameplay. <b>쫄깃함은 게이트0 전투감 선행 판정</b>(맵=무대).</div>
+
+<footer>좌표 출처: <code>docs/02_logs/2026-06-14-first-stage-build-spec.md</code> · 이미지: <code>docs/03_reference/assets/monster_previews/</code> (Protofactor Vol.2) · 독트린 <code>docs/00_authority/2026-06-14-natural-pull-doctrine.md</code></footer>
+</div></body></html>

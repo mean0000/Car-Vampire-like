@@ -1,11 +1,11 @@
 ---
 name: bootstrap-attacher-hazards
-description: 자가 부트스트랩 DDOL/런타임 부착자 패턴(RearThreatHint·AmbientBedDrone·ZombieVocalDirector·CameraPresetLab) 리뷰 체크리스트 — 2026-06-12 세션1 리뷰에서 실제 발화한 항목들
+description: 자가 부트스트랩 DDOL/런타임 부착자 패턴(RearThreatHint·AmbientBedDrone·ZombieVocalDirector·CameraPresetLab·PlayerHandWeapon) 리뷰 체크리스트 — 2026-06-12 세션1 + 2026-06-13 Phase2 리뷰에서 실제 발화한 항목들
 metadata:
   type: project
 ---
 
-이 프로젝트는 "씬/프리팹 무수정" 정책 때문에 자가 부트스트랩 DDOL + 런타임 AddComponent 부착자 패턴을 반복 사용한다(RearThreatHint, AmbientBedDrone, ZombieVocalDirector, CameraPresetLab/Restorer). 2026-06-12 리뷰에서 실제로 발화한 하자 패턴:
+이 프로젝트는 "씬/프리팹 무수정" 정책 때문에 자가 부트스트랩 DDOL + 런타임 AddComponent/Instantiate 부착자 패턴을 반복 사용한다(RearThreatHint, AmbientBedDrone, ZombieVocalDirector, CameraPresetLab/Restorer, PlayerHandWeapon). 2026-06-12~13 리뷰에서 실제로 발화한 하자 패턴:
 
 **Why:** 같은 패턴이 계속 복제되므로 같은 구멍도 복제된다. 아래는 코드만 봐서는 한 번에 안 보이는, 이 패턴 고유의 함정.
 
@@ -17,5 +17,7 @@ metadata:
 4. **Awake 중복-파괴 경로의 같은 프레임 Update NRE**: `Destroy(gameObject)`는 프레임 말 지연이라, Awake에서 초기화를 건너뛴 중복 인스턴스의 Update가 그 프레임에 한 번 돈다 → 미초기화 필드 NRE. `if (_src == null) return` 1줄 가드.
 5. **풀링 도입 시 AddComponent 중복**: ZombieController.Init은 풀링 대비로 작성됨(현재는 Instantiate/Destroy). 풀링이 들어오면 사망 시 Voice 목록에서 빠진 좀비가 부활할 때 부착자가 AudioSource를 또 붙임. 풀링 PR 리뷰 때 부착자 전수 점검 필요.
 6. **Init 없는 룩데브/조각상 좀비**: FindObjectsOfType 리스캔은 룩데브 씬의 Init 안 된 좀비도 줍는다(IsDead false, Dormant) → 조각상이 으르렁댄다. 부착자에 게임플레이 씬 가정이 암묵적으로 박혀 있음.
+7. **[2026-06-13 신규] AfterSceneLoad 1회 발화 한계 + 씬 전환 재진입 무방비**: RuntimeInitializeOnLoadMethod(AfterSceneLoad)는 앱 기동 시 1회만 발화. 런타임 씬 전환(LoadScene)으로 진입하는 전투 씬에는 Bootstrap이 재실행되지 않아 손 무기가 부착되지 않음. 현재 검증 경로(전투 씬 직부팅)에서는 영향 없으나, 오피스↔미션 씬 전환이 구현되면 즉시 발화. 구현자 주석이 이 한계를 명시하고 있음. SceneManager.sceneLoaded 구독 또는 별도 MonoBehaviour Awake로의 전환이 필요한 시점. 확인 신호: 오피스→미션 씬 전환 PR이 올 때 이 파일을 함께 수정해야 함.
+8. **[2026-06-13 신규] AfterSceneLoad → Awake 순서 레이스**: Bootstrap()이 prefab Instantiate 후 곧바로 돌아오지만, 인스턴스의 Awake(→_combat 캐시)는 같은 프레임 Unity 스케줄링에서 실행된다. 일반적으로는 Instantiate가 부모 지정(hand transform)과 함께 호출되면 Awake가 즉시 실행되지만, 현재 hand 본이 다른 MonoBehaviour의 Awake/OnEnable에서 재배치되는 구조라면 Awake 순서가 뒤집힐 수 있다. 정확한 발화 여부는 씬 구성에 의존 — 정적 직접 연결보다 취약한 구조임은 변하지 않음.
 
 관련: 카메라 샌드위치(복원 Update −9 → 리그 LateUpdate −50 → 랩 −40) 구조 자체는 건전 판정. 단 Feel MMWiggle이 카메라 트랜스폼을 LateUpdate(0)에서 쓰면 오버라이드 중 그 오프셋이 다음 프레임 복원에 지워짐 — 씬 확인 필요 항목.

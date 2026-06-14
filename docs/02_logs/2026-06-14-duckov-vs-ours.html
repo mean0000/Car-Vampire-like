@@ -1,0 +1,77 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>덕코프 맵 배치 vs 우리 v3</title>
+<style>
+:root{--bg:#0f1014;--panel:#1a1d24;--edge:#3a3f49;--txt:#e6e8ec;--dim:#9aa0a8;--sub:#c2c6cc;--gold:#fac95a;--green:#7ad6a0;--red:#e8857a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 700px at 50% -10%,#161922,#0f1014 60%);color:var(--txt);
+font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo","Segoe UI",sans-serif;line-height:1.55;padding:36px 24px 70px}
+.wrap{max-width:1180px;margin:0 auto}
+.stamp{display:inline-block;border:1px solid var(--edge);border-radius:4px;padding:3px 10px;font-size:11px;letter-spacing:.12em;color:var(--dim);margin-bottom:14px}
+h1{font-size:26px;font-weight:800;margin-bottom:6px}
+.lede{color:var(--dim);font-size:14px;max-width:980px;margin-bottom:20px}.lede b{color:var(--sub)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px}
+@media(max-width:820px){.row{grid-template-columns:1fr}}
+.cell{background:var(--panel);border:1px solid var(--edge);border-radius:12px;overflow:hidden}
+.cell.good{border-color:var(--green)} .cell.bad{border-color:#6a4040}
+.cell img{width:100%;display:block;background:#000;aspect-ratio:16/9;object-fit:cover}
+.cap{padding:11px 15px}.cap .t{font-weight:800;font-size:15px}.cell.good .t{color:var(--green)}.cell.bad .t{color:var(--red)}
+.cap p{font-size:12.5px;color:var(--dim);margin-top:4px}
+.box{background:var(--panel);border:1px solid var(--edge);border-radius:10px;padding:16px 18px;margin-top:18px}
+.box h3{font-size:15px;color:var(--gold);margin-bottom:10px}
+.box li{font-size:13px;color:var(--sub);margin-bottom:7px;list-style:none;padding-left:18px;position:relative}
+.box li::before{content:"›";position:absolute;left:0;color:var(--gold)}.box b{color:var(--txt)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}@media(max-width:760px){.two{grid-template-columns:1fr}}
+.q{margin-top:16px;border:1px solid #4a6a4a;background:rgba(122,214,160,.07);border-radius:10px;padding:14px 17px;font-size:13px;color:#bfe6cc}
+footer{margin-top:18px;font-size:11px;color:#6c727c;border-top:1px solid var(--edge);padding-top:12px}footer code{color:#9aa0a8}
+</style></head><body><div class="wrap">
+<div class="stamp">ZombieCrush · 덕코프 맵 배치 확인 vs 우리 v3 · 2026-06-14</div>
+<h1>덕코프는 이렇게 깔았다 — 내 격자가 틀렸다</h1>
+<p class="lede">덕코프 전체 맵(Ground Zero)을 받아 확인. <b>유기적·비대칭 테마 존</b>이지 십자+링 대칭 격자가 아님. 내 v3는 "이 세상에 없는 수학적 격자"가 맞았습니다.</p>
+
+<div class="row">
+  <div class="cell good">
+    <img src="../03_reference/assets/map_refs/duckov_fullmap.png">
+    <div class="cap"><span class="t">덕코프 실제 맵 ✓</span><p>유기적 지형(물길·숲·고저차) + 흩어진 컴파운드 + 굽은 길 + 자연 장벽. <b>비대칭, 격자 0.</b></p></div>
+  </div>
+  <div class="cell bad">
+    <img src="../03_reference/assets/angle_test/map_overview.png">
+    <div class="cap"><span class="t">우리 v3 ✗</span><p>십자 대로 + 사각 링 + 줄지은 건물. <b>완벽 대칭 수학 격자 — 현실/덕코프와 정반대.</b></p></div>
+  </div>
+</div>
+
+<div class="box">
+<h3>덕코프 배치 로직 (실측)</h3>
+<div class="two">
+<div>
+<ul>
+<li><b>유기적·비대칭</b> — 손으로 빚은 불규칙. 대칭 0.</li>
+<li><b>자연 지형이 공간을 나눔</b> — 풀밭·숲·물길·고저차(우리 평평 격자 ❌).</li>
+<li><b>흩어진 컴파운드</b> — 균일 블록 ❌, 테마 거점(농가·창고·야드)으로 불규칙 군집.</li>
+</ul>
+</div>
+<div>
+<ul>
+<li><b>굽은 길</b> — POI 사이를 지형 따라 구불구불(직선 대로 ❌).</li>
+<li><b>자연 장벽</b>(물·절벽·숲)이 동선 가르고 존 분리.</li>
+<li><b>테마 존</b> — Ground Zero/Farm/Warehouse/J-Lab/Storm 각자 정체성.</li>
+</ul>
+</div>
+</div>
+</div>
+
+<div class="box">
+<h3>그래서 우리 맵 수정 방향 (유기적으로, 단 우리 끌림은 유지)</h3>
+<ul>
+<li><b>격자 폐기</b> — 십자+링 대칭 버림. <b>비대칭 유기 배치.</b></li>
+<li><b>컴파운드 단위</b> — 건물을 거점으로 군집(집하장 야드·폐허 블록·코어 시설). 줄세우기 ❌.</li>
+<li><b>굽은 길 + 자연 장벽</b> — 아스팔트/흙길을 구불구불, 잔해·벽·차량 줄·지형으로 동선 채널링.</li>
+<li><b>★우리 끌림 유지</b> — 덕코프는 동심원 아님. 단 우리 독트린(코어 비콘·뽕 잭팟·밀도 그라디언트)은 유지하되 <b>중앙 대칭이 아니라 *한 거점*(코어 시설)을 향해 유기적으로 빨려들게</b>. 비콘은 그 거점에.</li>
+<li><b>바운디드 유지</b> — 봉쇄벽/자연 경계로 둘러싼 한 존(15분 농성).</li>
+</ul>
+</div>
+
+<div class="q">❓ <b>확인:</b> 이 읽기 맞습니까? 맞으면 — 격자 버리고 <b>유기적 컴파운드+굽은 길+자연 장벽+비대칭</b>으로 다시 깔겠습니다(끌림=한 코어 거점으로 유기적 수렴). 우리 첫 존 테마는 <b>폐허 도심(집하장/야드)</b>로 잡고. 다른 지시 있으면 말씀하세요.</div>
+
+<footer>출처: <code>docs/03_reference/assets/map_refs/duckov_fullmap.png</code>(vgtimes 인터랙티브 맵) · 덕코프 존: Ground Zero/Farm/Warehouse/J-Lab/Storm</footer>
+</div></body></html>

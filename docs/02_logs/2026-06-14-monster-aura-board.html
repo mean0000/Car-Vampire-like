@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZombieCrush 몬스터 시그니처 오라 보드 (제안)</title>
+<style>
+  :root{
+    --bg:#0b0f15; --panel:#121a24; --line:#1f2c3a; --txt:#dbe5f0; --dim:#7e8da0;
+    --cyan:#2de2e6; --red:#ff5a2c; --magenta:#ff3d7f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:'Pretendard','Segoe UI',system-ui,sans-serif;line-height:1.5;padding:30px 22px 80px}
+  .wrap{max-width:1200px;margin:0 auto}
+  h1{font-size:25px;letter-spacing:1px;margin-bottom:6px}
+  h1 .c{color:#2de2e6}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:8px}
+  .note{color:var(--txt);font-size:12.5px;background:var(--panel);border-left:3px solid #ff5a2c;padding:10px 14px;border-radius:5px;margin:14px 0 24px;line-height:1.7}
+  .note b{color:#ff5a2c}
+  .note .ok{color:#a0f0a0}
+  .note .warn{color:#f0c050}
+  h2{font-size:15px;margin:30px 0 4px;padding:8px 13px;border-radius:7px;background:var(--panel);border-left:4px solid}
+  .axissub{color:var(--dim);font-size:12px;margin:0 0 12px 4px}
+
+  /* === LV GRADE STRIP === */
+  .grade-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border-radius:11px;overflow:hidden;border:1px solid var(--line);margin-bottom:24px}
+  .grade-col{display:flex;flex-direction:column}
+  .grade-chip{height:80px;position:relative;display:flex;align-items:flex-end;padding:8px}
+  .grade-chip .hex{font-family:'Consolas',monospace;font-size:10.5px;background:rgba(0,0,0,.5);color:#fff;padding:2px 7px;border-radius:4px}
+  .grade-meta{background:var(--panel);padding:10px 12px;flex:1;border-top:1px solid var(--line)}
+  .grade-meta .lv{font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:3px;opacity:.9}
+  .grade-meta .nm{font-size:13px;font-weight:600;margin-bottom:4px}
+  .grade-meta .role{font-size:11px;color:var(--dim);line-height:1.6}
+
+  /* player cyan comparison strip */
+  .cmp-strip{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:16px}
+  .cmp-card{background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .cmp-chip{height:70px;display:flex;align-items:flex-end;padding:8px}
+  .cmp-chip .hex{font-family:'Consolas',monospace;font-size:11px;background:rgba(0,0,0,.45);color:#fff;padding:2px 7px;border-radius:4px}
+  .cmp-meta{padding:10px 12px}
+  .cmp-meta .nm{font-size:13.5px;font-weight:700;margin-bottom:3px}
+  .cmp-meta .role{font-size:11.5px;color:var(--dim)}
+  .cmp-sep{display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--dim);padding:0 4px}
+
+  /* row layout */
+  .row{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:13px;margin-bottom:8px}
+  .sw{background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .chip{height:90px;display:flex;align-items:flex-end;justify-content:flex-end;padding:8px}
+  .chip .hex{font-family:'Consolas',monospace;font-size:11px;background:rgba(0,0,0,.45);color:#fff;padding:2px 7px;border-radius:4px}
+  .meta{padding:10px 12px}
+  .meta .nm{font-size:14px;font-weight:600;margin-bottom:3px}
+  .meta .role{font-size:11.5px;color:var(--dim)}
+
+  /* temp gradient bar */
+  .temp-bar{height:28px;border-radius:7px;margin:10px 0 4px;background:linear-gradient(90deg,
+    #5ac9b4 0%, #3baa8a 22%,
+    #ff7c35 50%, #ff5a2c 66%,
+    #c41a1a 82%, #1a0505 100%
+  );position:relative;border:1px solid var(--line)}
+  .temp-bar .tick{position:absolute;top:-18px;font-size:10px;color:var(--dim);transform:translateX(-50%)}
+  .temp-bar .tick.lo{left:11%} .temp-bar .tick.lh{left:33%}
+  .temp-bar .tick.ml{left:50%} .temp-bar .tick.mh{left:64%}
+  .temp-bar .tick.hi{left:82%} .temp-bar .tick.ex{left:95%}
+  .temp-wrap{margin:0 0 20px;padding-top:20px}
+
+  /* body part diagram */
+  .body-table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:12.5px}
+  .body-table th{background:var(--panel);padding:7px 12px;text-align:left;color:var(--dim);font-size:11px;border-bottom:1px solid var(--line)}
+  .body-table td{padding:8px 12px;border-bottom:1px solid #141d27;vertical-align:top}
+  .body-table tr:last-child td{border-bottom:none}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle}
+
+  /* attack accent diagram */
+  .accent-bar{display:flex;border-radius:8px;overflow:hidden;height:48px;border:1px solid var(--line);margin:10px 0}
+  .accent-seg{display:flex;align-items:center;justify-content:center;font-size:11.5px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7);font-weight:600}
+
+  /* attribute shape cards */
+  .attr-row{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-bottom:16px}
+  .attr-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;position:relative;overflow:hidden}
+  .attr-card .attr-nm{font-size:13.5px;font-weight:700;margin-bottom:6px}
+  .attr-card .attr-tag{display:inline-block;font-size:10px;padding:2px 8px;border-radius:4px;margin-bottom:8px;font-weight:600;letter-spacing:.5px}
+  .attr-card .attr-body{font-size:11.5px;color:var(--dim);line-height:1.65}
+  .attr-card .attr-shape{font-size:11px;padding:6px 10px;border-radius:5px;margin-top:8px;background:rgba(255,255,255,.04);border-left:3px solid}
+
+  /* top-down mock scene */
+  .mock{margin-top:14px;border-radius:12px;overflow:hidden;border:1px solid var(--line);position:relative;height:340px;
+    background:radial-gradient(130% 110% at 30% 20%, #1e2b3a 0%, #141c28 50%, #0d131b 100%)}
+  .mock .lbl{position:absolute;font-size:10.5px;font-family:Consolas,monospace;padding:2px 7px;border-radius:4px;background:rgba(0,0,0,.55);white-space:nowrap}
+  .mock .entity{position:absolute;border-radius:50%}
+  .glow{filter:drop-shadow(0 0 8px currentColor)}
+
+  /* separator */
+  .sep{border:none;border-top:1px solid var(--line);margin:28px 0}
+
+  /* tech option pills */
+  .tech-row{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 18px}
+  .tech-pill{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 14px;font-size:12px;min-width:180px;flex:1}
+  .tech-pill .pill-tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap}
+  .tech-pill .pill-body{color:var(--dim);line-height:1.55}
+
+  footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:12px;color:var(--dim);line-height:1.9}
+  footer .big{font-size:13.5px;color:var(--txt);font-weight:600;margin-bottom:6px}
+  footer .fp{color:#f0c050}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>ZombieCrush 몬스터 <span class="c">시그니처 오라 보드</span> — 제안 v1</h1>
+<div class="sub">2026-06-14 · 등급 온도축 + 부위 발광 규칙 + 공격 악센트 + 속성→형태 매핑 · 수치 전부 제안, 유저 판정</div>
+
+<div class="note">
+  <b>핵심 원리 3줄</b><br>
+  1. <b>오라 = 변이 등급 온도계</b> — 차가운 탁한 청록(약함) → 뜨거운 붉은(강함). 색이 곧 위협도 읽기다.<br>
+  2. <b class="warn">LV1~2 오라색은 플레이어 시안(#2DE2E6)과 절대 섞이지 않는다</b> — 적은 탁하고 자연스러운 변이색, 플레이어는 형광 포화 인공색. 아래 분리 증명 색칩 참고.<br>
+  3. <b>공격 텔레그래프 = 항상 레드오렌지(#FF5A2C) 베이스</b> — "위험하다" 는 등급 무관 동일 언어, 오라색은 악센트로만 가미.
+</div>
+
+
+<!-- ===== 1. 시안 분리 증명 ===== -->
+<h2 style="border-color:#2de2e6">01 / 플레이어 시안 vs LV1~2 오라 — 분리 증명</h2>
+<div class="axissub">두 색을 나란히 놔서 부감 호드(15m 탑다운)에서 "내 시안"과 섞이지 않음을 확인. 판정 포인트.</div>
+<div class="cmp-strip">
+  <div class="cmp-card">
+    <div class="cmp-chip" style="background:#2de2e6">
+      <span class="hex">#2DE2E6</span>
+    </div>
+    <div class="cmp-meta">
+      <div class="nm" style="color:#2de2e6">플레이어 시안 — 인공 신호</div>
+      <div class="role">§3-3 "인공색 = 나" 절대 규약. 형광·포화·날카로운 청. 슬래시 궤적·킬 버스트·HUD. <b style="color:#f0c050">이 색은 적이 절대 쓰지 않는다.</b></div>
+    </div>
+  </div>
+  <div class="cmp-sep">vs</div>
+  <div class="cmp-card">
+    <div class="cmp-chip" style="background:#4baf90">
+      <span class="hex">#4BAF90 (제안)</span>
+    </div>
+    <div class="cmp-meta">
+      <div class="nm" style="color:#4baf90">LV1~2 오라 — 탁한 변이 청록</div>
+      <div class="role">채도 낮음·녹 방향으로 기울어짐(teal-green). <b>자연 변이색</b> — 해조류·곰팡이·바이오매스. 형광 인공감 없음. 부감에서 시안과 즉시 구분 가능 여부가 판정 핵심.</div>
+    </div>
+  </div>
+</div>
+<div class="axissub" style="margin-top:-6px;font-size:11.5px">
+  ★ 대안 LV1~2 후보 — 더 탁하게(#3d8c72), 더 녹색으로(#5ab87a), 황녹 쪽으로(#88b840). 아래 등급 스트립에서 같이 보고 판정.
+</div>
+
+<div class="row" style="margin-top:10px;margin-bottom:4px">
+  <div class="sw"><div class="chip" style="background:#4baf90"><span class="hex">#4BAF90</span></div>
+    <div class="meta"><div class="nm" style="color:#4baf90">후보 A — teal-green (제안 기본)</div><div class="role">청록 중간. 시안보다 녹 방향 + 채도 -40%</div></div></div>
+  <div class="sw"><div class="chip" style="background:#3d8c72"><span class="hex">#3D8C72</span></div>
+    <div class="meta"><div class="nm" style="color:#3d8c72">후보 B — 더 탁하게</div><div class="role">명도 낮춤. 어둠 속 약한 발광 느낌. 위협감 더 낮음</div></div></div>
+  <div class="sw"><div class="chip" style="background:#5ab87a"><span class="hex">#5AB87A</span></div>
+    <div class="meta"><div class="nm" style="color:#5ab87a">후보 C — 녹 비중 높임</div><div class="role">자연 변이(균류/이끼) 연상. 플레이어 시안과 최대 거리</div></div></div>
+  <div class="sw"><div class="chip" style="background:#88b840"><span class="hex">#88B840</span></div>
+    <div class="meta"><div class="nm" style="color:#88b840">후보 D — 황녹</div><div class="role">가장 "생물학적 변이" 느낌. 시안과 완전 분리. 다소 독성 연상</div></div></div>
+</div>
+
+
+<!-- ===== 2. 온도 그라데이션 ===== -->
+<h2 style="border-color:#ff7a40">02 / 등급 온도 그라데이션 — LV1 → LV5</h2>
+<div class="axissub">차가운 자연 변이(약함) → 뜨거운 붉은 위협(강함). 색이 곧 실력이자 위험 알림.</div>
+
+<div class="temp-wrap">
+  <div class="temp-bar">
+    <span class="tick lo">LV1</span>
+    <span class="tick lh">LV2</span>
+    <span class="tick ml">LV3</span>
+    <span class="tick mh">LV4</span>
+    <span class="tick hi">LV5</span>
+  </div>
+</div>
+
+<div class="grade-strip">
+
+  <!-- LV1 -->
+  <div class="grade-col">
+    <div class="grade-chip" style="background:linear-gradient(135deg,#1e3a30,#4baf90)">
+      <span class="hex">#4BAF90</span>
+    </div>
+    <div class="grade-meta">
+      <div class="lv" style="color:#4baf90">LV 1</div>
+      <div class="nm" style="color:#4baf90">탁한 청록</div>
+      <div class="role">발광 강도 약 (어둠 속에서만 눈에 띔). 변이 초기. 눈·등 등 소면적 한 곳만 발광. 호드 최다 등장.</div>
+    </div>
+  </div>
+
+  <!-- LV2 -->
+  <div class="grade-col">
+    <div class="grade-chip" style="background:linear-gradient(135deg,#1a3528,#3d9c78)">
+      <span class="hex">#3D9C78</span>
+    </div>
+    <div class="grade-meta">
+      <div class="lv" style="color:#3d9c78">LV 2</div>
+      <div class="nm" style="color:#3d9c78">심화 청록</div>
+      <div class="role">LV1 대비 발광 약간 더 강함. 2곳 이하 발광 가능(눈+등 등). 여전히 차가운 자연 변이색.</div>
+    </div>
+  </div>
+
+  <!-- LV3 -->
+  <div class="grade-col">
+    <div class="grade-chip" style="background:linear-gradient(135deg,#3a1800,#ff7c35)">
+      <span class="hex">#FF7C35</span>
+    </div>
+    <div class="grade-meta">
+      <div class="lv" style="color:#ff7c35">LV 3</div>
+      <div class="nm" style="color:#ff7c35">주황</div>
+      <div class="role">온도 전환점. 위협 레드오렌지 계열 진입. 발광 면적 확장(눈+등+관절 1). ThreatArc와 색 계열 정합.</div>
+    </div>
+  </div>
+
+  <!-- LV4 -->
+  <div class="grade-col">
+    <div class="grade-chip" style="background:linear-gradient(135deg,#3a0800,#ff5a2c)">
+      <span class="hex">#FF5A2C</span>
+    </div>
+    <div class="grade-meta">
+      <div class="lv" style="color:#ff5a2c">LV 4</div>
+      <div class="nm" style="color:#ff5a2c">레드오렌지</div>
+      <div class="role">위협 경고색과 동일 계열 — 오라만 봐도 "위험" 즉각 읽힘. 발광 부위 3~4곳. Fulgurodonte 전기속성 = <b>형태(스파크)로 분화</b>, 오라 등급색은 레드오렌지 유지.</div>
+    </div>
+  </div>
+
+  <!-- LV5 -->
+  <div class="grade-col">
+    <div class="grade-chip" style="background:linear-gradient(135deg,#120000,#c41a1a 60%,#0a0000)">
+      <span class="hex">#C41A1A</span>
+    </div>
+    <div class="grade-meta">
+      <div class="lv" style="color:#c41a1a">LV 5</div>
+      <div class="nm" style="color:#c41a1a">붉은 + 검은 입자</div>
+      <div class="role">변이 말기·위협 극대. 오라색=진홍+어둠(#C41A1A~#1A0000 그라데이션). 검은 입자(어둠 방울) 추가. 발광 부위 4~5곳 + 열기 시머.</div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ===== 3. 부위 발광 규칙 ===== -->
+<h2 style="border-color:#7a6aaa">03 / 부위 발광 규칙 — 신체 유형별 가이드</h2>
+<div class="axissub">전신 발광 X. 변이 핵심부 = 해당 종의 "이야기하는 부위"만 빛남. 부감 15m 가독성 기준.</div>
+
+<table class="body-table">
+  <thead>
+    <tr>
+      <th>신체 유형</th>
+      <th>LV1~2 (탁청록) 발광 부위</th>
+      <th>LV3~4 (주황/레드) 추가 부위</th>
+      <th>LV5 (진홍+검정) 전체</th>
+      <th>부감 가독성 포인트</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>2족 직립형</b><br><span style="color:var(--dim);font-size:11px">Caniathrox 류</span></td>
+      <td><span class="dot" style="background:#4baf90"></span>눈 (핵심 1곳)</td>
+      <td><span class="dot" style="background:#ff7c35"></span>눈 + 등 척추 라인 + 어깨 관절</td>
+      <td><span class="dot" style="background:#c41a1a"></span>전술 부위 5곳 + 검은 입자 trail</td>
+      <td>눈 발광 = 방향 읽기 핵심. 척추 라인 = 탑다운에서 실루엣 강화</td>
+    </tr>
+    <tr>
+      <td><b>4족 돌진형</b><br><span style="color:var(--dim);font-size:11px">Crassorrid 류</span></td>
+      <td><span class="dot" style="background:#4baf90"></span>등 혹(변이 핵심부)</td>
+      <td><span class="dot" style="background:#ff7c35"></span>등 혹 + 어깨 2곳 + 머리 이마</td>
+      <td><span class="dot" style="background:#c41a1a"></span>등 + 머리 + 발굽/발톱 + 입가</td>
+      <td>탑다운에서 등이 항상 노출됨 = 등 발광이 1순위 식별자</td>
+    </tr>
+    <tr>
+      <td><b>원거리 사수형</b><br><span style="color:var(--dim);font-size:11px">Venodonte 류</span></td>
+      <td><span class="dot" style="background:#4baf90"></span>입/분비기관 (발사 전 예열)</td>
+      <td><span class="dot" style="background:#ff7c35"></span>입 + 복부 발사기 + 눈</td>
+      <td><span class="dot" style="background:#c41a1a"></span>전신 분비선 다수</td>
+      <td>입·복부 발광이 공격 예고 = 텔레그래프와 오라 자연 통합</td>
+    </tr>
+    <tr>
+      <td><b>대형/보스형</b><br><span style="color:var(--dim);font-size:11px">LV5 단독 등장</span></td>
+      <td style="color:var(--dim)">해당 없음</td>
+      <td style="color:var(--dim)">해당 없음</td>
+      <td><span class="dot" style="background:#c41a1a"></span>눈 + 등 + 관절 + 거대 혹 + 입 = 발광 풀셋<br><span style="font-size:11px;color:var(--dim)">검은 입자 상시 방출 (이동 trail)</span></td>
+      <td>진홍+검정의 대비가 "이건 다르다"를 즉시 전달. 부감에서 실루엣만으로 보스 식별</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="note" style="border-color:#7a6aaa;font-size:12px">
+  <b style="color:#a090cc">발광 강도 규칙</b> — HDR 발광(Bloom 트리거) 강도는 등급에 따라 단계적으로 상승.<br>
+  LV1: Emission intensity 1.5 / LV2: 2.0 / LV3: 3.0 / LV4: 4.0 / LV5: 5.0 + 검은 입자 추가 (전부 제안 — 플레이 중 조정).
+</div>
+
+
+<!-- ===== 4. 공격 악센트 규칙 ===== -->
+<h2 style="border-color:#ff5a2c">04 / 공격 악센트 — 위협 레드오렌지 베이스 + 오라색 가미</h2>
+<div class="axissub">ThreatArc·임팩트는 항상 위협색으로 먼저 읽힌다. 오라색은 "누가 공격하는가"를 얹는 악센트.</div>
+
+<div style="margin-bottom:14px">
+  <!-- LV1~2 attack accent -->
+  <div style="margin-bottom:10px">
+    <div style="font-size:12px;color:var(--dim);margin-bottom:5px">LV1~2 텔레그래프 / 임팩트 — 위협 85% + 오라 15%</div>
+    <div class="accent-bar">
+      <div class="accent-seg" style="flex:8.5;background:#ff5a2c">위협 레드오렌지 #FF5A2C (85%)</div>
+      <div class="accent-seg" style="flex:1.5;background:#4baf90">오라 청록 (15%)</div>
+    </div>
+    <div style="font-size:11px;color:var(--dim)">악센트 = ThreatArc 외곽 테두리 실선, 파티클 끝 색조 미세 변화</div>
+  </div>
+  <!-- LV3~4 attack accent -->
+  <div style="margin-bottom:10px">
+    <div style="font-size:12px;color:var(--dim);margin-bottom:5px">LV3~4 텔레그래프 / 임팩트 — 위협 70% + 오라 30%</div>
+    <div class="accent-bar">
+      <div class="accent-seg" style="flex:7;background:#ff5a2c">위협 레드오렌지 #FF5A2C (70%)</div>
+      <div class="accent-seg" style="flex:3;background:#ff7c35">오라 주황 (30%)</div>
+    </div>
+    <div style="font-size:11px;color:var(--dim)">오라 주황이 위협색과 계열이 같아서 자연 통합 — 악센트 비율 더 높여도 가독성 유지</div>
+  </div>
+  <!-- LV5 attack accent -->
+  <div>
+    <div style="font-size:12px;color:var(--dim);margin-bottom:5px">LV5 텔레그래프 / 임팩트 — 위협 60% + 오라 진홍 40%</div>
+    <div class="accent-bar">
+      <div class="accent-seg" style="flex:6;background:#ff5a2c">위협 레드오렌지 #FF5A2C (60%)</div>
+      <div class="accent-seg" style="flex:4;background:#c41a1a">오라 진홍 #C41A1A (40%)</div>
+    </div>
+    <div style="font-size:11px;color:var(--dim)">보스 텔레그래프 = 어두운 진홍이 섞여 "더 위험한 경고"로 온도 에스컬레이션</div>
+  </div>
+</div>
+
+<div class="note" style="border-color:#ff5a2c;font-size:12px">
+  <b>충돌 방지 원칙</b> — 공격 시 오라색이 절대 시안(#2DE2E6) 쪽으로 이동하지 않는다. LV1~2 청록 오라가 공격에 악센트로 쓰일 때도 <b>탁한 teal-green</b>으로 유지 (형광 시안 ❌). 확인 방법: ThreatArc 외곽 악센트 색을 시안 옆에 놓고 육안 비교.
+</div>
+
+
+<!-- ===== 5. 속성→형태 매핑 ===== -->
+<h2 style="border-color:#88a060">05 / 속성 분화 — 색 대신 형태/입자/패턴으로</h2>
+<div class="axissub">
+  기존 "산성=녹/전기=청백/가스=황" 색축은 <b>등급 온도축으로 교체</b>. 속성은 발광 형태·입자 모양·텔레그래프 패턴으로만 분화.<br>
+  ★ Fulgurodonte(LV4 전기)처럼 속성색(청백)이 등급색(레드오렌지)과 충돌하는 경우 → <b>등급 우선</b>.
+</div>
+
+<div class="attr-row">
+  <!-- 산성 -->
+  <div class="attr-card" style="border-color:#5a8a50">
+    <div class="attr-nm" style="color:#88cc66">산성 (Acid)</div>
+    <div><span class="attr-tag" style="background:rgba(88,180,60,.2);color:#88cc66;border:1px solid #5a8a50">형태 분화</span></div>
+    <div class="attr-body">
+      <b>오라</b> — 등급 온도색 유지<br>
+      <b>발광 형태</b> — 방울(Droplet) 형태. 표면에서 떨어지는 이슬방울 모양 파티클. 느리게 떨어짐<br>
+      <b>연기</b> — 부식 연기 (낮게 퍼짐, 투명도 높음)<br>
+      <b>텔레그래프</b> — ThreatArc 위에 방울 아이콘 반복 패턴 (오버레이)
+    </div>
+    <div class="attr-shape" style="border-color:#5a8a50">형태 키워드: 방울 · 연기 · 퍼짐 · 느린 낙하</div>
+  </div>
+
+  <!-- 전기 -->
+  <div class="attr-card" style="border-color:#8878c0">
+    <div class="attr-nm" style="color:#aab0ff">전기 (Electric)</div>
+    <div><span class="attr-tag" style="background:rgba(130,120,220,.2);color:#aab0ff;border:1px solid #8878c0">형태 분화</span></div>
+    <div class="attr-body">
+      <b>오라</b> — 등급 온도색 유지 (Fulgurodonte LV4 = 레드오렌지. 청백 금지)<br>
+      <b>발광 형태</b> — 스파크(Arc) 형태. 표면에서 튀는 번개 아크, 짧고 불규칙한 선<br>
+      <b>파티클</b> — 고속 방사형 점(스파크 튐), 수명 매우 짧음<br>
+      <b>텔레그래프</b> — ThreatArc 라인이 직선 지그재그(번개 모양) 변형
+    </div>
+    <div class="attr-shape" style="border-color:#8878c0">형태 키워드: 아크 · 스파크 · 지그재그 · 순간성</div>
+  </div>
+
+  <!-- 가스 -->
+  <div class="attr-card" style="border-color:#8a8040">
+    <div class="attr-nm" style="color:#c8b860">가스 (Gas)</div>
+    <div><span class="attr-tag" style="background:rgba(180,160,50,.2);color:#c8b860;border:1px solid #8a8040">형태 분화</span></div>
+    <div class="attr-body">
+      <b>오라</b> — 등급 온도색 유지<br>
+      <b>발광 형태</b> — 뿜김(Puff) 형태. 천천히 퍼지는 구름 실루엣, 반투명 넓은 면적<br>
+      <b>파티클</b> — 낮게 깔리는 안개 레이어, 천천히 팽창 후 소멸<br>
+      <b>텔레그래프</b> — ThreatArc가 원형 확산 패턴 (부채꼴 대신 전방위 확산)
+    </div>
+    <div class="attr-shape" style="border-color:#8a8040">형태 키워드: 뿜김 · 안개 · 팽창 · 면적</div>
+  </div>
+</div>
+
+
+<!-- ===== 6. 기술 강도 옵션 ===== -->
+<h2 style="border-color:#558877">06 / 기술 구현 강도 — 옵션 선택 (유저 판정)</h2>
+<div class="axissub">구현 비용과 비주얼 퀄리티의 트레이드오프. A→C 순으로 비용 증가.</div>
+
+<div class="tech-row">
+  <div class="tech-pill">
+    <span class="pill-tag" style="background:rgba(70,180,130,.2);color:#70d0a0;border:1px solid #70d0a0">옵션 A</span>
+    <div>
+      <div style="font-size:12.5px;font-weight:600;margin-bottom:2px;color:#a0e0c0">림 프레넬만 (최소)</div>
+      <div class="pill-body">MonsterActor 셰이더 림 컬러 = 오라색. Emissive 마스크 텍스처로 발광 부위 제한. 파티클 없음. 가장 가볍고 즉시 적용 가능.</div>
+    </div>
+  </div>
+  <div class="tech-pill">
+    <span class="pill-tag" style="background:rgba(180,130,50,.2);color:#e0a060;border:1px solid #e0a060">옵션 B</span>
+    <div>
+      <div style="font-size:12.5px;font-weight:600;margin-bottom:2px;color:#e0b070">림 + Emissive 펄스 (권장)</div>
+      <div class="pill-body">림 + sin파 펄스 Emissive 스크롤. 등급별 pulse speed 노브(LV1 느림→LV5 빠름). 파티클 없이 생동감. 기존 킬버스트 셰이더 구조 재활용 가능.</div>
+    </div>
+  </div>
+  <div class="tech-pill">
+    <span class="pill-tag" style="background:rgba(180,80,80,.2);color:#e08080;border:1px solid #e08080">옵션 C</span>
+    <div>
+      <div style="font-size:12.5px;font-weight:600;margin-bottom:2px;color:#e09090">림 + 펄스 + 파티클 (풀)</div>
+      <div class="pill-body">B + 공격 전조 wind-up 파티클 추가(기존 VfxDirector wind-up 글로우 재활용). 속성 형태도 파티클로. 호드 다수 시 overdraw 주의 — culling 필수.</div>
+    </div>
+  </div>
+</div>
+
+<div class="note" style="border-color:#558877;font-size:12px">
+  <b>권장</b> — 옵션 B를 기본 롤아웃(즉시 가능), LV5 보스 한정 옵션 C 적용. 호드 구성(LV1~2 다수)은 옵션 A/B로 overdraw 억제. 구현 시작 전 유저가 강도 선택.
+</div>
+
+
+<hr class="sep">
+
+
+<!-- ===== 7. 부감 목업 ===== -->
+<h2 style="border-color:#2de2e6">07 / 부감 색 분리 검증 목업</h2>
+<div class="axissub">탑다운 15m 시점. LV1~2 청록몹 + LV4 레드오렌지몹 + LV5 진홍몹 + 플레이어 시안 동시. 색 분리 육안 확인용.</div>
+
+<div class="mock">
+  <!-- world floor grid hint -->
+  <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(255,255,255,.025) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(255,255,255,.025) 40px)"></div>
+
+  <!-- === PLAYER === -->
+  <!-- player body -->
+  <div style="position:absolute;left:47%;top:52%;width:20px;height:30px;background:#c8d8e0;border-radius:7px;transform:translate(-50%,-50%)"></div>
+  <!-- player cyan slash trail -->
+  <div class="glow" style="position:absolute;left:42%;top:45%;width:130px;height:36px;background:linear-gradient(90deg,transparent,#2de2e6 55%,#bffcff);border-radius:40%;transform:rotate(-15deg);color:#2de2e6;opacity:.92"></div>
+  <div class="lbl" style="left:30%;top:33%;color:#2de2e6">내 슬래시 (시안 #2DE2E6)</div>
+
+  <!-- === LV1 MOB (teal-green) === -->
+  <div style="position:absolute;left:18%;top:40%;width:18px;height:18px;background:#4baf90;border-radius:50%;box-shadow:0 0 10px #4baf9099;"></div>
+  <div class="lbl" style="left:8%;top:28%;color:#4baf90">LV1 청록 (#4BAF90)</div>
+  <!-- LV1 eye dot -->
+  <div style="position:absolute;left:18.5%;top:39%;width:5px;height:5px;background:#7dffc8;border-radius:50%;box-shadow:0 0 6px #7dffc8"></div>
+
+  <!-- === LV2 MOB (slightly deeper teal) === -->
+  <div style="position:absolute;left:26%;top:65%;width:18px;height:18px;background:#3d9c78;border-radius:50%;box-shadow:0 0 10px #3d9c7888;"></div>
+  <div class="lbl" style="left:14%;top:75%;color:#3d9c78">LV2 청록 (#3D9C78)</div>
+
+  <!-- === LV3 MOB (orange) === -->
+  <div style="position:absolute;left:72%;top:58%;width:22px;height:22px;background:#3a1800;border-radius:50%;border:2px solid #ff7c35;box-shadow:0 0 12px #ff7c3599;"></div>
+  <!-- LV3 spine glow -->
+  <div style="position:absolute;left:71.5%;top:56%;width:5px;height:14px;background:linear-gradient(180deg,#ff9050,transparent);border-radius:3px;"></div>
+  <div class="lbl" style="left:74%;top:46%;color:#ff7c35">LV3 주황 (#FF7C35)</div>
+
+  <!-- === LV4 MOB (red-orange, large) === -->
+  <div style="position:absolute;right:12%;top:35%;width:26px;height:26px;background:#1a0800;border-radius:50%;border:2px solid #ff5a2c;box-shadow:0 0 18px #ff5a2cbb;"></div>
+  <!-- LV4 threat aura glow -->
+  <div style="position:absolute;right:8%;top:25%;width:120px;height:70px;background:radial-gradient(closest-side,#ff5a2c44,transparent);border-radius:50%;"></div>
+  <div class="lbl" style="right:6%;top:14%;color:#ff5a2c">LV4 레드오렌지 (#FF5A2C)</div>
+
+  <!-- === LV5 BOSS === -->
+  <div style="position:absolute;left:78%;bottom:18%;width:38px;height:38px;background:radial-gradient(circle at 40% 40%,#c41a1a,#0a0000);border-radius:50%;box-shadow:0 0 22px #c41a1acc,0 0 40px #c41a1a55;"></div>
+  <!-- dark particles -->
+  <div style="position:absolute;left:76%;bottom:30%;width:8px;height:8px;background:#350808;border-radius:50%;opacity:.8;"></div>
+  <div style="position:absolute;left:82%;bottom:26%;width:5px;height:5px;background:#250606;border-radius:50%;opacity:.7;"></div>
+  <div style="position:absolute;left:74%;bottom:22%;width:6px;height:6px;background:#2a0505;border-radius:50%;opacity:.75;"></div>
+  <div class="lbl" style="left:62%;bottom:8%;color:#c41a1a">LV5 진홍+검정 입자 (#C41A1A)</div>
+
+  <!-- === THREAT ARC (enemy telegraph) === -->
+  <div style="position:absolute;right:10%;top:44%;width:80px;height:45px;background:radial-gradient(closest-side,#ff5a2c55,transparent);border-radius:50%;"></div>
+  <div class="lbl" style="right:22%;top:56%;color:#ff5a2c;font-size:9.5px">텔레그래프 (레드오렌지 베이스)</div>
+
+  <!-- separation annotation arrow area -->
+  <div style="position:absolute;left:37%;top:39%;width:2px;height:60px;background:rgba(255,255,255,.12);"></div>
+  <div class="lbl" style="left:28%;top:50%;color:rgba(255,255,255,.35);font-size:9.5px">← 시안 vs 청록 분리선</div>
+</div>
+
+<div class="axissub" style="margin-top:8px">
+  ★ 목업에서 플레이어 시안(중앙 슬래시)과 좌측 LV1~2 청록몹이 다른 색역으로 읽히면 분리 성공. 비슷하게 느껴진다면 LV1~2 오라를 후보 C(#5AB87A 녹 강화) 또는 후보 D(#88B840 황녹)로 이동.
+</div>
+
+
+<hr class="sep">
+
+
+<footer>
+  <div class="big">유저 판정 포인트</div>
+  <span class="fp">① LV1~2 오라 색 선택</span> — 제안 기본 #4BAF90 OK? 아니면 후보 B(더 탁하게 #3D8C72) / C(녹 강화 #5AB87A) / D(황녹 #88B840)? 목업 §07에서 시안과 분리 충분한지 확인.<br>
+  <span class="fp">② LV5 검은 입자 방향</span> — "진홍+검정" 표현을 파티클(구현 비용↑) vs Emissive 마스크(검은 면적, 저비용)로 할 것인지.<br>
+  <span class="fp">③ 구현 강도 선택</span> — 옵션 A(림만) / B(림+펄스, 권장) / C(풀+파티클). 호드 LV1~2는 A/B, LV5 보스는 C 분리 적용 검토.<br>
+  <span class="fp">④ 속성 분화 방향성</span> — 색 대신 형태로 분화(전기=스파크/산성=방울/가스=뿜김) 동의? Fulgurodonte(LV4 전기)의 오라색이 청백 → 레드오렌지로 바뀌는 것 OK?<br>
+  <span class="fp">⑤ 공격 악센트 비율</span> — LV1~2 "위협 85% + 오라 15%" 악센트가 충분히 보이는지, 더 늘려야 하는지.<br><br>
+  ★ 권위 = docs/00_authority/2026-06-13-shader-direction.md §3 색규약 3조 · 이 보드는 그 위 *몬스터 오라 구체 색값 제안*<br>
+  ★ 구현 시작 전 ①②③ 판정 필수 — 나머지는 구현 중 튜닝.
+</footer>
+
+</div>
+</body>
+</html>

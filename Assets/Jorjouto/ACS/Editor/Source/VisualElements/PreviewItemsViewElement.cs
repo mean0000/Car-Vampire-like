@@ -1,11 +1,11 @@
 // Author: Jorge Dinares
 // Copyright © 2025 Jorge Dinares. All rights reserved.
 /// <summary>
-/// A VisualElement that represents a single action block on an animation track.
+/// A VisualElement that represents the Preview Items view.
 /// </summary>
 /// <remarks>
-/// This element handles all user interactions for a single action block, including
-/// selection, dragging to move, and resizing its start and end times. It also
+/// This element handles all user interactions for the preview items, including
+/// selection, dragging to move, and resizing their start and end times. It also
 /// manages the display of the corresponding property panel in the Inspector.
 /// </remarks>
 using System;
@@ -26,9 +26,16 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
     /// Each preview item represents a GameObject that can be attached to a socket on a preview model,
     /// with configurable transform offsets, scale, and visibility.
     /// </remarks>
+    #if UNITY_2023_2_OR_NEWER
     [UxmlElement]
+    #endif
     public partial class PreviewItemsViewElement : VisualElement
     {
+        #if !UNITY_2023_2_OR_NEWER
+        public new class UxmlFactory : UxmlFactory<PreviewItemsViewElement, UxmlTraits> { }
+
+        #endif
+
         #region Events
 
         /// <summary>
@@ -62,21 +69,17 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         public event Action<int, bool> OnPreviewItemVisibilityChanged;
 
         #endregion
-
-        #region Fields
-
-        /// <summary>
-        /// UXML template used to create each item row in the list.
-        /// </summary>
-        [SerializeField]
-        [UxmlAttribute("item-row-template")]
-        private VisualTreeAsset itemRowTemplate;
-        
-        #endregion
         
         #region Properties
 
         #region Visual Elements
+
+        private const string itemRowTemplateGuid = "4c2e2e51fcfbb5b4e83b991964fe4c4f";
+
+        /// <summary>
+        /// UXML template used to create each item row in the list.
+        /// </summary>
+        private VisualTreeAsset itemRowTemplate;
 
         /// <summary>
         /// Root container that holds all UI elements of the preview item system.
@@ -143,6 +146,7 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         /// </summary>
         public PreviewItemsViewElement()
         {
+            LoadItemRowTemplate();
             AddToClassList("DetailsPanelFoldout");
             addItemButton.clicked += AddNewItemToList;
             removeItemButton.clicked += RemoveItemFromList;
@@ -195,6 +199,19 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
         #region Private Functions
 
         #region Initialization
+
+        /// <summary>
+        /// Loads the UXML template for item rows if it hasn't been loaded already.
+        /// </summary>
+        private void LoadItemRowTemplate()
+        {
+            if (itemRowTemplate != null)
+                return;
+
+            string path = AssetDatabase.GUIDToAssetPath(itemRowTemplateGuid);
+
+            itemRowTemplate = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(path);
+        }
 
         /// <summary>
         /// Rebuilds the entire list of preview item rows from the serialized property array.

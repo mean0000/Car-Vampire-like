@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>카타나 카드 카탈로그 — 65장</title>
+<style>
+  :root{
+    --bg:#0a0e14; --bg2:#0f1620; --panel:#131c28; --line:#1e2c3c;
+    --txt:#d6e2ee; --dim:#7d8da0; --cyan:#2de2e6; --magenta:#ff3d7f;
+    --geh:#3a9bdc; --cham:#e8843c;
+    --common:#8a939b; --rare:#2de2e6; --epic:#b14aed; --legendary:#f5a623; --mythic:#ff3366; --base:#5a6675;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:'Pretendard','Segoe UI',system-ui,sans-serif;line-height:1.5;padding:28px 18px 80px}
+  .wrap{max-width:1280px;margin:0 auto}
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:24px}
+  h1{font-size:26px;letter-spacing:1px}
+  h1 .accent{color:var(--cyan)}
+  .sub{color:var(--dim);font-size:13px;margin-top:6px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:16px;font-size:12px}
+  .legend span{display:flex;align-items:center;gap:6px;color:var(--dim)}
+  .dot{width:11px;height:11px;border-radius:2px;display:inline-block}
+  .tree-head{display:flex;align-items:baseline;gap:12px;margin:34px 0 14px;padding:10px 14px;border-radius:8px;border-left:4px solid;background:var(--bg2)}
+  .tree-head.geh{border-color:var(--geh)} .tree-head.cham{border-color:var(--cham)} .tree-head.shared{border-color:var(--cyan)} .tree-head.myth{border-color:var(--mythic)}
+  .tree-head h2{font-size:18px} .tree-head .tag{font-size:12px;color:var(--dim)}
+  .geh .tname{color:var(--geh)} .cham .tname{color:var(--cham)} .shared .tname{color:var(--cyan)} .myth .tname{color:var(--mythic)}
+  .layer{font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:2px;margin:18px 0 10px;border-bottom:1px dashed var(--line);padding-bottom:5px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--base);border-radius:7px;padding:13px 14px;transition:.15s;position:relative}
+  .card:hover{border-color:var(--cyan);transform:translateY(-2px);box-shadow:0 6px 20px rgba(45,226,230,.08)}
+  .card.common{border-left-color:var(--common)} .card.rare{border-left-color:var(--rare)} .card.epic{border-left-color:var(--epic)}
+  .card.legendary{border-left-color:var(--legendary)} .card.mythic{border-left-color:var(--mythic)}
+  .card .nm{font-size:15px;font-weight:600;margin-bottom:4px}
+  .card.legendary .nm{color:var(--legendary)} .card.mythic .nm{color:var(--mythic)}
+  .badges{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+  .b{font-size:10px;padding:2px 7px;border-radius:10px;border:1px solid var(--line);color:var(--dim)}
+  .b.g{color:var(--geh);border-color:#274a63} .b.c{color:var(--cham);border-color:#5e3d22}
+  .b.grade{font-weight:600}
+  .b.common{color:var(--common);border-color:#3a4048} .b.rare{color:var(--rare);border-color:#16494a}
+  .b.epic{color:var(--epic);border-color:#3f2452} .b.legendary{color:var(--legendary);border-color:#5e4416} .b.mythic{color:var(--mythic);border-color:#5e1a2c}
+  .eff{font-size:12.5px;color:var(--txt);margin-bottom:7px}
+  .stat{font-size:11px;color:var(--dim);font-family:'Consolas',monospace;background:var(--bg);border-radius:4px;padding:5px 7px;margin-bottom:6px}
+  .pre{font-size:10.5px;color:#5e6b7d}
+  .pre b{color:var(--cyan)}
+  /* leaf block */
+  .leaf-block{border:1px solid #2a2118;background:linear-gradient(180deg,#1a1610,#131c28 60%);border-radius:9px;padding:14px;margin-bottom:14px}
+  .leaf-head{display:flex;align-items:center;gap:9px;margin-bottom:4px}
+  .leaf-head .nm{font-size:16px;font-weight:700;color:var(--legendary)}
+  .leaf-eff{font-size:12.5px;color:var(--txt);margin-bottom:10px}
+  .leaf-pre{font-size:10.5px;color:#5e6b7d;margin-bottom:10px}
+  .vrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px}
+  .variant{background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:10px}
+  .variant .vn{font-size:13px;font-weight:600;color:#ffd98a;margin-bottom:4px}
+  .variant .ve{font-size:11.5px;color:var(--txt);margin-bottom:6px}
+  .reforks{display:flex;flex-direction:column;gap:4px;border-top:1px dashed var(--line);padding-top:6px}
+  .rf{font-size:11px;color:var(--dim)} .rf b{color:#e8b04a;font-weight:600}
+  .count{color:var(--cyan);font-weight:700}
+  footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:12px;color:var(--dim)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>🗡 <span class="accent">카타나</span> 카드 카탈로그 <span style="color:var(--dim);font-size:16px">/ 65장</span></h1>
+  <div class="sub">수입형 모노엣지 도검 C-7형 · 거합(Mod-A·고수) ↔ 참격(Mod-B·뉴비) · 등급 3종 하이브리드 · 이름은 전부 가제(Story 후속) · 수치=노브 시작값</div>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--base)"></i>베이스</span>
+    <span><i class="dot" style="background:var(--common)"></i>Common(①숫자 롤)</span>
+    <span><i class="dot" style="background:var(--rare)"></i>Rare</span>
+    <span><i class="dot" style="background:var(--epic)"></i>Epic</span>
+    <span><i class="dot" style="background:var(--legendary)"></i>전설 잎(결정론)</span>
+    <span><i class="dot" style="background:var(--mythic)"></i>신화(RNG·화려함=돈)</span>
+  </div>
+</header>
+<div id="app"></div>
+<footer>
+  ① 숫자 등급 롤 = 시너지6 + 연료9 = <span class="count">15장</span> · ② 전설 결정론(잎·변형·재분기) = <span class="count">42장</span> · ③ 신화 = <span class="count">2장</span> · 베이스 뿌리 1<br>
+  ★한 런에 실제 먹는 잎 경로 = 도달1 → 변형1택 → 재분기1택 = 잎당 3장 (카탈로그 65 ≠ 런 소비량) · 권위 = docs/03_reference/2026-06-14-katana-card-catalog.md
+</footer>
+</div>
+
+<script>
+const D = {
+  shared:{
+    root:{nm:'수입형 모노엣지 도검 C-7형',grade:'base',cls:'베이스',eff:'카타나 장착. LMB 홀드=자동 부채꼴 클리브 스윙, RMB=무기특수(분기가 의미 가름), 대시=기본 회피. 런 시작 1택.',stat:'평타 47°×1.7m · 쿨 0.45s · 대시 4m/i-frame 0.15s',pre:'없음 (런 시작)'},
+    fuel:[
+      {nm:'날 갈기',grade:'common',cls:'G0 연료·공유',eff:'평타·전체 베기 데미지 +% (양 가지 흐름)',stat:'C +8% / R +12% / E +18% (스택)'},
+      {nm:'손목 단련',grade:'common',cls:'G0 연료·공유',eff:'평타 스윙 공속 +% (거합 묵직 덜고, 참격 시동 빨라짐)',stat:'C +6% / R +9% / E +13%'},
+      {nm:'보법',grade:'common',cls:'G0 연료·공유',eff:'대시 거리 +% + 대시 쿨 −% (양쪽 회피력)',stat:'거리 +8/12/18% · 쿨 −5/8/12%'},
+    ]
+  },
+  trees:[
+    {key:'geh',name:'거합',tag:'Mod-A · 고수 · 정지충전 발도 환류 (MGR 잔타츠)',
+     branch:{nm:'충전 사출 모드 (Mod-A) "거합"',grade:'legendary',cls:'G6+G1 분기',eff:'RMB 홀드=게이지 충전(정지 2배·걷기 허용), 릴리스=조준선 직선 발도 돌진(관통). 킬 환류. ★대가: 평타 공속 55%(묵직 단발, 난사 불가).',stat:'공속 55% · 차지 정지1.2s/이동2.4s · 발도 2.5~6m ×1.5~×4 · 킬 게이지+35%',pre:'kat_root'},
+     syn:[
+       {nm:'기 충전',grade:'common',cls:'G2 사슬·먹임',eff:'정지·미발사 유지 시 다음 발도 데미지·돌진 누적(서 있을수록 세짐). 환류 사슬의 연료.',stat:'정지 0.4s마다 +8%뎀/+0.3m (상한 +60%) · C/R/E +6/8/11%'},
+       {nm:'처형 환류 ★사슬 심장',grade:'rare',cls:'G3 시너지활성',eff:'발도 킬/약점 처형 시 게이지 즉시 리필 + 발도 쿨 0. ★사슬이 닫힌다(킬이 나를 재충전, MGR 잔타츠).',stat:'발도 킬당 +50% · 약점 처형 +70% · 쿨 0.4s→0s · C/R/E +40/50/65%'},
+       {nm:'약점 개창',grade:'common',cls:'G2 사슬·되먹임',eff:'발도 적중 시 대상 약점 3초 노출(정밀축 공명, 저격과 공유 풀). 약점 적=즉살 판정. 처형 조건을 깐다.',stat:'노출 C/R/E 2.5/3.0/3.8s · 즉살 임계 HP 25/30/38%'},
+     ],
+     fuel:[
+       {nm:'발도 호흡',grade:'common',cls:'G0 연료·거합',eff:'거합 게이지 충전속도 +% ("멈춤이 곧 화력"을 더 빨리)',stat:'C +10% / R +15% / E +22%'},
+       {nm:'단발 집중',grade:'common',cls:'G0 연료·거합',eff:'발도 단발 데미지 +% + 관통 데미지 보존(점사 한 방 무게)',stat:'C +10% / R +15% / E +22%'},
+       {nm:'사형 선고',grade:'common',cls:'G0 연료·거합',eff:'처형 발동 임계 HP +% + 약점 노출 +% (처형 사슬이 더 자주)',stat:'임계 HP +5/8/12%p (베이스 30% 위로)'},
+     ],
+     leaves:[
+       {nm:'벽력일섬',eff:'발도 돌진이 치고빠지는 전진 일섬으로 변태 — 반충전 허용, 조준선 장거리 관통(6→10m), 통과한 적 베고 반대편 i-frame. 움직이며 일섬→재배치→일섬.',pre:'거합 분기 + (기충전 OR 처형환류)',
+        variants:[
+          {vn:'중심 과부하',ve:'관통선 중앙에 응축 — 라인 한가운데 2배 데미지 + 폭발(밀집 코어 분쇄)',rf:[['관통 증식','킬마다 폭발 반경 +0.5m'],['관통 압축','중앙 ×3, 폭발 제거(점 올인)']]},
+          {vn:'귀환 라인',ve:'끝에서 시작점으로 되돌아오는 2차 사출(왕복 절단·i-frame 2회)',rf:[['왕복 가속','왕복마다 돌파 쿨 −50%'],['왕복 환류','왕복 킬마다 충전 +30%']]},
+          {vn:'2차 기폭',ve:'관통선이 0.4s 지연 후 라인 전체 동시 폭발(꿰뚫고 빠진 뒤 터짐)',rf:[['연쇄 기폭','킬이 인접 적에 2차 폭발 전파'],['정밀 기폭','지연 0.2s + 약점 적 ×2']]},
+        ]},
+       {nm:'반격베기 (E 방어궁)',eff:'E = 상시 패링 → 막은 순간 광역 거합 되치기. 받아치는 크기·데미지가 궁극 충전 + 막은 피해량에 비례. 완벽회피 직후 패링창 강화.',pre:'거합 분기 + 처형 환류(환류 회로 전제)',
+        variants:[
+          {vn:'광역 되치기',ve:'되치기가 전방위 360° 거합으로 확장(둘러싼 적 전원). 호드 패링형',rf:[['되치기 넉백','강넉백 8 추가(공간 확보)'],['되치기 처형','맞은 저HP 적 즉살']]},
+          {vn:'관통 되치기',ve:'되치기가 직선 관통 발도로(가장 큰 위협에 일직선 즉살 돌진). 엘리트 처단형',rf:[['관통 환류','킬 시 패링창+궁극충전+50%'],['관통 약점','라인 전원 약점 개창']]},
+          {vn:'충전 되치기',ve:'막은 피해를 저장했다가 다음 발도에 합산 방출(여러 번 막아 한 방). 점사 빌드 결선',rf:[['과적 방출','저장 ×8 + 만재 광역 폭발'],['즉시 환원','저장 발도 킬 시 일부 재충전']]},
+        ]},
+     ]},
+    {key:'cham',name:'참격',tag:'Mod-B · 뉴비 · 위빙 가속 임계 작렬 (GoT 스트릭+무쌍)',
+     branch:{nm:'연속 가동 모드 (Mod-B) "참격"',grade:'legendary',cls:'G6+G1 분기',eff:'평타가 위빙 연속 베기 — 적중마다 콤보↑→공속↑(0~5단). 5단 RMB=참격파(전방 확장 부채꼴). 대시=공격 캔슬. ★대가: 피격 시 콤보 −1~2단 일부 손실(통째 리셋 ❌).',stat:'평타 50°×1.8m · 적중3회=1단 · 5단 −60% · 참격파 90°×5m ×3',pre:'kat_root'},
+     syn:[
+       {nm:'콤보 가속',grade:'common',cls:'G2 사슬·먹임',eff:'적중 누적마다 콤보 단↑, 단마다 스윙 쿨 −15%. 빨라진 공속이 더 많은 적중을.',stat:'적중 3회당 1단 · 단당 −15%(5단 −60%) · C/R/E −12/15/19%'},
+       {nm:'처치 가산 ★사슬 심장',grade:'rare',cls:'G3 시너지활성',eff:'적 처치 시 콤보 +1단 보너스 + 윈도우 갱신(죽일수록 빨라짐). ★사슬 닫힘(킬이 가속을 되먹임, GoT 스트릭).',stat:'처치 +1단 즉시 · 윈도우 2.0s 리셋 · C/R/E +1단/(+윈도우 0.3/0.6s)'},
+       {nm:'유지 관용',grade:'common',cls:'G2 사슬·되먹임',eff:'콤보 윈도우↑ + 감쇠 완화 + 피격 손실 완화(위빙 중 잠깐 못 때려도 단 유지). 뉴비 친화.',stat:'윈도우 2.0→3.0s · 피격 손실 −1단 고정 · C/R/E 윈도우 +0.6/1.0/1.5s'},
+     ],
+     fuel:[
+       {nm:'광기 가속',grade:'common',cls:'G0 연료·참격',eff:'콤보 단 상승속도 +% + 단당 공속 보너스(가속 사슬 더 빨리 5단)',stat:'단 게인 C +10/R +15/E +22%'},
+       {nm:'출력 증폭',grade:'common',cls:'G0 연료·참격',eff:'검기 빔·블링크 자동 베기 데미지 +% (두 참격 잎 공통 연료)',stat:'C +10% / R +15% / E +22%'},
+       {nm:'흐름 유지',grade:'common',cls:'G0 연료·참격',eff:'콤보 윈도우 +% + 피격 손실폭 완화(가속이 안 끊기게, 뉴비 관용)',stat:'C +10% / R +15% / E +22%'},
+     ],
+     leaves:[
+       {nm:'플리커',eff:'콤보 5단 + 킬축 카드 2개 보유 시 → 블링크 자동 썰기 모드(잔상만 남기고 적 사이 순간이동·자동 베기). 체인 이어지는 한 가속 유지.',pre:'참격 분기 + 처치 가산 (+킬축 카드 2개 활성)',
+        variants:[
+          {vn:'무한 연쇄',ve:'체인 유지창 연장 + 처치마다 체인↑, 카운터 높을수록 데미지↑. 끝없는 폭주형',rf:[['체인 광폭','체인 20+ 시 블링크당 2회 베기'],['체인 보존','피격해도 체인 유지(폭주 보험)']]},
+          {vn:'잔영 폭발',ve:'블링크 착지마다 시안 잔상 광역 폭발(지나간 자리가 다 터짐). 면 학살형',rf:[['잔영 연소','폭발 자리에 0.5s 시안 장판 DoT'],['잔영 흡인','폭발이 인접 적 끌어당김(밀도↑)']]},
+          {vn:'표적 봉인',ve:'블링크 자동 표적을 고위협 우선 편향(정예부터) + 정예 타격 ×2. 자동인데 똑똑',rf:[['봉인 처형','정예 3타 시 처형 게이지(즉살 임박)'],['봉인 분산','정예 처치 후 주변 잡몹 폭발 확산']]},
+        ]},
+       {nm:'검기 발사 (뉴비 안전)',eff:'콤보 쌓으면 RMB/평타가 중거리 8~10m 검기 빔 발사(콤보 높을수록 빈도·크기↑). 군집을 면으로 깎음. ⚠️면·중거리 한정(저격 분리). 근접 평타 −25%. 디제틱="비인가 출력".',pre:'참격 분기 + (콤보가속 OR 유지관용)',
+        variants:[
+          {vn:'확산 검기',ve:'검기 각 확장(35°→70°) — 더 넓은 면 한 번에. 광역 면 청소',rf:[['확산 연사','5단 시 2연발(좌우 교차)'],['확산 관통','적 관통(뒷줄까지 면)']]},
+          {vn:'집속 검기',ve:'좁은 집속 빔(35°→10°) — 면 좁히고 데미지·사거리↑. 중거리 압축 화력',rf:[['집속 관통','일렬 다수 관통'],['집속 가속','콤보 단당 충전속도↑']]},
+          {vn:'순환 검기',ve:'플레이어 주위 회전하는 칼바람 면(360° 순환) — 위빙하며 주변 깎음. 근접 안전막',rf:[['순환 확장','5단 시 반경 4→7m 도넛'],['순환 흡인','적을 안쪽으로 끌어 CC']]},
+        ]},
+     ]},
+  ],
+  mythics:[
+    {nm:'전개식 모노필라멘트',grade:'mythic',cls:'M-1 · 🔴 데모 앵커 · 새 동사',eff:'모든 이동(대시·벽력일섬·플리커) 종료 지점마다 와이어 자동 설치. 5개+ 설치 시 전체 동시 회수 → 와이어가 그은 존 안 모든 적 순삭. ★기동 빌드일수록 와이어 촘촘=회수 학살 커짐(이동=무기화). 정적 거합과 상극.',stat:'임계 5개 · 와이어 지속 4s · 회수 쿨 3s · 존 내 즉살(정예 −40% HP)',pre:'트리 밖 · 화려함=돈 가중 RNG + 기동 메모리 약가중'},
+    {nm:'압류 집행',grade:'mythic',cls:'M-3 · 🟢 싸고 디제틱 · 새 동사',eff:'공격/약점 개창이 적에게 압류 표식 누적(킬 안 해도). 임계/정산 트리거 시 표식 단 모든 적 동시 "정산"(폭발+즉살) — 표식 많을수록 연쇄 광역↑. 거합 약점·검기 면 둘 다 결선(발라두다 일괄 수금). 사후처리부 "정산·압류" 디제틱.',stat:'표식 임계 3스택 · 정산 폭발 2m 즉살 · 5+ 동시 정산 시 연쇄 +50%',pre:'트리 밖 · 화려함=돈 가중 RNG + 약점/마킹 약가중'},
+  ]
+};
+
+const app = document.getElementById('app');
+function cardEl(c,treeKey){
+  const div=document.createElement('div'); div.className='card '+c.grade;
+  let badges='<span class="b grade '+c.grade+'">'+gradeLabel(c.grade)+'</span><span class="b '+(treeKey||'')+'">'+c.cls+'</span>';
+  let stat=c.stat?'<div class="stat">'+c.stat+'</div>':'';
+  let pre=c.pre?'<div class="pre">필요: <b>'+c.pre+'</b></div>':'';
+  div.innerHTML='<div class="nm">'+c.nm+'</div><div class="badges">'+badges+'</div><div class="eff">'+c.eff+'</div>'+stat+pre;
+  return div;
+}
+function gradeLabel(g){return {base:'베이스',common:'Common',rare:'Rare',epic:'Epic',legendary:'전설 잎',mythic:'신화'}[g]||g}
+function grid(cards,treeKey){const g=document.createElement('div');g.className='grid';cards.forEach(c=>g.appendChild(cardEl(c,treeKey)));return g}
+function layerLabel(t){const d=document.createElement('div');d.className='layer';d.textContent=t;return d}
+function treeHead(cls,name,tag){const d=document.createElement('div');d.className='tree-head '+cls;d.innerHTML='<h2 class="tname">'+name+'</h2><span class="tag">'+tag+'</span>';return d}
+
+// shared
+app.appendChild(treeHead('shared','뿌리 · 공유','베이스 무기 + 양 가지 공유 중립 연료'));
+app.appendChild(grid([D.shared.root]));
+app.appendChild(layerLabel('중립 연료 (양 가지 공유)'));
+app.appendChild(grid(D.shared.fuel));
+
+// trees
+D.trees.forEach(t=>{
+  app.appendChild(treeHead(t.key,t.name,t.tag));
+  app.appendChild(layerLabel('분기 (정체성)'));
+  app.appendChild(grid([t.branch],t.key));
+  app.appendChild(layerLabel('시너지 묶음 — 사슬 (①숫자 등급 롤)'));
+  app.appendChild(grid(t.syn,t.key));
+  app.appendChild(layerLabel('방향 연료 (①숫자 등급 롤)'));
+  app.appendChild(grid(t.fuel,t.key));
+  app.appendChild(layerLabel('전설 잎 + 변형 (결정론 — 등급 롤 ❌)'));
+  t.leaves.forEach(lf=>{
+    const block=document.createElement('div'); block.className='leaf-block';
+    let vhtml='';
+    lf.variants.forEach(v=>{
+      let rf=v.rf.map(r=>'<div class="rf">└ <b>'+r[0]+'</b> — '+r[1]+'</div>').join('');
+      vhtml+='<div class="variant"><div class="vn">◆ '+v.vn+'</div><div class="ve">'+v.ve+'</div><div class="reforks">'+rf+'</div></div>';
+    });
+    block.innerHTML='<div class="leaf-head"><span class="b grade legendary">전설 잎</span><span class="nm">🍃 '+lf.nm+'</span></div><div class="leaf-eff">'+lf.eff+'</div><div class="leaf-pre">필요: <b style="color:var(--cyan)">'+lf.pre+'</b> · 도달 후 변형 3택 → 재분기 2택</div><div class="vrow">'+vhtml+'</div>';
+    app.appendChild(block);
+  });
+});
+
+// mythics
+app.appendChild(treeHead('myth','신화 · 트리 밖','화려함=돈 가중 RNG로 가끔 끼어듦 — 잭팟 (등급 롤 ❌)'));
+app.appendChild(grid(D.mythics));
+</script>
+</body>
+</html>

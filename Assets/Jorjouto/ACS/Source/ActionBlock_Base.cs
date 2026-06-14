@@ -1,6 +1,7 @@
 // Author: Jorge Dinares
 // Copyright © 2025 Jorge Dinares. All rights reserved.
 using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -87,6 +88,11 @@ namespace Jorjouto.AnimComposerSystem
         /// </summary>
         #if UNITY_EDITOR
         protected PreviewRenderUtility previewRenderUtility = null;
+
+        /// <summary>
+        /// The attached items in the preview, used for debug visualization.
+        /// </summary>
+        protected List<GameObject> previewAttachedItems;
         #endif
 
         /// <summary>
@@ -182,13 +188,16 @@ namespace Jorjouto.AnimComposerSystem
         /// <param name="startTime">The debug start time.</param>
         /// <param name="endTime">The debug end time.</param>
         /// <param name="rate">The debug execution rate.</param>
-        public virtual void OnDebugStart(PreviewRenderUtility previewRenderUtility,
+        public virtual void OnDebugStart(
+                                        List<GameObject> previewAttachedItems,
+                                        PreviewRenderUtility previewRenderUtility,
                                         GameObject previewObject,
                                         AudioSource debugAudioSource,
                                         float startTime,
                                         float endTime,
                                         float rate)
         {
+            this.previewAttachedItems = previewAttachedItems;
             this.previewRenderUtility = previewRenderUtility;
             this.previewObject = previewObject;
             this.debugAudioSource = debugAudioSource;

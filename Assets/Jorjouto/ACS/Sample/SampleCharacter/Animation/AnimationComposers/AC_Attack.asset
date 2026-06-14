@@ -12,8 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9887673fcdd2326479cb68651544629d, type: 3}
   m_Name: AC_Attack
   m_EditorClassIdentifier: Assembly-CSharp::Jorjouto.AnimComposerSystem.ScriptableObject_AnimComposer
-  AnimationClip: {fileID: -6141942375509812306, guid: 910e50cf09ebca04d9d29271a0b6feac, type: 3}
-  PreviewModel: {fileID: 919132149155446097, guid: 910e50cf09ebca04d9d29271a0b6feac, type: 3}
+  AnimationClip: {fileID: -6141942375509812306, guid: 910e50cf09ebca04d9d29271a0b6feac,
+    type: 3}
+  PreviewModel: {fileID: 919132149155446097, guid: 910e50cf09ebca04d9d29271a0b6feac,
+    type: 3}
   PreviewItems:
   - Item: {fileID: 395494194743491360, guid: 3f863337e8e1f9d43b22b099fdb906e4, type: 3}
     AttachSocket: None
@@ -31,13 +33,15 @@ MonoBehaviour:
   - ActionBlocks:
     - Action:
         rid: 7602220387326230614
-      StartFrame: 6
-      EndFrame: 17
-      StartTime: 0.2
-      EndTime: 0.56666666
+      IsDisabled: 0
+      StartFrame: 7
+      EndFrame: 18
+      StartTime: 0.23333333
+      EndTime: 0.6
   - ActionBlocks:
     - Action:
         rid: 7602220387326230615
+      IsDisabled: 0
       StartFrame: 12
       EndFrame: 24
       StartTime: 0.4
@@ -45,6 +49,7 @@ MonoBehaviour:
   - ActionBlocks:
     - Action:
         rid: 7602220387326230616
+      IsDisabled: 0
       StartFrame: 0
       EndFrame: 47
       StartTime: 0
@@ -2686,7 +2691,8 @@ MonoBehaviour:
     version: 2
     RefIds:
     - rid: 7602220387326230614
-      type: {class: ActionBlock_PlaySound, ns: Jorjouto.AnimComposerSystem.Sample, asm: Jorjouto.AnimComposerSystem.Sample}
+      type: {class: ActionBlock_PlaySound, ns: Jorjouto.AnimComposerSystem.Sample,
+        asm: Jorjouto.AnimComposerSystem.Sample}
       data:
         DebugEnabled: 1
         DebugExitOnAnimationEnd: 1
@@ -2695,22 +2701,26 @@ MonoBehaviour:
         SoundVolume: 1
         IsLooped: 0
     - rid: 7602220387326230615
-      type: {class: ActionBlock_InstantiatePrefab, ns: Jorjouto.AnimComposerSystem.Sample, asm: Jorjouto.AnimComposerSystem.Sample}
+      type: {class: ActionBlock_InstantiatePrefab, ns: Jorjouto.AnimComposerSystem.Sample,
+        asm: Jorjouto.AnimComposerSystem.Sample}
       data:
         DebugEnabled: 1
         DebugExitOnAnimationEnd: 1
-        PrefabToInstantiate: {fileID: 3167240524148501157, guid: c216ea6b977517d438e59ef4b7017994, type: 3}
+        PrefabToInstantiate: {fileID: 3167240524148501157, guid: c216ea6b977517d438e59ef4b7017994,
+          type: 3}
         SpawnSocket: root
         ShouldAttachToSocket: 1
         instanceLocalPosition: {x: 0.2, y: 0.7, z: -1}
         instanceLocalRotation: {x: 0, y: 50, z: -155}
         instanceLocalScale: {x: 0.28, y: 0.28, z: 0.28}
     - rid: 7602220387326230616
-      type: {class: ActionBlock_InstantiatePrefab, ns: Jorjouto.AnimComposerSystem.Sample, asm: Jorjouto.AnimComposerSystem.Sample}
+      type: {class: ActionBlock_InstantiatePrefab, ns: Jorjouto.AnimComposerSystem.Sample,
+        asm: Jorjouto.AnimComposerSystem.Sample}
       data:
         DebugEnabled: 0
         DebugExitOnAnimationEnd: 0
-        PrefabToInstantiate: {fileID: 919132149155446097, guid: 69e7beb1d7e09da4eb1e8080e6dbe92b, type: 3}
+        PrefabToInstantiate: {fileID: 919132149155446097, guid: 69e7beb1d7e09da4eb1e8080e6dbe92b,
+          type: 3}
         SpawnSocket: hand.R
         ShouldAttachToSocket: 1
         instanceLocalPosition: {x: 0.025, y: 0.02, z: -0.07}

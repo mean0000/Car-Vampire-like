@@ -98,6 +98,15 @@ public static class WeaponLoadout
             arcHalfAngle = 0f, knockback = 0f, stagger = 0f, hitstop = 0f, deathStyle = DeathStyle.None,
             altFire = AltFire.StockBash,
         },
+        // 카타나(인덱스 5) — 증명 슬라이스 Phase1. KatanaController가 거합/참격 두 모드로 분기 구동한다.
+        // 평타 베이스값(데미지·리치·부채꼴)은 여기서, 모드별 차등(공속·콤보·발도)은 KatanaController 노브에서.
+        new Weapon {
+            name = "카타나", desc = "거합/참격 두 모드 · 연쇄 가속 (증명 슬라이스)", kind = Kind.Melee,
+            damage = 3, fireCooldown = 0.45f, range = 1.8f, gunshotNoise = 22f,
+            pelletCount = 0, spread = 0f,
+            magazine = 0, reloadTime = 0f,
+            arcHalfAngle = 50f, knockback = 4f, stagger = 0.12f, hitstop = 0.05f, deathStyle = DeathStyle.Splat,
+        },
     };
 
     public static int SelectedIndex = -1;   // -1 = 미선택 → 인스펙터 기본값 유지
@@ -113,4 +122,7 @@ public static class WeaponLoadout
     public static Weapon Revolver => Weapons[0];
     public static Weapon Rifle => Weapons[3];
     public static Weapon Shotgun => Weapons[4];
+
+    /// <summary>카타나(인덱스 5) — 증명 슬라이스 Phase1 데모 장착용.</summary>
+    public static Weapon Katana => Weapons[5];
 }

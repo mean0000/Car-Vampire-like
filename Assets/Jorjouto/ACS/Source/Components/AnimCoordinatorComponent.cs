@@ -48,7 +48,7 @@ namespace Jorjouto.AnimComposerSystem
         /// A list of currently active animation composers on this layer.
         /// </summary>
         [Tooltip("A list of currently active animation composers on this layer.")]
-        public List<ScriptableObject_AnimComposer> ActiveComposers = new();
+        public List<RuntimeAnimComposer> ActiveComposers = new();
     }
 
     /// <summary>
@@ -61,20 +61,20 @@ namespace Jorjouto.AnimComposerSystem
         /// <summary>
         /// Delegate for an event that occurs when an animation composer starts playing.
         /// </summary>
-        /// <param name="CurrentComposer">The <see cref="ScriptableObject_AnimComposer"/> that started.</param>
-        public delegate void AnimCoordinatorEvent_AnimStart(ScriptableObject_AnimComposer CurrentComposer);
+        /// <param name="CurrentComposer">The <see cref="RuntimeAnimComposer"/> that started.</param>
+        public delegate void AnimCoordinatorEvent_AnimStart(RuntimeAnimComposer CurrentComposer);
 
         /// <summary>
         /// Delegate for an event that occurs while an animation composer is updating.
         /// </summary>
-        /// <param name="CurrentComposer">The <see cref="ScriptableObject_AnimComposer"/> that is updating.</param>
-        public delegate void AnimCoordinatorEvent_AnimUpdate(ScriptableObject_AnimComposer CurrentComposer);
+        /// <param name="CurrentComposer">The <see cref="RuntimeAnimComposer"/> that is updating.</param>
+        public delegate void AnimCoordinatorEvent_AnimUpdate(RuntimeAnimComposer CurrentComposer);
 
         /// <summary>
         /// Delegate for an event that occurs when an animation composer ends playback.
         /// </summary>
-        /// <param name="CurrentComposer">The <see cref="ScriptableObject_AnimComposer"/> that has ended.</param>
-        public delegate void AnimCoordinatorEvent_AnimEnd(ScriptableObject_AnimComposer CurrentComposer);
+        /// <param name="CurrentComposer">The <see cref="RuntimeAnimComposer"/> that has ended.</param>
+        public delegate void AnimCoordinatorEvent_AnimEnd(RuntimeAnimComposer CurrentComposer);
 
         /// <summary>
         /// Event that is raised when an animation composer begins playing.
@@ -192,6 +192,26 @@ namespace Jorjouto.AnimComposerSystem
         /// <returns>True if root motion is blocked, otherwise false.</returns>
         public bool GetIsRootMotionBlocked() => bIsRootMotionBlocked;
 
+        public bool IsAnimationActive(ScriptableObject_AnimComposer animComposer)
+        {
+            if(animComposer.AnimationLayer < 0 || animComposer.AnimationLayer >= LayersAndActiveAnimComposers.Count)
+            {
+                Debug.LogWarning($"Layer {animComposer.AnimationLayer} does not exist. Please ensure the composer layer is valid.");
+                return false;
+            }
+
+            foreach(var runtimeComposer in LayersAndActiveAnimComposers[animComposer.AnimationLayer].ActiveComposers)
+            {
+                if(runtimeComposer.SourceAnimComposer == animComposer)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+
         #endregion
 
         #region Setters
@@ -259,12 +279,12 @@ namespace Jorjouto.AnimComposerSystem
                 for (int i = composers.Count - 1; i >= 0; i--)
                 {
                     var composer = composers[i];
-                    if (composer == null || composer.AnimationClip == null) continue;
+                    if (composer == null) continue;
 
                     composer.Tick(Time.deltaTime * LayersAndActiveAnimComposers[layer].Rate);
 
-                    if (composer.ElapsedTime >= composer.AnimationClip.length - 0.02f &&
-                        mixer.GetInput(i).GetSpeed() > 0f && composer.AnimationClip.wrapMode != WrapMode.Loop)
+                    if (composer.ElapsedTime >= composer.AnimationLength - 0.02f &&
+                        mixer.GetInput(i).GetSpeed() > 0f && composer.WrapMode != WrapMode.Loop)
                     {
                         mixer.GetInput(i).SetSpeed(0f);
                     }
@@ -297,6 +317,7 @@ namespace Jorjouto.AnimComposerSystem
             if (playableGraph.IsValid())
             {
                 playableGraph.Destroy();
+                playableGraph = default;
             }
         }
 
@@ -414,9 +435,9 @@ namespace Jorjouto.AnimComposerSystem
         /// the composer’s default <c>BlendInCurve</c> will be used.
         /// </param>
         public void PlayAnimComposer(ScriptableObject_AnimComposer newAnimComposer,
-                                    float ? customBlendInTime = null, AnimationCurve
-                                    customBlendInCurve = null, bool bShouldInstantiate = true, 
-                                    bool ? shouldLoop = null)
+                                    float ? customBlendInTime = null, 
+                                    AnimationCurve customBlendInCurve = null, 
+                                    bool shouldForceLoop = false)
         {
             if (newAnimComposer == null || newAnimComposer.AnimationClip == null)
             {
@@ -434,7 +455,7 @@ namespace Jorjouto.AnimComposerSystem
 
             InterruptActiveAnimComposersInLayer(customBlendInTime ?? newAnimComposer.BlendInTime, layer);
 
-            bool shouldLoopAnim = shouldLoop ?? newAnimComposer.Loop;
+            bool shouldLoopAnim = shouldForceLoop != false || newAnimComposer.Loop;
 
             newAnimComposer.AnimationClip.wrapMode = shouldLoopAnim ? WrapMode.Loop : WrapMode.Once;
 
@@ -464,8 +485,12 @@ namespace Jorjouto.AnimComposerSystem
             var mixer = layerMixers[layer];
             mixer.AddInput(newPlayable, 0, 0f);
 
-            var animComposerInstance = bShouldInstantiate ? Instantiate(newAnimComposer) : newAnimComposer;
-            animComposerInstance.Init(gameObject, customBlendInTime, customBlendInCurve, shouldLoop);
+
+            var animComposerInstance = new RuntimeAnimComposer( newAnimComposer, 
+                                                                gameObject, 
+                                                                customBlendInTime, 
+                                                                customBlendInCurve, 
+                                                                shouldForceLoop);
 
             LayersAndActiveAnimComposers[layer].ActiveComposers.Add(animComposerInstance);
             OnAnimStart?.Invoke(animComposerInstance);
@@ -498,11 +523,18 @@ namespace Jorjouto.AnimComposerSystem
         /// <param name="blendOutTime">
         /// The time over which the animations should fade out on all layers.
         /// </param>
-        public void InterruptAllAnimComposers(float blendOutTime)
+        public void InterruptAllAnimComposers(float ? blendOutTime = null)
         {
             for (int i = 0; i < LayersAndActiveAnimComposers.Count; i++)
             {
-                InterruptActiveAnimComposersInLayer(blendOutTime, i);
+                if(blendOutTime.HasValue)
+                {
+                    InterruptActiveAnimComposersInLayer(blendOutTime.Value, i);
+                }
+                else
+                {
+                    InterruptActiveAnimComposersInLayer(i);
+                }
             }
             return;
         }
@@ -514,7 +546,13 @@ namespace Jorjouto.AnimComposerSystem
         /// <param name="layer">The layer on which to interrupt the animations.</param>
         public void InterruptActiveAnimComposersInLayer(float blendOutTime, int layer)
         {
-            if (layer == 0 || layer >= LayersAndActiveAnimComposers.Count)
+            if(layer < 0 || layer >= LayersAndActiveAnimComposers.Count)
+            {
+                Debug.LogWarning($"Layer {layer} does not exist. Please ensure the layer index is valid.");
+                return;
+            }
+
+            if (layer == 0)
             {
                 SetApplyRootMotions(false, false, false);
             }
@@ -532,6 +570,40 @@ namespace Jorjouto.AnimComposerSystem
                 }
             }
         }
+
+        /// <summary>
+        /// Stops all currently active anim composers on a specific layer with the last added anim composer blend out time
+        /// </summary>
+        /// <param name="layer">The layer on which to interrupt the animations.</param>
+        public void InterruptActiveAnimComposersInLayer(int layer)
+        {
+            if(layer < 0 || layer >= LayersAndActiveAnimComposers.Count)
+            {
+                Debug.LogWarning($"Layer {layer} does not exist. Please ensure the layer index is valid.");
+                return;
+            }
+
+            if (layer == 0)
+            {
+                SetApplyRootMotions(false, false, false);
+            }
+
+            var activeAnimComposers = LayersAndActiveAnimComposers[layer].ActiveComposers;
+            //Retrieves blend out time from last played anim composer in the layer.
+            float blendOutTime = activeAnimComposers[activeAnimComposers.Count - 1].BlendOutTime;
+
+            for (int i = activeAnimComposers.Count - 1; i >= 0; i--)
+            {
+                bool bWasPlaying = activeAnimComposers[i].IsPlaying;
+                activeAnimComposers[i].Stop(blendOutTime);
+
+                if (bWasPlaying)
+                {
+                    OnAnimEnd?.Invoke(activeAnimComposers[i]);
+                }
+            }
+        }
+
 
         #endregion
 
@@ -556,17 +628,17 @@ namespace Jorjouto.AnimComposerSystem
         /// <param name="index">The index of the composer in its layer's list.</param>
         /// <param name="layer">The animation layer index.</param>
         /// <returns>The calculated weight for the composer in its mixer.</returns>
-        private float HandleAnimComposerStateLayer(ScriptableObject_AnimComposer animComposer, int index, int layer)
+        private float HandleAnimComposerStateLayer(RuntimeAnimComposer animComposer, int index, int layer)
         {
             float elapsedTime = animComposer.ElapsedTime;
             float blendInTime = animComposer.BlendInTime;
             float blendOutTime = animComposer.BlendOutTime;
             float blendOutOffset = animComposer.BlendOutOffset;
-            float clipLength = animComposer.AnimationClip.length;
+            float clipLength = animComposer.AnimationLength;
 
             if (!animComposer.IsPlaying ||
                 (elapsedTime >= (clipLength - blendOutTime + blendOutOffset) &&
-                animComposer.AnimationClip.wrapMode != WrapMode.Loop))
+                animComposer.WrapMode != WrapMode.Loop))
             {
                 return HandleBlendOutLayer(animComposer, index, blendOutTime, layer);
             }
@@ -589,7 +661,7 @@ namespace Jorjouto.AnimComposerSystem
         /// <param name="blendInTime">The total blend-in duration.</param>
         /// <param name="layer">The animation layer index.</param>
         /// <returns>The calculated weight.</returns>
-        private float HandleBlendInLayer(ScriptableObject_AnimComposer animComposer, int index, float blendInTime, int layer)
+        private float HandleBlendInLayer(RuntimeAnimComposer animComposer, int index, float blendInTime, int layer)
         {
             float t = Mathf.Clamp01(animComposer.CurrentBlendInTime / blendInTime);
             float weight = IsWeightCurveValid(animComposer.BlendInCurve) ? animComposer.BlendInCurve.Evaluate(t) : t;
@@ -608,7 +680,7 @@ namespace Jorjouto.AnimComposerSystem
         /// <param name="blendOutTime">The total blend-out duration.</param>
         /// <param name="layer">The animation layer index.</param>
         /// <returns>The calculated weight.</returns>
-        private float HandleBlendOutLayer(ScriptableObject_AnimComposer animComposer, int index, float blendOutTime, int layer)
+        private float HandleBlendOutLayer(RuntimeAnimComposer animComposer, int index, float blendOutTime, int layer)
         {
             if (animComposer.IsPlaying)
             {
@@ -634,7 +706,6 @@ namespace Jorjouto.AnimComposerSystem
             {
                 DisconnectAnimComposerLayer(index, layer);
                 LayersAndActiveAnimComposers[layer].ActiveComposers.RemoveAt(index);
-                Destroy(animComposer);
             }
 
             return weight;
@@ -666,7 +737,7 @@ namespace Jorjouto.AnimComposerSystem
         /// <param name="animComposer">The composer to set the weight for.</param>
         /// <param name="index">The index of the composer in its layer's list.</param>
         /// <param name="layer">The animation layer index.</param>
-        private void EnsureFullWeightLayer(ScriptableObject_AnimComposer animComposer, int index, int layer)
+        private void EnsureFullWeightLayer(RuntimeAnimComposer animComposer, int index, int layer)
         {
             animComposer.SetCurrentWeight(1f);
             layerMixers[layer].SetInputWeight(index, 1f);

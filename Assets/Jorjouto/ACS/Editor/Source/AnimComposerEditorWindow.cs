@@ -234,21 +234,23 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
 
         #endregion
 
-        #region Disposal
+        private void OnEnable()
+        {
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+        }
 
-        /// <summary>
-        /// Called when the editor window is disabled or closed.
-        /// </summary>
-        /// <remarks>
-        /// Ensures the active editor UI is properly disposed to release
-        /// resources such as preview objects, playable graphs, and event
-        /// bindings.
-        /// </remarks>
         private void OnDisable()
         {
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             currentUI?.Dispose();
         }
 
-        #endregion
+        private void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.EnteredEditMode && currentUI != null)
+            {
+                RebuildUI();
+            }
+        }
     }
 }

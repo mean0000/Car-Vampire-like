@@ -1,0 +1,47 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>유기적 맵 v1 (덕코프식)</title>
+<style>
+:root{--bg:#0f1014;--panel:#1a1d24;--edge:#3a3f49;--txt:#e6e8ec;--dim:#9aa0a8;--sub:#c2c6cc;--gold:#fac95a;--green:#7ad6a0;--red:#e8857a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 700px at 50% -10%,#161922,#0f1014 60%);color:var(--txt);
+font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo","Segoe UI",sans-serif;line-height:1.55;padding:36px 24px 70px}
+.wrap{max-width:1100px;margin:0 auto}
+.stamp{display:inline-block;border:1px solid var(--edge);border-radius:4px;padding:3px 10px;font-size:11px;letter-spacing:.12em;color:var(--dim);margin-bottom:14px}
+h1{font-size:26px;font-weight:800;margin-bottom:6px}
+.lede{color:var(--dim);font-size:14px;max-width:960px;margin-bottom:16px}.lede b{color:var(--sub)}
+.shot{background:var(--panel);border:1px solid var(--edge);border-radius:12px;overflow:hidden;margin-bottom:14px}
+.shot.hero{border-color:var(--gold)}.shot img{width:100%;display:block;background:#000}
+.cap{padding:11px 15px;font-size:13px;color:var(--sub)}.cap .t{font-weight:800;color:var(--txt);font-size:15px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px}@media(max-width:760px){.two{grid-template-columns:1fr}}
+.box{background:var(--panel);border:1px solid var(--edge);border-radius:10px;padding:14px 16px}
+.box.good{border-color:#3a5a3a}.box.bad{border-color:#5a3a3a}
+.box h3{font-size:14px;margin-bottom:8px}.box.good h3{color:var(--green)}.box.bad h3{color:var(--red)}
+.box li{font-size:12.5px;color:var(--sub);margin-bottom:6px;list-style:none;padding-left:15px;position:relative}.box li::before{content:"·";position:absolute;left:2px;color:var(--dim)}.box b{color:var(--txt)}
+.q{margin-top:16px;border:1px solid #4a6a4a;background:rgba(122,214,160,.07);border-radius:10px;padding:14px 17px;font-size:13px;color:#bfe6cc}
+footer{margin-top:18px;font-size:11px;color:#6c727c;border-top:1px solid var(--edge);padding-top:12px}footer code{color:#9aa0a8}
+</style></head><body><div class="wrap">
+<div class="stamp">ZombieCrush · 유기적 맵 v1 (격자 폐기, 덕코프식) · 2026-06-14</div>
+<h1>유기적으로 다시 깔았습니다 — 구조 ✓, 밀도 ✗</h1>
+<p class="lede">격자 폐기. <b>비대칭 컴파운드 + 굽은 도로 + 자연 장벽</b>으로 재배치, 끌림=크레인 야드로 수렴. 단 — 덕코프 대비 <b>너무 비어있음</b>(식생·지형 밀도 부족).</p>
+
+<div class="shot hero">
+  <img src="../03_reference/assets/angle_test/map_overview.png">
+  <div class="cap"><span class="t">전경</span> · 비대칭 컴파운드(주거 폐허 SW · 창고 E · 코어 크레인 야드 중북 · 전초 NW) + S자 굽은 도로 + 차량·잔해 장벽. 격자 0.</div>
+</div>
+<div class="shot">
+  <img src="../03_reference/assets/angle_test/map_45.png">
+  <div class="cap"><span class="t">45°</span> · 컴파운드·굽은 도로·장벽·괴수 읽힘. 단 베이지 공백이 휑함.</div>
+</div>
+
+<div class="two">
+  <div class="box good"><h3>✓ 잡힌 것 (당신 지적 반영)</h3>
+    <ul><li>대칭 격자 폐기 → <b>비대칭 유기 배치</b></li><li>건물 = <b>테마 컴파운드</b> 군집(줄세우기 ❌)</li><li><b>굽은 메인 도로</b> + 거점 분기</li><li>차량·잔해 <b>자연 장벽</b>으로 동선 채널링</li><li>끌림 = 한 코어 거점(크레인 야드) 유기 수렴</li></ul></div>
+  <div class="box bad"><h3>✗ 아직 부족 (다음 패스)</h3>
+    <ul><li><b>너무 비어있음</b> — 덕코프는 나무·덤불·지형으로 꽉 참</li><li>평평 솔리드 베이지 = 휑함(지형 텍스처·패치 필요)</li><li>도로가 직선 타일이라 굽힘에 <b>이음새 파편화</b></li><li>작은 소품·펜스·잡초 부족</li></ul></div>
+</div>
+
+<div class="q">❓ <b>유기적 구조(컴파운드 배치·굽은 도로·비대칭) 이 방향 맞습니까?</b> 맞으면 <b>밀도 패스</b> 진행: 보유 <b>LMHPOLY 나무/자연</b> + 지형 흙/잔디 패치 + 펜스·작은 소품·잡초로 공백 메우고, 도로 코너 정합. 컴파운드 위치·개수·테마 조정할 거 있으면 짚어주세요.</div>
+
+<footer>렌더 <code>docs/03_reference/assets/angle_test/map_overview.png · map_45.png</code> (유기 v1 덮어씀) · 컴파운드=주거/창고/야드/전초 · 끌림=크레인 야드</footer>
+</div></body></html>

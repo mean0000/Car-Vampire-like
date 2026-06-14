@@ -13,26 +13,38 @@
 }
 
 .action-blockData .unity-base-field__label {
+    align-items: flex-start;
+    align-self: flex-start;
+    justify-content: flex-start;
+    flex-direction: row;
     width: 300px;
 }
 
 .action-blockData .unity-base-field__input {
-    min-width: 100px;
+    align-items: flex-start;
+    align-self: flex-start;
+    justify-content: flex-start;
+    flex-shrink: 1;
+    flex-direction: row;
 }
 
 .action-blockData .unity-base-field {
-    padding-right: 12px;
+    padding-right: 0;
     margin-top: 3px;
     margin-bottom: 3px;
+    margin-right: 0;
+    align-items: flex-start;
+    align-self: flex-start;
+    width: 800px;
+    justify-content: flex-start;
+    flex-direction: row;
 }
 
 .action-blockData {
     max-width: none;
-    min-width: 100px;
-    align-items: stretch;
-    flex-grow: 1;
-    align-self: stretch;
-    justify-content: space-around;
+    align-items: flex-start;
+    align-self: flex-start;
+    justify-content: flex-start;
     align-content: stretch;
     font-size: 14px;
     -unity-text-align: middle-left;

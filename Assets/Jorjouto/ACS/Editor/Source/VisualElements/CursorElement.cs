@@ -12,9 +12,16 @@ using UnityEngine.UIElements;
 
 namespace Jorjouto.AnimComposerSystem.ACSEditor
 {
+
+    #if UNITY_2023_2_OR_NEWER
     [UxmlElement]
+    #endif
     public partial class CursorElement : VisualElement
     {
+        #if !UNITY_2023_2_OR_NEWER
+        public new class UxmlFactory : UxmlFactory<CursorElement, UxmlTraits> { }
+        #endif
+        
         /// <summary>
         /// Flag indicating if an item (action block) has been selected for dragging or resizing.
         /// </summary>

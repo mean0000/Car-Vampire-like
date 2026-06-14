@@ -1,0 +1,59 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>집하장 손배치 청사진</title>
+<style>
+:root{--bg:#0f1014;--panel:#1a1d24;--edge:#3a3f49;--txt:#e6e8ec;--dim:#9aa0a8;--sub:#c2c6cc;--gold:#fac95a;--cyan:#5ac8d6;--green:#7ad6a0;--red:#e8857a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 700px at 50% -10%,#161922,#0f1014 60%);color:var(--txt);font-family:"Pretendard","Malgun Gothic","Segoe UI",sans-serif;line-height:1.6;padding:34px 22px 70px}
+.wrap{max-width:1080px;margin:0 auto}
+.stamp{display:inline-block;border:1px solid var(--edge);border-radius:4px;padding:3px 10px;font-size:11px;letter-spacing:.1em;color:var(--dim);margin-bottom:12px}
+h1{font-size:25px;font-weight:800;margin-bottom:6px}
+h2{font-size:17px;margin:22px 0 10px;color:var(--gold)}
+.lede{color:var(--dim);font-size:14px;max-width:940px;margin-bottom:8px}.lede b{color:var(--sub)}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}.split .pill{background:var(--panel);border:1px solid var(--edge);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--sub)}
+.pill .h{font-weight:800;font-size:13px;margin-bottom:5px}.pill.code .h{color:var(--cyan)}.pill.hand .h{color:var(--gold)}
+img{width:100%;display:block;border:1px solid var(--edge);border-radius:12px;background:#000;margin:6px 0 4px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+th,td{border:1px solid var(--edge);padding:7px 9px;text-align:left}th{background:#22262e;color:var(--sub);font-size:12px}
+td code{color:var(--cyan);font-size:12px}.r{color:var(--gold);font-weight:700}
+ol{margin:8px 0 8px 20px}ol li{font-size:13.5px;color:var(--sub);margin-bottom:7px}ol li b{color:var(--txt)}
+.warn{background:#2a1d1d;border:1px solid #6a4040;border-radius:10px;padding:12px 15px;font-size:13px;color:#f0c9c2;margin:10px 0}
+.warn b{color:#ffd9d2}
+footer{margin-top:22px;font-size:11px;color:#6c727c;border-top:1px solid var(--edge);padding-top:12px}
+</style></head><body><div class="wrap">
+<div class="stamp">ZombieCrush · 하이브리드 맵 제작 · 집하장 1차 · 2026-06-14</div>
+<h1>집하장 — 손배치 청사진</h1>
+<p class="lede"><b>캔버스(바닥·벽·도로·잔해·식생)는 코드가 자동 생성</b>합니다 — <code>Tools/MapGen/Generate Map</code>. <b>당신은 ①~⑤ 히어로만</b> 에디터에서 드래그해 얹으면 됩니다(눈으로 보면서 스냅으로 — 코드 장님배치보다 빠르고 예쁨).</p>
+
+<div class="split">
+  <div class="pill code"><div class="h">🤖 코드가 함 (자동·재생성)</div>탄 포장 바닥 전면 · 봉쇄벽 · 아스팔트 도로망 · 흙/잔디 색변화 구역 · 잔해 산포 200 · 식생 군집 · (추후)스폰 디렉터·전투</div>
+  <div class="pill hand"><div class="h">✋ 당신이 함 (눈·구도)</div>① 크레인 랜드마크 · ② 창고 · ③ 주거 줄 · ④ 검문소 · ⑤ 컨테이너 회랑 — 아래 좌표대로 놓고 스냅으로 미세조정</div>
+</div>
+
+<img src="../03_reference/assets/angle_test/handplace_blueprint.png" alt="청사진">
+
+<h2>히어로 배치표 (Inspector에 X / Z / rotY 입력 · Y=0)</h2>
+<table>
+<tr><th>#</th><th>무엇</th><th>프리팹 (이름 검색)</th><th>X</th><th>Z</th><th class="r">rotY</th><th>풋프린트 X×Z</th><th>메모</th></tr>
+<tr><td>①</td><td><b>크레인(랜드마크·비콘)</b></td><td><code>SM_Bld_Crane_01</code></td><td>8</td><td>14</td><td class="r">200</td><td>7.5×45.2 (붐 김)</td><td>타워는 야드 위, 붐이 남(LZ)쪽으로 — 멀리서 우뚝 보이게</td></tr>
+<tr><td>②</td><td>창고</td><td><code>SM_Bld_Warehouse_01</code></td><td>52</td><td>-8</td><td class="r">90</td><td>21.7×22.6</td><td>정면 도로쪽</td></tr>
+<tr><td>③</td><td>주거 줄 (집 4채 한 줄)</td><td><code>SM_Bld_House_01</code> · <code>_House_03</code> · <code>_House_02</code> · <code>SM_Bld_WoodenShack_01</code></td><td colspan="2">중심 (-44,-36)</td><td class="r">-35</td><td>11 / 5.6 / 13.4 / 4.5 (폭)</td><td>rot -35°로 한 줄, 2.5m 간격, 정면 도로쪽</td></tr>
+<tr><td>④</td><td>검문소</td><td><code>SM_Bld_Portable_Office_01</code> + <code>SM_Bld_SmallBuilding_03</code></td><td colspan="2">중심 (-42,40)</td><td class="r">25</td><td>3×5.6 / 10.7×7.1</td><td>진입 통제 느낌</td></tr>
+<tr><td>⑤</td><td>컨테이너 회랑 (깔때기)</td><td><code>SM_Prop_Container_01</code> / <code>SM_Prop_Shipping_Container_01</code> 번갈아</td><td colspan="2">두 줄 X=-7 / X=15 (Z -2~12)<br>뒤벽 Z=24 (X -2~18)</td><td class="r">0</td><td>2.5×6.2 each</td><td>척추 끝 → 크레인으로 좁아드는 통로. 색 번갈아</td></tr>
+</table>
+
+<h2>작업 순서</h2>
+<ol>
+<li>맵 씬 열기 → <b><code>Tools/MapGen/Generate Map</code></b> 실행 → 캔버스(<code>GeneratedMap</code> 루트) 생성.</li>
+<li>Hierarchy에 빈 GameObject <b><code>HandPlaced</code></b> 생성, 위치 (0,0,0). <span class="r">★ GeneratedMap 밖(씬 루트)에</span> 둘 것.</li>
+<li>Project에서 위 프리팹 이름 검색 → <b>HandPlaced 밑으로 드래그</b>. Inspector에서 Position X/Z, Rotation Y 입력(Y는 0).</li>
+<li>미세조정: <b>Ctrl+드래그=그리드 스냅</b>, <b>V=버텍스 스냅</b>(바닥에 딱 앉히기). 화면 보면서 어색하면 옮기기.</li>
+<li>씬 저장.</li>
+</ol>
+
+<div class="warn"><b>★중요:</b> 캔버스를 다시 뽑고 싶으면 <code>Generate Map</code>을 또 누르면 됩니다 — 이건 <code>GeneratedMap</code> 루트만 지우므로 <b>당신의 <code>HandPlaced</code>는 안 지워집니다.</b> (그래서 히어로를 GeneratedMap 밖에 두는 것.)</div>
+
+<p class="lede" style="margin-top:14px">좌표·치수는 전부 실측(에디터에서 측정)이라 충돌 없이 맞물립니다. 놓아보고 "이게 더 낫다" 싶으면 자유롭게 옮기세요 — 청사진은 출발점이지 감옥이 아닙니다. 구도가 잡히면 그 위에 <b>스폰 디렉터(착지→표효 소집→동심원 강화)</b>를 코드로 얹습니다.</p>
+
+<footer>캔버스 엔진 <code>Assets/_Project/Scripts/MapGen/</code> (TiledFloor 완전바닥·heroByHand 캔버스모드) · 청사진 데이터 = RuinCitySpec.cs(compounds/corridors 좌표) · 렌더 <code>docs/03_reference/assets/angle_test/canvas_*.png</code></footer>
+</div></body></html>
