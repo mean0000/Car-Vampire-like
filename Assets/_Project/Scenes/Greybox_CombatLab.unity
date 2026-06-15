@@ -20,9 +20,9 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 15
   m_LinearFogEnd: 80
-  m_AmbientSkyColor: {r: 0.88000005, g: 0.88000005, b: 1.3640001, a: 2.2}
-  m_AmbientEquatorColor: {r: 1.628, g: 0.9768, b: 0.6919, a: 2.035}
-  m_AmbientGroundColor: {r: 0.814, g: 0.4884, b: 0.34595, a: 2.035}
+  m_AmbientSkyColor: {r: 0.63919544, g: 0.9581202, b: 1.018868, a: 1.5}
+  m_AmbientEquatorColor: {r: 0.63583124, g: 0.8300802, b: 0.9169811, a: 1.3499999}
+  m_AmbientGroundColor: {r: 0.31791562, g: 0.4150401, b: 0.45849055, a: 1.3499999}
   m_AmbientIntensity: 1
   m_AmbientMode: 1
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
@@ -64885,6 +64885,7 @@ Transform:
   - {fileID: 1784326568}
   - {fileID: 465330427}
   - {fileID: 1692434996}
+  - {fileID: 1133929441}
   m_Father: {fileID: 930851857}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!23 &1114635128
@@ -65078,7 +65079,6 @@ MonoBehaviour:
   muzzleLightRange: 7
   muzzleLightDuration: 0.06
   muzzleLightColor: {r: 1, g: 0.72, b: 0.34, a: 1}
-  shotVolume: 0.65
   reloadVolume: 0.25
   impactFlashTime: 0.2
   zombieFlashSize: 0.85
@@ -65087,14 +65087,8 @@ MonoBehaviour:
   wallFlashColor: {r: 3.5, g: 4.5, b: 6, a: 1}
   sparkColor: {r: 9, g: 7.5, b: 3.5, a: 1}
   sparkBurstCount: 16
-  fireShake: 0.06
-  fireKick: 0.1
-  heavyKickMinCooldown: 0.3
   convergedDamageMult: 2
   convergedKnockbackMult: 2
-  convergedHitStop: 0
-  convergedKickMult: 1.4
-  convergedKillHitStop: 0
   aimReleaseAfterKill: 0.35
   zombieHitOverride: {fileID: 0}
   wallHitOverride: {fileID: 0}
@@ -65117,6 +65111,42 @@ MonoBehaviour:
   bashDamage: 1
   bashCooldown: 0.7
   bashNoise: 30
+  iaiKnobs:
+    lightBaseCadence: 0.82
+    lightSpeedMult: 0.55
+    lightArcHalfAngle: 45
+    lightRange: 1.6
+    chargeTimeStill: 1.2
+    chargeTimeMoving: 2.4
+    minCharge01: 0.125
+    lungeDistMin: 2.5
+    lungeDistMax: 6
+    lungeRadius: 0.4
+    lungeSpeed: 38
+    lungeDmgMultMin: 1.5
+    lungeDmgMultMax: 4
+    killRefill: 0.35
+    lungeCooldown: 0.4
+    snapAssistDeg: 10
+  slashKnobs:
+    arcHalfAngle: 50
+    range: 1.8
+    baseCadence: 0.55
+    maxTier: 5
+    hitsPerTier: 3
+    cooldownCutPerTier: 0.15
+    comboWindow: 2
+    decayPerSec: 1
+    hitLossMin: 1
+    hitLossMax: 2
+    waveRange: 5
+    waveHalfAngle: 90
+    waveDuration: 0.4
+    waveDmgMult: 3
+    waveKnockback: 6
+  forceKatanaForTest: 1
+  iaiModeKey: 49
+  slashModeKey: 50
   evolveKey: 116
   altFireKey: 113
   allowWeaponHotswap: 1
@@ -66234,6 +66264,106 @@ Transform:
   - {fileID: 1881133209}
   m_Father: {fileID: 513497177}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1133929440
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1114635127}
+    m_Modifications:
+    - target: {fileID: 3802377507391346821, guid: 759b8668b55fe0d4686d41389db207d9, type: 3}
+      propertyPath: m_Name
+      value: CharacterVisual
+      objectReference: {fileID: 0}
+    - target: {fileID: 5786415867449015086, guid: 759b8668b55fe0d4686d41389db207d9, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: b2448ad7f8058194ba388069ba3857c3, type: 2}
+    - target: {fileID: 7165016677263533491, guid: 759b8668b55fe0d4686d41389db207d9, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7165016677263533491, guid: 759b8668b55fe0d4686d41389db207d9, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7165016677263533491, guid: 759b8668b55fe0d4686d41389db207d9, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7165016677263533491, guid: 759b8668b55fe0d4686d41389db207d9, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7165016677263533491, guid: 759b8668b55fe0d4686d41389db207d9, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7165016677263533491, guid: 759b8668b55fe0d4686d41389db207d9, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7165016677263533491, guid: 759b8668b55fe0d4686d41389db207d9, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7165016677263533491, guid: 759b8668b55fe0d4686d41389db207d9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7165016677263533491, guid: 759b8668b55fe0d4686d41389db207d9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7165016677263533491, guid: 759b8668b55fe0d4686d41389db207d9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3802377507391346821, guid: 759b8668b55fe0d4686d41389db207d9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1133929443}
+  m_SourcePrefab: {fileID: 100100000, guid: 759b8668b55fe0d4686d41389db207d9, type: 3}
+--- !u!4 &1133929441 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7165016677263533491, guid: 759b8668b55fe0d4686d41389db207d9, type: 3}
+  m_PrefabInstance: {fileID: 1133929440}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1133929442 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3802377507391346821, guid: 759b8668b55fe0d4686d41389db207d9, type: 3}
+  m_PrefabInstance: {fileID: 1133929440}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1133929443
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1133929442}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5020a027a0048624cbd52eba8fb105e3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerLocomotionAnimator
+  moveSource: {fileID: 0}
+  aimSource: {fileID: 0}
+  walkSpeedRef: 5
+  runSpeedRef: 8.5
+  maxSpeed: 12
+  moveThreshold: 0.3
+  speedDamp: 0.1
+  dirDamp: 0.08
+  rifleController: {fileID: 9100000, guid: b2448ad7f8058194ba388069ba3857c3, type: 2}
+  pistolController: {fileID: 9100000, guid: 05d2ba84f12cb1c4aa50a861206b0506, type: 2}
+  reloadClipLength: 3.6666667
+  maxReloadAnimSpeed: 1.35
+  dashClipLength: 2.5
+  maxDashAnimSpeed: 1.35
 --- !u!1 &1134492357
 GameObject:
   m_ObjectHideFlags: 0
@@ -97318,7 +97448,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6596192949152740936, guid: 4fb69deca745bb2468236eb03b90210f, type: 3}
       propertyPath: m_Name
-      value: CharacterVisual
+      value: CharacterVisual_OLD_CasualMale
+      objectReference: {fileID: 0}
+    - target: {fileID: 6596192949152740936, guid: 4fb69deca745bb2468236eb03b90210f, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7147335891255492358, guid: 4fb69deca745bb2468236eb03b90210f, type: 3}
       propertyPath: m_UpdateWhenOffscreen
@@ -97408,6 +97542,9 @@ MonoBehaviour:
   rifleController: {fileID: 9100000, guid: b2448ad7f8058194ba388069ba3857c3, type: 2}
   pistolController: {fileID: 9100000, guid: 05d2ba84f12cb1c4aa50a861206b0506, type: 2}
   reloadClipLength: 3.6666667
+  maxReloadAnimSpeed: 1.35
+  dashClipLength: 2.5
+  maxDashAnimSpeed: 1.35
 --- !u!1 &1692655886
 GameObject:
   m_ObjectHideFlags: 0
