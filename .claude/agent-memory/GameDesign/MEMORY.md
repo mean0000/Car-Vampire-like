@@ -16,6 +16,7 @@
 - [메타 경제 레퍼 8종](reference_meta_economy.md) — ★런 밖 재화 사용처(유저 "가장 빈 칸"). HLB 2층추출(영구/임시=stake)·Hades II Grasp+골드환전·Dead Cells 옵션not스탯·Hunt 바운티(회피-최적 해소)·Tarkov 은신처(프레임만)·ZERO Sievert·StS 승천·Rogue Legacy 몰수
 - [★카드-내용 설계 문법](reference_card_content_grammar.md) — 레퍼가 *카드 1장 내용을* 짜는 법(구조 아님). "+5% 함정" 답=6동사클래스. PoE키스톤(규칙변경+대가 실측4)·Hades Aspect Guan Yu(동사변경)·Hades Duo/Gemini(시너지활성)·VS 진화(형태변태)·20MTD/DMD 스코프. 두 altitude 분리(PoE=메타트리, 노드정체성만 훔침)
 - [★검 액션 뽕 엔진 6종](reference_sword_action_pong_engines.md) — 검 뽕=*연쇄 가속* 축. GoT 스탠드오프 스트릭(3연 즉살 체인)·MGR 잔타츠(직접 절단선+킬=재충전, 우리 추출코어 동형)·세키로 체간 처결·로닌 카운터스파크·Katana Zero 플로우클리어·무쌍 격노(게이지→난동→화면와이프). 점/면보다 연쇄가 본진
+- [★VS 보호/영토/패링 선례](reference_vs_protect_territory_parry.md) — 2026-06-16 웹리서치. ★VS코어=카이팅(이동만이 방어)→농성·영토 정지점거는 정면충돌. 선례: DRG:S 에스코트모드(캡처존+호드, 호불호·간헐모드면 작동)/Death Must Die 닷지롤(포지셔닝→반응게임 전환=패링 정당근거, 단 상시회피)/Rock&Road(VS+타워디펜스=과설계신호). 결론=보호/영토는 간헐이벤트면OK·상시척추면 위험
 - [★급습+호드+성장 결합 추적](reference_ambush_horde_growth.md) — 2026-06-15 웹리서치. ★결합=드묾(빈공간,함정아님). 3문제 답: 급습이유=Dishonored 아드레날린(미발각→전투강화, "no trouble"넘어)+백스탭배수 3~30x(과감해야 작동)/스타일쿠션=Desperados유한증원(발각도 이김)vs Intravenous2·Dishonored1 반례(한쪽만보상)/호드리듬=L4D Peak Fade(스폰0+stress decay)+DRG:S 어그로캡32+예산제+RoR2크레딧. 차용Top5
 
 ## 판정 기준
