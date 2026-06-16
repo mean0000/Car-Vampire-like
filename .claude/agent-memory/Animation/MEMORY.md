@@ -3,6 +3,9 @@
 ## ★구매 게이트 — 외주 애니팩 리타겟 검증
 - [Frank Slash Pack 리타겟 게이트 (06-16, $50 구매 전)](project_frank_slash_retarget_gate.md) — Humanoid→Synty Sidekick 리타겟=구조 PASS(깨짐0·칼 실루엣 강함). ★진짜 리스크=45도 부감서 수직동작(텀블 등) 납작해짐(렌즈 문제, 리그 아님). import 경고=표준 translation-DOF discard=비치명. 동적 느낌·속도=유저 플레이 게이트
 
+## 플레이어 리타게팅
+- [한쪽 발만 어긋나는 리타게팅 비대칭 — 근본원인·수정법](project_retarget_foot_asymmetry_fix.md) — 소스 FBX 왼발이 A-포즈서 꺾여 CreateFromThisModel이 muscle-zero로 구움→리타게팅 상수 roll. 진단=타깃에 known-good 클립+native rig 둘 다 샘플로 소스/타깃 가름. 수정=skeleton[] T-pose 결함다리를 FK모델공간 미러(naive 컴포넌트 미러 ❌, Unreal 본축 X-반사 아님). L roll 0.32→0.17(R0.10 수렴). Reflection AvatarSetupTool=하니스 즉사. NewKatana=git미추적
+
 ## ★1차 스테이지 9종 애니 판독 (구현 전 — 신체분류·틀맵·배역이견)
 - [1차 스테이지 9종 애니 도메인 판독(06-14)](project_stage1_roster_anim_read.md) — 프리뷰 실측 신체분류+클립킷 인벤토리(부족 0)+틀 재활용 맵(Venosaur=클로틀 직재활용·성체Crustaspikan=브루트틀·비행2종=신규틀). ★배역이견: Fulgurodonte=직립아님(저자세 절지)·Kupolojuve=날갯짓아닌 부유해파리·Lacercharias=진짜 Roll 상태머신. 난이도: Carcinoptera>Crustaspikan성체>Kupolojuve>Fulgurodonte>Lacercharias>Venosaur
 

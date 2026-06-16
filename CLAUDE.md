@@ -16,6 +16,15 @@ Before implementing:
 - If a simpler approach exists, say so. Push back when warranted.
 - If something is unclear, stop. Name what's confusing. Ask.
 
+## 1.5 Verify Before Asserting (사실 주장 규율)
+
+**외부·경험적·시간민감 사실은 단정 전에 검증하거나, 미검증이라고 깃발을 꽂는다.** (2026-06-16 신설 — "여름세일 6/25 50%" 미검증 단정 사고에서. [[feedback_verify_before_assert]])
+
+- **트리거:** 가격·세일·날짜·버전·라이브러리/API 존재·"이 에셋/툴에 X 기능 있다"·외부 상태 등 *지금 사실인지*가 걸린 주장.
+- **둘 중 하나만 허용:** (a) 방금 확인한 라이브 출처를 같이 댄다(WebFetch/WebSearch/직접 조회), 또는 (b) **"미검증 — 확인 필요"라고 명시**한다. 어중간하게 사실처럼 흘리지 않는다.
+- **메모리 위생:** 메모리/내부 노트를 *현재 사실*로 승격하지 않는다. 메모리는 *적힐 때* 사실이었을 뿐 — 시간민감 항목(가격·세일·버전·파일/플래그 존재)은 재확인 후 인용. (recall 시스템 경고와 동일.)
+- **고도 주의:** 이건 새 게이트/에이전트가 아니라 *말하기 전 규율*이다. 상설 검증 에이전트는 만들지 않는다(검증자도 같은 환각·Max5 비용·무한 회귀). 도메인 산출물 검증은 기존 게이트(Stab/Codex/vc)가 맡고, 사실 주장은 이 규율이 맡는다.
+
 ## 2. Simplicity First
 
 **Minimum code that solves the problem. Nothing speculative.**
