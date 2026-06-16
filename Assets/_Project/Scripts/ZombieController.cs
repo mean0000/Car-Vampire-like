@@ -127,6 +127,8 @@ public class ZombieController : MonoBehaviour
     public bool IsAlerted => _state == ZombieState.Investigate || _state == ZombieState.Alert;
     /// <summary>공격 사이클(Windup/Lunge/Grapple) — 시야 게이트 공정성 바닥(공격 중 실물 강제 공개)용.</summary>
     public bool IsAttacking => _state == ZombieState.Windup || _state == ZombieState.Lunge || _state == ZombieState.Grapple;
+    /// <summary>어그로(Chase) 전 — 플레이어를 아직 특정 못 한 무경계 상태. 급습(보장 즉살) 자격.</summary>
+    public bool IsUnaware => _state < ZombieState.Chase && !IsDead;
     /// <summary>설정 이동속도(m/s) — 스폰 가드 TTC 계산용(런타임 속도 아님). config 부재 시 코드 기본 3.</summary>
     public float MoveSpeed => _config != null ? _config.moveSpeed : 3f;
 
