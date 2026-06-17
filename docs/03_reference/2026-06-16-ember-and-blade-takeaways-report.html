@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>엠버 앤 블레이드 → 우리 게임 참고점 분류 보고서</title>
+<style>
+  :root{
+    --bg:#0e1014; --panel:#171a21; --panel2:#1d2129; --line:#2a2f3a;
+    --txt:#e6e8ec; --dim:#9aa3b2; --gold:#e8c069; --red:#e0556a; --cyan:#52c7d8;
+    --codex:#7dd3a8; --gd:#b69bff; --must:#e0556a; --nice:#5aa9e6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:"Pretendard","Segoe UI",system-ui,sans-serif;line-height:1.6;}
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 24px 80px;}
+  h1{font-size:30px;margin:0 0 6px;letter-spacing:-.5px;}
+  .sub{color:var(--dim);font-size:15px;margin-bottom:4px;}
+  .meta{color:var(--dim);font-size:13px;margin-bottom:28px;}
+  .meta b{color:var(--gold);}
+  h2{font-size:22px;margin:46px 0 16px;padding-bottom:8px;border-bottom:2px solid var(--line);}
+  h3{font-size:17px;margin:24px 0 10px;}
+  .lead{background:var(--panel);border-left:4px solid var(--gold);padding:14px 18px;
+    border-radius:0 8px 8px 0;color:#d8dbe2;font-size:15px;margin:18px 0;}
+  /* gallery */
+  .gal{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0;}
+  .shot{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+  .shot img{width:100%;display:block;}
+  .shot .cap{padding:10px 14px;font-size:13px;color:var(--dim);}
+  .shot .cap b{color:var(--txt);}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;
+    margin-right:6px;vertical-align:middle;}
+  .t-act{background:rgba(224,85,106,.18);color:#ff8a9c;}
+  .t-boss{background:rgba(82,199,216,.18);color:#7fe0ee;}
+  .t-hub{background:rgba(232,192,105,.18);color:var(--gold);}
+  .t-npc{background:rgba(182,155,255,.18);color:#c9b6ff;}
+  /* two-eye columns */
+  .eyes{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:16px;}
+  .eye{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;}
+  .eye.codex{border-top:3px solid var(--codex);}
+  .eye.gd{border-top:3px solid var(--gd);}
+  .eye .who{font-weight:700;font-size:15px;margin-bottom:2px;}
+  .eye.codex .who{color:var(--codex);}
+  .eye.gd .who{color:var(--gd);}
+  .eye .role{color:var(--dim);font-size:12px;margin-bottom:14px;}
+  .grp{font-size:12px;font-weight:800;letter-spacing:.5px;margin:16px 0 8px;text-transform:uppercase;}
+  .grp.must{color:var(--must);}
+  .grp.nice{color:var(--nice);}
+  ul.items{list-style:none;padding:0;margin:0;}
+  ul.items li{position:relative;padding:8px 0 8px 18px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13.5px;}
+  ul.items li:last-child{border-bottom:none;}
+  ul.items li::before{content:"▸";position:absolute;left:0;color:var(--dim);}
+  ul.items li b{color:#fff;}
+  ul.items li .arw{color:var(--cyan);}
+  /* convergence table */
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13.5px;}
+  th,td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top;}
+  th{background:var(--panel2);color:var(--gold);font-size:12px;letter-spacing:.3px;}
+  tr:nth-child(even) td{background:rgba(255,255,255,.015);}
+  td .arw{color:var(--cyan);}
+  .pri{font-weight:800;color:var(--must);white-space:nowrap;}
+  .both{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;
+    background:rgba(125,211,168,.15);color:var(--codex);border:1px solid rgba(125,211,168,.3);}
+  .warn{background:rgba(224,85,106,.08);border:1px solid rgba(224,85,106,.35);border-radius:10px;
+    padding:16px 20px;margin:18px 0;}
+  .warn h3{margin-top:0;color:var(--red);}
+  .q{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 16px;margin:10px 0;}
+  .q b{color:var(--gold);}
+  .foot{margin-top:50px;padding-top:18px;border-top:1px solid var(--line);color:var(--dim);font-size:12px;}
+  a{color:var(--cyan);}
+  @media(max-width:760px){.gal,.eyes{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>엠버 앤 블레이드 → 우리 게임 참고점 분류</h1>
+  <div class="sub">라인게임즈 <b>《Ember and Blade》</b> — 불렛헤븐 + 무쌍식 액션 로그라이크 (2026 Q4 예정 · 데모 플레이 가능 · 에픽 Top Demos 1위)</div>
+  <div class="meta">작성 2026-06-16 · 대상=우리 <b>조준형 총기 뱀파이어서바이버즈</b> + 사후처리부 2페이즈 · 분류 두 독립 눈: <b style="color:var(--codex)">Codex (gpt-5.5, 이미지 직접 분석)</b> + <b style="color:var(--gd)">GameDesign 에이전트 (코어 권위 정합)</b></div>
+
+  <div class="lead">
+    <b>왜 이 게임인가:</b> 우리와 <b>척추가 거의 동일한 동시대 정식작</b>이다(자동공격 베이스 + 인런 드래프트 + 고정 보스 + 영구 메타). 그래서 그들의 성공은 <b>우리 결정의 실증</b>이고, 그들의 실패(이펙트가 가독성을 잡아먹음)는 <b>우리 가드레일의 확증</b>이다. 핵심 변환은 하나 — <b>저쪽 근접 검 손맛을 우리는 "조준 사격 동사 + 회피→재조준 보너스 창"으로 번역</b>한다.
+  </div>
+
+  <div style="background:linear-gradient(90deg,rgba(224,85,106,.16),rgba(224,85,106,.04));border:1px solid rgba(224,85,106,.45);border-radius:10px;padding:14px 18px;margin:18px 0;font-size:14.5px;">
+    🟥 <b style="color:#ff8a9c;">유저 결정 (2026-06-16):</b> <b>Codex가 짚은 항목은 A·B 구분 없이 전부 최우선</b>으로 올림. → §2 Codex 패널 11개 전체 + §3 교집합이 채택 확정 대상. (GameDesign 에이전트의 B는 기존 등급 유지)
+  </div>
+
+  <!-- ============ GALLERY ============ -->
+  <h2>1. 무엇을 보고 분석했나 (데모 스크린샷)</h2>
+  <div class="gal">
+    <div class="shot">
+      <img src="references/ember_and_blade/ss1.jpg" alt="군중 임팩트">
+      <div class="cap"><span class="tag t-act">액션 임팩트</span><b>방사형 백색 참격 버스트.</b> 부감 쿼터뷰, 거대 호드 한가운데 "내가 군중을 밀어냈다"는 즉시 피드백. 좌하 HP/XP, 우상 타이머·축복 아이콘. <span style="color:var(--red)">단 플레이어가 이펙트에 묻힐 위험.</span></div>
+    </div>
+    <div class="shot">
+      <img src="references/ember_and_blade/ss6.jpg" alt="보스 전조 패턴">
+      <div class="cap"><span class="tag t-boss">보스 전조</span><b>보스 Arcanus 'The Faceless'.</b> 지면 빨간 빔 전조 패턴 + 청록 그리드로 <b>화면 공간을 선·면으로 장악</b>. 상단 보스 HP바. 색=위험(적)/환경(청록) 분리.</div>
+    </div>
+    <div class="shot">
+      <img src="references/ember_and_blade/ss3.jpg" alt="거점 포탈">
+      <div class="cap"><span class="tag t-hub">거점 · 출격</span><b>망각의 성채 / 출격 포탈.</b> 런 사이 운영 공간 + 3인칭 컷씬 무드. 다크판타지 톤.</div>
+    </div>
+    <div class="shot">
+      <img src="references/ember_and_blade/ss8.jpg" alt="천사 대화">
+      <div class="cap"><span class="tag t-npc">서사 프레이밍</span><b>천사 GALILIEL ("Angel of Poison & Conspiracy").</b> 드래프트 제공자에 캐릭터·서사를 입힘(Hades풍). 픽=스탯+세계관 사건.</div>
+    </div>
+  </div>
+
+  <!-- ============ TWO EYES ============ -->
+  <h2>2. 두 독립 눈의 분류</h2>
+  <p class="sub">같은 질문을 시각 분석(Codex)과 시스템 정합(에이전트) 두 갈래로 던졌다. <b style="color:var(--must)">A=반드시 참고</b> / <b style="color:var(--nice)">B=참고하면 좋을 것</b>.</p>
+
+  <div class="eyes">
+    <!-- CODEX -->
+    <div class="eye codex" style="border-top:3px solid var(--must);box-shadow:0 0 0 1px rgba(224,85,106,.35);">
+      <div class="who">◆ Codex · gpt-5.5</div>
+      <div class="role">크로스 프로바이더 · 이미지 직접 분석 (화면 가독성·연출 관점)</div>
+      <div style="background:rgba(224,85,106,.12);border:1px solid rgba(224,85,106,.4);border-radius:8px;padding:8px 12px;margin:4px 0 14px;font-size:12.5px;color:#ffb3bf;">
+        ★ <b>유저 확정 (2026-06-16):</b> Codex 항목은 <b>A·B 전부 최우선</b>으로 승격. 아래 11개 모두 "반드시" 등급.
+      </div>
+
+      <div class="grp must">A · 반드시 참고 <span style="font-weight:600;color:var(--dim)">(최우선)</span></div>
+      <ul class="items">
+        <li><b>전조가 먼저, 폭발은 나중</b> — 지면 빔/라인 전조가 패턴 이해를 만듦. <span class="arw">→</span> 보스 탄막·돌진·포격을 <b>빨간 위험영역 → 짧은 락온음 → 실제 피해</b> 순서로, 총기 회피 리듬화.</li>
+        <li><b>중앙 캐릭터 가독성 확보</b> — ss1은 플레이어가 묻힐 위험. <span class="arw">→</span> 조준형이므로 <b>플레이어 실루엣·조준선·커서 1~2m는 항상 시각 우선권</b>.</li>
+        <li><b>방사형 임팩트의 쾌감</b> — 백색 참격버스트="군중을 밀어냈다". <span class="arw">→</span> 산탄·관통탄·충격파탄의 <b>원형/부채꼴 넉백 연출</b>로 변환.</li>
+        <li><b>보스의 지형 점유감</b> — 보스가 선·면으로 공간 장악. <span class="arw">→</span> 체력몹 금지, <b>봉쇄선·생체 포탑·감염 장판·저격 레이저</b>로 이동 경로 압박.</li>
+        <li><b>색으로 피해 계층 분리</b> — 빨강=위험/청록=환경. <span class="arw">→</span> <b>적 전조·플레이어 탄·시민 목표·아이템 색을 엄격 분리</b>.</li>
+        <li><b>군중 속 한 방의 타격 피드백</b> — 다수 피격을 한 덩어리로. <span class="arw">→</span> 숫자보다 <b>관통 궤적·탄착 스파크·사지 파편·웨이브 밀림</b>으로 "탄이 군중을 찢었다".</li>
+      </ul>
+
+      <div class="grp must">B · 원래 "좋을 것" → ★최우선 승격 <span style="font-weight:700;background:rgba(224,85,106,.2);color:#ff8a9c;padding:1px 7px;border-radius:10px;font-size:10px;">유저 확정 06-16</span></div>
+      <ul class="items">
+        <li><b>보스명/체력바의 의식감</b> — 등장 시 이름·파벌 문양·봉쇄 단계·처치/시간 게이지를 한 번에.</li>
+        <li><b>흔들림·히트스톱 제한 사용</b> — 샷건·저격·폭발·약점 파괴 때만 짧게(조준감 보호).</li>
+        <li><b>보스별 컬러 아이덴티티</b> — 파벌별 감염색·탄막색·시체 잔흔색 차별화.</li>
+        <li><b>전장 장식의 밀도</b> — 폐쇄구역·구조차량·방역벽·변종 둥지·민간인 잔해로 "사후처리부" 세계관.</li>
+        <li><b>시그니처 패턴의 스크린샷성</b> — 보스마다 한 장면으로 알아보는 시그니처 패턴 1개씩.</li>
+      </ul>
+    </div>
+
+    <!-- GAMEDESIGN AGENT -->
+    <div class="eye gd">
+      <div class="who">◆ GameDesign 에이전트</div>
+      <div class="role">코어 권위 정합 · 시스템/런구조 관점 (검→총 변환 + 충돌 감사)</div>
+
+      <div class="grp must">A · 반드시 참고</div>
+      <ul class="items">
+        <li><b>A1 · 자동 베이스 + 수동 액션 레이어</b> — 순수 자동 뱀서의 "손맛 없음"을 푸는 검증된 해법. <span class="arw">→</span> 저쪽 수동=검 콤보, 우리 수동=<b>방향 조준 사격</b>. <span style="color:var(--codex)">정합: §2 "조준 사격 / 무조준 자동 ❌"와 일치.</span></li>
+        <li><b>A2 · 전조 → 회피 → 반격 데미지 창</b> — 카이팅에 "읽고 대응"하는 깊이. <span class="arw">→</span> <b>조준 회피 → 재조준 사격 보너스 창</b>. <span style="color:var(--red)">⚠ 이동+조준+회피 손가락 과부하 → 노브 검증 필수.</span></li>
+        <li><b>A3 · 적 등급 = 전조 강도의 다이얼</b> — HP 스펀지가 아니라 <b>읽히는 위협 강도</b>로 등급 표현. <span style="color:var(--codex)">정합: "등급=행동변화" 정신, 폐기된 5계열의 비-rigid 대체.</span></li>
+        <li><b>A4 · 화려함 ≤ 가독성 가드레일</b> — 경쟁작이 같은 함정을 밟음. <span class="arw">→</span> <b>정보 레이어(상시 클린) vs 연출 레이어 분리</b>를 처음부터. <span style="color:var(--codex)">[[juice_textbook_lessons]] 확증.</span></li>
+        <li><b>A5 · 보스 = 인런 클라이맥스</b> — 정교한 컨트롤+패턴 긴장이 런의 정점. <span class="arw">→</span> 조준 카이팅 패턴 회피 → 사격 윈도우. 전조는 A3 최댓값. <span style="color:var(--red)">⚠ 카메라 전환 연출은 회수(아래).</span></li>
+      </ul>
+
+      <div class="grp nice">B · 참고하면 좋을 것</div>
+      <ul class="items">
+        <li><b>B1 · 콤보 입력 리듬</b> — 자동 뱀서의 "구경만 함" 함정 해소. <span class="arw">→</span> 점사/풀오토/차징의 <b>사격 리듬</b>. <span style="color:var(--red)">⚠ 카이팅 이동과 입력 과부하 트레이드오프.</span></li>
+        <li><b>B2 · 거점 허브 (망각의 성채)</b> — 영구메타 2축에 물리적 장소. <span class="arw">→</span> 총기 업글(도구함) + 캐릭터 성장(운영자). 사후처리부 지부 톤. <span style="color:var(--dim)">이름=Story 의뢰.</span></li>
+        <li><b>B3 · 드래프트의 서사 프레이밍 (천사 축복)</b> — 픽=스탯+세계관 사건. <span class="arw">→</span> 본사 지급/긴급 보급/현장 즉흥으로 프레이밍. <span style="color:var(--dim)">우리 천사 대응물=본사/지부.</span></li>
+        <li><b>B4 · 보스 = 일관 모티프 (영혼 판 인간)</b> — 외형은 달라도 한 서사축으로 묶어 파편화 방지. <span class="arw">→</span> <b>보스별 파벌="각 보스=한 종의 변종 생태"</b>로 묶음.</li>
+        <li><b>B5 · 경쾌 지향 핵슬 템포</b> — 무겁지 않게 튜닝한 타격감. <span class="arw">→</span> 사격 연사·처치 피드백의 경쾌함. <span style="color:var(--red)">⚠ 15m 부감=히트스탑 구조적 기각, 방향만 참고.</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============ CONVERGENCE ============ -->
+  <h2>3. 두 눈이 합의한 것 = 최우선 (교집합)</h2>
+  <p class="sub">시각 분석과 시스템 정합이 <b>독립적으로 같은 결론에 도달</b>한 항목. 가장 신뢰도 높은 "반드시".</p>
+  <table>
+    <tr><th style="width:30px">#</th><th>합의 항목</th><th>우리 게임으로 변환 (검 → 총)</th><th style="width:70px">우선</th></tr>
+    <tr>
+      <td>1</td>
+      <td><b>전조 → 회피 → 반격</b> 의 액션 리듬 <span class="both">양쪽 A</span></td>
+      <td>보스/엘리트 공격을 <span class="arw">빨간 위험영역 → 락온음 → 피해</span> 순서로. 회피 직후 <b>재조준 사격 보너스 창</b>으로 보상.</td>
+      <td class="pri">최우선</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><b>플레이어·조준 가독성을 이펙트보다 위에</b> <span class="both">양쪽 A</span></td>
+      <td>조준형의 생사. <b>플레이어 실루엣·조준선·커서 1~2m 시각 우선권</b> + 정보/연출 레이어 분리. 화려함 ≤ 가독성.</td>
+      <td class="pri">최우선</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><b>보스가 공간을 장악</b> (체력몹 금지) <span class="both">양쪽 A</span></td>
+      <td>봉쇄선·생체 포탑·감염 장판·저격 레이저로 <b>이동 경로 압박</b>. 보스게이지(시간+처치)와 짝.</td>
+      <td class="pri">최우선</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td><b>자동 베이스 + 수동 동사가 정체성</b> <span class="both">A1 ↔ Codex 임팩트</span></td>
+      <td>자동사격은 보조, 정체성은 <b>조준 동사</b>에. 군중 처치를 관통 궤적·웨이브 밀림으로 "찢었다" 표현.</td>
+      <td class="pri">최우선</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td><b>색상으로 피해 계층 분리 / 등급=전조 강도</b> <span class="both">A3 ↔ Codex 색분리</span></td>
+      <td>적 전조·아군 탄·시민 목표·아이템 색 엄격 분리. 적 등급은 HP가 아니라 <b>전조 강도</b>로 읽히게.</td>
+      <td class="pri">높음</td>
+    </tr>
+  </table>
+
+  <!-- ============ WARN ============ -->
+  <h2>4. 가져오지 말 것 (그들의 실패 = 우리 가드레일)</h2>
+  <div class="warn">
+    <h3>⚠ 화려함은 타격감이 아니다 — 그리고 보스 카메라 전환 금지</h3>
+    <p style="margin:6px 0;"><b>① 이펙트 과잉 (Codex + 시연 기자 합치):</b> ss1처럼 백색 파편·적·UI·플레이어가 한곳에 겹치면 조준형에서는 <b>커서·탄도·위험영역이 묻힌다</b>. "멋진 폭발"보다 "내가 어디를 조준했고, 무엇을 맞혔고, 어디로 피해야 하는지"가 항상 먼저 읽혀야 한다.</p>
+    <p style="margin:6px 0;"><b>② 보스 패턴 중 카메라 전환 (에이전트 명시 회수):</b> 시연 기자가 "순간적 혼란"으로 지목. 카메라=정보 채널인데 멋 부리다 정보를 끊음. 우리 부감 카메라는 <b>상시 클린 유지</b> — 보스에서 패턴/전조 깊이만 가져오고 카메라 연출은 버린다. ([[juice_textbook_lessons]] "카메라 거리가 채널을 결정"과 정면 충돌 → 재제안 금지급)</p>
+  </div>
+
+  <!-- ============ DECISIONS ============ -->
+  <h2>5. 유저 판정 대기 (🟡 코어 결정)</h2>
+  <div class="q"><b>Q1.</b> <b>전조→회피→반격 창(교집합 #1)</b>을 우리 조준 뱀서에 진짜 얹나? — 깊이를 더하지만 이동+조준+회피 손가락 과부하 위험. <b>핵심 동사 추가 = 코어 결정.</b></div>
+  <div class="q"><b>Q2.</b> <b>사격 리듬 입력(B1)</b> 채택 여부 — 손맛 vs 손가락 과부하 트레이드오프.</div>
+  <div class="q"><b>Q3.</b> <b>거점 허브(B2)</b>를 영구메타 공간으로 확정하나? (이름은 Story 렉시콘 경유 전제)</div>
+
+  <!-- ============ DESIGN INTENT ============ -->
+  <h2>6. 왜 그렇게 했나 — 설계 의도 역설계 (Codex × 오케스트레이터)</h2>
+  <div class="lead" style="border-left-color:var(--cyan);">
+    <b>핵심 재정의 (Codex):</b> 엠버앤블레이드는 <b>액션게임처럼 보이지만, 전투 화면 설계의 진짜 우선순위는 "검술 몰입"이 아니라 "고밀도 위험 해석"</b>이다. 근접검인데도 3인칭을 버린 이유가 그것. <b>우리 총기 뱀서도 정확히 같은 축</b>에 있다 — 그래서 카메라·색·전조·UI 원리는 거의 다 가져온다. <span style="color:var(--dim)">(④의 방사형 버스트는 기본기가 아니라 광역 슬램 스킬로 정정됨 — 기본 사격만 방향성 유지하면 됨.)</span>
+  </div>
+
+  <style>
+    .di{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0;}
+    .di h3{margin:0 0 10px;font-size:16px;}
+    .di .row{font-size:13.5px;margin:6px 0;padding-left:14px;position:relative;}
+    .di .row::before{content:"";position:absolute;left:0;top:9px;width:5px;height:5px;border-radius:50%;background:var(--dim);}
+    .di .lab{color:var(--dim);font-weight:700;}
+    .di .me{background:rgba(232,192,105,.08);border-left:3px solid var(--gold);border-radius:0 6px 6px 0;padding:10px 14px;margin-top:12px;font-size:13.5px;}
+    .di .me b{color:var(--gold);}
+    .vd{display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:20px;margin-left:8px;vertical-align:middle;}
+    .vd.ok{background:rgba(90,169,230,.18);color:#7fb8f0;}
+    .vd.strong{background:rgba(125,211,168,.18);color:var(--codex);}
+    .vd.part{background:rgba(232,192,105,.18);color:var(--gold);}
+    .vd.cond{background:rgba(154,163,178,.18);color:var(--dim);}
+    .vd.flip{background:rgba(224,85,106,.2);color:#ff8a9c;}
+  </style>
+
+  <div class="di">
+    <h3>① 전투 카메라 — 왜 무쌍액션인데 3인칭을 버리고 부감 쿼터뷰?<span class="vd ok">성립</span></h3>
+    <div class="row"><span class="lab">문제:</span> 캐릭터·포위 밀도·접근 방향·장판·탄막·쿨·보스 패턴을 한 화면에.</div>
+    <div class="row"><span class="lab">그들의 선택:</span> 높은 부감 쿼터뷰 + 약한 틸트(완전 탑다운 아님). 캐릭터보다 <b>전장 구조·위험 분포</b>를 우선.</div>
+    <div class="row"><span class="lab">대가:</span> 검술 육체감·1:1 긴장 약화 → 대신 광역 판단·반복 피로 감소.</div>
+    <div class="me"><b>내 판단:</b> 성립. 단 우리 핵심동사=조준이라 완전 탑다운이면 총구·조준선 감각이 죽는다. <b>이미 우리가 푼 답</b> — 이원 카메라(평시 리드/우클릭 주시)+조준선 스택([[attention_channels_weapon_identity]])이 Codex가 말한 "캐릭터 실루엣 보강"이다. 교훈=<b>지금 높이(15m)·틸트에서 더 올리거나 평평하게 하지 말 것.</b></div>
+  </div>
+
+  <div class="di">
+    <h3>② 위험 전조를 왜 '지면'에? (적 몸·공중 아니라)<span class="vd strong">강하게 성립</span></h3>
+    <div class="row"><span class="lab">문제:</span> 부감에선 적 몸·이펙트·숫자·군중이 겹쳐 → 위험이 적 몸/공중에 붙으면 묻힌다.</div>
+    <div class="row"><span class="lab">그들의 선택:</span> 빔·폭발·패턴 전조를 <b>지면에 직접</b>. 부감에선 <b>지면이 곧 전술 UI</b>. "저 적이 뭘 한다"보다 "어느 칸이 죽는 공간인가"를 먼저 읽힘.</div>
+    <div class="me"><b>내 판단:</b> 우리에겐 더 강하게 성립. 조준·이동·회피가 분리돼 있으니 <b>위험은 "적"이 아니라 "내 이동 경로"에 붙어야</b> 한다. 고정보스는 보스 몸보다 바닥 패턴이 핵심. 우리 후방위협힌트(아크+발자국)·정보레이어 분리와 같은 계열.</div>
+  </div>
+
+  <div class="di">
+    <h3>③ 색 언어 — 왜 빨강=위험 / 청록=환경을 강제?<span class="vd strong">성립 (우리는 더 엄격)</span></h3>
+    <div class="row"><span class="lab">문제:</span> 이펙트 많으면 "장식인가 위험인가" 매번 판단 → 피로 폭증.</div>
+    <div class="row"><span class="lab">그들의 선택:</span> 색을 의미 체계로 고정 → <b>반응 시간을 줄이는 규칙</b>(미술 취향 아님). 청록 배경이 아무리 강해도 빨강 빔이 즉시 위험으로.</div>
+    <div class="me"><b>내 판단 + 실행안(Codex 제안):</b> 총기 게임은 더 엄격해야. <b>위험=빨강/주황 · 내 탄=노랑/백색 · 보상/상호작용=청록·초록 · 배경=저채도.</b> 아군 탄과 적 위험색이 섞이면 조준형은 즉사. ⚠️ <b>일찍 동결</b>할 것 — 색 의미를 나중에 갈아끼우는 건 비싸다. 경쟁작 리서치의 "적 발광 색코딩"도 이 팔레트와 충돌 안 나게 재정합 필요.</div>
+  </div>
+
+  <div class="di" style="border-color:rgba(82,199,216,.45);">
+    <h3>④ ss1 방사형 백색 버스트 — 광역기(쾅 슬램) 한 발의 연출<span class="vd part">정정: 스킬 이펙트</span></h3>
+    <div class="row" style="color:#ffb3bf;"><span class="lab" style="color:#ff8a9c;">정정(2026-06-16, 유저 확인):</span> 이건 그들의 기본 공격/시그니처 실루엣이 <b>아니라 특정 광역 슬램 스킬("쾅 내려찍기")의 이펙트</b>다. → "방향성으로 뒤집어라"는 과한 판정이었음.</div>
+    <div class="row"><span class="lab">그들의 크래프트:</span> 중심→바깥 방사형 백색 버스트. <b>화려함은 흰색 밝기 피크로, 가독성은 얇고 긴 스트로크 + 빈 공간 + 짧은 버스트로</b>. 화면을 흰 덩어리로 안 덮음. <b>대단히 잘 만듦.</b></div>
+    <div class="me"><b>내 판단(정정):</b> 광역 슬램은 원래 <b>방사형이 정답</b> — 조준 동사와 충돌이 아니라 <b>별개의 도구</b>다. <b>우리도 폭탄·충격파·슬램 같은 광역기는 똑같이 방사형으로 써도 된다.</b> 좁혀진 진짜 교훈: <b>① 기본 공격(주 사격)은 방향성 유지</b>(조준 보존) <b>② 방사형은 "의도적 광역기"일 때만.</b> 그리고 이 스킬의 크래프트(흰 피크=화려 / 얇은 스트로크+빈공간+짧은 버스트=가독)는 <b>우리 광역기에 그대로 훔쳐온다.</b> 단 §4 경고(플레이어가 묻힘)는 슬램 순간엔 일부 용인되나, 우리 부감+조준에선 <b>내 캐릭터·조준선은 끝까지 안 묻히게.</b></div>
+  </div>
+
+  <div class="di">
+    <h3>⑤ UI 배치 — 왜 타이머 상단/HP·XP 좌하/보스바 상단중앙?<span class="vd ok">대체로 성립</span></h3>
+    <div class="row"><span class="lab">논리:</span> 타이머=진행정보(구석) · HP/XP=반복확인하되 전투공간 침범 금지(좌하) · 보스바=목표 그 자체(상단 크게).</div>
+    <div class="me"><b>내 판단:</b> 보스게이지 상단중앙·HP/XP 좌하 그대로 채택. <b>단 한 가지 적응</b> — 조준형은 <b>커서가 화면 전역을 이동</b>하니 탄약·스킬 쿨 같은 <b>즉시 조작 정보는 구석이면 늦다</b> → 캐릭터 주변 미니게이지 or 커서 근처 보조 피드백. (우리 "커서가 곧 눈" 원칙과 일치)</div>
+  </div>
+
+  <div class="di">
+    <h3>⑥ 거점은 왜 전투와 정반대로 낮고 가까운 3인칭으로?<span class="vd cond">조건부 — 나는 보류 권고</span></h3>
+    <div class="row"><span class="lab">그들의 선택:</span> 거점/컷씬에서 낮은 3인칭으로 전환. <b>카메라 전환 자체가 "모드 전환 신호"</b> — 반사신경→관찰·정비·서사.</div>
+    <div class="row"><span class="lab">대가:</span> 카메라·입력 시스템 두 벌 + 에셋 근접 품질 요구↑ = <b>제작비 상승</b>.</div>
+    <div class="me"><b>내 판단 (Codex와 갈림):</b> <b>원리는 채택, 별도 3인칭 리그 구축은 지금 보류.</b> 우리 P1 사후처리부는 장르정합(플레이어 상대좌표·디테일맵 금지·벡터이동 — [[vampire_survivors_pivot]])이라 풀 3인칭 시네마틱은 현 스코프 과욕. 대신 <b>"카메라 전환=모드 전환 신호"는 부감 안에서도 싸게</b> 지킬 수 있다(정비/드래프트 때 줌인·프레이밍 변화). 비용 대비 목적이 분명해질 때 3인칭 승격.</div>
+  </div>
+
+  <div class="warn" style="border-color:rgba(82,199,216,.4);background:rgba(82,199,216,.06);">
+    <h3 style="color:var(--cyan);">한 줄 결론</h3>
+    <p style="margin:6px 0;">엠버앤블레이드의 모든 화면 선택은 <b>"고밀도 위험 해석"이라는 하나의 문제</b>를 푼다 — 카메라·지면 전조·색 규칙·UI 위치 전부. 우리도 같은 문제를 풀지만 <b>핵심동사가 "조준"</b>이라 — 그들의 <b>해법(원리)은 거의 다 그대로 가져온다.</b> 단 하나의 규율: <b>기본 사격은 방향성을 유지</b>하고, 방사형은 의도적 광역기일 때만(④). 표면이 아니라 원리를 베끼면 우리 게임이 강해진다.</p>
+  </div>
+
+  <div class="foot">
+    출처: <a href="https://store.steampowered.com/app/3470500/Ember_and_Blade/?l=koreana">Steam — Ember and Blade</a> ·
+    <a href="https://bbs.ruliweb.com/news/read/212968">루리웹 데모 시연기</a> ·
+    <a href="https://namu.wiki/w/%EC%97%A0%EB%B2%84%20%EC%95%A4%20%EB%B8%94%EB%A0%88%EC%9D%B4%EB%93%9C">나무위키</a><br>
+    연계 문서: docs/03_reference/2026-06-16-ember-and-blade-action-reference.md · 코어 권위: docs/00_authority/2026-06-16-vampire-survivors-pivot-spec.md<br>
+    분류: Codex gpt-5.5 (이미지 분석) + GameDesign 에이전트 (권위 정합) · 한계: 두 눈 모두 정지 이미지/문서 기반 — 액션 "느낌"의 최종 판정은 데모 직접 플레이.
+  </div>
+
+</div>
+</body>
+</html>

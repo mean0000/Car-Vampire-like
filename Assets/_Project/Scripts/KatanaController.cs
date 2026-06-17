@@ -85,6 +85,10 @@ public class KatanaController
 
         [Tooltip("발도 릴리스 스냅 어시스트 각(도) — 조준선 ±N° 내 가장 가까운 적으로 방향 보정. 풀 락온 아님.")]
         public float snapAssistDeg = 10f;
+
+        [Tooltip("급습(무경계 적 발도 보장킬) 시 즉발 지급 XP — 오브 우회, 그 자리 레벨업 스파이크. "
+               + "레벨1 임계 20 기준 12≈2급습/레벨. 플레이게이트에서 손맛 튜닝.")]
+        [Min(0)] public int ambushXp = 12;
     }
 
     // ════════════════════════════════════════════════════════════
@@ -321,8 +325,7 @@ public class KatanaController
 
         SwingFan(_iai.lightArcHalfAngle, _iai.lightRange, BaseDamage, _profile.knockback,
                  _profile.stagger, _profile.hitstop, applyWeakpointOpen: false);
-        // ★(C)하이브리드: 화려한 시안 부채꼴 슬래시 + ThreatArc 부채꼴 범위. 거합 평타는 콤보 없음(묵직 단발 tier01=0).
-        SlashVfx?.Acquire()?.PlayFan(_owner.position, _aimDir, _iai.lightRange, _iai.lightArcHalfAngle, 0f);
+        // 카타나 공격 비주얼 없음(애니·슬래시 VFX 모두 제거 — 2026-06-16 유저 지시). 메커닉만.
         _ownerSpring?.Bump(new Vector3(-0.1f, 0.06f, -0.1f));
     }
 
@@ -339,7 +342,6 @@ public class KatanaController
 
         // 경계 가드(M-3): min>max 역전 노브에도 "차지 높을수록 멀리"가 유지되게 max를 min 이상으로 클램프.
         float distMax = Mathf.Max(_iai.lungeDistMin, _iai.lungeDistMax);
-        float charge = Mathf.Clamp01(_charge01);   // VFX 길이/밝기용 — 아래서 _charge01이 0으로 소비되기 전 캡처.
         float dist = Mathf.Lerp(_iai.lungeDistMin, distMax, _charge01);
         // 카메라 밖 방지: 조준점까지 거리로 클램프(조준점 너머로 안 나감)는 PlayerCombat이 cursorDist를
         // 안 넘겨주므로 여기선 단순 거리만(증명 슬라이스 — 클램프는 노브 세션 추가). 벽 클램프는 StepLunge.
@@ -362,14 +364,8 @@ public class KatanaController
         _charge01 = 0f;   // 게이지 소비
         _charging = false;
 
-        // ★(C)하이브리드 진행형: 화려한 시안 직선 찌르기 슬래시 + ThreatArc 레인 범위.
-        //   목표 거리로 미리 찍지 않는다 — 실제 누적 이동(StepLunge에서 DrivePierce)으로 늘인다(벽=거기서 멈춤).
-        _lungeFx = SlashVfx?.Acquire();
-        if (_lungeFx != null)
-        {
-            _lungeFx.PlayPierce(_owner.position, _lungeDir, _iai.lungeRadius, charge);
-            _lungeFxGen = _lungeFx.Gen;
-        }
+        // 카타나 공격 비주얼 없음(애니·슬래시 VFX 모두 제거). _lungeFx=null이면 StepLunge의 DrivePierce 가드가 자연 no-op.
+        _lungeFx = null;
         _ownerSpring?.Bump(new Vector3(-0.2f, 0.12f, -0.2f));
         NoiseManager.Instance?.EmitImpulse(_profile.gunshotNoise);
     }
@@ -396,13 +392,16 @@ public class KatanaController
                 var z = h.collider.GetComponentInParent<ZombieController>();
                 if (z == null || _lungeHits.Contains(z)) continue;
                 _lungeHits.Add(z);
-                bool killed = z.TakeMeleeHit(_lungeDamage, _owner.position, _profile.knockback * 1.5f,
+                bool ambush = z.IsUnaware;
+                int dmg = ambush ? 999999 : _lungeDamage;
+                bool killed = z.TakeMeleeHit(dmg, _owner.position, _profile.knockback * 1.5f,
                                              _profile.stagger, _profile.deathStyle, _profile.hitstop * 1.5f);
                 if (killed)
                 {
                     // ★킬 환류: 게이지 +killRefill, 다음 발도 쿨 0(연속 처형 사슬).
                     _charge01 = Mathf.Min(1f, _charge01 + _iai.killRefill);
                     _lungeKilled = true;
+                    if (ambush) XPManager.Instance?.AddXP(_iai.ambushXp); // 급습 즉발 성장(오브 우회)
                 }
             }
         }
@@ -495,10 +494,7 @@ public class KatanaController
             if (_comboTier >= _slash.maxTier) _hitAccum = 0;
         }
 
-        // ★(C)하이브리드 + 콤보 스케일링: 1단 흐린 짧은 호 → 5단 밝은 큰 호(+마젠타 살짝, HDR). PlayFan이 tier01로 처리.
-        //   화려한 시안 부채꼴 슬래시 + ThreatArc 부채꼴 범위(실제 50°×1.8m 판정 그대로).
-        float t01 = _comboTier / (float)Mathf.Max(1, _slash.maxTier);
-        SlashVfx?.Acquire()?.PlayFan(_owner.position, _aimDir, _slash.range, _slash.arcHalfAngle, t01);
+        // 카타나 공격 비주얼 없음(애니·슬래시 VFX 모두 제거). 메커닉만.
         _ownerSpring?.Bump(new Vector3(-0.08f, 0.05f, -0.08f));
     }
 
@@ -518,14 +514,8 @@ public class KatanaController
         _comboTier = 0;       // 참격파 = 게이지 전소비(다시 쌓아야).
         _hitAccum = 0;
         _comboTimer = 0f;
-        // ★(C)하이브리드 임계 연출 진행형: 시안 코어 + 마젠타 엣지(오버드라이브 캐넌) 확장 부채꼴 파동 + ThreatArc 확장 부채꼴.
-        //   즉시 5m로 안 찍는다 — StepWave의 실제 radius(1.8→5m)를 매 프레임 DriveWave로 동기(확장이 판정과 일치).
-        _waveFx = SlashVfx?.Acquire();
-        if (_waveFx != null)
-        {
-            _waveFx.PlayWave(_owner.position, _waveDir, _slash.range, _slash.waveRange, _slash.waveHalfAngle);
-            _waveFxGen = _waveFx.Gen;
-        }
+        // 카타나 공격 비주얼 없음(애니·슬래시 VFX 모두 제거). _waveFx=null이면 StepWave의 DriveWave 가드가 자연 no-op.
+        _waveFx = null;
         NoiseManager.Instance?.EmitImpulse(_profile.gunshotNoise * 1.5f);
         _ownerSpring?.Bump(new Vector3(-0.25f, 0.15f, -0.25f));
     }
@@ -607,8 +597,7 @@ public class KatanaController
         }
 
         NoiseManager.Instance?.EmitImpulse(_profile.gunshotNoise);
-        if (hitAny) MeleeSfx.PlayHit(_profile.deathStyle, firstHitPos);
-        else MeleeSfx.PlayWhiff(eye);
+        // 카타나 타격음 제거(2026-06-16 유저 지시 "사운드 다 빼"). NoiseManager(좀비 청각=게임플레이)는 유지.
         return hitCount;
     }
 

@@ -136,10 +136,8 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 5. **작은 편집·자잘한 값 조정엔 3단 에이전트 춤(Plan→구현→리뷰)을 생략한다. 순수 오버헤드다.**
 
 **토큰/effort 규율:**
-- **★Max5 비용 규율 (2026-06-14, Max20→Max5 다운그레이드)** — 사용량 상한이 병목. ①**기계적 타이핑은 오케스트레이터(Opus)가 직접 치지 말고 Sonnet-Gameplay로 내린다** — Opus 손은 게임감/미적/코어 *판단·구현*에만(B/C존 의도 보존). ②**리뷰 게이트는 유지** — Stab=Sonnet(쌈)·Codex=별도 provider(Max5 예산 0원)라 완화할 이유 없음. ③작업 단위로 `/clear`해 누적 대화 재전송을 끊는다.
+- **★Max5가 병목 (2026-06-14, Max20→Max5)** — 사용량 상한이 제약. 기계적 손작업은 Sonnet-Gameplay로 내리고, Opus 손은 게임감/미적/코어 *판단·구현*에만(B/C존 의도 보존).
 - **effort를 작업별로 조절** — 어려운 판단만 `xhigh`, 루틴은 low/medium. effort가 토큰·성능 최대 레버다.
-- **캐싱 친화** — CLAUDE.md/메모리를 안정시켜 반복 컨텍스트 input 90% 할인을 받는다.
-- **컨텍스트 최소 주입** — 전체 코드베이스 ❌, 관련 파일만 주입.
 - *(Fable 복귀 시: Fable은 토큰당 Opus 2배지만 1패스로 루프가 덜 돌아 어려운 작업의 누적 비용이 더 쌀 수 있음 — "항상 켜두되 기계적 손작업만 아래로" 기조 복원.)*
 
 > Always announce the switch briefly before acting. 예: "게임 중심·게임감이 걸려서 오케스트레이터가 직접 끝까지 잡습니다." / "스펙 동결된 기계적 구현이라 Sonnet으로 위임합니다." / "Gameplay(opus)가 헛돌아서 회수해 직접 잡습니다."
