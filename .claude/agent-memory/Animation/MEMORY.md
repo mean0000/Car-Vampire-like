@@ -9,7 +9,10 @@
 ## ★1차 스테이지 9종 애니 판독 (구현 전 — 신체분류·틀맵·배역이견)
 - [1차 스테이지 9종 애니 도메인 판독(06-14)](project_stage1_roster_anim_read.md) — 프리뷰 실측 신체분류+클립킷 인벤토리(부족 0)+틀 재활용 맵(Venosaur=클로틀 직재활용·성체Crustaspikan=브루트틀·비행2종=신규틀). ★배역이견: Fulgurodonte=직립아님(저자세 절지)·Kupolojuve=날갯짓아닌 부유해파리·Lacercharias=진짜 Roll 상태머신. 난이도: Carcinoptera>Crustaspikan성체>Kupolojuve>Fulgurodonte>Lacercharias>Venosaur
 
-## ★주인공(플레이어) — 카타나 그레이트소드
+## ★주인공(플레이어) — 카타나 (Vexa/Sidekick rig·Frank 킷)
+- [★Frank FBX에 AnimationEvent 박는 법 — 함정 2종](project_frank_fbx_animevent_gotchas.md) — ①meta의 event time=NORMALIZED[0..1], 임포터가 ×길이(0.342×1.25=0.4275). 절대초 T 원하면 meta에 T/len 적기 ②`clipAnimations=new[]{}`+SaveAndReimport=테이크 길이 팽창(1.25→1.4375)+시간 재스케일=금지. ✓정답=.FBX.meta의 events블록 직접 Edit+ImportAsset(길이보존). Frank=git미추적(meta백업=Read먼저). Rig경고=비치명(RunCommand가 success:false라도 [Log]보라). 타격프레임=Weapon_Blade 본속도 피크 실측(01 f26·02 f26·03 f32)
+- [★Vexa Humanoid화 + KatanaMelee.controller + OnAttackHit (06-18 시공완료)](project_vexa_humanoid_katana_base.md) — Vexa Generic→Humanoid PASS(아바타 valid·바인드 대칭, ★Hand→Palm 재매핑). Frank 클립 리타겟 PASS(★공격은 Root_Motion폴더에만→applyRootMotion=false로 제자리). KatanaMelee.controller=Speed/MoveX/MoveY/Attack/Dash 계약·8way FreeformDir·액션 CUT. OnAttackHit(int)@norm0.342(★importer가 time을 normalized로 곱함). watch=idle 왼발 상수roll L0.20/R0.10(Frank소스, 유저눈 판정). 릴레이=Animator GO에 MonoBehaviour 필요(코드=오케스트레이터)
+- [Frank 카타나 킷 + Vexa/Sidekick rig 상황 (06-18 계획)](project_frank_katana_kit_and_vexa_rig.md) — Frank 클립=전부 Humanoid(공유아바타 c544be36, FBX변형 In_Place/Root_Motion/8Way). ★Vexa=Generic(Humanoid클립 못얹음→재임포트필요) vs Sidekick=이미 게이트통과(슬라이스 완성 후 메시교체가 최소작업, Q0). In_Place=톱다운정답. 콤보=쿨가속(모션분기 ❌)→평타1·발도1·참격파1 3클립. 발도전용클립 없음→제자리찌르기. ★2026-06-16 카타나 공격애니/VFX 제거됨=이번 작업이 Frank로 재도입. OverrideController=무기바로바로(superset/2-tier, 상태추가 불가). KatanaController=순수C#→AnimationEvent 릴레이 필요
 - [카타나 플레이어 컨트롤러 — ★루트모션 OFF 헌법예외(코드가 위치 소유)](project_katana_player_controller.md) — KatanaLocomotion.controller 신규(RifleLocomotion 미러링). 트리거 KatanaLight/Lunge/Wave→풀바디 베이스상태(상체레이어 ❌, Any-State CUT 0.02·복귀 ExitTime0.85). 클립=great sword slash/slide attack/high spin attack. applyRootMotion=false라 클립 root커브 무시=제자리(이중이동 0 검증). Sidekick 리타겟 정상. CombatLab 씬 인스턴스 배선
 
 ## 종별 (근접돌진=Caniathrox, 원거리=Venodonte, 클로월=Dimaxillosaurus, ★접근브루트+장판=Crassorrid, ★묵직클로월=Venosaur — 신규6종 1번)
