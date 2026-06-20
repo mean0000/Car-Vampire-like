@@ -39,8 +39,8 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     public event System.Action<int, int> Damaged;
     /// <summary>HP 0 도달. GameOver/정산 연결용.</summary>
     public event System.Action Died;
-    /// <summary>★회피 성공 — 대시 무적(회피)이 적 공격을 무효화한 순간(대시당 1회). 슬로모 등 보상 트리거.
-    /// (Tumbling 비활성으로 좁은 패링 창 제거 — 대시로 공격을 막으면 무조건 발화. 피격 직후 무적은 제외.)</summary>
+    /// <summary>★퍼펙트 회피 성공 — 대시 시작 후 perfectDodgeWindow 내에 적 공격이 닿은 순간(대시당 1회).
+    /// 슬로모/히트스탑·반격 창 등 보상 트리거. 피격 직후 무적(_hitIframe)은 제외(대시 출처만).</summary>
     public event System.Action Parried;
 
     void Awake()
@@ -49,9 +49,9 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         if (_motor == null) _motor = GetComponentInParent<PlayerMotor>();
         _hp = maxHp;
 #if UNITY_EDITOR
-        // dashInvulnerable이 꺼져 있으면 _motor.IsInvulnerable이 항상 false → PerfectDodge 미발화 = Tumbling 무음 사망(Stab H-1).
+        // dashInvulnerable이 꺼져 있으면 _motor.IsInvulnerable이 항상 false → 퍼펙트 회피 미발화 = Parried/반격 무음(Stab H-1).
         if (_motor != null && !_motor.DashInvulnerable)
-            Debug.LogWarning("[PlayerHealth] PlayerMotor.dashInvulnerable=false → 회피 무적이 없어 Parried/Tumbling이 절대 동작하지 않습니다. 의도 확인.", this);
+            Debug.LogWarning("[PlayerHealth] PlayerMotor.dashInvulnerable=false → 회피 무적이 없어 Parried(퍼펙트 회피)가 절대 동작하지 않습니다. 의도 확인.", this);
 #endif
     }
 

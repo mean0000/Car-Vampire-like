@@ -48,7 +48,6 @@ public class PlayerMotor : MonoBehaviour
     float _dashTimer;         // >0 = 대시 중(남은 이동 창)
     float _iframeTimer;       // >0 = 무적 중(누른 순간부터 iframeDuration). 이동창과 별개로 흐른다.
     float _dashStartTime = -999f;  // 마지막 대시 시작 시각(unscaledTime) — 퍼펙트 회피 창(대시 시작 프레임) 판정 기준
-    bool _tumbling;           // 패링 구르기 중 — 위치는 코드 대시가 아니라 Tumbling 클립 루트모션(공중회전 궤적)이 소유
     Vector3 _dashDir;         // 대시 진행 방향(키보드/조준, 자유방향) — 이동은 코드가 이 방향으로 버스트
     float _rechargeTimer;     // 다음 1스택 충전까지(스택<max일 때만 흐름)
     int _dashCharges;
@@ -68,19 +67,9 @@ public class PlayerMotor : MonoBehaviour
     public bool DashInvulnerable => dashInvulnerable;
     /// <summary>마지막 대시 시작 시각(Time.time) — PlayerHealth가 패링 창(닿기 직전 회피) 판정에 쓴다.</summary>
     public float DashStartTime => _dashStartTime;
-    public bool IsTumbling => _tumbling;
 
-    /// <summary>패링 구르기(Tumbling) 진입/종료 — 드라이버가 Tumbling 상태 진입/종료에 맞춰 호출.
-    /// 진입 시 코드 대시 이동을 끊고(i-frame은 유지) 위치를 Tumbling 클립 루트모션에 넘긴다 — 공중회전 거리/궤적은 클립이 소유. 종료 시 로코모션 복귀.</summary>
-    public void SetTumbling(bool on)
-    {
-        _tumbling = on;
-        if (on) _dashTimer = 0f;   // 코드 대시 이동 중단(i-frame 유지) — 루트모션이 구르기 궤적을 만든다
-        // ※ ApplyRootStep이 Y=0(지면 스냅)이라 Tumbling 클립의 *수직 공중* 궤적은 무시되고 XZ 궤적만 적용된다.
-        //    회전·공중 느낌은 pose(애니)로 표현. 실제 수직 부양이 필요하면 ApplyRootStep의 Y 처리 별도 작업.
-    }
-    /// <summary>지금 대시를 시작할 수 있나 — 충전 있고 대시 중 아니고 텀블링 중 아님(구르기=커밋된 롤, 중간 재대시 차단). PlayerBrain이 회피 최우선 캔슬 판정에 쓴다.</summary>
-    public bool CanDash => _dashCharges > 0 && _dashTimer <= 0f && !_tumbling;
+    /// <summary>지금 대시를 시작할 수 있나 — 충전 있고 대시 중 아님. PlayerBrain이 회피 최우선 캔슬 판정에 쓴다.</summary>
+    public bool CanDash => _dashCharges > 0 && _dashTimer <= 0f;
     public int DashCharges => _dashCharges;
     public int MaxDashCharges => maxDashCharges;
     /// <summary>대시 i-frame/busy 창(초) — Step 클립 길이에 맞춘 값(거리 아님).</summary>
@@ -114,9 +103,6 @@ public class PlayerMotor : MonoBehaviour
 
         // 대시 진행 중이면 완료까지 우선(회피 관성 보장 — 공격 잠금보다 먼저). 코드 버스트가 위치를 만든다.
         if (_dashTimer > 0f) { UpdateDash(dt); return; }
-
-        // 패링 구르기(Tumbling) 중 — 위치는 클립 루트모션(ApplyRootStep)이 소유. 입력 이동 양보(공중회전 궤적/역동감 보존).
-        if (_tumbling) { _velocity = Vector3.zero; return; }
 
         // 공격 커밋(콤보 등) 중엔 이동/대시 입력을 무시하고 즉시 정지 — 제자리 공격이라 발 미끄러짐이 사라진다.
         if (locked) { _velocity = Vector3.zero; return; }

@@ -32,8 +32,6 @@ public class PlayerBrain : MonoBehaviour
         _footsteps = GetComponentInChildren<PlayerFootsteps>();   // 발소리(자족 — 없어도 무해)
         _health = GetComponentInChildren<PlayerHealth>();
         _weapon?.Initialize(transform, _animator);
-        // ★[비활성화 2026-06-20] 패링→Tumbling 애니 전환 — 복잡도 대비 효율 낮아 주석처리. 회피=Step 대시 유지.
-        // if (_health != null && _animator != null) _health.Parried += _animator.TriggerTumbling;
         // ★패링 성공 → 무기 반격 창 오픈(카타나=Skill02 카운터). 창 안에 좌클릭하면 반격 발동.
         if (_health != null && _weapon != null) _health.Parried += _weapon.ArmCounter;
     }
@@ -41,7 +39,6 @@ public class PlayerBrain : MonoBehaviour
     void OnDestroy()
     {
         _weapon?.Cleanup();
-        // [비활성화] if (_health != null && _animator != null) _health.Parried -= _animator.TriggerTumbling;
         if (_health != null && _weapon != null) _health.Parried -= _weapon.ArmCounter;
     }
 

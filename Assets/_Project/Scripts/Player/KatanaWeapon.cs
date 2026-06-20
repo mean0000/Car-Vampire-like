@@ -54,8 +54,8 @@ public class KatanaWeapon : WeaponBehaviour
     [Tooltip("반격 넉백(m/s).")]
     [SerializeField] float counterKnockback = 6f;
     [Tooltip("반격 안전 워치독(초, 스케일 시간) — Skill02 클립(≈2.58s)+여유. 정상 종료는 클립 OnComboEnd가 하지만, " +
-             "이벤트 누락/하드컷 인터럽트 시 _countering 고착(반 소프트락)을 이 시간 뒤 강제 종료로 막는다. " +
-             "Tumbling 타임아웃과 동형 방어선(Stab H-1·Codex #1 수렴).")]
+             "이벤트 누락/하드컷 인터럽트 시 _countering 고착(반 소프트락)을 이 시간 뒤 강제 종료로 막는다(Stab H-1·Codex #1 수렴). " +
+             "★진행플래그 자가치유(OnTick reconcile)가 더 빨리 잡으므로 현재는 백스톱 성격.")]
     [SerializeField] float counterMaxDuration = 3.5f;
 
     int _step;            // 0=idle, 1..comboMax 진행 중
@@ -128,8 +128,8 @@ public class KatanaWeapon : WeaponBehaviour
         float dt = Time.deltaTime;
         if (_startCdTimer > 0f) _startCdTimer -= dt;
         if (_counterTimer > 0f) _counterTimer -= Time.unscaledDeltaTime;   // 반격 창은 실시간(슬로모가 늘리거나 줄이지 않음 — 관대)
-        // ★반격 워치독: 정상 종료는 클립 OnComboEnd(@0.92)지만, 누락/하드컷 인터럽트 시 _countering 고착 → 반 소프트락
-        //   (Stab H-1·Codex #1 수렴, Tumbling 타임아웃 선례). 클립 재생은 스케일 시간이라 Time.deltaTime로 감쇠(정렬). 만료 시 강제 종료.
+        // ★반격 워치독(백스톱): 정상 종료는 클립 OnComboEnd(@0.92), 더 빠른 복구는 아래 진행플래그 자가치유. 이건 최후 방어선 —
+        //   둘 다 놓쳐 _countering이 고착(반 소프트락)되는 극단 케이스용. 클립 재생은 스케일 시간이라 Time.deltaTime로 감쇠(정렬).
         if (_countering)
         {
             _counterFallbackTimer -= Time.deltaTime;

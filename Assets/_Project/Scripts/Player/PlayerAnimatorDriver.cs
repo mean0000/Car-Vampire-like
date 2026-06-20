@@ -29,13 +29,6 @@ public class PlayerAnimatorDriver : MonoBehaviour
     [SerializeField] float speedDamp = 0.1f;
     [SerializeField] float dirDamp = 0.08f;
 
-    [Header("Tumbling (패링 구르기)")]
-    [Tooltip("패링 구르기 애니 재생 속도 배수 — 클수록 빠르고 스냅. 구르기 재생 중에만 적용, 그 외 1. " +
-             "★거리에도 영향: 총 이동 ≈ 클립 × tumblingSpeed × tumblingDistanceScale (둘은 곱 관계).")]
-    [SerializeField, Min(0.1f)] float tumblingSpeed = 1.5f;
-    [Tooltip("패링 구르기 거리 배수 — 루트모션 변위에 곱(클수록 멀리). 1 = (속도 배율 적용된) 원본 거리.")]
-    [SerializeField] float tumblingDistanceScale = 1.5f;
-
     static readonly int SpeedHash = Animator.StringToHash("Speed");
     static readonly int MoveXHash = Animator.StringToHash("MoveX");
     static readonly int MoveYHash = Animator.StringToHash("MoveY");
@@ -43,7 +36,6 @@ public class PlayerAnimatorDriver : MonoBehaviour
     static readonly int DashHash = Animator.StringToHash("Dash");
     static readonly int DashXHash = Animator.StringToHash("DashX");
     static readonly int DashYHash = Animator.StringToHash("DashY");
-    static readonly int TumblingHash = Animator.StringToHash("Tumbling");
     static readonly int CounterHash = Animator.StringToHash("Counter");
 
     Animator _animator;
@@ -52,10 +44,6 @@ public class PlayerAnimatorDriver : MonoBehaviour
     Vector3 _lastPos;
     bool _wasDashing;
     bool _attacking;   // 공격 커밋 중 = 루트모션을 위치로 적용(PlayerBrain이 매 프레임 갱신)
-    bool _tumbling;        // 패링 구르기 중 = Tumbling 클립 루트모션을 위치로 적용
-    bool _enteredTumbling; // Tumbling 상태에 실제 진입했나 — 종료(이탈) 감지용
-    float _tumblingTimeout; // 안전 타임아웃 — 상태 미진입 시 영구 Dash 억제 방지
-    const float TumblingTimeoutSec = 3f;   // Tumbling 클립 길이보다 넉넉(정상 종료는 exited가 먼저, 이건 미진입 안전망)
     Vector3 _lockedFace;   // 콤보 단 시작 시 잠근 facing — 공격 중 몸/런지 방향 고정(단 사이엔 재캡처)
 
     /// <summary>공격 클립 타격 정점(AnimationEvent OnAttackHit)이 발화 → 무기가 구독해 판정.</summary>
@@ -86,18 +74,6 @@ public class PlayerAnimatorDriver : MonoBehaviour
     }
 
     void OnEnable() { if (moveSource != null) _lastPos = moveSource.position; }
-
-    void OnDisable()
-    {
-        // ★구르기 중 비활성화(사망·씬전환·비주얼 swap) 시 모터 _tumbling 잔존 → 로코모션 영구 동결 방지(Stab F-1).
-        if (_tumbling)
-        {
-            _tumbling = false;
-            _enteredTumbling = false;
-            _motor?.SetTumbling(false);
-            if (_animator != null) _animator.speed = 1f;   // 비활성화 중에도 재생 속도 원복(전역 잔존 방지)
-        }
-    }
 
     /// <summary>PlayerBrain이 매 프레임 마지막에 호출.</summary>
     public void Tick()
@@ -165,33 +141,10 @@ public class PlayerAnimatorDriver : MonoBehaviour
             {
                 _animator.SetFloat(DashXHash, _motor.DashLocalX);
                 _animator.SetFloat(DashYHash, _motor.DashLocalY);
-                _tumbling = false;          // 새 대시 시작 — 이전 패링 텀블링 억제 해제(이 대시는 Step으로)
-                _enteredTumbling = false;
             }
-            // ★대시 애니 선택 직전 체크: 패링 텀블링 중이면 Dash 상태 억제 → Any→Tumbling이 이김(안 씹힘). 이동은 코드 대시 그대로.
-            bool dashAnim = _motor.IsDashing && !_tumbling;
+            bool dashAnim = _motor.IsDashing;
             if (dashAnim != _wasDashing) { _animator.SetBool(DashHash, dashAnim); _wasDashing = dashAnim; }
         }
-
-        // 패링 구르기 종료 감지 — Tumbling 상태에 들어갔다 나오면 모터에 로코모션 복귀 통지(루트모션 양도 해제).
-        if (_tumbling)
-        {
-            _tumblingTimeout -= dt;
-            bool inTum = _animator.GetCurrentAnimatorStateInfo(0).IsName("Tumbling");
-            if (inTum) _enteredTumbling = true;
-            bool exited = _enteredTumbling && !inTum && !_animator.IsInTransition(0);
-            if (exited || _tumblingTimeout <= 0f)   // 정상 종료 OR 안전 타임아웃(상태 미진입 소프트락 방지)
-            {
-                if (_tumblingTimeout <= 0f && !_enteredTumbling)
-                    Debug.LogWarning("[PlayerAnimatorDriver] Tumbling 타임아웃 — 'Tumbling' 상태 미진입. 컨트롤러 상태명/트랜지션 우선순위 확인.", this);
-                _tumbling = false;
-                _enteredTumbling = false;
-                _motor?.SetTumbling(false);
-            }
-        }
-
-        // ★재생 속도 매 프레임 구동 — 실제 Tumbling 상태 재생 중에만 배속. 미진입 타임아웃 창·종료 후 즉시 1로 복귀(리셋 누락/스턱 제거, Stab H-1/H-2).
-        _animator.speed = (_tumbling && _enteredTumbling) ? Mathf.Max(0.1f, tumblingSpeed) : 1f;
     }
 
     /// <summary>콤보 단 설정(0=idle, 1/2/3) — AnimatorController가 ComboStep으로 Combo 상태를 전환한다.
@@ -227,25 +180,6 @@ public class PlayerAnimatorDriver : MonoBehaviour
         }
     }
 
-    /// <summary>★퍼펙트 회피 — 진행 중 회피를 Step 대신 Tumbling(구르기)으로 전환(컨트롤러 Any→Tumbling 트리거).
-    /// 방향은 대시 시작 시 잠근 DashX/DashY를 그대로 쓴다(같은 동작 정체성). 컨트롤러에 Tumbling 파라미터가
-    /// 없으면 SetTrigger는 무음 무동작(안전).</summary>
-    public void TriggerTumbling()
-    {
-        // ★[비활성화 2026-06-20] 패링→Tumbling 애니 전환 주석처리(복잡도/효율). 회피=Step 대시 유지. 필요 시 복구.
-        /*
-        if (_animator == null) return;
-        _animator.SetTrigger(TumblingHash);
-        _animator.SetBool(DashHash, false);   // ★Any→Dash(우선순위 높음)가 Tumbling을 덮지 않게 Dash bool 즉시 끔 → Any→Tumbling 발동
-        _wasDashing = false;                  // Dash bool 직접 끈 것과 엣지 추적 동기화
-        _tumbling = true;                     // Dash 애니 억제 + 루트모션 적용 게이트
-        _enteredTumbling = false;
-        _tumblingTimeout = TumblingTimeoutSec; // 순수 안전망(상태 미진입 소프트락 방지) — 어떤 Tumbling 클립보다 넉넉히
-        _motor?.SetTumbling(true);            // 코드 대시 끊고 위치를 클립 루트모션에 — 공중회전 궤적/역동감은 클립이 소유
-        // 재생 속도는 Tick이 매 프레임 구동(여기서 직접 안 건드림) — 리셋 누락 방지(Stab H-1/H-2).
-        */
-    }
-
     /// <summary>★패링 반격(Skill02) — 컨트롤러 Any→Counter 트리거. 카타나가 카운터 창 입력 시 호출.
     /// 반격은 공격이라 IsBusy(=_attacking)로 루트모션이 적용된다(별도 게이트 불필요). 몸 facing을
     /// 현재 조준에 잠가 히트박스 _aimDir과 통일(콤보 SetCombo의 잠금과 동형). 종료 시 SetCombo(0)이 잠금 해제.
@@ -269,10 +203,8 @@ public class PlayerAnimatorDriver : MonoBehaviour
     void OnAnimatorMove()
     {
         if (_motor == null) return;
-        if (!_attacking && !_motor.IsDashing && !_tumbling) return;   // 텀블링 중엔 클립 루트모션을 위치로 적용(공중회전 궤적)
-        Vector3 delta = _animator.deltaPosition;
-        if (_tumbling && tumblingDistanceScale > 0f) delta *= tumblingDistanceScale;   // 구르기 거리 배수(루트모션 변위 스케일)
-        _motor.ApplyRootStep(delta);
+        if (!_attacking && !_motor.IsDashing) return;   // 공격 커밋 중이거나 대시 창 동안만 루트모션을 위치로 적용
+        _motor.ApplyRootStep(_animator.deltaPosition);
     }
 
     // ── AnimationEvent 수신(함수명 고정 — Animation 에이전트가 이 이름으로 클립에 심는다) ──
