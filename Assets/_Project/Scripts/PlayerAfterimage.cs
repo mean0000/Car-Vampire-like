@@ -3,75 +3,76 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 /// <summary>
-/// 대시 중 "위상 분리 잔상"을 남기는 비주얼 컴포넌트. CharacterVisual(스킨드 메시 루트)에 붙인다.
+/// ★대시 잔상(afterimage) — 하이브리드: 기존 성능 골격(풀링·버퍼 재사용·GC≈0·속도선) +
+/// 시안 프레넬 단색 비주얼(ZombieCrush/AfterimageGhost). 스킨드 메시 루트(CharacterVisual)에 붙인다.
 ///
-/// 원리: 플레이어는 여러 SkinnedMeshRenderer로 구성된다(몸·옷·머리카락 등). 매 interval마다
-/// 각 SMR의 현재 포즈를 BakeMesh로 굽고(1회), 같은 버퍼로 CombineMeshes를 2회 호출해
-/// 고스트 "페어"(마젠타 1 + 시안 1)를 그 자리에 띄운다 — CombineMeshes는 호출 시점에 메시를
-/// 복사하므로 버퍼 공유가 안전하다. 갓 생긴 페어는 같은 자리에 겹쳐 가산 블렌드로 화이트 코어가
-/// 자연 발생하고, 나이가 들수록 대시 진행방향의 수평 수직축을 따라 좌우(+/-)로 찢어지며
-/// 마젠타 고스트와 시안 고스트로 분리되어 어두워지다 사라진다.
+/// 원리: 플레이어는 여러 SkinnedMeshRenderer로 구성된다. 매 interval마다 각 SMR의 현재 포즈를
+/// BakeMesh로 굽고(재사용 버퍼), CombineMeshes로 한 메시로 합쳐 그 자리에 고스트 1장을 띄운다.
+/// 몸은 대시로 빠져나가고 고스트는 월드 고정으로 남아 페이드 → 촘촘한 "스슥" 잔상.
 ///
-/// ★ 디제틱: 나노봇 신호가 캐릭터의 이동 속도를 못 따라와 채널이 갈라진다 — "위상 잔류".
-///   시안(0.35,0.75,0.85)=정상 신호(기존 캐넌), 마젠타(1.0,0.17,0.84)=신호 붕괴/규정 외(신규 캐넌).
-///   다크 무드 월드라 가산 블렌드 + HDR 색으로 블룸을 통과시킨다(킬 링·머즐 플래시와 같은 문법).
+/// ★성능(기존 보존): BakeMesh 버퍼·CombineInstance 배열을 영속 재사용하고 고스트를 풀링한다.
+///   프리워밍으로 첫 대시 생성 스파이크를 시작 1회로 옮긴다. 스트릭은 ParticleSystem 내부 풀 +
+///   EmitParams 재사용으로 할당 0. 정상상태 힙 할당 ≈ 0.
+/// ★비주얼(신규): 마젠타 위상분리 폐기 → 시안 단색 프레넬 림 고스트(실루엣 살리고 바디 옅게, 가산).
+///   색 팔레트 규약 시안=액션. 알파는 머티리얼 _Alpha로 페이드.
 ///
-/// ★ 성능: 매 스폰마다 Mesh/GameObject/Material을 새로 만들고 버리면 GC 스파이크로 대시 중 프레임이
-///   끊긴다. 그래서 (1) BakeMesh 버퍼·CombineInstance 배열을 영속 재사용하고 (2) 고스트는 풀링해
-///   메시·머티리얼·오브젝트를 재활용한다(페어라 동시 생존이 2배 — 워밍업도 ×2). 스트릭 파티클은
-///   ParticleSystem 내부 풀 + EmitParams 재사용으로 할당 0. 워밍업 이후 정상상태 힙 할당 ≈ 0.
-///
-/// PlayerController.IsDashing을 폴링해 대시 중에만 스폰 — 대시의 트리거/타이밍은 컨트롤러가 소유.
-/// 진행방향은 컨트롤러가 공개하지 않으므로(_dashDir은 private) 위치 델타로 추정한다(수정 금지 영역).
+/// PlayerMotor.IsDashing을 폴링해 대시 중에만 스폰 — 트리거/타이밍은 모터가 소유. 진행방향은
+/// 위치 델타로 추정(스트릭 방향용).
 /// </summary>
 public class PlayerAfterimage : MonoBehaviour
 {
+    [Header("참조")]
+    [Tooltip("대시 상태 소스. 비우면 부모/씬에서 탐색.")]
+    [SerializeField] PlayerMotor motor;
+    [Tooltip("고스트 셰이더(비우면 ZombieCrush/AfterimageGhost 자동 탐색).")]
+    [SerializeField] Shader ghostShader;
+
     [Header("Spawn")]
-    [Tooltip("잔상 페어 1쌍을 남기는 간격(초). 작을수록 촘촘한 모션블러 느낌, 클수록 띄엄띄엄.")]
-    [SerializeField] float interval = 0.04f;
+    [Tooltip("잔상 1장 간격(초). 작을수록 촘촘. 대시 0.42s에 0.03이면 ~14장.")]
+    [SerializeField] float interval = 0.03f;
 
     [Header("Ghost")]
-    [Tooltip("잔상 1장이 떠 있다 사라지기까지 시간(초).")]
+    [Tooltip("잔상 1장 페이드 시간(초).")]
     [SerializeField] float lifetime = 0.28f;
-    [Tooltip("마젠타 고스트 색/시작 알파 — 신호 붕괴 채널(규정 외).")]
-    [SerializeField] Color ghostColorMagenta = new Color(1f, 0.17f, 0.84f, 0.55f);
-    [Tooltip("시안 고스트 색/시작 알파 — 정상 신호 채널(스캔펄스 캐넌).")]
-    [SerializeField] Color ghostColorCyan = new Color(0.35f, 0.75f, 0.85f, 0.55f);
+    [Tooltip("고스트 색(시안=액션 규약). HDR — 다크월드 블룸 통과.")]
+    [ColorUsage(true, true)]
+    [SerializeField] Color ghostColor = new Color(0.3f, 1.4f, 1.7f, 1f);
+    [Tooltip("고스트 시작 알파(가산이라 1 미만 권장).")]
+    [SerializeField, Range(0f, 1f)] float startAlpha = 0.9f;
 
-    // --- 위상 분리 튜닝 상수 ---
-    const float SplitStart = 0.02f;   // 갓 생긴 페어의 좌우 오프셋(m) — 거의 겹쳐 화이트 코어
-    const float SplitEnd = 0.14f;     // 수명 끝의 좌우 오프셋(m) — 완전히 찢어진 두 채널
-    const float GhostHDR = 2.5f;      // HDR 색 배율 — 블룸 임계 통과(×2~3 권장 범위)
+    [Header("Streaks (속도선)")]
+    [Tooltip("대시 방향 속도선 켜기.")]
+    [SerializeField] bool enableStreaks = true;
 
-    // --- 스피드 스트릭 튜닝 상수 ---
     const float StreakRate = 40f;     // 대시 중 초당 방출 수
-    static readonly Color StreakColor = new Color(0.7f, 0.95f, 1f, 0.8f);   // 시안~화이트
+    static readonly Color StreakColor = new Color(0.7f, 0.95f, 1f, 0.8f);
 
     // --- 재사용 버퍼(영속) ---
-    SkinnedMeshRenderer[] _renderers;     // 활성 파트 스냅샷(Awake 1회 수집)
-    Mesh[] _bakeBuffers;                  // SMR별 BakeMesh 대상 — CombineMeshes가 호출 내에서 즉시 복사하므로 공유 안전
-    CombineInstance[] _combineBuffer;     // mesh/subMeshIndex는 고정, transform만 매 스폰 갱신
-    int[] _combineStart;                  // renderer i가 _combineBuffer에서 차지하는 시작 인덱스
-    int[] _combineCount;                  // renderer i의 서브메시 수
+    SkinnedMeshRenderer[] _renderers;
+    Mesh[] _bakeBuffers;
+    int[] _combineCount;          // SMR별 서브메시 수(고정, sharedMesh 기준)
+    CombineInstance[] _combine;   // 활성 SMR만 — 멤버십 변할 때만 재구성(GC-제로 유지)
+    bool[] _prevActive;           // 직전 스폰의 SMR별 활성 상태(변화 감지)
+    bool _layoutDirty = true;
 
     Material _ghostMatTemplate;
-    int _baseColorId = -1;                // URP/Unlit이면 _BaseColor, 폴백이면 -1(_Color)
+    static readonly int AlphaID = Shader.PropertyToID("_Alpha");
+    static readonly int ColorID = Shader.PropertyToID("_BaseColor");
 
     readonly List<Ghost> _pool = new List<Ghost>();
     float _spawnTimer;
 
-    // --- 진행방향 추정(컨트롤러 비공개라 위치 델타 폴백) ---
-    Vector3 _prevPlayerPos;
+    // --- 진행방향 추정(스트릭용) ---
+    Vector3 _prevPos;
     bool _hasPrevPos;
-    Vector3 _moveDir = Vector3.forward;   // 마지막 유효 이동방향(수평) — 정지 프레임에도 유지
+    Vector3 _moveDir = Vector3.forward;
 
     // --- 스피드 스트릭 ---
     ParticleSystem _streakPS;
     Material _streakMat;
     float _streakTimer;
-    ParticleSystem.EmitParams _streakEmit;   // 구조체 재사용 — 할당 0
+    ParticleSystem.EmitParams _streakEmit;
 
-    // 풀 슬롯 1개 — 자기 Mesh/Material/오브젝트를 영속 보유하고 재활용된다.
     class Ghost
     {
         public GameObject go;
@@ -80,67 +81,50 @@ public class PlayerAfterimage : MonoBehaviour
         public Mesh mesh;
         public float age;
         public bool active;
-        public Color baseColor;     // 이 고스트의 채널 색(마젠타 or 시안)
-        public Vector3 splitDir;    // 분리축(대시 진행방향의 수평 수직 벡터, 정규화)
-        public float splitSign;     // 좌우 부호(+1/-1)
     }
 
     void Awake()
     {
-        interval = Mathf.Max(0.01f, interval);   // 0/음수면 매 프레임 스폰 — 방지
+        interval = Mathf.Max(0.01f, interval);
+        if (motor == null) motor = GetComponentInParent<PlayerMotor>();
+        if (motor == null) motor = FindObjectOfType<PlayerMotor>();
 
-        // 활성·유효 파트만 영속 수집. 비활성/disabled(예: 안 쓰는 머리카락 변종)는 제외 —
-        // 안 그러면 잔상에 겹쳐 찍히고 BakeMesh도 낭비된다. 런타임에 옷 파트가 토글되지 않는다는 전제(솔로 MVP).
         var all = GetComponentsInChildren<SkinnedMeshRenderer>(true);
         var live = new List<SkinnedMeshRenderer>(all.Length);
         foreach (var s in all)
-            if (s != null && s.sharedMesh != null && s.enabled && s.gameObject.activeInHierarchy) live.Add(s);
+            if (s != null && s.sharedMesh != null) live.Add(s);   // 활성 여부는 스폰 시 판단(런타임 토글 대응, Stab 권고-4)
         _renderers = live.ToArray();
 
-        _bakeBuffers = new Mesh[_renderers.Length];
-        _combineStart = new int[_renderers.Length];
-        _combineCount = new int[_renderers.Length];
+        if (_renderers.Length == 0) { Debug.LogWarning("[PlayerAfterimage] SkinnedMeshRenderer 미발견.", this); }
 
-        int total = 0;
+        _bakeBuffers = new Mesh[_renderers.Length];
+        _combineCount = new int[_renderers.Length];
+        _prevActive = new bool[_renderers.Length];
         for (int i = 0; i < _renderers.Length; i++)
         {
             _bakeBuffers[i] = new Mesh();
-            int sub = _renderers[i].sharedMesh.subMeshCount;
-            _combineStart[i] = total;
-            _combineCount[i] = sub;
-            total += sub;
+            _combineCount[i] = _renderers[i].sharedMesh.subMeshCount;
         }
-
-        // mesh/subMeshIndex를 미리 고정 — 매 스폰엔 transform만 갱신해 배열 재할당을 없앤다.
-        _combineBuffer = new CombineInstance[total];
-        for (int i = 0; i < _renderers.Length; i++)
-            for (int s = 0; s < _combineCount[i]; s++)
-                _combineBuffer[_combineStart[i] + s] =
-                    new CombineInstance { mesh = _bakeBuffers[i], subMeshIndex = s };
+        // _combine은 첫 스폰 시 활성 멤버십에 맞춰 구성(_layoutDirty=true).
 
         _ghostMatTemplate = CreateGhostMaterial();
-        if (_ghostMatTemplate == null) return;   // [L-3] 셰이더 전멸 — 안전 무효화(고스트/스트릭 미생성, enabled=false는 내부에서)
-        _baseColorId = _ghostMatTemplate.HasProperty("_BaseColor") ? Shader.PropertyToID("_BaseColor") : -1;
+        if (_ghostMatTemplate == null) { enabled = false; return; }   // 셰이더 전멸 — 안전 무효화
 
-        // 풀 프리워밍: 동시 생존 고스트 수(≈lifetime/interval) × 2(페어)만큼 미리 만들어,
-        // 첫 대시 중 점진 생성 스파이크를 게임 시작 1회 비용으로 옮긴다.
-        int warm = (Mathf.CeilToInt(Mathf.Max(0.0001f, lifetime) / interval) + 1) * 2;
+        // 프리워밍: 동시 생존 고스트 수(≈lifetime/interval)만큼 미리 생성.
+        int warm = Mathf.CeilToInt(Mathf.Max(0.0001f, lifetime) / interval) + 1;
         for (int i = 0; i < warm; i++) CreateGhost();
 
-        _streakMat = CreateStreakMaterial();
-        _streakPS = CreateStreakPS();
-        _streakPS.Play();   // emission 모듈은 꺼둠 — 수동 Emit만 시뮬레이션되게 가동 상태 유지
+        if (enableStreaks)
+        {
+            _streakMat = CreateStreakMaterial();
+            _streakPS = CreateStreakPS();
+            _streakPS.Play();
+        }
     }
 
     void OnDisable()
     {
-        // [L-5] 비활성 시 잔존 정리 — 고스트는 부모 없는 독립 GO라 컴포넌트가 꺼져도 LateUpdate 페이드가
-        // 멈춰 가산 HDR 고스트가 월드에 풀 강도로 영구 잔존한다. 풀 전체 끄고 스트릭도 비운다.
-        foreach (var g in _pool)
-        {
-            g.active = false;
-            if (g.go != null) g.go.SetActive(false);
-        }
+        foreach (var g in _pool) { g.active = false; if (g.go != null) g.go.SetActive(false); }
         if (_streakPS != null) _streakPS.Clear();
         _spawnTimer = 0f;
         _streakTimer = 0f;
@@ -149,11 +133,9 @@ public class PlayerAfterimage : MonoBehaviour
     void OnDestroy()
     {
         if (_ghostMatTemplate != null) Destroy(_ghostMatTemplate);
-        if (_streakMat != null) Destroy(_streakMat);   // 스트릭 PS 오브젝트는 자식이라 함께 파괴 — 머티리얼만 명시 정리
+        if (_streakMat != null) Destroy(_streakMat);
         if (_bakeBuffers != null)
             foreach (var m in _bakeBuffers) if (m != null) Destroy(m);
-
-        // 고스트는 부모 없는 독립 오브젝트라 자동 파괴되지 않는다 — 명시적으로 정리.
         foreach (var g in _pool)
         {
             if (g.mesh != null) Destroy(g.mesh);
@@ -168,8 +150,7 @@ public class PlayerAfterimage : MonoBehaviour
         float dt = Time.deltaTime;
         float life = Mathf.Max(0.0001f, lifetime);
 
-        // 1) 살아있는 고스트 페이드 + 위상 분리(메시는 안 건드리고 색·위치만) — 가벼움.
-        //    가산 블렌드에선 알파만으론 안 빠질 수 있어 색 자체를 (1-t)로 어둡게 한다.
+        // 1) 살아있는 고스트 페이드(_Alpha만 — 메시 안 건드림).
         for (int i = 0; i < _pool.Count; i++)
         {
             var g = _pool[i];
@@ -177,87 +158,89 @@ public class PlayerAfterimage : MonoBehaviour
             g.age += dt;
             float t = g.age / life;
             if (t >= 1f) { g.active = false; if (g.go != null) g.go.SetActive(false); continue; }
-
-            // 분리: 메시는 월드 좌표로 구워졌고 GO는 원점 기준이므로 position 오프셋이 곧 월드 분리.
-            g.go.transform.position = g.splitDir * (g.splitSign * Mathf.Lerp(SplitStart, SplitEnd, t));
-
-            Color c = GhostTint(g.baseColor, 1f - t);
-            if (_baseColorId >= 0) g.mat.SetColor(_baseColorId, c);
-            else g.mat.color = c;
+            g.mat.SetFloat(AlphaID, startAlpha * (1f - t));
         }
 
-        // 2) 진행방향 추정 — 컨트롤러가 방향을 공개하지 않으므로 위치 델타(수평)로 갱신.
-        var pc = PlayerController.Instance;
-        if (pc != null)
+        // 2) 진행방향 추정(스트릭 방향).
+        if (motor != null)
         {
-            Vector3 pos = pc.transform.position;
+            Vector3 pos = motor.transform.position;
             if (_hasPrevPos)
             {
-                Vector3 d = pos - _prevPlayerPos; d.y = 0f;
+                Vector3 d = pos - _prevPos; d.y = 0f;
                 if (d.sqrMagnitude > 1e-6f) _moveDir = d.normalized;
             }
-            _prevPlayerPos = pos;
+            _prevPos = pos;
             _hasPrevPos = true;
         }
 
-        // 3) 대시 중이면 고스트 페어 스폰 + 스트릭 방출.
-        if (pc == null || !pc.IsDashing) { _spawnTimer = 0f; _streakTimer = 0f; return; }
+        // 3) 대시 중이면 고스트 스폰 + 스트릭.
+        if (motor == null || !motor.IsDashing) { _spawnTimer = 0f; _streakTimer = 0f; return; }
 
-        EmitStreaks(dt);
+        if (enableStreaks && _streakPS != null) EmitStreaks(dt);
 
         _spawnTimer -= dt;
         if (_spawnTimer > 0f) return;
         _spawnTimer = interval;
-        SpawnGhostPair();
+        SpawnGhost();
     }
 
-    // 가산용 채널 색: RGB는 HDR 배율 × 페이드, 알파는 페이드만(블렌드 기여 보조).
-    static Color GhostTint(Color baseColor, float fade)
-    {
-        Color c = baseColor * (GhostHDR * fade);
-        c.a = baseColor.a * fade;
-        return c;
-    }
+    static bool IsActive(SkinnedMeshRenderer s) => s != null && s.enabled && s.gameObject.activeInHierarchy;
 
-    void SpawnGhostPair()
+    /// <summary>활성 SMR 멤버십이 바뀌었을 때만 _combine 레이아웃 재구성(GC-제로 유지, Stab 권고-4).</summary>
+    void RebuildCombineIfNeeded()
     {
-        if (_renderers.Length == 0) return;
+        bool changed = _layoutDirty;
+        for (int i = 0; i < _renderers.Length && !changed; i++)
+            if (IsActive(_renderers[i]) != _prevActive[i]) changed = true;
+        if (!changed) return;
 
-        // 현재 포즈를 재사용 버퍼에 굽고 월드 변환만 갱신 — 페어여도 베이크는 1회뿐(메시·배열 신규 할당 없음).
+        int total = 0;
         for (int i = 0; i < _renderers.Length; i++)
         {
+            _prevActive[i] = IsActive(_renderers[i]);
+            if (_prevActive[i]) total += _combineCount[i];
+        }
+        _combine = new CombineInstance[total];   // 멤버십 변화 시에만 할당(평시 0)
+        int w = 0;
+        for (int i = 0; i < _renderers.Length; i++)
+        {
+            if (!_prevActive[i]) continue;
+            for (int s = 0; s < _combineCount[i]; s++)
+                _combine[w++] = new CombineInstance { mesh = _bakeBuffers[i], subMeshIndex = s };
+        }
+        _layoutDirty = false;
+    }
+
+    void SpawnGhost()
+    {
+        if (_renderers.Length == 0) return;
+        RebuildCombineIfNeeded();
+        if (_combine == null || _combine.Length == 0) return;   // 활성 SMR 없음
+
+        // 활성 SMR만 베이크 + 월드 변환 갱신(_combine 레이아웃과 동일 순서).
+        int w = 0;
+        for (int i = 0; i < _renderers.Length; i++)
+        {
+            if (!_prevActive[i]) continue;
             var smr = _renderers[i];
             smr.BakeMesh(_bakeBuffers[i]);
             Matrix4x4 toWorld = smr.transform.localToWorldMatrix;
-            int start = _combineStart[i], cnt = _combineCount[i];
-            for (int s = 0; s < cnt; s++)
-                _combineBuffer[start + s].transform = toWorld;
+            for (int s = 0; s < _combineCount[i]; s++)
+                _combine[w++].transform = toWorld;
         }
 
-        // 분리축 = 진행방향의 수평 수직 벡터. 마젠타=+측, 시안=-측으로 찢어진다.
-        Vector3 perp = Vector3.Cross(Vector3.up, _moveDir);
-        SpawnGhostFromBuffer(ghostColorMagenta, perp, +1f);
-        SpawnGhostFromBuffer(ghostColorCyan, perp, -1f);
-    }
-
-    void SpawnGhostFromBuffer(Color channelColor, Vector3 splitDir, float splitSign)
-    {
         var ghost = GetGhost();
         ghost.mesh.Clear();
-        ghost.mesh.indexFormat = IndexFormat.UInt32;   // Clear가 UInt16로 되돌릴 수 있어 재확정(65k+ 버텍스 안전)
-        ghost.mesh.CombineMeshes(_combineBuffer, true, true);   // 호출 시점 복사 → 같은 버퍼로 2회 호출 안전, 할당 0
+        ghost.mesh.indexFormat = IndexFormat.UInt32;
+        ghost.mesh.CombineMeshes(_combine, true, true);   // 호출 시점 복사 → 버퍼 재사용 안전, 할당 0
         ghost.mf.sharedMesh = ghost.mesh;
         ghost.age = 0f;
         ghost.active = true;
-        ghost.baseColor = channelColor;
-        ghost.splitDir = splitDir;
-        ghost.splitSign = splitSign;
-        ghost.go.transform.position = splitDir * (splitSign * SplitStart);
+        ghost.go.transform.position = Vector3.zero;   // 메시에 월드 좌표가 구워짐 → GO는 원점
 
-        Color c = GhostTint(channelColor, 1f);   // 첫 프레임부터 풀 강도로 보이게 즉시 색 적용
-        if (_baseColorId >= 0) ghost.mat.SetColor(_baseColorId, c);
-        else ghost.mat.color = c;
-
+        ghost.mat.SetColor(ColorID, ghostColor);
+        ghost.mat.SetFloat(AlphaID, startAlpha);
         if (ghost.go != null) ghost.go.SetActive(true);
     }
 
@@ -265,24 +248,25 @@ public class PlayerAfterimage : MonoBehaviour
     {
         for (int i = 0; i < _pool.Count; i++)
             if (!_pool[i].active) return _pool[i];
-        return CreateGhost();   // 풀 소진 시에만 1회 확장(워밍업 이후 재호출 안 됨)
+        return CreateGhost();
     }
 
     Ghost CreateGhost()
     {
         var go = new GameObject("DashGhost");
-        // 부모 없음: 메시에 월드 좌표를 구워 넣으므로 CharacterVisual 회전에 끌려가면 안 된다.
         go.transform.SetParent(null, false);
         var mf = go.AddComponent<MeshFilter>();
         var mr = go.AddComponent<MeshRenderer>();
         mr.shadowCastingMode = ShadowCastingMode.Off;
         mr.receiveShadows = false;
+        mr.lightProbeUsage = LightProbeUsage.Off;
+        mr.reflectionProbeUsage = ReflectionProbeUsage.Off;
 
         var mat = new Material(_ghostMatTemplate);
         mr.sharedMaterial = mat;
 
-        var mesh = new Mesh { indexFormat = IndexFormat.UInt32 };   // 합산 버텍스 65k 초과 대비
-        mesh.MarkDynamic();   // 매 스폰 CombineMeshes로 덮어쓰므로 동적 힌트
+        var mesh = new Mesh { indexFormat = IndexFormat.UInt32 };
+        mesh.MarkDynamic();
 
         var g = new Ghost { go = go, mf = mf, mat = mat, mesh = mesh, active = false };
         go.SetActive(false);
@@ -292,52 +276,28 @@ public class PlayerAfterimage : MonoBehaviour
 
     Material CreateGhostMaterial()
     {
-        // URP/Unlit 가산(SrcAlpha, One). 다크 월드 위에 채널 색이 쌓여 빛나고, 페어가 겹친
-        // 초기엔 마젠타+시안 ≈ 화이트 코어가 자연 발생. ZWrite off라 정렬 무관(가산은 순서 독립).
-        var sh = Shader.Find("Universal Render Pipeline/Unlit");
-        Material m;
-        if (sh != null)
+        var sh = ghostShader != null ? ghostShader : Shader.Find("ZombieCrush/AfterimageGhost");
+        if (sh == null)
         {
-            m = new Material(sh);
-            m.SetFloat("_Surface", 1f);   // Transparent
-            m.SetFloat("_Blend", 2f);     // Additive
-            m.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
-            m.SetFloat("_DstBlend", (float)BlendMode.One);
-            m.SetFloat("_ZWrite", 0f);
-            m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-            m.DisableKeyword("_ALPHATEST_ON");
-            m.renderQueue = (int)RenderQueue.Transparent;
-            m.SetColor("_BaseColor", GhostTint(ghostColorCyan, 1f));
+            Debug.LogWarning("[PlayerAfterimage] ZombieCrush/AfterimageGhost 셰이더 미발견 — 잔상 비활성. 빌드 스트립 의심.");
+            return null;
         }
-        else
-        {
-            // 폴백: Sprites/Default(알파 블렌드).
-            var fallback = Shader.Find("Sprites/Default");
-            if (fallback == null)
-            {
-                // [L-3] 최종 폴백도 null이면 예외 대신 안전 무효화 — GlitchFX의 셰이더 미발견 패턴과 동일
-                Debug.LogWarning("[PlayerAfterimage] 고스트 셰이더 미발견(URP/Unlit·Sprites/Default 모두) — 잔상/스트릭 영구 비활성. 빌드 스트립 의심.");
-                enabled = false;
-                return null;
-            }
-            m = new Material(fallback);
-            m.color = ghostColorCyan;
-        }
+        var m = new Material(sh);
+        m.SetColor(ColorID, ghostColor);
+        m.SetFloat(AlphaID, startAlpha);
         return m;
     }
 
-    // ──────────── 스피드 스트릭(대시 방향 발광 속도선) ────────────
+    // ──────────── 스피드 스트릭 ────────────
 
     void EmitStreaks(float dt)
     {
         _streakTimer -= dt;
-        int safety = 8;   // 저 FPS 프레임에서 폭주 방지
+        int safety = 8;
         while (_streakTimer <= 0f && safety-- > 0)
         {
             _streakTimer += 1f / StreakRate;
-            // 몸통 높이 부근에서 흩뿌리고, 대시 반대 방향으로 살짝 흘려보낸다 —
-            // 스트레치드 빌보드가 속도 벡터를 따라 늘어나며 속도선이 된다.
-            _streakEmit.position = transform.position + Vector3.up * 0.9f + Random.insideUnitSphere * 0.35f;
+            _streakEmit.position = motor.transform.position + Vector3.up * 0.9f + Random.insideUnitSphere * 0.35f;
             _streakEmit.velocity = -_moveDir * Random.Range(1.5f, 3f);
             _streakPS.Emit(_streakEmit, 1);
         }
@@ -351,16 +311,15 @@ public class PlayerAfterimage : MonoBehaviour
         ps.Stop();
         var main = ps.main;
         main.startLifetime = new ParticleSystem.MinMaxCurve(0.15f, 0.25f);
-        main.startSpeed = 0f;   // 속도는 EmitParams로 직접 지정(방향 제어)
+        main.startSpeed = 0f;
         main.startSize = new ParticleSystem.MinMaxCurve(0.03f, 0.07f);
-        main.startColor = StreakColor;   // [L-4] startColor는 Color32로 클램프돼 HDR 배율 무효 — 실제 블룸은 머티리얼 _BaseColor(CreateStreakMaterial)가 낸다
-        main.maxParticles = 64;                 // 40/s × 0.25s ≈ 10 동시 생존 — 여유분
+        main.startColor = StreakColor;
+        main.maxParticles = 64;
         main.playOnAwake = false;
-        main.simulationSpace = ParticleSystemSimulationSpace.World;   // 캐릭터를 따라가지 않고 궤적에 잔류
-        var em = ps.emission; em.enabled = false;   // 수동 Emit 전용
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        var em = ps.emission; em.enabled = false;
         var shp = ps.shape; shp.enabled = false;
 
-        // 수명 끝 투명 페이드(버텍스 컬러를 읽는 파티클 셰이더에서 동작, 폴백에선 무해).
         var col = ps.colorOverLifetime;
         col.enabled = true;
         var grad = new Gradient();
@@ -370,7 +329,7 @@ public class PlayerAfterimage : MonoBehaviour
         col.color = grad;
 
         var psr = go.GetComponent<ParticleSystemRenderer>();
-        psr.renderMode = ParticleSystemRenderMode.Stretch;   // 속도 벡터 방향으로 늘어나는 속도선
+        psr.renderMode = ParticleSystemRenderMode.Stretch;
         psr.lengthScale = 4f;
         psr.velocityScale = 0.08f;
         psr.shadowCastingMode = ShadowCastingMode.Off;
@@ -381,8 +340,6 @@ public class PlayerAfterimage : MonoBehaviour
 
     Material CreateStreakMaterial()
     {
-        // ZombieDeathFX.CreateAdditive와 같은 폴백 체인. 머티리얼 색에도 HDR을 직접 박아
-        // 버텍스 컬러를 안 읽는 셰이더(URP/Unlit)로 떨어져도 색·블룸은 유지된다.
         var sh = Shader.Find("Universal Render Pipeline/Particles/Unlit");
         if (sh == null) sh = Shader.Find("Universal Render Pipeline/Unlit");
         if (sh == null) sh = Shader.Find("Sprites/Default");

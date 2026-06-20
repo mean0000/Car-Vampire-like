@@ -21,16 +21,42 @@ public class KatanaWeapon : WeaponBehaviour
     [Tooltip("1단 시작 직후 재시작 방지 최소 간격(초).")]
     [SerializeField, Min(0f)] float startCooldown = 0.08f;
 
-    [Header("타격(공통)")]
-    [SerializeField] float arcHalfAngle = 50f;
-    [SerializeField] float range = 1.8f;
-    [SerializeField] int damage = 3;
-    [SerializeField] float knockback = 4f;
+    [Header("타격 — 콤보 단별")]
+    [Tooltip("★통합 콤보 공격 세트(판정+슬래시 단일 진실). PlayerAttackVfx와 같은 에셋을 넣는다. " +
+             "단별 range/arc/offset/damage/knockback과 슬래시를 이 SO에서 조정.")]
+    [SerializeField] ComboAttackSet comboSet;
+    [Tooltip("시야(LOS) 레이캐스트 눈높이(m) — 공통.")]
     [SerializeField] float eyeHeight = 1f;
+
+    /// <summary>이 단의 실효 사거리 = range(폴백 1.8) × (rangeFromSlashScale면 그 단 슬래시 scale).</summary>
+    float EffectiveRange(in ComboAttackSet.ComboAttackStep h)
+    {
+        float r = h.range > 0f ? h.range : 1.8f;
+        if (h.rangeFromSlashScale) r *= (h.scale > 0f ? h.scale : 1f);
+        return r;
+    }
 
     [Header("Layers")]
     [SerializeField] LayerMask enemyMask = 1 << 7;
     [SerializeField] LayerMask obstacleMask = 1 << 8;
+
+    [Header("카운터 (패링 반격 — Skill02)")]
+    [Tooltip("패링 성공 후 반격(Skill02) 입력 창(초, 실시간). 이 안에 좌클릭하면 반격 발동.")]
+    [SerializeField] float counterWindow = 0.6f;
+    [Tooltip("반격 사거리(m).")]
+    [SerializeField] float counterRange = 3f;
+    [Tooltip("반격 부채꼴 半각(deg).")]
+    [SerializeField] float counterArcHalf = 70f;
+    [Tooltip("반격 히트존 전진(m).")]
+    [SerializeField] float counterForwardOffset = 0.5f;
+    [Tooltip("반격 데미지(보상 — 콤보보다 강하게).")]
+    [SerializeField] int counterDamage = 12;
+    [Tooltip("반격 넉백(m/s).")]
+    [SerializeField] float counterKnockback = 6f;
+    [Tooltip("반격 안전 워치독(초, 스케일 시간) — Skill02 클립(≈2.58s)+여유. 정상 종료는 클립 OnComboEnd가 하지만, " +
+             "이벤트 누락/하드컷 인터럽트 시 _countering 고착(반 소프트락)을 이 시간 뒤 강제 종료로 막는다. " +
+             "Tumbling 타임아웃과 동형 방어선(Stab H-1·Codex #1 수렴).")]
+    [SerializeField] float counterMaxDuration = 3.5f;
 
     int _step;            // 0=idle, 1..comboMax 진행 중
     bool _windowOpen;     // 캔슬 윈도우(다음 단 입력 가능) — AnimationEvent가 연다
@@ -39,10 +65,14 @@ public class KatanaWeapon : WeaponBehaviour
     bool _hitDone;        // 현재 단 타격 1회 가드
     float _startCdTimer;
     float _lastAdvanceTime = -1f;   // 마지막 Advance 시각 — 직후 이전 클립의 지연 OnComboEnd를 무시(Stab M-1 경합 방어)
+    float _counterTimer;            // 패링 후 반격 입력 창(unscaled — 슬로모 무관, 관대)
+    bool _countering;               // 반격(Skill02) 진행 중 — 콤보 _step과 독립
+    float _counterFallbackTimer;    // 반격 안전 워치독(스케일 시간) — OnComboEnd 누락 시 강제 종료
 
-    Vector3 _aimDir = Vector3.forward;
+    Vector3 _aimDir = Vector3.forward;    // 단 시작 시 잠근 조준 — 타격 판정 방향(facing/런지와 통일). 단 진행 중 고정.
+    Vector3 _liveAim = Vector3.forward;   // 매 프레임 최신 조준 — 단 시작(BeginCombo/Advance)에 _aimDir로 캡처.
     readonly HashSet<IDamageable> _hitThisSwing = new HashSet<IDamageable>();
-    readonly Collider[] _overlap = new Collider[64];
+    readonly Collider[] _overlap = new Collider[128];
 
     public override void Initialize(Transform owner, PlayerAnimatorDriver animator)
     {
@@ -70,19 +100,53 @@ public class KatanaWeapon : WeaponBehaviour
         base.Cleanup();
     }
 
-    /// <summary>콤보 진행 중(1단 이상)이면 공격 커밋 — 이동 잠금(제자리 공격).</summary>
-    public override bool IsBusy => _step >= 1;
+    /// <summary>콤보 진행 중(1단 이상) 또는 반격(Skill02) 중이면 공격 커밋 — 이동 잠금(제자리 공격).</summary>
+    public override bool IsBusy => _step >= 1 || _countering;
+
+    /// <summary>패링 성공 시 호출 — 반격(Skill02) 입력 창을 연다. PlayerBrain이 PlayerHealth.Parried에 배선.</summary>
+    public override void ArmCounter()
+    {
+        _counterTimer = counterWindow;
+        Debug.Log($"[Counter] 창 열림(ArmCounter) — {counterWindow}s, _step={_step}");   // 진단(임시)
+    }
+
+    /// <summary>회피 등 최우선 입력에 의한 콤보 즉시 캔슬 — idle 하드컷(self-cancel 캐넌).
+    /// 대시 비주얼은 Animator의 Any→Dash가 덮는다. 콤보 단/버퍼/윈도우 전부 리셋.</summary>
+    public override void Cancel()
+    {
+        _step = 0;
+        _windowOpen = false;
+        _buffered = false;
+        _hitDone = false;
+        _countering = false;     // 회피가 반격을 가로채면 반격도 취소(최우선 입력)
+        _counterTimer = 0f;
+        _counterFallbackTimer = 0f;
+        _lastAdvanceTime = -1f;
+        AnimatorDriver?.SetCombo(0);
+    }
 
     public override void Tick(in PlayerInputState input, Vector3 aimDir)
     {
-        if (aimDir.sqrMagnitude > 0.0001f) _aimDir = aimDir;
+        if (aimDir.sqrMagnitude > 0.0001f) _liveAim = aimDir;   // 최신 조준 보관 — 단 시작 시 잠근다(진행 중엔 _aimDir 고정).
         float dt = Time.deltaTime;
         if (_startCdTimer > 0f) _startCdTimer -= dt;
+        if (_counterTimer > 0f) _counterTimer -= Time.unscaledDeltaTime;   // 반격 창은 실시간(슬로모가 늘리거나 줄이지 않음 — 관대)
+        // ★반격 워치독: 정상 종료는 클립 OnComboEnd(@0.92)지만, 누락/하드컷 인터럽트 시 _countering 고착 → 반 소프트락
+        //   (Stab H-1·Codex #1 수렴, Tumbling 타임아웃 선례). 클립 재생은 스케일 시간이라 Time.deltaTime로 감쇠(정렬). 만료 시 강제 종료.
+        if (_countering)
+        {
+            _counterFallbackTimer -= Time.deltaTime;
+            if (_counterFallbackTimer <= 0f) EndCounter();
+        }
 
-        // 각 좌클릭 '누름'이 콤보 입력. idle이면 1단 시작, 진행 중이면 버퍼.
+        // 각 좌클릭 '누름'. ★반격 창 안 + idle이면 카운터(Skill02) 우선, 아니면 콤보(idle 1단 / 진행 중 버퍼).
+        //   M-1 무효 근거: 패링은 항상 회피(대시) 뒤 — 대시가 콤보를 Cancel(→_step=0)하므로 창이 열릴 땐 _step==0이 보장된다.
+        //   창 안 첫 좌클릭은 이 분기로 곧장 카운터가 되어, '콤보 진행 중 창' 시나리오는 정상 흐름에서 발생하지 않는다.
         if (input.primaryDown)
         {
-            if (_step == 0)
+            if (_countering) { /* 반격 모션 중 입력 무시 — 클립 끝까지 커밋 */ }
+            else if (_counterTimer > 0f && _step == 0) BeginCounter();
+            else if (_step == 0)
             {
                 if (_startCdTimer <= 0f) BeginCombo();
             }
@@ -107,6 +171,7 @@ public class KatanaWeapon : WeaponBehaviour
 
     void BeginCombo()
     {
+        _aimDir = _liveAim;   // 1단 시작 — 이 순간 조준으로 방향 잠금(facing/런지/타격 통일)
         _step = 1;
         _windowOpen = false;
         _hitDone = false;
@@ -117,6 +182,7 @@ public class KatanaWeapon : WeaponBehaviour
 
     void Advance()
     {
+        _aimDir = _liveAim;   // 다음 단 시작 — 단 사이 재조준 반영(이후 다시 고정)
         _buffered = false;
         _windowOpen = false;
         _hitDone = false;
@@ -125,10 +191,35 @@ public class KatanaWeapon : WeaponBehaviour
         AnimatorDriver?.SetCombo(_step);
     }
 
+    /// <summary>★패링 반격 — 카운터 창 안에서 좌클릭 시 Skill02 발동. 콤보 _step과 독립(busy로 잠김),
+    /// 타격은 OnHitFrame이 _countering일 때 DoCounterHit(보상치), 종료는 OnComboEnd가 처리.</summary>
+    void BeginCounter()
+    {
+        _aimDir = _liveAim;       // 반격 방향을 현재 조준으로 잠금(타격/모션 통일)
+        _countering = true;
+        _hitDone = false;
+        _counterTimer = 0f;       // 창 소비
+        _counterFallbackTimer = counterMaxDuration;   // 안전 워치독 가동(OnComboEnd 누락 대비)
+        _windowOpen = false;
+        Debug.Log("[Counter] BeginCounter — TriggerCounter() 호출(SetTrigger Counter)");   // 진단(임시)
+        AnimatorDriver?.TriggerCounter();
+    }
+
+    /// <summary>반격 종료 공통 경로 — 클립 OnComboEnd(정상)와 워치독(폴백) 둘 다 여기로 합류.
+    /// SetCombo(0)이 _lockedFace도 해제(Stab H-2 — 반격 facing 잠금이 함께 풀린다).</summary>
+    void EndCounter()
+    {
+        _countering = false;
+        _hitDone = false;
+        _counterFallbackTimer = 0f;
+        AnimatorDriver?.SetCombo(0);
+    }
+
     // ── AnimationEvent 릴레이(PlayerAnimatorDriver 경유) — 타이밍은 클립이 소유 ──
     protected override void OnHitFrame(int hitFrameIndex)   // 타격 정점
     {
-        if (_step >= 1 && !_hitDone) { _hitDone = true; DoSwingHit(); }
+        if (_countering) { if (!_hitDone) { _hitDone = true; DoCounterHit(); } }   // 반격 타격(보상치)
+        else if (_step >= 1 && !_hitDone) { _hitDone = true; DoSwingHit(); }
     }
 
     void OnComboWindow()   // 캔슬 윈도우 시작 — 다음 단 입력 받기 시작(각 좌클릭이 각 단)
@@ -136,8 +227,9 @@ public class KatanaWeapon : WeaponBehaviour
         if (_step >= 1) _windowOpen = true;
     }
 
-    void OnComboEnd()      // 현재 단 클립 끝 — 다음 단으로 안 넘어갔으면 콤보 종료(idle 복귀)
+    void OnComboEnd()      // 현재 단/반격 클립 끝 — 다음 단으로 안 넘어갔으면 종료(idle 복귀)
     {
+        if (_countering) { EndCounter(); return; }   // 반격(Skill02) 정상 종료 — 클립 끝 OnComboEnd
         // Stab M-1 방어: Advance 직후엔 이전 클립이 CUT로 중단되며 그 OnComboEnd가 1프레임 늦게 샐 수 있다.
         // 그 지연 발화는 막 시작한 다음 단을 잘못 종료시키므로, Advance 후 짧은 관용창 내 OnComboEnd는 무시한다.
         // (Combo 클립 길이가 0.1s를 크게 웃돌아 현재 단의 정상 종료는 막지 않는다.)
@@ -149,10 +241,61 @@ public class KatanaWeapon : WeaponBehaviour
         AnimatorDriver?.SetCombo(0);
     }
 
+    /// <summary>현재 콤보 단의 공격 스텝(1-based). 범위 밖이면 마지막 단으로 클램프, 비면 안전 기본값.</summary>
+    ComboAttackSet.ComboAttackStep GetHit(int step)
+    {
+        if (comboSet == null || comboSet.StepCount == 0)
+        {
+            Debug.LogWarning("[KatanaWeapon] comboSet 미할당/비어 있음 — 하드코딩 폴백 사용. Inspector에서 ComboAttackSet 확인 요망.", this);
+            return new ComboAttackSet.ComboAttackStep { range = 1.8f, arcHalfAngle = 50f, forwardOffset = 0f, damage = 3, knockback = 4f };
+        }
+        comboSet.TryGetStep(step, out var s);
+        return s;
+    }
+
+    // ── 디버그 시각화용 읽기전용 접근자(HitboxDebugManager 전용) — 전투 로직 무관 ──
+    public Transform DebugOwner => Owner;
+    public int DebugStep => _step;
+    /// <summary>공격 중이면 잠근 방향(_aimDir), 평시엔 라이브 조준(_liveAim) — 프리뷰용.</summary>
+    public Vector3 DebugAimDir => _step >= 1 ? _aimDir : _liveAim;
+    public int DebugHitCount => comboSet != null ? comboSet.StepCount : 0;
+    /// <summary>단별 히트박스 파라미터(1-based). DoSwingHit과 동일 폴백 가드.</summary>
+    public bool DebugGetHit(int step, out float range, out float arcHalf, out float forwardOffset)
+    {
+        range = 1.8f; arcHalf = 50f; forwardOffset = 0f;
+        if (comboSet == null || comboSet.StepCount == 0) return false;
+        comboSet.TryGetStep(step, out var h);
+        range = EffectiveRange(h);   // 슬래시 스케일 연동 포함 — 디버그 뷰가 실효 판정을 그린다
+        arcHalf = h.arcHalfAngle > 0f ? h.arcHalfAngle : 50f;
+        forwardOffset = Mathf.Max(0f, h.forwardOffset);
+        return true;
+    }
+
     void DoSwingHit()
     {
+        ComboAttackSet.ComboAttackStep h = GetHit(_step);
+        // 0/미설정 직렬화값 폴백 가드(필드 추가 시 default 0 함정).
+        DoHit(EffectiveRange(h),                              // range × (rangeFromSlashScale면 그 단 슬래시 스케일)
+              h.arcHalfAngle > 0f ? h.arcHalfAngle : 50f,
+              Mathf.Max(0f, h.forwardOffset),
+              h.damage > 0 ? h.damage : 1,
+              h.knockback);
+    }
+
+    /// <summary>반격(Skill02) 타격 — 콤보보다 강한 보상치. DoHit 공통 경로 재사용.</summary>
+    void DoCounterHit() => DoHit(counterRange,
+                                 counterArcHalf > 0f ? counterArcHalf : 70f,   // 0이면 부채꼴이 모든 적을 배제(M-2)
+                                 counterForwardOffset,
+                                 counterDamage > 0 ? counterDamage : 1,
+                                 counterKnockback);                            // 넉백 0은 유효(무넉백) — 가드 강제 안 함
+
+    /// <summary>부채꼴+사거리+LOS 판정으로 IDamageable에 타격. 콤보/반격 공통(파라미터만 다름).</summary>
+    void DoHit(float range, float arcHalf, float forwardOffset, int dmgAmt, float kb)
+    {
         if (Owner == null) return;
-        Vector3 origin = Owner.position;
+
+        // ★히트존 원점을 조준 방향으로 전진 — 보이는 슬래시 위치에 정합(Codex 권고; 발밑 중심 아님).
+        Vector3 origin = Owner.position + _aimDir * Mathf.Max(0f, forwardOffset);
         Vector3 eye = origin + Vector3.up * eyeHeight;
         float gather = range + 0.5f;
         const float pointBlank = 0.9f;
@@ -160,7 +303,7 @@ public class KatanaWeapon : WeaponBehaviour
         _hitThisSwing.Clear();
         int n = Physics.OverlapSphereNonAlloc(origin, gather, _overlap, enemyMask, QueryTriggerInteraction.Collide);
         if (n == _overlap.Length)
-            Debug.LogWarning("[KatanaWeapon] OverlapSphere 버퍼(64)가 가득 — 일부 타격 누락 가능(버퍼 증대 검토).");
+            Debug.LogWarning("[KatanaWeapon] OverlapSphere 버퍼(128)가 가득 — 일부 타격 누락 가능(버퍼 증대 검토).");
         for (int i = 0; i < n; i++)
         {
             var dmg = _overlap[i].GetComponentInParent<IDamageable>();
@@ -171,14 +314,14 @@ public class KatanaWeapon : WeaponBehaviour
             if (dist > range) continue;
             if (dist > pointBlank)
             {
-                if (Vector3.Angle(_aimDir, to) > arcHalfAngle) continue;
+                if (Vector3.Angle(_aimDir, to) > arcHalf) continue;
                 Vector3 los = (_overlap[i].transform.position + Vector3.up * eyeHeight) - eye;
                 float ll = los.magnitude;
                 if (ll > 0.001f && Physics.Raycast(eye, los / ll, ll, obstacleMask, QueryTriggerInteraction.Ignore))
                     continue;
             }
             _hitThisSwing.Add(dmg);
-            dmg.TakeHit(damage, origin, knockback);
+            dmg.TakeHit(dmgAmt, origin, kb);
         }
     }
 }

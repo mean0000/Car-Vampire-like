@@ -39,6 +39,14 @@ public abstract class WeaponBehaviour : MonoBehaviour
     /// <summary>공격(콤보 등) 커밋 중인가 — PlayerBrain이 이동 잠금 등 상태 우선순위 판정에 쓴다.</summary>
     public virtual bool IsBusy => false;
 
+    /// <summary>외부(회피 등 최우선 입력)가 현재 동작을 즉시 캔슬할 때 호출 — 상태를 idle로 하드컷.
+    /// 기본 무동작. 구체 무기가 콤보/충전 등 진행 상태를 리셋한다(플레이어 self-cancel 캐넌).</summary>
+    public virtual void Cancel() { }
+
+    /// <summary>패링(퍼펙트 회피) 성공 시 호출 — 반격 입력 창을 연다. PlayerBrain이 PlayerHealth.Parried에 배선.
+    /// 기본 무동작. 카타나가 Skill02 카운터 창을 연다(다른 무기는 자기 반격을 두거나 무시).</summary>
+    public virtual void ArmCounter() { }
+
     /// <summary>공격 클립의 타격 정점(AnimationEvent OnAttackHit). 구체 무기가 이 프레임에 판정을 실행한다.</summary>
     protected virtual void OnHitFrame(int hitFrameIndex) { }
 }
