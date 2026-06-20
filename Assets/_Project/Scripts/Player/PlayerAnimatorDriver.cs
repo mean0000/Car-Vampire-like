@@ -37,6 +37,7 @@ public class PlayerAnimatorDriver : MonoBehaviour
     static readonly int DashXHash = Animator.StringToHash("DashX");
     static readonly int DashYHash = Animator.StringToHash("DashY");
     static readonly int CounterHash = Animator.StringToHash("Counter");
+    static readonly int Skill01Hash = Animator.StringToHash("Skill01");
 
     Animator _animator;
     PlayerAim _aim;
@@ -194,6 +195,18 @@ public class PlayerAnimatorDriver : MonoBehaviour
         _animator.SetBool(DashHash, false);
         _wasDashing = false;
         _animator.SetTrigger(CounterHash);
+    }
+
+    /// <summary>★우클릭 스킬(Skill01) — 컨트롤러 Any→Skill01 트리거. Counter와 동형(공격이라 루트모션 적용,
+    /// facing 잠금, Dash bool 정리로 AnyState 경쟁 해소). 컨트롤러에 Skill01 트리거가 없으면 무음 무동작(안전).</summary>
+    public void TriggerSkill()
+    {
+        if (_animator == null) return;
+        if (_aim != null && _aim.Direction.sqrMagnitude > 0.0001f)
+            _lockedFace = _aim.Direction;
+        _animator.SetBool(DashHash, false);
+        _wasDashing = false;
+        _animator.SetTrigger(Skill01Hash);
     }
 
     /// <summary>공격·대시 클립의 루트모션을 루트(PlayerMotor)로 넘긴다 — 애니가 진실(전진/회피 거리는 클립이 소유).

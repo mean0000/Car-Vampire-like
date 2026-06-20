@@ -58,6 +58,14 @@ public class KatanaWeapon : WeaponBehaviour
              "★진행플래그 자가치유(OnTick reconcile)가 더 빨리 잡으므로 현재는 백스톱 성격.")]
     [SerializeField] float counterMaxDuration = 3.5f;
 
+    [Header("스킬 (RMB — Skill01)")]
+    [Tooltip("★스킬 데이터 SO(판정+타이밍+VFX+사운드 통합). 비우면 RMB 스킬 비활성. " +
+             "ComboAttackSet과 같은 데이터 주도 규약 — Katana_Cham_Skill01Set 같은 에셋을 넣는다.")]
+    [SerializeField] SkillSet skillSet;
+    [Tooltip("★스킬 VFX가 Weapon 기준일 때(슬래시) 정합 앵커 — 무기(칼) transform. 콤보 슬래시와 같은 Katana_Mesh를 넣는다. " +
+             "Player 기준(불렛)일 땐 안 쓰임.")]
+    [SerializeField] Transform weaponAnchor;
+
     int _step;            // 0=idle, 1..comboMax 진행 중
     bool _windowOpen;     // 캔슬 윈도우(다음 단 입력 가능) — AnimationEvent가 연다
     bool _buffered;       // 입력 버퍼
@@ -68,6 +76,9 @@ public class KatanaWeapon : WeaponBehaviour
     float _counterTimer;            // 패링 후 반격 입력 창(unscaled — 슬로모 무관, 관대)
     bool _countering;               // 반격(Skill02) 진행 중 — 콤보 _step과 독립
     float _counterFallbackTimer;    // 반격 안전 워치독(스케일 시간) — OnComboEnd 누락 시 강제 종료
+    bool _skilling;                 // 스킬(Skill01) 진행 중 — _step/_countering과 독립
+    float _skillCdTimer;            // 스킬 쿨다운 잔여
+    float _skillFallbackTimer;      // 스킬 안전 워치독(스케일 시간)
 
     Vector3 _aimDir = Vector3.forward;    // 단 시작 시 잠근 조준 — 타격 판정 방향(facing/런지와 통일). 단 진행 중 고정.
     Vector3 _liveAim = Vector3.forward;   // 매 프레임 최신 조준 — 단 시작(BeginCombo/Advance)에 _aimDir로 캡처.
@@ -117,6 +128,8 @@ public class KatanaWeapon : WeaponBehaviour
         _countering = false;     // 회피가 반격을 가로채면 반격도 취소(최우선 입력)
         _counterTimer = 0f;
         _counterFallbackTimer = 0f;
+        _skilling = false;       // 회피가 스킬도 가로챔(쿨다운은 소비 유지 — 환불 안 함)
+        _skillFallbackTimer = 0f;
         _lastAdvanceTime = -1f;
         AnimatorDriver?.SetCombo(0);
         base.Cancel();           // 레일: 액션 유예도 끔(캔슬 즉시 busy 해제)
@@ -135,13 +148,22 @@ public class KatanaWeapon : WeaponBehaviour
             _counterFallbackTimer -= Time.deltaTime;
             if (_counterFallbackTimer <= 0f) EndCounter();
         }
+        if (_skillCdTimer > 0f) _skillCdTimer -= dt;
+        if (_skilling)
+        {
+            _skillFallbackTimer -= Time.deltaTime;
+            if (_skillFallbackTimer <= 0f) EndSkill();
+        }
 
-        // ★레일 자가치유(진행 플래그) — busy가 풀렸는데(유예 만료 + Animator가 Action 아님) _step/_countering이 남아 있으면
+        // ★레일 자가치유(진행 플래그) — busy가 풀렸는데(유예 만료 + Animator가 Action 아님) _step/_countering/_skilling이 남아 있으면
         //   액션 진입 실패(전이 경쟁·★"Action" 태그 누락)로 보고 진행 상태도 닫는다. busy(이동)뿐 아니라 입력 게이트
         //   (특히 _countering이 입력을 묵살하는 것)까지 자가 복구 — Codex M. 정상 동작 중엔 IsBusy=true라 발화 안 함.
-        if (!IsBusy && (_step > 0 || _countering))
+        if (!IsBusy && (_step > 0 || _countering || _skilling))
         {
-            if (_countering) EndCounter(); else ResetCombo();
+            // 독립 if 3개 — 이론적 다중 플래그 동시 고착도 전부 닫는다(Stab H-2). 각 End/Reset은 SetCombo(0) 멱등이라 중복 안전.
+            if (_skilling) EndSkill();
+            if (_countering) EndCounter();
+            if (_step > 0) ResetCombo();
 #if UNITY_EDITOR
             Debug.LogWarning("[KatanaWeapon] 액션 진입 실패 자가치유 — Animator가 \"Action\" 상태에 못 들었다(유예 내 진입 실패). " +
                              "해당 액션 상태의 \"Action\" 태그와 AnyState 진입 전환을 확인하라.", this);
@@ -153,7 +175,7 @@ public class KatanaWeapon : WeaponBehaviour
         //   창 안 첫 좌클릭은 이 분기로 곧장 카운터가 되어, '콤보 진행 중 창' 시나리오는 정상 흐름에서 발생하지 않는다.
         if (input.primaryDown)
         {
-            if (_countering) { /* 반격 모션 중 입력 무시 — 클립 끝까지 커밋 */ }
+            if (_countering || _skilling) { /* 반격/스킬 모션 중 입력 무시 — 클립 끝까지 커밋 */ }
             else if (_counterTimer > 0f && _step == 0) BeginCounter();
             else if (_step == 0)
             {
@@ -165,6 +187,11 @@ public class KatanaWeapon : WeaponBehaviour
                 _bufferTimer = inputBufferTime;
             }
         }
+
+        // ★우클릭 스킬(Skill01) — SkillSet 할당 + idle + 쿨다운 준비 시 발동. 콤보/카운터/스킬 진행 중엔 IsBusy로 막힌다.
+        //   (대시 중 RMB는 PlayerBrain이 억제 — 대시 커밋 보호.)
+        if (input.secondaryDown && skillSet != null && !IsBusy && _skillCdTimer <= 0f)
+            BeginSkill();
 
         // 입력 버퍼 감쇠
         if (_buffered)
@@ -226,10 +253,83 @@ public class KatanaWeapon : WeaponBehaviour
         AnimatorDriver?.SetCombo(0);
     }
 
+    /// <summary>★우클릭 스킬 — Skill01 발동. 반격과 동형(busy로 잠김, 타격=OnHitFrame _skilling 분기, 종료=OnComboEnd).
+    /// 쿨다운 소비. facing은 발동 순간 조준에 잠금.</summary>
+    void BeginSkill()
+    {
+        _aimDir = _liveAim;
+        _skilling = true;
+        _hitDone = false;
+        _skillCdTimer = skillSet.timing.cooldown;
+        _skillFallbackTimer = skillSet.timing.maxDuration > 0f ? skillSet.timing.maxDuration : 3.5f;
+        AnimatorDriver?.TriggerSkill();
+        BeginAction();   // 레일: 진입 유예 켬 → Animator가 Skill01(Action) 들 때까지 busy 유지
+        // ★VFX/사운드는 발동 순간이 아니라 타격 순간(DoSkillHit @ OnAttackHit = 칼 벨 때)에 낸다.
+    }
+
+    /// <summary>스킬 VFX 스폰 — skillVfxPrefab을 조준 방향에 오리엔트해 띄우고 자동 소멸.
+    /// PlayOnAwake=false 프리팹도 강제 재생(슬래시 VFX와 동일 함정 가드). 비어 있으면 무동작.</summary>
+    void SpawnSkillVfx()
+    {
+        if (skillSet == null || skillSet.vfx == null || skillSet.vfx.prefab == null) return;
+        var v = skillSet.vfx;
+        Vector3 pos; Quaternion rot;
+        if (v.basis == SkillSet.VfxBasis.Weapon && weaponAnchor != null)
+        {
+            // ★무기(칼) 앵커 기준 — 슬래시(휘두름 따라). 콤보 슬래시(PlayerAttackVfx)와 동일 수학.
+            pos = weaponAnchor.TransformPoint(v.posOffset);
+            rot = weaponAnchor.rotation * Quaternion.Euler(v.eulerOffset);
+        }
+        else
+        {
+            // ★플레이어 위치 + 조준 방향 기준 — 불렛/전방 발사. posOffset은 조준-로컬(z=앞·x=우·y=위).
+            if (Owner == null) return;
+            Vector3 fwd = _aimDir.sqrMagnitude > 0.0001f ? _aimDir.normalized : Owner.forward; fwd.y = 0f;
+            if (fwd.sqrMagnitude < 0.0001f) fwd = Vector3.forward;
+            Quaternion aimRot = Quaternion.LookRotation(fwd.normalized, Vector3.up);
+            pos = Owner.position + aimRot * v.posOffset;
+            rot = aimRot * Quaternion.Euler(v.eulerOffset);
+        }
+        var go = Instantiate(v.prefab, pos, rot);
+        float s = v.scale > 0f ? v.scale : 1f;
+        if (!Mathf.Approximately(s, 1f)) go.transform.localScale *= s;
+        float spd = v.playbackSpeed > 0f ? v.playbackSpeed : 1f;
+        foreach (var ps in go.GetComponentsInChildren<ParticleSystem>())
+        {
+            if (!Mathf.Approximately(spd, 1f)) { var main = ps.main; main.simulationSpeed *= spd; }
+            ps.Play(false);
+        }
+        Destroy(go, v.lifetime > 0f ? v.lifetime : 1.5f);
+    }
+
+    AudioSource _skillSfxSource;   // 2D one-shot 소스(첫 사용 시 생성 — PlayerAttackSfx와 동일 정책)
+    /// <summary>스킬 사운드 — 2D(거리감쇠 없음) PlayOneShot. 비어 있으면 무동작.</summary>
+    void PlaySkillSfx()
+    {
+        if (skillSet == null || skillSet.sfx == null || skillSet.sfx.clip == null) return;
+        if (_skillSfxSource == null)
+        {
+            _skillSfxSource = gameObject.AddComponent<AudioSource>();
+            _skillSfxSource.playOnAwake = false;
+            _skillSfxSource.spatialBlend = 0f;   // 2D — 손맛 사운드는 카메라 거리감쇠 X
+        }
+        _skillSfxSource.PlayOneShot(skillSet.sfx.clip, skillSet.sfx.volume);
+    }
+
+    /// <summary>스킬 종료 공통 경로 — 클립 OnComboEnd(정상)와 워치독/자가치유(폴백) 둘 다 여기로.</summary>
+    void EndSkill()
+    {
+        _skilling = false;
+        _hitDone = false;
+        _skillFallbackTimer = 0f;
+        AnimatorDriver?.SetCombo(0);
+    }
+
     // ── AnimationEvent 릴레이(PlayerAnimatorDriver 경유) — 타이밍은 클립이 소유 ──
     protected override void OnHitFrame(int hitFrameIndex)   // 타격 정점
     {
-        if (_countering) { if (!_hitDone) { _hitDone = true; DoCounterHit(); } }   // 반격 타격(보상치)
+        if (_skilling) { if (!_hitDone) { _hitDone = true; DoSkillHit(); } }       // 스킬 타격
+        else if (_countering) { if (!_hitDone) { _hitDone = true; DoCounterHit(); } }   // 반격 타격(보상치)
         else if (_step >= 1 && !_hitDone) { _hitDone = true; DoSwingHit(); }
     }
 
@@ -240,6 +340,7 @@ public class KatanaWeapon : WeaponBehaviour
 
     void OnComboEnd()      // 현재 단/반격 클립 끝 — 다음 단으로 안 넘어갔으면 종료(idle 복귀)
     {
+        if (_skilling) { EndSkill(); return; }       // 스킬(Skill01) 정상 종료 — 클립 끝 OnComboEnd
         if (_countering) { EndCounter(); return; }   // 반격(Skill02) 정상 종료 — 클립 끝 OnComboEnd
         // Stab M-1 방어: Advance 직후엔 이전 클립이 CUT로 중단되며 그 OnComboEnd가 1프레임 늦게 샐 수 있다.
         // 그 지연 발화는 막 시작한 다음 단을 잘못 종료시키므로, Advance 후 짧은 관용창 내 OnComboEnd는 무시한다.
@@ -306,6 +407,17 @@ public class KatanaWeapon : WeaponBehaviour
                                  counterForwardOffset,
                                  counterDamage > 0 ? counterDamage : 1,
                                  counterKnockback);                            // 넉백 0은 유효(무넉백) — 가드 강제 안 함
+
+    /// <summary>스킬(Skill01) 타격 — SkillSet 판정 + ★타격 순간(칼 벨 때) VFX·사운드.</summary>
+    void DoSkillHit()
+    {
+        if (skillSet == null) return;
+        var h = skillSet.hit;
+        DoHit(h.range, h.arcHalfAngle > 0f ? h.arcHalfAngle : 80f, h.forwardOffset,
+              h.damage > 0 ? h.damage : 1, h.knockback);
+        SpawnSkillVfx();   // ★타격 순간 VFX
+        PlaySkillSfx();    // ★타격 순간 사운드
+    }
 
     /// <summary>부채꼴+사거리+LOS 판정으로 IDamageable에 타격. 콤보/반격 공통(파라미터만 다름).</summary>
     void DoHit(float range, float arcHalf, float forwardOffset, int dmgAmt, float kb)

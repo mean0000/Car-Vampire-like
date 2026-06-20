@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51f4d7230df42f141b23da021850ad86, type: 3}
+  m_Name: Katana_Cham_Skill01Set
+  m_EditorClassIdentifier: Assembly-CSharp::SkillSet
+  skillName: Katana_Skill01
+  hit:
+    range: 3.5
+    arcHalfAngle: 80
+    forwardOffset: 0.5
+    damage: 20
+    knockback: 7
+  timing:
+    cooldown: 0
+    maxDuration: 3.5
+  vfx:
+    basis: 0
+    prefab: {fileID: 512424923302614939, guid: 2eb5380c54d118c4fab15b58a96c669b, type: 3}
+    eulerOffset: {x: 0, y: -90, z: 0}
+    posOffset: {x: 0, y: 1, z: 10}
+    scale: 0.75
+    playbackSpeed: 1
+    lifetime: 2
+  sfx:
+    clip: {fileID: 0}
+    volume: 0.7

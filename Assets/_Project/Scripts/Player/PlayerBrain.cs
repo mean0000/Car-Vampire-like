@@ -52,6 +52,7 @@ public class PlayerBrain : MonoBehaviour
         {
             _weapon?.Cancel();
             input.primaryDown = false;             // 같은 프레임 좌클릭이 콤보를 재시작해 대시를 씹는 것 방지
+            input.secondaryDown = false;           // 같은 프레임 우클릭(스킬)도 무효 — 회피가 이김
             _bufferedAttack = false;               // 새 대시 선택 — 이전 버퍼 공격 폐기
         }
         // ★대시 커밋 보호 + 입력 버퍼: 대시 진행 중 좌클릭은 버리지 말고 기억 → 대시 끝나는 즉시 재주입.
@@ -61,6 +62,7 @@ public class PlayerBrain : MonoBehaviour
         {
             if (input.primaryDown) _bufferedAttack = true;
             input.primaryDown = false;             // 대시 중엔 콤보 시작 보류(대시 끝나고 재주입)
+            input.secondaryDown = false;           // 대시 중엔 스킬 발동 보류(대시 커밋 — 끝난 뒤 RMB로)
         }
         else if (_bufferedAttack)
         {

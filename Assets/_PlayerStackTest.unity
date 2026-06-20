@@ -3602,8 +3602,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerDashTint
   motor: {fileID: 1450077382}
   body: {fileID: 2005968283}
-  dashColor: {r: 0.3, g: 1.2, b: 1.5, a: 1}
-  blendSpeed: 25
+  dashEmission: {r: 0.3, g: 1.8, b: 2.2, a: 1}
+  glowHold: 0.15
+  fadeInSpeed: 30
+  fadeOutSpeed: 30
 --- !u!1 &1452246592
 GameObject:
   m_ObjectHideFlags: 0
@@ -3969,6 +3971,8 @@ MonoBehaviour:
   counterDamage: 12
   counterKnockback: 6
   counterMaxDuration: 3.5
+  skillSet: {fileID: 11400000, guid: bb933dc9f8f25b949b2eb44c5f5a0585, type: 2}
+  weaponAnchor: {fileID: 823562877}
 --- !u!1 &1969498553 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 100022, guid: a1926410b13a7ee47bb907df03589011, type: 3}
