@@ -109,7 +109,7 @@ ReadInput → Aim.Tick → [회피 최우선 캔슬 + 입력 버퍼] → Weapon.
 - **회피(대시):** `dashDown + CanDash` → `Weapon.Cancel()`(진행 공격 하드컷) + 같은 프레임 좌클릭 무효. 대시는 커밋(공격이 못 끊음).
 - **입력 버퍼:** 대시 *진행 중* 좌클릭은 버리지 말고 기억(`_bufferedAttack`) → 대시 끝나는 첫 프레임 재주입. 만료 타이머 없음(대시는 짧고, 재대시 시 폐기). "눌렀는데 안 나감" 제거의 핵심.
 - **패링(퍼펙트 회피):** 대시 시작 후 `perfectDodgeWindow`(0.15s) 내에 적 공격이 닿으면 `PlayerHealth.Parried` 발화 → ① `ParrySlowMotion`(히트스탑+슬로모) ② `KatanaWeapon.ArmCounter`(반격 입력창 0.6s 오픈).
-- **반격(카운터):** 반격창 안에 좌클릭 → `BeginCounter` → `Skill02` 반격(콤보 대신). `TriggerCounter`가 Dash bool을 즉시 꺼 AnyState 경쟁 해소.
+- **반격(카운터):** 반격창 안에 좌클릭 → `BeginCounter` → 반격 모션(콤보 대신, Counter 상태 = `Frank_RPG_Katana_S1_Attack02`). `TriggerCounter`가 Dash bool을 즉시 꺼 AnyState 경쟁 해소.
 
 ---
 
