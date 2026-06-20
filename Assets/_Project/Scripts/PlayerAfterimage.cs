@@ -86,8 +86,8 @@ public class PlayerAfterimage : MonoBehaviour
     void Awake()
     {
         interval = Mathf.Max(0.01f, interval);
-        if (motor == null) motor = GetComponentInParent<PlayerMotor>();
-        if (motor == null) motor = FindObjectOfType<PlayerMotor>();
+        if (motor == null) motor = GetComponentInParent<PlayerMotor>();   // 부모 체인만 — FindObjectOfType 제거(임의 픽업 방지)
+        if (motor == null) { Debug.LogError("[PlayerAfterimage] PlayerMotor 미연결 — 잔상 비활성. Inspector/부모 배선 확인.", this); enabled = false; return; }
 
         var all = GetComponentsInChildren<SkinnedMeshRenderer>(true);
         var live = new List<SkinnedMeshRenderer>(all.Length);
@@ -253,7 +253,7 @@ public class PlayerAfterimage : MonoBehaviour
 
     Ghost CreateGhost()
     {
-        var go = new GameObject("DashGhost");
+        var go = new GameObject("DashGhost") { hideFlags = HideFlags.DontSave };   // 씬 저장 제외 — 에디터 정지 시 고아 GO 잔류 방지
         go.transform.SetParent(null, false);
         var mf = go.AddComponent<MeshFilter>();
         var mr = go.AddComponent<MeshRenderer>();

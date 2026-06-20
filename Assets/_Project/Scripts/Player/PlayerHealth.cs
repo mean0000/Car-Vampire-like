@@ -89,11 +89,15 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         _hp = Mathf.Max(0, _hp - damage);
         _hitIframe = hitInvulnDuration;
         Damaged?.Invoke(_hp, maxHp);
-        Debug.Log($"[PlayerHealth] took {damage} → {_hp}/{maxHp}", this);
+#if UNITY_EDITOR
+        Debug.Log($"[PlayerHealth] took {damage} → {_hp}/{maxHp}", this);   // 에디터 전용 — 빌드 로그 범람 방지
+#endif
 
         if (_hp <= 0)
         {
+#if UNITY_EDITOR
             Debug.Log("[PlayerHealth] DEAD", this);
+#endif
             Died?.Invoke();
         }
     }

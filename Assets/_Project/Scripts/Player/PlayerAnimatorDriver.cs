@@ -210,6 +210,23 @@ public class PlayerAnimatorDriver : MonoBehaviour
     /// <summary>공격 커밋 여부 — true인 프레임에만 루트모션 변위를 루트로 적용(PlayerBrain이 busy로 갱신).</summary>
     public void SetAttacking(bool attacking) => _attacking = attacking;
 
+    /// <summary>★레일: 지금 '액션' 클립(공격/반격)이 실제로 재생 중인가 — busy의 단일 진실 소스(애니가 진실).
+    /// 컨트롤러에서 Combo1/2/3·Counter 상태에 "Action" 태그를 단다. 새 무기/액션은 상태에 같은 태그만 달면
+    /// 코드 수정 없이 busy/잠금에 자동 편입(OCP 확장점). 전이 중이면 다음 상태도 봐서 진입 1프레임 갭을 메운다.
+    /// ★REQUIRED: 모든 '공격/반격' 액션 상태에 Animator State Tag "Action" 필수. 누락 시 유예(0.12s) 뒤 busy가
+    ///   풀려 이동 누수 — 단 KatanaWeapon의 진입 실패 자가치유가 에디터 경고로 잡아준다(런타임 안전망).</summary>
+    public bool IsActionPlaying
+    {
+        get
+        {
+            if (_animator == null) return false;
+            if (_animator.GetCurrentAnimatorStateInfo(0).IsTag("Action")) return true;
+            // 전이 진행 중엔 도착 상태가 Action이면 이미 액션 진입으로 친다(요청→진입 갭의 busy 누수 방지).
+            if (_animator.IsInTransition(0) && _animator.GetNextAnimatorStateInfo(0).IsTag("Action")) return true;
+            return false;
+        }
+    }
+
     /// <summary>★퍼펙트 회피 — 진행 중 회피를 Step 대신 Tumbling(구르기)으로 전환(컨트롤러 Any→Tumbling 트리거).
     /// 방향은 대시 시작 시 잠근 DashX/DashY를 그대로 쓴다(같은 동작 정체성). 컨트롤러에 Tumbling 파라미터가
     /// 없으면 SetTrigger는 무음 무동작(안전).</summary>
@@ -238,6 +255,10 @@ public class PlayerAnimatorDriver : MonoBehaviour
         if (_animator == null) return;
         if (_aim != null && _aim.Direction.sqrMagnitude > 0.0001f)
             _lockedFace = _aim.Direction;
+        // ★AnyState 경쟁 해소: 직전 대시의 Dash bool이 남아 있으면 Any→Dash(우선순위 0)가 Any→Counter(2)를 이긴다.
+        //   반격 요청 시 Dash bool을 즉시 꺼 Counter가 확실히 진입하게 한다(엣지 추적도 동기화).
+        _animator.SetBool(DashHash, false);
+        _wasDashing = false;
         _animator.SetTrigger(CounterHash);
     }
 

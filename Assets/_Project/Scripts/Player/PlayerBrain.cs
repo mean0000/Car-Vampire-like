@@ -2,7 +2,8 @@ using UnityEngine;
 
 /// <summary>
 /// 플레이어 스택의 단일 오케스트레이터. 매 프레임 입력을 수집해 하위 컴포넌트를
-/// Aim→Motor→Weapon→Animator 순서로 명시 호출한다(Script Execution Order 암묵 의존 제거 — codex 권고).
+/// Aim→Weapon→Motor→Animator 순서로 명시 호출한다(Script Execution Order 암묵 의존 제거 — codex 권고).
+/// (조준을 먼저 확정 → 무기가 IsBusy를 정해야 Motor가 그 busy로 이동을 양보하므로 Weapon이 Motor보다 먼저.)
 /// 조준을 이동보다 먼저 확정해, 정지 대시 방향 폴백·공격 방향이 같은 프레임의 최신 aim을 본다.
 ///
 /// 무기는 런 시작 시 1택으로 자식에 주입된다(현재는 씬 배치 무기를 GetComponentInChildren로 집음 —
@@ -12,6 +13,8 @@ using UnityEngine;
 public class PlayerBrain : MonoBehaviour
 {
     [SerializeField] KeyCode dashKey = KeyCode.Space;
+
+    bool _bufferedAttack;   // 대시 중 좌클릭 기억 → 대시 끝 첫 프레임 재주입(만료 없음 — 대시는 짧고 재대시 시 폐기)
 
     PlayerMotor _motor;
     PlayerAim _aim;
@@ -52,7 +55,22 @@ public class PlayerBrain : MonoBehaviour
         {
             _weapon?.Cancel();
             input.primaryDown = false;             // 같은 프레임 좌클릭이 콤보를 재시작해 대시를 씹는 것 방지
+            _bufferedAttack = false;               // 새 대시 선택 — 이전 버퍼 공격 폐기
         }
+        // ★대시 커밋 보호 + 입력 버퍼: 대시 진행 중 좌클릭은 버리지 말고 기억 → 대시 끝나는 즉시 재주입.
+        //   대시는 커밋(공격이 못 끊음)이지만 입력은 보존해 "눌렀는데 안 나감"을 없앤다 = 회피→공격 흐름의 핵심.
+        //   만료 타이머 없음: 대시는 짧고(끝나면 즉시 재주입), 재대시 시 폐기되므로 영구 잔존 불가(슬로모 중 만료 엣지도 제거 — Codex L).
+        if (_motor.IsDashing)
+        {
+            if (input.primaryDown) _bufferedAttack = true;
+            input.primaryDown = false;             // 대시 중엔 콤보 시작 보류(대시 끝나고 재주입)
+        }
+        else if (_bufferedAttack)
+        {
+            input.primaryDown = true;              // 대시 끝난 첫 프레임에 버퍼된 공격 재주입
+            _bufferedAttack = false;
+        }
+
         _weapon?.Tick(input, _aim.Direction);      // 2) 공격 — 상태(IsBusy)를 먼저 확정(캔슬됐으면 idle)
         bool busy = _weapon != null && _weapon.IsBusy;
         _motor.Tick(input, _aim.Direction, busy);  // 3) 이동·대시 — 공격 커밋 중(busy)이면 Motor 입력이동 양보

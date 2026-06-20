@@ -8,6 +8,7 @@ using UnityEngine;
 /// 적 히트박스: enemyMask 레이어의 콜라이더(스피어/캡슐=풋프린트 원+높이, 박스=와이어, 그외=AABB).
 /// throwaway 디버그 — 정식 빌드 전 제거/비활성.
 /// </summary>
+#if UNITY_EDITOR
 [ExecuteAlways]   // 에디트 Scene 뷰 + Play Game 뷰 양쪽에서 그리게(OnRenderObject는 ExecuteAlways 필요).
 public class HitboxDebugManager : MonoBehaviour
 {
@@ -300,3 +301,7 @@ public class HitboxDebugManager : MonoBehaviour
 
     static float MaxAbsScale(Vector3 s) => Mathf.Max(Mathf.Abs(s.x), Mathf.Abs(s.y), Mathf.Abs(s.z));
 }
+#else
+// 빌드: 빈 셸만 — FindObjectsOfType 폴링·GL 드로우가 런타임에 들어가지 않게. 씬 참조(meta GUID)는 유지돼 missing-script 없음.
+public class HitboxDebugManager : MonoBehaviour { }
+#endif

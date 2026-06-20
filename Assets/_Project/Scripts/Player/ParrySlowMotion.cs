@@ -38,8 +38,7 @@ public class ParrySlowMotion : MonoBehaviour
 
     void Awake()
     {
-        if (health == null) health = GetComponentInParent<PlayerHealth>();
-        if (health == null) health = FindObjectOfType<PlayerHealth>();
+        if (health == null) health = GetComponentInParent<PlayerHealth>();   // 부모 체인만 — FindObjectOfType 제거(다중 인스턴스 임의 픽업 방지)
         _baseFixedDelta = Time.fixedDeltaTime;
         // 전역 슬로우 잔존 오염 가드 — 비정상 fixedDeltaTime을 baseline으로 캐시하면 물리 영구 왜곡(Stab H-2).
         if (_baseFixedDelta < 0.001f || _baseFixedDelta > 0.05f)

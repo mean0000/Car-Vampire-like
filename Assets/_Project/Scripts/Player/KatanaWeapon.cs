@@ -100,15 +100,11 @@ public class KatanaWeapon : WeaponBehaviour
         base.Cleanup();
     }
 
-    /// <summary>콤보 진행 중(1단 이상) 또는 반격(Skill02) 중이면 공격 커밋 — 이동 잠금(제자리 공격).</summary>
-    public override bool IsBusy => _step >= 1 || _countering;
+    // busy는 베이스 레일(WeaponBehaviour.IsBusy = 액션유예 OR AnimatorDriver.IsActionPlaying)이 소유한다.
+    // _step/_countering은 이제 '진행 로직'(어느 단·반격 분기)만 담당하고 busy를 직접 정하지 않는다(애니가 진실).
 
     /// <summary>패링 성공 시 호출 — 반격(Skill02) 입력 창을 연다. PlayerBrain이 PlayerHealth.Parried에 배선.</summary>
-    public override void ArmCounter()
-    {
-        _counterTimer = counterWindow;
-        Debug.Log($"[Counter] 창 열림(ArmCounter) — {counterWindow}s, _step={_step}");   // 진단(임시)
-    }
+    public override void ArmCounter() => _counterTimer = counterWindow;
 
     /// <summary>회피 등 최우선 입력에 의한 콤보 즉시 캔슬 — idle 하드컷(self-cancel 캐넌).
     /// 대시 비주얼은 Animator의 Any→Dash가 덮는다. 콤보 단/버퍼/윈도우 전부 리셋.</summary>
@@ -123,9 +119,10 @@ public class KatanaWeapon : WeaponBehaviour
         _counterFallbackTimer = 0f;
         _lastAdvanceTime = -1f;
         AnimatorDriver?.SetCombo(0);
+        base.Cancel();           // 레일: 액션 유예도 끔(캔슬 즉시 busy 해제)
     }
 
-    public override void Tick(in PlayerInputState input, Vector3 aimDir)
+    protected override void OnTick(in PlayerInputState input, Vector3 aimDir)
     {
         if (aimDir.sqrMagnitude > 0.0001f) _liveAim = aimDir;   // 최신 조준 보관 — 단 시작 시 잠근다(진행 중엔 _aimDir 고정).
         float dt = Time.deltaTime;
@@ -137,6 +134,18 @@ public class KatanaWeapon : WeaponBehaviour
         {
             _counterFallbackTimer -= Time.deltaTime;
             if (_counterFallbackTimer <= 0f) EndCounter();
+        }
+
+        // ★레일 자가치유(진행 플래그) — busy가 풀렸는데(유예 만료 + Animator가 Action 아님) _step/_countering이 남아 있으면
+        //   액션 진입 실패(전이 경쟁·★"Action" 태그 누락)로 보고 진행 상태도 닫는다. busy(이동)뿐 아니라 입력 게이트
+        //   (특히 _countering이 입력을 묵살하는 것)까지 자가 복구 — Codex M. 정상 동작 중엔 IsBusy=true라 발화 안 함.
+        if (!IsBusy && (_step > 0 || _countering))
+        {
+            if (_countering) EndCounter(); else ResetCombo();
+#if UNITY_EDITOR
+            Debug.LogWarning("[KatanaWeapon] 액션 진입 실패 자가치유 — Animator가 \"Action\" 상태에 못 들었다(유예 내 진입 실패). " +
+                             "해당 액션 상태의 \"Action\" 태그와 AnyState 진입 전환을 확인하라.", this);
+#endif
         }
 
         // 각 좌클릭 '누름'. ★반격 창 안 + idle이면 카운터(Skill02) 우선, 아니면 콤보(idle 1단 / 진행 중 버퍼).
@@ -178,6 +187,7 @@ public class KatanaWeapon : WeaponBehaviour
         _startCdTimer = startCooldown;
         _lastAdvanceTime = -1f;
         AnimatorDriver?.SetCombo(1);
+        BeginAction();   // 레일: 진입 유예 켬 → Animator가 Combo1(Action) 들 때까지 busy 유지
     }
 
     void Advance()
@@ -189,6 +199,7 @@ public class KatanaWeapon : WeaponBehaviour
         _step++;
         _lastAdvanceTime = Time.time;
         AnimatorDriver?.SetCombo(_step);
+        BeginAction();   // 레일: 다음 단 전이 갭 유예(이미 Action 상태라 안전망 성격)
     }
 
     /// <summary>★패링 반격 — 카운터 창 안에서 좌클릭 시 Skill02 발동. 콤보 _step과 독립(busy로 잠김),
@@ -201,8 +212,8 @@ public class KatanaWeapon : WeaponBehaviour
         _counterTimer = 0f;       // 창 소비
         _counterFallbackTimer = counterMaxDuration;   // 안전 워치독 가동(OnComboEnd 누락 대비)
         _windowOpen = false;
-        Debug.Log("[Counter] BeginCounter — TriggerCounter() 호출(SetTrigger Counter)");   // 진단(임시)
         AnimatorDriver?.TriggerCounter();
+        BeginAction();   // 레일: 진입 유예 켬 → Animator가 Counter(Action) 들 때까지 busy 유지
     }
 
     /// <summary>반격 종료 공통 경로 — 클립 OnComboEnd(정상)와 워치독(폴백) 둘 다 여기로 합류.
@@ -234,9 +245,16 @@ public class KatanaWeapon : WeaponBehaviour
         // 그 지연 발화는 막 시작한 다음 단을 잘못 종료시키므로, Advance 후 짧은 관용창 내 OnComboEnd는 무시한다.
         // (Combo 클립 길이가 0.1s를 크게 웃돌아 현재 단의 정상 종료는 막지 않는다.)
         if (_lastAdvanceTime >= 0f && Time.time - _lastAdvanceTime < 0.1f) return;
+        ResetCombo();
+    }
+
+    /// <summary>콤보 진행 상태를 idle로 닫는다 — 정상 종료(OnComboEnd)와 자가치유(진입 실패) 공통 경로.</summary>
+    void ResetCombo()
+    {
         _step = 0;
         _windowOpen = false;
         _buffered = false;
+        _hitDone = false;
         _lastAdvanceTime = -1f;
         AnimatorDriver?.SetCombo(0);
     }
