@@ -28,8 +28,8 @@ public class PlayerAfterimage : MonoBehaviour
     [SerializeField] Shader ghostShader;
 
     [Header("Spawn")]
-    [Tooltip("잔상 1장 간격(초). 작을수록 촘촘. 대시 0.42s에 0.03이면 ~14장.")]
-    [SerializeField] float interval = 0.03f;
+    [Tooltip("잔상 1장 간격(초). 작을수록 촘촘. 대시 0.10s에 0.012면 ~8장 + lifetime 동안 잔존.")]
+    [SerializeField] float interval = 0.012f;
 
     [Header("Ghost")]
     [Tooltip("잔상 1장 페이드 시간(초).")]
@@ -37,8 +37,8 @@ public class PlayerAfterimage : MonoBehaviour
     [Tooltip("고스트 색(시안=액션 규약). HDR — 다크월드 블룸 통과.")]
     [ColorUsage(true, true)]
     [SerializeField] Color ghostColor = new Color(0.3f, 1.4f, 1.7f, 1f);
-    [Tooltip("고스트 시작 알파(가산이라 1 미만 권장).")]
-    [SerializeField, Range(0f, 1f)] float startAlpha = 0.9f;
+    [Tooltip("고스트 시작 알파(알파블렌드 솔리드 필 — 낮추면 겹침이 비쳐 부드럽고, 높이면 진한 시안 덩어리).")]
+    [SerializeField, Range(0f, 1f)] float startAlpha = 0.7f;
 
     [Header("Streaks (속도선)")]
     [Tooltip("대시 방향 속도선 켜기.")]

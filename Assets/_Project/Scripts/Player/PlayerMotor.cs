@@ -22,8 +22,8 @@ public class PlayerMotor : MonoBehaviour
     [Header("Dash (코드 구동 자유방향 회피)")]
     [Tooltip("★대시 거리(m) — 직접 조절. 키보드 방향(정지 시 조준)으로 자유 회피, 카디널 스냅 안 함.")]
     [SerializeField] float dashDistance = 3f;
-    [Tooltip("대시 이동 시간(초) — 짧을수록 빠르고 딱딱하게(순간이동에 가깝게). i-frame/무적 창도 이 길이. 속도 = 거리/이값.")]
-    [SerializeField] float dashDuration = 0.13f;
+    [Tooltip("대시 이동 시간(초) — 짧을수록 빠르고 딱딱하게(순간이동에 가깝게). 속도 = 거리/이값. (무적창은 iframeDuration 별도.)")]
+    [SerializeField] float dashDuration = 0.10f;
     [Tooltip("스택 1개 충전 시간(초).")]
     [SerializeField] float dashCooldown = 1f;
     [Tooltip("저장 가능한 대시 횟수(스택). 시작 시 풀충전.")]
