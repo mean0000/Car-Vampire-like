@@ -18,9 +18,6 @@ public class PlayerMotor : MonoBehaviour
     [SerializeField] float acceleration = 50f;
     [Tooltip("입력을 떼거나 꺾을 때 감속도(m/s²). 작을수록 더 미끄러지듯 정착.")]
     [SerializeField] float deceleration = 40f;
-    [Tooltip("★공격 커밋 중 이동속도 배율(풀 트윈스틱 — 상체 공격/하체 이동 분리). 1=공격 중에도 풀속도, " +
-             "낮출수록 베는 동안 묵직하게 발이 느려진다. 0이면 사실상 제자리 공격. 손맛 노브.")]
-    [SerializeField, Range(0f, 1f)] float attackMoveSpeedScale = 0.55f;
 
     [Header("Dash (코드 구동 자유방향 회피)")]
     [Tooltip("★대시 거리(m) — 직접 조절. 키보드 방향(정지 시 조준)으로 자유 회피, 카디널 스냅 안 함.")]
@@ -36,6 +33,9 @@ public class PlayerMotor : MonoBehaviour
     [Tooltip("★무적(i-frame) 지속(초) — 대시 누른 순간부터. 이동창(dashDuration)과 별개로 조절. " +
              "이 중 앞부분(PlayerHealth.parryWindow)이 패링 창이다.")]
     [SerializeField] float iframeDuration = 0.3f;
+    [Tooltip("★대시캔슬 무적 배율(하데스식 대가) — 공격(회수 포함) 도중 대시로 끊으면 그 대시의 i-frame을 이 배율로 줄인다. " +
+             "1=대가 없음, 0=무적 완전 희생. 공격적으로 빨리 가면 무방비 = 리스크/리워드. 평시(비공격) 대시는 항상 풀 무적.")]
+    [SerializeField, Range(0f, 1f)] float dashCancelIframeScale = 0.5f;
 
     [Header("Collision / Ground")]
     [Tooltip("지면 레이어 — 높이 추종 레이캐스트 대상.")]
@@ -68,7 +68,7 @@ public class PlayerMotor : MonoBehaviour
     public bool IsInvulnerable => _iframeTimer > 0f && dashInvulnerable;
     /// <summary>대시 무적 옵션 켜짐 여부 — PlayerHealth가 미발화 경고에 읽는다.</summary>
     public bool DashInvulnerable => dashInvulnerable;
-    /// <summary>마지막 대시 시작 시각(Time.time) — PlayerHealth가 패링 창(닿기 직전 회피) 판정에 쓴다.</summary>
+    /// <summary>마지막 대시 시작 시각(Time.unscaledTime) — PlayerHealth가 패링 창(닿기 직전 회피) 판정에 쓴다.</summary>
     public float DashStartTime => _dashStartTime;
 
     /// <summary>지금 대시를 시작할 수 있나 — 충전 있고 대시 중 아님. PlayerBrain이 회피 최우선 캔슬 판정에 쓴다.</summary>
@@ -119,18 +119,18 @@ public class PlayerMotor : MonoBehaviour
         //   따라서 CanDash(_dashCharges>0 && _dashTimer<=0f)의 _dashTimer 조건은 이미 성립 — 충전만 확인하면 된다.
         if (_dashCharges > 0 && input.dashDown)
         {
-            StartDash(move, aimDir);
+            // locked(공격 커밋 중) 상태에서의 대시 = 공격을 끊는 캔슬 대시 → i-frame 대가(하데스식). 평시 대시는 풀 무적.
+            StartDash(move, aimDir, locked);
             if (_dashTimer > 0f) { UpdateDash(dt); return; }   // 이번 프레임 대시 시작 — 고정 방향·고정 속도 버스트
         }
 
-        // ★풀 트윈스틱: 공격 커밋(locked) 중에도 이동을 허용한다(상체가 베는 동안 하체는 움직임). 잠금=정지였던
-        //   기존 동작을 속도 배율로 대체 — attackMoveSpeedScale로 베는 동안의 무게를 조절(0이면 사실상 제자리).
-        //   (회피는 위에서 이미 잠금 무시하고 처리됨.)
-        float curMoveSpeed = moveSpeed * (locked ? attackMoveSpeedScale : 1f);
+        // 공격 커밋(콤보 등) 중엔 이동 입력을 무시하고 즉시 정지 — 제자리 공격이라 발 미끄러짐이 사라진다.
+        // (대시는 위에서 이미 처리 — 회피는 이 잠금을 무시하고 빠져나간다.)
+        if (locked) { _velocity = Vector3.zero; return; }
 
         // 가속/감속 분리: "같은 방향으로 더 빨라질 때"만 가속. 그 외(정지·감속·역방향)는 감속.
         // dot 검사가 없으면 역방향 입력이 가속으로 잡혀 제동 없이 오버슈트한다.
-        Vector3 targetVel = move * curMoveSpeed;
+        Vector3 targetVel = move * moveSpeed;
         bool speedingUp = Vector3.Dot(targetVel, _velocity) >= 0f
                           && targetVel.sqrMagnitude >= _velocity.sqrMagnitude;
         float rate = speedingUp ? acceleration : deceleration;
@@ -175,7 +175,7 @@ public class PlayerMotor : MonoBehaviour
         if (_dashCharges >= maxDashCharges) _rechargeTimer = 0f;
     }
 
-    void StartDash(Vector3 move, Vector3 aimDir)
+    void StartDash(Vector3 move, Vector3 aimDir, bool cancelingAction)
     {
         // 방향: 이동 입력이 있으면 그쪽, 없으면(정지) 조준 방향으로 회피 대시.
         Vector3 dir = move;
@@ -203,7 +203,8 @@ public class PlayerMotor : MonoBehaviour
         _dashCharges--;
         _dashDir = dir;                     // ★자유방향(카디널 스냅 안 함) — 이동은 키보드 방향 그대로
         _dashTimer = dashDuration;          // 이동 창
-        _iframeTimer = iframeDuration;      // ★누른 순간부터 무적 시작(이동창과 별개)
+        // ★누른 순간부터 무적 시작(이동창과 별개). 공격을 끊는 캔슬 대시면 무적을 배율만큼 줄인다(하데스식 대가 — 공격적으로 빨리 가면 무방비).
+        _iframeTimer = iframeDuration * (cancelingAction ? dashCancelIframeScale : 1f);
         _dashStartTime = Time.unscaledTime; // 퍼펙트 회피 창 판정 기준 — 슬로모 timeScale에 안 끌리게 unscaled
         _dashStartedThisFrame = true;       // 드라이버가 이 엣지에서 DashX/DashY(비주얼 클립)를 잠그고 Dash 트리거를 건다
         _velocity = Vector3.zero;           // ★속도 꼬리 없음 — 대시 끝나면 딱 멈춤(미끄러짐 제거)

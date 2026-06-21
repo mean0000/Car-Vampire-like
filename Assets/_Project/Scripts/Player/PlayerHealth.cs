@@ -18,16 +18,16 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     [SerializeField, Min(0f)] float hitInvulnDuration = 0.5f;
 
     [Header("퍼펙트 회피(보상 창)")]
-    [Tooltip("★퍼펙트 회피 창(초) — 대시 시작 후 이 시간 내에 적 공격이 닿아야 보상(슬로모). i-frame 전체보다 짧게 두어 " +
-             "'대시 시작 프레임'에만 보상한다. 대시 끝(꼬리)에 우연히 막힌 건 평범 회피(피해만 막고 보상 X). " +
-             "★i-frame(PlayerMotor.iframeDuration)은 넉넉히 두고 이것만 좁혀라 — 회피 자체 시간은 안 줄어든다.")]
+    [Tooltip("★퍼펙트 회피(패링) 창(초) — 대시 시작 후 이 시간 내에 적 공격이 닿으면 보상(슬로모+반격)+피해 무효. " +
+             "★i-frame과 독립(타이밍 기반): 캔슬 대시로 수동 무적이 줄어도 이 창은 그대로 — 스킬 보상은 유지된다. " +
+             "짧게 둘수록 '대시 시작 프레임'에만 보상(타이트). ⚠️iframeDuration보다 크게 두면 대시 끝난 뒤 피격에도 패링이 터지니 작게.")]
     [SerializeField, Min(0.02f)] float perfectDodgeWindow = 0.15f;
 
     PlayerMotor _motor;
     int _hp;
     float _hitIframe;
     bool _parryFiredThisDash;   // 한 대시당 보상 1회만(다중 피격 시 슬로모 중복 발동 방지)
-    bool _wasMotorInvuln;       // 대시 무적 상승 엣지 감지 → 새 대시마다 보상 허용 리셋
+    float _lastDashStart = -999f;   // 직전에 본 대시 시작 시각 — 변화로 새 대시 감지(i-frame 유무와 무관 — 캔슬 대시 대응, Stab H-2)
 
     public int CurrentHp => _hp;
     public int MaxHp => maxHp;
@@ -58,32 +58,41 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     void Update()
     {
         if (_hitIframe > 0f) _hitIframe -= Time.deltaTime;
-        // 새 대시 시작(모터 무적 false→true 엣지)마다 PerfectDodge 발화 허용 리셋 — 대시당 1회 보장.
-        bool motorInvuln = _motor != null && _motor.IsInvulnerable;
-        if (motorInvuln && !_wasMotorInvuln) _parryFiredThisDash = false;
-        _wasMotorInvuln = motorInvuln;
+        // (퍼펙트 회피 발화 허용 리셋은 TakeHit 진입부로 옮겼다 — 리셋/판정을 원자화해
+        //  "Update가 Motor.Tick보다 먼저 도는 프레임" 레이스를 제거, Stab High.)
     }
 
     /// <summary>IDamageable — 적 공격이 호출. 무적 중이면 무시(회피 성공). 아니면 HP 깎고 피격 무적 부여.</summary>
     public void TakeHit(int damage, Vector3 from, float knockback)
     {
         if (IsDead) return;
-        if (IsInvulnerable)
+
+        // ★새 대시 감지 → 패링 발화 허용 리셋(대시당 1회). ★Update가 아니라 여기(TakeHit 진입)서 — 리셋과 패링 판정을
+        //   원자적으로 묶어 "Update가 Motor.Tick보다 먼저 도는 프레임에 새 대시 직후 피격 시 이전 대시 fired 플래그가
+        //   남아 패링 누락"되는 Script Execution Order 레이스를 제거한다(Stab High).
+        if (_motor != null && _motor.DashStartTime != _lastDashStart)
         {
-            // ★퍼펙트 회피: 대시 '시작 프레임'(perfectDodgeWindow 내)에 적 공격이 닿았을 때만 보상(슬로모).
-            //   대시 끝(꼬리)에 우연히 i-frame으로 막힌 건 평범 회피(피해만 막고 보상 X) — 대시-끝 슬로모 방지.
-            //   age는 unscaledTime 기준이라 슬로모가 창을 늘리거나 줄이지 않는다. 피격 직후 무적(_hitIframe)은 제외(대시 출처만). 대시당 1회.
-            if (_motor != null && _motor.IsInvulnerable && !_parryFiredThisDash)
-            {
-                float age = Time.unscaledTime - _motor.DashStartTime;
-                if (age >= 0f && age <= perfectDodgeWindow)
-                {
-                    _parryFiredThisDash = true;
-                    Parried?.Invoke();
-                }
-            }
-            return;   // 무적 — 피해 무효
+            _parryFiredThisDash = false;
+            _lastDashStart = _motor.DashStartTime;
         }
+
+        // ★퍼펙트 회피(패링) — 대시 시작 후 perfectDodgeWindow 내에 적 공격이 닿으면 보상(슬로모)+피해 무효.
+        //   ★i-frame과 독립(옵션 A): 캔슬 대시로 수동 무적이 줄거나 0이어도 타이밍만 맞으면 패링은 뜬다 —
+        //     스킬 보상(퍼펙트 회피)은 살리고, 깎이는 건 패링 못한 일반 피격의 수동 안전뿐.
+        //   age는 unscaledTime 기준(슬로모가 창을 안 늘림). dashInvulnerable 켜진 대시만(회피기 정체성). 대시당 1회.
+        //   피격 직후 무적(_hitIframe)은 대시 출처가 아니므로 DashStartTime 타이밍에서 자연 제외된다.
+        if (_motor != null && _motor.DashInvulnerable && !_parryFiredThisDash)
+        {
+            float age = Time.unscaledTime - _motor.DashStartTime;
+            if (age >= 0f && age <= perfectDodgeWindow)
+            {
+                _parryFiredThisDash = true;
+                Parried?.Invoke();
+                return;   // 패링 = 피해 무효(수동 무적 유무와 무관)
+            }
+        }
+
+        if (IsInvulnerable) return;   // 수동 무적(대시 i-frame 꼬리 OR 피격 직후) — 피해만 무효, 보상 없음(평범 회피)
         if (damage <= 0) return;      // 0이하 피해는 i-frame/이벤트 소모 없이 무시(무적 낭비·가짜 피드백 방지, Stab H-1)
 
         _hp = Mathf.Max(0, _hp - damage);

@@ -200,7 +200,9 @@ public class KatanaWeapon : WeaponBehaviour
             if (_bufferTimer <= 0f) _buffered = false;
         }
 
-        // 캔슬 윈도우 열렸고 버퍼 입력 있으면 다음 단으로 캔슬 전환.
+        // 캔슬 윈도우 열렸고 버퍼 입력 있으면 다음 단으로 캔슬 전환(1→2→3가 흐름).
+        //   ★하데스식 피니셔: 마지막 단(comboMax)은 공격으로 재시작 못 한다 — 3타 회수는 대시로만 빠져나가는 커밋이다.
+        //   무한 연타 억제는 인공 쿨다운이 아니라 "3타 회수 + 대시캔슬 리듬"으로 한다(공격→대시→공격).
         if (_windowOpen && _buffered && _step >= 1 && _step < comboMax)
             Advance();
     }
