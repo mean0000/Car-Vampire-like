@@ -39,12 +39,17 @@ public class PlayerAnimatorDriver : MonoBehaviour
     static readonly int CounterHash = Animator.StringToHash("Counter");
     static readonly int Skill01Hash = Animator.StringToHash("Skill01");
 
+    // ★상체 액션 레이어 인덱스(KatanaMelee.controller). 공격/반격/스킬(Action 태그)은 이 레이어에 있고,
+    //   Base(0)는 Locomotion+Dash 풀바디. 평시 weight 0(Base가 상체까지)·액션 중에만 weight 1(상체 override).
+    const int UpperLayer = 1;
+
     Animator _animator;
     PlayerAim _aim;
     PlayerMotor _motor;
     Vector3 _lastPos;
     bool _wasDashing;
-    bool _attacking;   // 공격 커밋 중 = 루트모션을 위치로 적용(PlayerBrain이 매 프레임 갱신)
+    bool _attacking;   // 공격 커밋 중 = facing 잠금(_lockedFace)을 적용할지 결정(PlayerBrain이 busy로 매 프레임 갱신).
+                       // ★루트모션 게이트로는 안 쓰인다 — 풀 트윈스틱서 공격 런지 폐기, OnAnimatorMove는 IsDashing만 본다.
     Vector3 _lockedFace;   // 콤보 단 시작 시 잠근 facing — 공격 중 몸/런지 방향 고정(단 사이엔 재캡처)
 
     /// <summary>공격 클립 타격 정점(AnimationEvent OnAttackHit)이 발화 → 무기가 구독해 판정.</summary>
@@ -80,6 +85,9 @@ public class PlayerAnimatorDriver : MonoBehaviour
     public void Tick()
     {
         if (moveSource == null) return;
+        // ★상체 액션 레이어 weight — 액션 클립 재생 중에만 1(상체를 override해 공격), 평시 0(Base 풀바디 로코모션이
+        //   상체까지 흐름 → 비공격 시 팔 freeze/T포즈 없음). 하드 1/0(즉발). dt와 무관하게 매 프레임 갱신(히트스탑 중에도 유지).
+        _animator.SetLayerWeight(UpperLayer, IsActionPlaying ? 1f : 0f);
         float dt = Time.deltaTime;
         if (dt <= 0f) return;
 
@@ -174,15 +182,17 @@ public class PlayerAnimatorDriver : MonoBehaviour
         get
         {
             if (_animator == null) return false;
-            if (_animator.GetCurrentAnimatorStateInfo(0).IsTag("Action")) return true;
+            // ★상체 액션 레이어(UpperLayer)를 읽는다 — 공격/반격/스킬 상태와 "Action" 태그는 이제 layer 1에만 있다.
+            //   (layer 0을 읽으면 항상 false → busy가 유예 0.12s밖에 못 잡아 이동 누수.)
+            if (_animator.GetCurrentAnimatorStateInfo(UpperLayer).IsTag("Action")) return true;
             // 전이 진행 중엔 도착 상태가 Action이면 이미 액션 진입으로 친다(요청→진입 갭의 busy 누수 방지).
-            if (_animator.IsInTransition(0) && _animator.GetNextAnimatorStateInfo(0).IsTag("Action")) return true;
+            if (_animator.IsInTransition(UpperLayer) && _animator.GetNextAnimatorStateInfo(UpperLayer).IsTag("Action")) return true;
             return false;
         }
     }
 
     /// <summary>★패링 반격(Skill02) — 컨트롤러 Any→Counter 트리거. 카타나가 카운터 창 입력 시 호출.
-    /// 반격은 공격이라 IsBusy(=_attacking)로 루트모션이 적용된다(별도 게이트 불필요). 몸 facing을
+    /// 반격은 공격이라 busy로 잠긴다(루트모션은 풀 트윈스틱서 폐기 — 위치는 하체 로코모션 소유). 몸 facing을
     /// 현재 조준에 잠가 히트박스 _aimDir과 통일(콤보 SetCombo의 잠금과 동형). 종료 시 SetCombo(0)이 잠금 해제.
     /// 컨트롤러에 Counter 트리거가 없으면 SetTrigger는 무음 무동작(안전).</summary>
     public void TriggerCounter()
@@ -216,7 +226,10 @@ public class PlayerAnimatorDriver : MonoBehaviour
     void OnAnimatorMove()
     {
         if (_motor == null) return;
-        if (!_attacking && !_motor.IsDashing) return;   // 공격 커밋 중이거나 대시 창 동안만 루트모션을 위치로 적용
+        // ★풀 트윈스틱: 공격 런지(루트모션) 폐기 — 공격 중 위치는 하체 로코모션(PlayerMotor)이 소유한다.
+        //   상체 액션 레이어는 마스크로 Root를 제외하므로 deltaPosition에 공격 기여가 없지만, 이중 안전으로 _attacking을 게이트에서 뺀다.
+        //   대시 창 동안만 호출하나 ApplyRootStep이 대시엔 양보(코드 버스트가 위치 소유)하므로 실질 무동작 — 구조 일관성용으로 남김.
+        if (!_motor.IsDashing) return;
         _motor.ApplyRootStep(_animator.deltaPosition);
     }
 

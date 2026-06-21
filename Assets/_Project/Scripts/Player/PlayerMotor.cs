@@ -18,6 +18,9 @@ public class PlayerMotor : MonoBehaviour
     [SerializeField] float acceleration = 50f;
     [Tooltip("입력을 떼거나 꺾을 때 감속도(m/s²). 작을수록 더 미끄러지듯 정착.")]
     [SerializeField] float deceleration = 40f;
+    [Tooltip("★공격 커밋 중 이동속도 배율(풀 트윈스틱 — 상체 공격/하체 이동 분리). 1=공격 중에도 풀속도, " +
+             "낮출수록 베는 동안 묵직하게 발이 느려진다. 0이면 사실상 제자리 공격. 손맛 노브.")]
+    [SerializeField, Range(0f, 1f)] float attackMoveSpeedScale = 0.55f;
 
     [Header("Dash (코드 구동 자유방향 회피)")]
     [Tooltip("★대시 거리(m) — 직접 조절. 키보드 방향(정지 시 조준)으로 자유 회피, 카디널 스냅 안 함.")]
@@ -120,13 +123,14 @@ public class PlayerMotor : MonoBehaviour
             if (_dashTimer > 0f) { UpdateDash(dt); return; }   // 이번 프레임 대시 시작 — 고정 방향·고정 속도 버스트
         }
 
-        // 공격 커밋(콤보 등) 중엔 이동 입력을 무시하고 즉시 정지 — 제자리 공격이라 발 미끄러짐이 사라진다.
-        // (대시는 위에서 이미 처리 — 회피는 이 잠금을 무시하고 빠져나간다.)
-        if (locked) { _velocity = Vector3.zero; return; }
+        // ★풀 트윈스틱: 공격 커밋(locked) 중에도 이동을 허용한다(상체가 베는 동안 하체는 움직임). 잠금=정지였던
+        //   기존 동작을 속도 배율로 대체 — attackMoveSpeedScale로 베는 동안의 무게를 조절(0이면 사실상 제자리).
+        //   (회피는 위에서 이미 잠금 무시하고 처리됨.)
+        float curMoveSpeed = moveSpeed * (locked ? attackMoveSpeedScale : 1f);
 
         // 가속/감속 분리: "같은 방향으로 더 빨라질 때"만 가속. 그 외(정지·감속·역방향)는 감속.
         // dot 검사가 없으면 역방향 입력이 가속으로 잡혀 제동 없이 오버슈트한다.
-        Vector3 targetVel = move * moveSpeed;
+        Vector3 targetVel = move * curMoveSpeed;
         bool speedingUp = Vector3.Dot(targetVel, _velocity) >= 0f
                           && targetVel.sqrMagnitude >= _velocity.sqrMagnitude;
         float rate = speedingUp ? acceleration : deceleration;
