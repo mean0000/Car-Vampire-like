@@ -98,22 +98,31 @@ public class PlayerMotor : MonoBehaviour
 
         _dashAppliedThisFrame = false;   // 매 프레임 초기화 — 이후 OnAnimatorMove의 ApplyRootStep가 읽는다(Update→OnAnimatorMove 순서 보장)
         _dashStartedThisFrame = false;   // 엣지 1프레임만 true(드라이버가 DashX/DashY를 이 프레임에 잠금)
-        if (_iframeTimer > 0f) _iframeTimer -= dt;   // 무적 창 감쇠(이동 종료 후에도 남은 i-frame 유지 — 매 프레임)
+        // 무적 창 감쇠 — ★unscaled: i-frame은 사람 반응(회피 타이밍)에 귀속(§7). _dashStartTime(unscaled)과 정합.
+        //   scaled로 감쇠하면 패링 슬로모 중 대시 시 무적이 timeScale 배율만큼 과장된다(Stab High). 이동 종료 후에도 남은 i-frame 유지.
+        if (_iframeTimer > 0f) _iframeTimer -= Time.unscaledDeltaTime;
         RechargeDash(dt);
 
         // 대시 진행 중이면 완료까지 우선(회피 관성 보장 — 공격 잠금보다 먼저). 코드 버스트가 위치를 만든다.
         if (_dashTimer > 0f) { UpdateDash(dt); return; }
 
-        // 공격 커밋(콤보 등) 중엔 이동/대시 입력을 무시하고 즉시 정지 — 제자리 공격이라 발 미끄러짐이 사라진다.
-        if (locked) { _velocity = Vector3.zero; return; }
-
         Vector3 move = new Vector3(input.move.x, 0f, input.move.y);
         if (move.sqrMagnitude > 1f) move.Normalize();
 
+        // ★회피 최우선(self-cancel 캐넌): 공격 커밋(locked) 중에도 대시는 즉시 발동한다 — locked 게이트보다 먼저 평가.
+        //   busy=Animator 진실이라 캔슬 프레임엔 아직 IsActionPlaying=true → locked가 들어오지만, 대시가 그 잠금을
+        //   무시하고 시작해야 "공격 클립이 끝날 때까지 회피 불가" desync가 풀린다(PlayerBrain이 같은 프레임 Weapon.Cancel).
+        // ★전제: 여기 도달 시 _dashTimer<=0f 보장(위 L105 UpdateDash early-return이 진행 중 대시를 거른다).
+        //   따라서 CanDash(_dashCharges>0 && _dashTimer<=0f)의 _dashTimer 조건은 이미 성립 — 충전만 확인하면 된다.
         if (_dashCharges > 0 && input.dashDown)
+        {
             StartDash(move, aimDir);
+            if (_dashTimer > 0f) { UpdateDash(dt); return; }   // 이번 프레임 대시 시작 — 고정 방향·고정 속도 버스트
+        }
 
-        if (_dashTimer > 0f) { UpdateDash(dt); return; }   // 이번 프레임 대시 시작 — 고정 방향·고정 속도 버스트
+        // 공격 커밋(콤보 등) 중엔 이동 입력을 무시하고 즉시 정지 — 제자리 공격이라 발 미끄러짐이 사라진다.
+        // (대시는 위에서 이미 처리 — 회피는 이 잠금을 무시하고 빠져나간다.)
+        if (locked) { _velocity = Vector3.zero; return; }
 
         // 가속/감속 분리: "같은 방향으로 더 빨라질 때"만 가속. 그 외(정지·감속·역방향)는 감속.
         // dot 검사가 없으면 역방향 입력이 가속으로 잡혀 제동 없이 오버슈트한다.
