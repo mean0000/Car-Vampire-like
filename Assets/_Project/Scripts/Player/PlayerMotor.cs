@@ -18,6 +18,13 @@ public class PlayerMotor : MonoBehaviour
     [SerializeField] float acceleration = 50f;
     [Tooltip("입력을 떼거나 꺾을 때 감속도(m/s²). 작을수록 더 미끄러지듯 정착.")]
     [SerializeField] float deceleration = 40f;
+    [Header("달리기 (계단식 버스트 가속)")]
+    [Tooltip("★스프린트 단계별 기본 속도(m/s). 단계 사이는 '버스트'로 순간 점프(계단). 예: 9,15,24 — 극적으로 10,40,80도 가능. 첫 칸이 달리기 시작 속도.")]
+    [SerializeField] float[] sprintTierSpeeds = { 9f, 15f, 24f };
+    [Tooltip("각 단계 유지 시간(초) — 이만큼 지나면 다음 단계로 버스트(순간 가속).")]
+    [SerializeField, Min(0.1f)] float sprintTierDuration = 1.0f;
+    [Tooltip("단계 내 완만한 크립(m/s per sec) — 버스트 전 살짝 차오름(10→11→12). 0이면 순수 계단.")]
+    [SerializeField] float sprintTierCreep = 1.5f;
 
     [Header("Dash (코드 구동 자유방향 회피)")]
     [Tooltip("★대시 거리(m) — 직접 조절. 키보드 방향(정지 시 조준)으로 자유 회피, 카디널 스냅 안 함.")]
@@ -57,8 +64,18 @@ public class PlayerMotor : MonoBehaviour
     bool _dashStartedThisFrame;  // 이번 프레임 대시가 시작됐나 — 애니 드라이버가 엣지에서 DashX/DashY를 잠근다
     float _dashLocalX, _dashLocalY;  // 대시 방향을 facing 프레임에 투영·카디널 스냅(우=+X, 전진=+Y) — 어느 Step 클립을 고를지
     float _groundOffset;      // 콜라이더 중심→바닥 거리(지면 정렬 시 더해 발이 지면에 닿게)
+    bool _sprinting;          // 이번 프레임 스프린트 중인가 = Shift 홀드 + 실제 이동 + 非대시·非공격(의도 기반 — 측정속도 아님)
+    float _sprintHoldTime;    // 스프린트 누적 시간 — 단계/크립 계산(비스프린트 시 0)
+    int _sprintTier = -1;     // 현재 스프린트 단계(-1=비스프린트, 0..N-1)
+    bool _sprintBurstedThisFrame;  // 이번 프레임 단계 버스트(순간 점프) 발생 — 카메라/VFX 주스가 읽는다
 
     public bool IsDashing => _dashTimer > 0f;
+    /// <summary>스프린트(달리기) 의도 중인가 — Shift 홀드 + 실제 이동 + 대시/공격 아님.</summary>
+    public bool IsSprinting => _sprinting;
+    /// <summary>현재 스프린트 단계(0=1단, -1=비스프린트). 애니 속도 매칭·주스 강도에 쓴다.</summary>
+    public int SprintTier => _sprintTier;
+    /// <summary>이번 프레임 단계가 버스트(순간 점프)했나 — 카메라 킥/스피드라인 트리거.</summary>
+    public bool SprintBurstedThisFrame => _sprintBurstedThisFrame;
     /// <summary>이번 프레임에 대시가 막 시작됐나 — 애니 드라이버가 DashX/DashY(클립 선택)를 엣지에서 1회 잠근다.</summary>
     public bool DashStartedThisFrame => _dashStartedThisFrame;
     /// <summary>대시 방향(facing 프레임·카디널 스냅). x = 우측(+)/좌측(−), y = 전진(+)/후진(−). 어느 Step 클립을 재생할지 결정.</summary>
@@ -101,6 +118,8 @@ public class PlayerMotor : MonoBehaviour
 
         _dashAppliedThisFrame = false;   // 매 프레임 초기화 — 이후 OnAnimatorMove의 ApplyRootStep가 읽는다(Update→OnAnimatorMove 순서 보장)
         _dashStartedThisFrame = false;   // 엣지 1프레임만 true(드라이버가 DashX/DashY를 이 프레임에 잠금)
+        _sprinting = false;              // 기본 false — 아래 일반 이동 경로에서만 true(대시/공격 early-return 경로는 false 유지)
+        _sprintBurstedThisFrame = false; // 엣지 1프레임만 true(주스가 이 프레임에 카메라킥/스피드라인)
         // 무적 창 감쇠 — ★unscaled: i-frame은 사람 반응(회피 타이밍)에 귀속(§7). _dashStartTime(unscaled)과 정합.
         //   scaled로 감쇠하면 패링 슬로모 중 대시 시 무적이 timeScale 배율만큼 과장된다(Stab High). 이동 종료 후에도 남은 i-frame 유지.
         if (_iframeTimer > 0f) _iframeTimer -= Time.unscaledDeltaTime;
@@ -125,16 +144,40 @@ public class PlayerMotor : MonoBehaviour
         }
 
         // 공격 커밋(콤보 등) 중엔 이동 입력을 무시하고 즉시 정지 — 제자리 공격이라 발 미끄러짐이 사라진다.
-        // (대시는 위에서 이미 처리 — 회피는 이 잠금을 무시하고 빠져나간다.)
-        if (locked) { _velocity = Vector3.zero; return; }
+        // (대시는 위에서 이미 처리 — 회피는 이 잠금을 무시하고 빠져나간다.) 공격은 스프린트 기어를 리셋(멈춰서 벰).
+        if (locked) { _velocity = Vector3.zero; _sprintHoldTime = 0f; _sprintTier = -1; return; }
 
-        // 가속/감속 분리: "같은 방향으로 더 빨라질 때"만 가속. 그 외(정지·감속·역방향)는 감속.
-        // dot 검사가 없으면 역방향 입력이 가속으로 잡혀 제동 없이 오버슈트한다.
-        Vector3 targetVel = move * moveSpeed;
-        bool speedingUp = Vector3.Dot(targetVel, _velocity) >= 0f
-                          && targetVel.sqrMagnitude >= _velocity.sqrMagnitude;
-        float rate = speedingUp ? acceleration : deceleration;
-        _velocity = Vector3.MoveTowards(_velocity, targetVel, rate * dt);
+        // 달리기 보류(2026-06-21) — 탑다운 손맛 레버리지 약해 비활성화. 코드는 dormant(재개 시 false 제거).
+        _sprinting = false;
+        if (_sprinting)
+        {
+            // ★계단식 버스트 가속: 단계별 기본속도 + 단계 내 완만한 크립, 단계 시간 지나면 다음 단계로 '순간 점프'.
+            //   속도를 직접 세팅(MoveTowards 아님)해 버스트가 즉시 튀고(10→…→40!), 크립은 완만히 차오른다. 방향은 입력 즉응(스프린트 커밋).
+            _sprintHoldTime += dt;
+            int n = sprintTierSpeeds != null ? sprintTierSpeeds.Length : 0;
+            float spd;
+            if (n > 0)
+            {
+                int tier = Mathf.Min((int)(_sprintHoldTime / Mathf.Max(0.01f, sprintTierDuration)), n - 1);
+                // 크립 시간은 단계 시간으로 클램프 — 마지막 단계서 무한 증가(속도 발산) 방지(끝 단계도 한 번 크립 후 평탄).
+                float timeInTier = Mathf.Min(_sprintHoldTime - tier * sprintTierDuration, sprintTierDuration);
+                spd = sprintTierSpeeds[tier] + sprintTierCreep * timeInTier;
+                if (tier != _sprintTier) { _sprintBurstedThisFrame = _sprintTier >= 0; _sprintTier = tier; }   // 단계 상승=버스트(시작 진입 제외)
+            }
+            else { spd = moveSpeed; _sprintTier = 0; }   // 배열 비면 폴백
+            _velocity = move.normalized * spd;
+        }
+        else
+        {
+            _sprintHoldTime = 0f; _sprintTier = -1;
+            // 가속/감속 분리: "같은 방향으로 더 빨라질 때"만 가속. 그 외(정지·감속·역방향)는 감속.
+            // dot 검사가 없으면 역방향 입력이 가속으로 잡혀 제동 없이 오버슈트한다.
+            Vector3 targetVel = move * moveSpeed;
+            bool speedingUp = Vector3.Dot(targetVel, _velocity) >= 0f
+                              && targetVel.sqrMagnitude >= _velocity.sqrMagnitude;
+            float rate = speedingUp ? acceleration : deceleration;
+            _velocity = Vector3.MoveTowards(_velocity, targetVel, rate * dt);
+        }
 
         // 입력을 떼도 감속 꼬리가 남으므로 속도가 살아있는 동안 위치·지면 갱신.
         if (_velocity.sqrMagnitude > 0.0001f)
@@ -183,6 +226,9 @@ public class PlayerMotor : MonoBehaviour
         dir.y = 0f;
         if (dir.sqrMagnitude < 0.0001f) return;   // 방향을 못 구하면 취소(스택 소모 X)
         dir.Normalize();
+
+        // ★대시는 스프린트 기어를 리셋한다 — 대시 자체가 속도 순간이고, 재스프린트는 0단부터 다시 버스트하며 spool(무음 점프 방지, Stab H-2).
+        _sprintHoldTime = 0f; _sprintTier = -1;
 
         // 대시 방향을 몸 facing(=조준) 프레임에 투영해 '어느 Step 클립'을 고를지 정한다.
         // 비주얼이 aimDir을 향한 채 Step_F(+Z local)를 재생하면 그 루트모션이 aimDir로 회전돼 전진 회피가 된다.

@@ -13,8 +13,9 @@ using UnityEngine;
 public class PlayerBrain : MonoBehaviour
 {
     [SerializeField] KeyCode dashKey = KeyCode.Space;
+    [SerializeField] KeyCode sprintKey = KeyCode.LeftShift;   // ★달리기 — 누르고 있는 동안 스프린트
 
-    bool _bufferedAttack;   // 대시 중 좌클릭 기억 → 대시 끝 첫 프레임 재주입(만료 없음 — 대시는 짧고 재대시 시 폐기)
+    bool _bufferedAttack;   // 대시 중 좌클릭 기억 → 대시 끝 첫 프레임에 대시 베기로 주입(만료 없음 — 대시는 짧고 재대시 시 폐기)
 
     PlayerMotor _motor;
     PlayerAim _aim;
@@ -51,22 +52,25 @@ public class PlayerBrain : MonoBehaviour
         if (input.dashDown && _motor.CanDash)
         {
             _weapon?.Cancel();
-            input.primaryDown = false;             // 같은 프레임 좌클릭이 콤보를 재시작해 대시를 씹는 것 방지
+            // ★대시와 같은 프레임 좌클릭(코드)도 대시 베기로 예약 — 이 프레임엔 Motor가 아직 안 틱해 IsDashing=false라
+            //   아래 버퍼 분기가 못 잡는다(Codex P2-a). 여기서 직접 적립(새 대시라 이전 버퍼는 이번 입력으로 갱신·폐기).
+            _bufferedAttack = input.primaryDown;
+            input.primaryDown = false;             // 같은 프레임 좌클릭이 콤보를 재시작해 대시를 씹는 것 방지(대시 베기로 보존됨)
             input.secondaryDown = false;           // 같은 프레임 우클릭(스킬)도 무효 — 회피가 이김
-            _bufferedAttack = false;               // 새 대시 선택 — 이전 버퍼 공격 폐기
         }
         // ★대시 커밋 보호 + 입력 버퍼: 대시 진행 중 좌클릭은 버리지 말고 기억 → 대시 끝나는 즉시 재주입.
         //   대시는 커밋(공격이 못 끊음)이지만 입력은 보존해 "눌렀는데 안 나감"을 없앤다 = 회피→공격 흐름의 핵심.
         //   만료 타이머 없음: 대시는 짧고(끝나면 즉시 재주입), 재대시 시 폐기되므로 영구 잔존 불가(슬로모 중 만료 엣지도 제거 — Codex L).
         if (_motor.IsDashing)
         {
-            if (input.primaryDown) _bufferedAttack = true;
-            input.primaryDown = false;             // 대시 중엔 콤보 시작 보류(대시 끝나고 재주입)
+            if (input.primaryDown) _bufferedAttack = true;   // ★대시 중 좌클릭 = 대시 베기 예약(대시 끝에 발동)
+            input.primaryDown = false;             // 대시 중엔 콤보 시작 보류(대시 끝나고 대시 베기로 주입)
             input.secondaryDown = false;           // 대시 중엔 스킬 발동 보류(대시 커밋 — 끝난 뒤 RMB로)
         }
         else if (_bufferedAttack)
         {
-            input.primaryDown = true;              // 대시 끝난 첫 프레임에 버퍼된 공격 재주입
+            input.dashAttack = true;               // ★대시 끝난 첫 프레임 — 버퍼된 입력을 대시 베기로 주입(일반 콤보 아님)
+            input.primaryDown = false;             // 같은 프레임 우연한 새 좌클릭이 Combo1을 먼저 시작해 대시 베기를 씹는 것 방지(Codex P2-b — 버퍼 우선)
             _bufferedAttack = false;
         }
 
@@ -85,6 +89,7 @@ public class PlayerBrain : MonoBehaviour
         move = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical")),
         aimScreen = Input.mousePosition,
         dashDown = Input.GetKeyDown(dashKey),
+        sprintHeld = Input.GetKey(sprintKey),
         primaryDown = Input.GetMouseButtonDown(0),
         primaryHeld = Input.GetMouseButton(0),
         primaryUp = Input.GetMouseButtonUp(0),

@@ -65,6 +65,31 @@ public class KatanaWeapon : WeaponBehaviour
     [Tooltip("★스킬 VFX가 Weapon 기준일 때(슬래시) 정합 앵커 — 무기(칼) transform. 콤보 슬래시와 같은 Katana_Mesh를 넣는다. " +
              "Player 기준(불렛)일 땐 안 쓰임.")]
     [SerializeField] Transform weaponAnchor;
+    /// <summary>칼 메시(weaponAnchor) — PlayerAnimatorDriver가 달리기 시 숨길 대상을 자동 연결할 때 읽는다(수동 할당 누락 방지).</summary>
+    public Transform WeaponAnchor => weaponAnchor;
+
+    [Header("대시 베기 (대시 중 좌클릭 — DashAttack, 클립 Attack02)")]
+    [Tooltip("대시 베기 사거리(m). 런지 강타.")]
+    [SerializeField] float dashAttackRange = 3f;
+    [Tooltip("대시 베기 부채꼴 半각(deg).")]
+    [SerializeField] float dashAttackArcHalf = 60f;
+    [Tooltip("대시 베기 히트존 전진(m).")]
+    [SerializeField] float dashAttackForwardOffset = 0.5f;
+    [Tooltip("대시 베기 데미지.")]
+    [SerializeField] int dashAttackDamage = 8;
+    [Tooltip("대시 베기 넉백(m/s).")]
+    [SerializeField] float dashAttackKnockback = 6f;
+    [Tooltip("대시 베기 안전 워치독(초, 스케일 시간) — OnComboEnd 누락/하드컷 시 _dashAttacking 고착 방지(Counter와 동형).")]
+    [SerializeField] float dashAttackMaxDuration = 3.5f;
+
+    [Header("타격 손맛 (스냅·경쾌 — 칼이 적에 닿는 순간만 발동, 헛스윙엔 안 남)")]
+    // ★전역 히트스탑(Time.timeScale)은 이 프로젝트에서 금지 — 일시정지 UI(레벨업/상자/정산/사망)·ParrySlowMotion과
+    //   timeScale 소유권 충돌(게이트 Codex P0/P1). 스냅 손맛은 timeScale 무관한 카메라 킥으로만. 미세 프리즈는
+    //   추후 '피격자만 정지'(캐넌 — 진짜 적 구현 시) 경로로 재도입.
+    [Tooltip("평타(1·2타) 카메라 킥(m) — 조준 방향으로 짧게 밀었다 복귀. 스냅 손맛의 주력. 작게.")]
+    [SerializeField] float comboKick = 0.12f;
+    [Tooltip("피니셔(콤보 마지막 타)·반격·대시베기·스킬 카메라 킥(m) — 무게는 여기에 실린다. 평타보다 크게.")]
+    [SerializeField] float finisherKick = 0.28f;
 
     int _step;            // 0=idle, 1..comboMax 진행 중
     bool _windowOpen;     // 캔슬 윈도우(다음 단 입력 가능) — AnimationEvent가 연다
@@ -79,6 +104,8 @@ public class KatanaWeapon : WeaponBehaviour
     bool _skilling;                 // 스킬(Skill01) 진행 중 — _step/_countering과 독립
     float _skillCdTimer;            // 스킬 쿨다운 잔여
     float _skillFallbackTimer;      // 스킬 안전 워치독(스케일 시간)
+    bool _dashAttacking;            // 대시 베기(DashAttack) 진행 중 — _step/_countering/_skilling과 독립
+    float _dashAttackFallbackTimer; // 대시 베기 안전 워치독(스케일 시간)
 
     Vector3 _aimDir = Vector3.forward;    // 단 시작 시 잠근 조준 — 타격 판정 방향(facing/런지와 통일). 단 진행 중 고정.
     Vector3 _liveAim = Vector3.forward;   // 매 프레임 최신 조준 — 단 시작(BeginCombo/Advance)에 _aimDir로 캡처.
@@ -130,6 +157,8 @@ public class KatanaWeapon : WeaponBehaviour
         _counterFallbackTimer = 0f;
         _skilling = false;       // 회피가 스킬도 가로챔(쿨다운은 소비 유지 — 환불 안 함)
         _skillFallbackTimer = 0f;
+        _dashAttacking = false;  // 회피(새 대시)가 진행 중 대시 베기도 가로챔
+        _dashAttackFallbackTimer = 0f;
         _lastAdvanceTime = -1f;
         AnimatorDriver?.SetCombo(0);
         base.Cancel();           // 레일: 액션 유예도 끔(캔슬 즉시 busy 해제)
@@ -154,15 +183,21 @@ public class KatanaWeapon : WeaponBehaviour
             _skillFallbackTimer -= Time.deltaTime;
             if (_skillFallbackTimer <= 0f) EndSkill();
         }
+        if (_dashAttacking)
+        {
+            _dashAttackFallbackTimer -= Time.deltaTime;
+            if (_dashAttackFallbackTimer <= 0f) EndDashAttack();
+        }
 
-        // ★레일 자가치유(진행 플래그) — busy가 풀렸는데(유예 만료 + Animator가 Action 아님) _step/_countering/_skilling이 남아 있으면
+        // ★레일 자가치유(진행 플래그) — busy가 풀렸는데(유예 만료 + Animator가 Action 아님) 진행 플래그가 남아 있으면
         //   액션 진입 실패(전이 경쟁·★"Action" 태그 누락)로 보고 진행 상태도 닫는다. busy(이동)뿐 아니라 입력 게이트
         //   (특히 _countering이 입력을 묵살하는 것)까지 자가 복구 — Codex M. 정상 동작 중엔 IsBusy=true라 발화 안 함.
-        if (!IsBusy && (_step > 0 || _countering || _skilling))
+        if (!IsBusy && (_step > 0 || _countering || _skilling || _dashAttacking))
         {
-            // 독립 if 3개 — 이론적 다중 플래그 동시 고착도 전부 닫는다(Stab H-2). 각 End/Reset은 SetCombo(0) 멱등이라 중복 안전.
+            // 독립 if — 이론적 다중 플래그 동시 고착도 전부 닫는다(Stab H-2). 각 End/Reset은 SetCombo(0) 멱등이라 중복 안전.
             if (_skilling) EndSkill();
             if (_countering) EndCounter();
+            if (_dashAttacking) EndDashAttack();
             if (_step > 0) ResetCombo();
 #if UNITY_EDITOR
             Debug.LogWarning("[KatanaWeapon] 액션 진입 실패 자가치유 — Animator가 \"Action\" 상태에 못 들었다(유예 내 진입 실패). " +
@@ -175,7 +210,7 @@ public class KatanaWeapon : WeaponBehaviour
         //   창 안 첫 좌클릭은 이 분기로 곧장 카운터가 되어, '콤보 진행 중 창' 시나리오는 정상 흐름에서 발생하지 않는다.
         if (input.primaryDown)
         {
-            if (_countering || _skilling) { /* 반격/스킬 모션 중 입력 무시 — 클립 끝까지 커밋 */ }
+            if (_countering || _skilling || _dashAttacking) { /* 반격/스킬/대시베기 모션 중 입력 무시 — 클립 끝까지 커밋 */ }
             else if (_counterTimer > 0f && _step == 0) BeginCounter();
             else if (_step == 0)
             {
@@ -187,6 +222,11 @@ public class KatanaWeapon : WeaponBehaviour
                 _bufferTimer = inputBufferTime;
             }
         }
+
+        // ★대시 베기(DashAttack) — 대시 중 좌클릭을 PlayerBrain이 대시 끝 프레임에 주입. idle일 때만(콤보/반격/스킬/대시베기 중 무시).
+        //   대시가 직전 콤보를 Cancel하므로 보통 _step==0이 보장됨.
+        if (input.dashAttack && _step == 0 && !_countering && !_skilling && !_dashAttacking)
+            BeginDashAttack();
 
         // ★우클릭 스킬(Skill01) — SkillSet 할당 + idle + 쿨다운 준비 시 발동. 콤보/카운터/스킬 진행 중엔 IsBusy로 막힌다.
         //   (대시 중 RMB는 PlayerBrain이 억제 — 대시 커밋 보호.)
@@ -293,6 +333,7 @@ public class KatanaWeapon : WeaponBehaviour
             rot = aimRot * Quaternion.Euler(v.eulerOffset);
         }
         var go = Instantiate(v.prefab, pos, rot);
+        PlayerAttackVfx.StripEmbeddedAudio(go);   // ★VFX는 시각 전용 — 프리팹 playOnAwake 사운드 차단(스킬 사운드는 SkillSet.sfx 단일 소유)
         float s = v.scale > 0f ? v.scale : 1f;
         if (!Mathf.Approximately(s, 1f)) go.transform.localScale *= s;
         float spd = v.playbackSpeed > 0f ? v.playbackSpeed : 1f;
@@ -327,11 +368,33 @@ public class KatanaWeapon : WeaponBehaviour
         AnimatorDriver?.SetCombo(0);
     }
 
+    /// <summary>★대시 베기 — 대시 끝 좌클릭 시 DashAttack(Attack02) 발동. Counter/Skill과 동형(busy로 잠김, 타격=OnHitFrame
+    /// _dashAttacking 분기, 종료=OnComboEnd). facing은 발동 순간 조준에 잠금. 공격이라 _attacking으로 Attack02 런지가 적용됨.</summary>
+    void BeginDashAttack()
+    {
+        _aimDir = _liveAim;       // 대시 베기 방향을 현재 조준으로 잠금(타격/모션 통일)
+        _dashAttacking = true;
+        _hitDone = false;
+        _dashAttackFallbackTimer = dashAttackMaxDuration > 0f ? dashAttackMaxDuration : 3.5f;
+        AnimatorDriver?.TriggerDashAttack();
+        BeginAction();   // 레일: 진입 유예 켬 → Animator가 DashAttack(Action) 들 때까지 busy 유지
+    }
+
+    /// <summary>대시 베기 종료 공통 경로 — 클립 OnComboEnd(정상)와 워치독/자가치유(폴백) 둘 다 여기로.</summary>
+    void EndDashAttack()
+    {
+        _dashAttacking = false;
+        _hitDone = false;
+        _dashAttackFallbackTimer = 0f;
+        AnimatorDriver?.SetCombo(0);
+    }
+
     // ── AnimationEvent 릴레이(PlayerAnimatorDriver 경유) — 타이밍은 클립이 소유 ──
     protected override void OnHitFrame(int hitFrameIndex)   // 타격 정점
     {
         if (_skilling) { if (!_hitDone) { _hitDone = true; DoSkillHit(); } }       // 스킬 타격
         else if (_countering) { if (!_hitDone) { _hitDone = true; DoCounterHit(); } }   // 반격 타격(보상치)
+        else if (_dashAttacking) { if (!_hitDone) { _hitDone = true; DoDashAttackHit(); } }   // 대시 베기 타격
         else if (_step >= 1 && !_hitDone) { _hitDone = true; DoSwingHit(); }
     }
 
@@ -344,6 +407,7 @@ public class KatanaWeapon : WeaponBehaviour
     {
         if (_skilling) { EndSkill(); return; }       // 스킬(Skill01) 정상 종료 — 클립 끝 OnComboEnd
         if (_countering) { EndCounter(); return; }   // 반격(Skill02) 정상 종료 — 클립 끝 OnComboEnd
+        if (_dashAttacking) { EndDashAttack(); return; }   // 대시 베기(DashAttack) 정상 종료 — 클립 끝 OnComboEnd
         // Stab M-1 방어: Advance 직후엔 이전 클립이 CUT로 중단되며 그 OnComboEnd가 1프레임 늦게 샐 수 있다.
         // 그 지연 발화는 막 시작한 다음 단을 잘못 종료시키므로, Advance 후 짧은 관용창 내 OnComboEnd는 무시한다.
         // (Combo 클립 길이가 0.1s를 크게 웃돌아 현재 단의 정상 종료는 막지 않는다.)
@@ -396,35 +460,62 @@ public class KatanaWeapon : WeaponBehaviour
     {
         ComboAttackSet.ComboAttackStep h = GetHit(_step);
         // 0/미설정 직렬화값 폴백 가드(필드 추가 시 default 0 함정).
-        DoHit(EffectiveRange(h),                              // range × (rangeFromSlashScale면 그 단 슬래시 스케일)
+        bool connected = DoHit(EffectiveRange(h),             // range × (rangeFromSlashScale면 그 단 슬래시 스케일)
               h.arcHalfAngle > 0f ? h.arcHalfAngle : 50f,
               Mathf.Max(0f, h.forwardOffset),
               h.damage > 0 ? h.damage : 1,
               h.knockback);
+        // 피니셔(콤보 마지막 타)는 무게, 평타는 스냅 — 닿았을 때만.
+        bool finisher = comboSet != null && _step >= comboSet.StepCount;
+        if (connected) FireHitFeedback(finisher ? finisherKick : comboKick);
     }
 
     /// <summary>반격(Skill02) 타격 — 콤보보다 강한 보상치. DoHit 공통 경로 재사용.</summary>
-    void DoCounterHit() => DoHit(counterRange,
-                                 counterArcHalf > 0f ? counterArcHalf : 70f,   // 0이면 부채꼴이 모든 적을 배제(M-2)
-                                 counterForwardOffset,
-                                 counterDamage > 0 ? counterDamage : 1,
-                                 counterKnockback);                            // 넉백 0은 유효(무넉백) — 가드 강제 안 함
+    void DoCounterHit()
+    {
+        bool connected = DoHit(counterRange,
+                               counterArcHalf > 0f ? counterArcHalf : 70f,   // 0이면 부채꼴이 모든 적을 배제(M-2)
+                               counterForwardOffset,
+                               counterDamage > 0 ? counterDamage : 1,
+                               counterKnockback);                            // 넉백 0은 유효(무넉백) — 가드 강제 안 함
+        if (connected) FireHitFeedback(finisherKick);
+    }
+
+    /// <summary>대시 베기(DashAttack) 타격 — 런지 강타. DoHit 공통 경로 재사용(0/미설정 폴백 가드).</summary>
+    void DoDashAttackHit()
+    {
+        bool connected = DoHit(dashAttackRange > 0f ? dashAttackRange : 3f,
+                               dashAttackArcHalf > 0f ? dashAttackArcHalf : 60f,
+                               Mathf.Max(0f, dashAttackForwardOffset),
+                               dashAttackDamage > 0 ? dashAttackDamage : 1,
+                               dashAttackKnockback);
+        if (connected) FireHitFeedback(finisherKick);
+    }
 
     /// <summary>스킬(Skill01) 타격 — SkillSet 판정 + ★타격 순간(칼 벨 때) VFX·사운드.</summary>
     void DoSkillHit()
     {
         if (skillSet == null) return;
         var h = skillSet.hit;
-        DoHit(h.range, h.arcHalfAngle > 0f ? h.arcHalfAngle : 80f, h.forwardOffset,
+        bool connected = DoHit(h.range, h.arcHalfAngle > 0f ? h.arcHalfAngle : 80f, h.forwardOffset,
               h.damage > 0 ? h.damage : 1, h.knockback);
-        SpawnSkillVfx();   // ★타격 순간 VFX
-        PlaySkillSfx();    // ★타격 순간 사운드
+        if (connected) FireHitFeedback(finisherKick);
+        SpawnSkillVfx();   // ★스윙 비주얼(칼 휘두르는 순간 = 콤보 슬래시와 동일하게 적중 불문)
+        PlaySkillSfx();    // ★스윙 사운드(칼 베는 소리 — 적중 불문)
     }
 
-    /// <summary>부채꼴+사거리+LOS 판정으로 IDamageable에 타격. 콤보/반격 공통(파라미터만 다름).</summary>
-    void DoHit(float range, float arcHalf, float forwardOffset, int dmgAmt, float kb)
+    /// <summary>타격 손맛 발동 — 칼이 적에 닿았을 때만(헛스윙 제외). 카메라 킥(조준 방향, unscaled·스냅).
+    /// ★전역 히트스탑은 의도적으로 안 씀 — 일시정지/슬로모와 timeScale 소유권 충돌(게이트 Codex P0/P1, 캐넌 "전역 timeScale 금지").</summary>
+    void FireHitFeedback(float camKick)
     {
-        if (Owner == null) return;
+        if (camKick > 0f) PlayerCameraFollow.Active?.AddKick(_aimDir, camKick);
+    }
+
+    /// <summary>부채꼴+사거리+LOS 판정으로 IDamageable에 타격. 콤보/반격 공통(파라미터만 다름).
+    /// 반환=하나라도 적중했는가(손맛 피드백을 헛스윙엔 안 내기 위함).</summary>
+    bool DoHit(float range, float arcHalf, float forwardOffset, int dmgAmt, float kb)
+    {
+        if (Owner == null) return false;
 
         // ★히트존 원점을 조준 방향으로 전진 — 보이는 슬래시 위치에 정합(Codex 권고; 발밑 중심 아님).
         Vector3 origin = Owner.position + _aimDir * Mathf.Max(0f, forwardOffset);
@@ -455,5 +546,6 @@ public class KatanaWeapon : WeaponBehaviour
             _hitThisSwing.Add(dmg);
             dmg.TakeHit(dmgAmt, origin, kb);
         }
+        return _hitThisSwing.Count > 0;
     }
 }

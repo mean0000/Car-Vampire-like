@@ -51,6 +51,7 @@ public class PlayerAttackVfx : MonoBehaviour
         Quaternion rot = a.rotation * Quaternion.Euler(step.eulerOffset);
 
         var go = Instantiate(prefab, pos, rot);
+        StripEmbeddedAudio(go);   // ★VFX는 시각 전용 — 프리팹의 playOnAwake 사운드가 PlayerAttackSfx와 중복되던 것 차단(사운드 단일 소유)
         if (parentToWeapon) go.transform.SetParent(a, true);
         float s = step.scale > 0f ? step.scale : 1f;
         if (!Mathf.Approximately(s, 1f)) go.transform.localScale *= s;
@@ -71,5 +72,12 @@ public class PlayerAttackVfx : MonoBehaviour
         }
 
         Destroy(go, step.lifetime > 0f ? step.lifetime : 1.5f);
+    }
+
+    /// <summary>스폰된 VFX 인스턴스의 임베디드 AudioSource를 즉시 차단 — VFX 프리팹(예: Vefects)은 playOnAwake 사운드를 달고 오는데,
+    /// 우리 게임의 손맛 사운드는 PlayerAttackSfx/SkillSet.sfx가 단일 소유한다(2D·통제 가능). Instantiate 직후 Stop()으로 첫 프레임 발성 차단.</summary>
+    public static void StripEmbeddedAudio(GameObject go)
+    {
+        foreach (var a in go.GetComponentsInChildren<AudioSource>(true)) { a.playOnAwake = false; a.Stop(); a.enabled = false; }
     }
 }
