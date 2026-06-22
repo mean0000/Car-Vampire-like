@@ -90,15 +90,40 @@ namespace Jorjouto.AnimComposerSystem
         /// Event that is raised when foot ik is blocked.
         /// </summary>    
         [Tooltip("Event that is raised when foot ik is blocked.")]
-        [SerializeField, HideInInspector]
-        protected IKFootUnBlockedChannel OnIKFootBlocked = null;
+        public static event Action<GameObject> IKFootBlockedEvent;
 
         /// <summary>
         /// Event that is raised when foot ik is unblocked.
         /// </summary>    
-        [Tooltip("Event that is raised when foot ik is unblocked.")]
-        [SerializeField, HideInInspector]
-        protected IKFootUnblockedChannel OnIKFootUnblocked = null;
+        public static event Action<GameObject> IkFootUnblockedEvent = null;
+
+        /// <summary>
+        /// Event that is raised when root motion triggers movement.
+        /// </summary>    
+        public static event Action<GameObject, Vector3> DisplacementRootMotionTriggeredEvent = null;
+
+        /// <summary>
+        /// Event that is raised when root motion triggers rotation.
+        /// </summary>    
+        public static event Action<GameObject, Quaternion> RotationRootMotionTriggeredEvent = null;
+
+        /// <summary>
+        /// Controls whether character is moved through AnimCoordinator methods. If this is set to false,
+        /// movement can still be retrieved from DisplacementRootMotionTriggered event and applied to custom movement systems.
+        /// </summary>
+        [Tooltip("Controls whether character is moved through AnimCoordinator methods.\n" +
+                "If this is set to false movement can still be retrieved from RootMotionTriggered event and applied to custom movement systems.")]
+        [SerializeField]
+        private bool ShouldApplyDisplacementRootMotionAutomatically = true;
+
+        /// <summary>
+        /// Controls whether character is rotated through AnimCoordinator methods. If this is set to false,
+        /// movement can still be retrieved from RotationRootMotionTriggered event and applied to custom movement systems.
+        /// </summary>
+        [Tooltip("Controls whether character is moved through AnimCoordinator methods.\n" +
+                "If this is set to false movement can still be retrieved from RootMotionTriggered event and applied to custom movement systems.")]
+        [SerializeField]
+        private bool ShouldApplyRotationRootMotionAutomatically = true;
 
         /// <summary>
         /// A list of custom animation layers, each with an AvatarMask and additive property.
@@ -117,6 +142,12 @@ namespace Jorjouto.AnimComposerSystem
         /// </summary>
         private RuntimeAnimatorController animatorController = null;
 
+        
+        /// <summary>
+        /// The cached reference to the original RuntimeAnimatorController used for the base layer.
+        /// </summary>
+        private RuntimeAnimatorController originalAnimatorController = null;
+
         /// <summary>
         /// The core PlayableGraph that drives all animations.
         /// </summary>
@@ -127,6 +158,9 @@ namespace Jorjouto.AnimComposerSystem
         /// </summary>
         private AnimationLayerMixerPlayable topLevelMixer;
 
+        /// <summary>
+        /// The locomotion playable (playable associated to the runtimeAnimatorController in the Animator)
+        /// </summary>
         private AnimatorControllerPlayable locomotionPlayable;
 
         /// <summary>
@@ -142,17 +176,17 @@ namespace Jorjouto.AnimComposerSystem
         /// <summary>
         /// A flag to determine if horizontal root motion should be applied from the current animation.
         /// </summary>
-        private bool bShouldApplyHorizontalRootMotion = false;
+        private bool bShouldApplyHorizontalRootMotion = true;
 
         /// <summary>
         /// A flag to determine if vertical root motion should be applied from the current animation.
         /// </summary>
-        private bool bShouldApplyVerticalRootMotion = false;
+        private bool bShouldApplyVerticalRootMotion = true;
 
         /// <summary>
         /// A flag to determine if rotation root motion should be applied from the current animation.
         /// </summary>
-        private bool bShouldApplyRotationRootMotion = false;
+        private bool bShouldApplyRotationRootMotion = true;
 
         /// <summary>
         /// A flag to block root motion application, even if the animation has it.
@@ -173,6 +207,11 @@ namespace Jorjouto.AnimComposerSystem
         /// The last root motion movement vector, relative to the current frame.
         /// </summary>
         public Vector3 LastRootMotionMovement { get; private set; }
+
+        /// <summary>
+        /// The last root motion rotation Quaternion, relative to the current frame.
+        /// </summary>
+        public Quaternion LastRootMotionRotation { get; private set; }
 
         /// <summary>
         /// A flag to indicate whether hit stop is currently being applied for the character.
@@ -341,6 +380,7 @@ namespace Jorjouto.AnimComposerSystem
             else
             {
                 animatorController = animator.runtimeAnimatorController;
+                originalAnimatorController = animatorController;
             }
         }
 
@@ -459,10 +499,6 @@ namespace Jorjouto.AnimComposerSystem
 
             newAnimComposer.AnimationClip.wrapMode = shouldLoopAnim ? WrapMode.Loop : WrapMode.Once;
 
-            SetApplyRootMotions (newAnimComposer.ApplyHorizontalRootMotion,
-                                newAnimComposer.ApplyVerticalRootMotion,
-                                newAnimComposer.ApplyRotationRootMotion); 
-
             var newPlayable = AnimationClipPlayable.Create(playableGraph, newAnimComposer.AnimationClip);
 
             newPlayable.SetSpeed(newAnimComposer.PlayRate);
@@ -470,14 +506,18 @@ namespace Jorjouto.AnimComposerSystem
 
             if (layer == 0)
             {
+                SetApplyRootMotions (newAnimComposer.ApplyHorizontalRootMotion,
+                                newAnimComposer.ApplyVerticalRootMotion,
+                                newAnimComposer.ApplyRotationRootMotion); 
+
                 // Notify listeners whether foot IK should be considered blocked or unblocked on the base layer.
-                if (newAnimComposer.IsFootIK && OnIKFootUnblocked != null)
+                if (newAnimComposer.IsFootIK && IkFootUnblockedEvent != null)
                 {
-                    OnIKFootUnblocked.Raise(this);
+                    IkFootUnblockedEvent?.Invoke(gameObject);
                 }
-                else if (!newAnimComposer.IsFootIK && OnIKFootBlocked != null)
+                else if (!newAnimComposer.IsFootIK && IKFootBlockedEvent != null)
                 {
-                    OnIKFootBlocked.Raise(this);
+                    IKFootBlockedEvent?.Invoke(gameObject);
                 }
             }
 
@@ -554,7 +594,7 @@ namespace Jorjouto.AnimComposerSystem
 
             if (layer == 0)
             {
-                SetApplyRootMotions(false, false, false);
+                SetApplyRootMotions(true, true, true);
             }
 
             var activeAnimComposers = LayersAndActiveAnimComposers[layer].ActiveComposers;
@@ -585,7 +625,7 @@ namespace Jorjouto.AnimComposerSystem
 
             if (layer == 0)
             {
-                SetApplyRootMotions(false, false, false);
+                SetApplyRootMotions(true, true, true);
             }
 
             var activeAnimComposers = LayersAndActiveAnimComposers[layer].ActiveComposers;
@@ -604,6 +644,42 @@ namespace Jorjouto.AnimComposerSystem
             }
         }
 
+        /// <summary>
+        /// Changes the AnimatorController used by the locomotion playable at runtime.
+        /// </summary>
+        /// <param name="newController">The new RuntimeAnimatorController to use.</param>
+        public void SetLocomotionAnimatorController(RuntimeAnimatorController newController)
+        {
+            if (newController == null || animatorController == newController)
+            {
+                Debug.LogWarning("Cannot set locomotion controller to null or same value.");
+                return;
+            }
+
+            // Disconnect the old locomotion playable
+            topLevelMixer.DisconnectInput(0);
+
+            // Destroy the old playable
+            if (locomotionPlayable.IsValid())
+            {
+                playableGraph.DestroyPlayable(locomotionPlayable);
+            }
+
+            // Create a new locomotion playable with the new controller
+            locomotionPlayable = AnimatorControllerPlayable.Create(playableGraph, newController);
+
+            // Reconnect to the mixer
+            topLevelMixer.ConnectInput(0, locomotionPlayable, 0);
+            topLevelMixer.SetInputWeight(0, 1f);
+
+            animatorController = newController;
+        }
+
+        public void ResetLocomotionAnimatorController()
+        {
+            SetLocomotionAnimatorController(originalAnimatorController);
+        }
+
 
         #endregion
 
@@ -614,6 +690,14 @@ namespace Jorjouto.AnimComposerSystem
             if (locomotionPlayable.IsValid())
             {
                 locomotionPlayable.Play(stateName, layer, normalizedTime);
+            }
+        }
+
+        public void PlayAnimatorStateWithBlend(string stateName, int layer = 0, float fixedTime = 0f)
+        {
+            if (locomotionPlayable.IsValid())
+            {
+                locomotionPlayable.CrossFadeInFixedTime(stateName, fixedTime, layer);
             }
         }
 
@@ -686,11 +770,13 @@ namespace Jorjouto.AnimComposerSystem
             {
                 animComposer.Stop();
 
-                if (OnIKFootUnblocked != null)
+                IkFootUnblockedEvent?.Invoke(gameObject);
+
+                if(layer == 0 && CheckAnimComposersNotApplyingRootMotion())
                 {
-                    OnIKFootUnblocked.Raise(this);
+                    SetApplyRootMotions(true, true, true);
                 }
-                
+
                 OnAnimEnd?.Invoke(animComposer);
             }
 
@@ -757,16 +843,6 @@ namespace Jorjouto.AnimComposerSystem
                 return;
             }
 
-            bool hasActiveAnimComposer =
-                LayersAndActiveAnimComposers.Count > 0 &&
-                LayersAndActiveAnimComposers[0].ActiveComposers.Count > 0;
-
-            if (!hasActiveAnimComposer)
-            {
-                SetApplyRootMotions(false, false, false);
-                return;
-            }
-
             if (animator != null && animator.isActiveAndEnabled)
             {
                 Vector3 deltaPos = animator.deltaPosition;
@@ -796,6 +872,28 @@ namespace Jorjouto.AnimComposerSystem
             }
         }
 
+        private bool CheckAnimComposersNotApplyingRootMotion()
+        {
+            return LayersAndActiveAnimComposers.Count == 0 ||
+                   LayersAndActiveAnimComposers[0].ActiveComposers.Count == 0 ||
+                   CheckAnimComposersInLayerAreInBlendOutPhase(0);
+        }
+
+        private bool CheckAnimComposersInLayerAreInBlendOutPhase(int layer)
+        {
+            var composers = LayersAndActiveAnimComposers[layer].ActiveComposers;
+
+            for (int i = 0; i < composers.Count; i++)
+            {
+                if (composers[i].IsPlaying)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// Applies the positional component of root motion to the GameObject.
         /// Chooses the appropriate movement method depending on whether a
@@ -806,6 +904,13 @@ namespace Jorjouto.AnimComposerSystem
         /// <param name="deltaPosition">The change in position from root motion.</param>
         protected void ApplyRootMotionDisplacement(Vector3 deltaPosition)
         {
+            DisplacementRootMotionTriggeredEvent?.Invoke(gameObject, deltaPosition);
+
+            if(!ShouldApplyDisplacementRootMotionAutomatically)
+            {
+                return;
+            }
+
             if (characterController != null && characterController.enabled == true)
             {
                 if (deltaPosition.y == 0.0f)
@@ -835,6 +940,13 @@ namespace Jorjouto.AnimComposerSystem
         /// <param name="deltaRotation">The change in rotation from root motion.</param>
         protected void ApplyRootMotionRotation(Quaternion deltaRotation)
         {
+            RotationRootMotionTriggeredEvent?.Invoke(gameObject, deltaRotation);
+
+            if(!ShouldApplyRotationRootMotionAutomatically)
+            {
+                return;
+            }
+
             if (rigidBody != null && !rigidBody.isKinematic)
             {
                 rigidBody.MoveRotation(rigidBody.rotation * deltaRotation);
@@ -843,6 +955,8 @@ namespace Jorjouto.AnimComposerSystem
             {
                 transform.rotation *= deltaRotation;
             }
+
+            LastRootMotionRotation = deltaRotation;
         }
 
         #endregion

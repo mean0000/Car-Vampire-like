@@ -11,6 +11,8 @@ public struct PlayerInputState
     public Vector2 aimScreen;   // 조준 스크린 좌표(마우스). 게임패드는 우스틱→가상 커서로 채움(추후)
 
     public bool dashDown;       // 대시 눌림 엣지
+    public bool dashAttack;     // ★대시 베기 — PlayerBrain이 '대시 중 좌클릭'을 대시 끝 프레임에 이 플래그로 주입(파생 입력)
+    public bool sprintHeld;     // ★달리기(Shift) 홀드 — 누르고 있는 동안 스프린트 속도
 
     public bool primaryDown;    // 주공격(LMB) 눌림 엣지
     public bool primaryHeld;    // 주공격 홀드

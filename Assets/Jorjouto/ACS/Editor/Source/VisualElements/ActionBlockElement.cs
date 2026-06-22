@@ -366,7 +366,7 @@ namespace Jorjouto.AnimComposerSystem.ACSEditor
 
                 var color = style.backgroundColor.value;
 
-                panelStyle.backgroundColor = new Color(color.r, color.g, color.b, 0.6f);
+                panelStyle.backgroundColor = new Color(color.r, color.g, color.b, 0.75f);
                 actionBlockPropertyField.AddToClassList("action-blockData");
 
                 actionBlockPropertyField.BindProperty(actionProp);

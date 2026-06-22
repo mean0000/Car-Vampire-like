@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>도시 맵 키트 스펙 v1 — 브루탈리스트 사이파이</title>
+<style>
+  :root{
+    --bg:#15181c; --panel:#1d2127; --panel2:#232831; --ink:#dde3ea; --dim:#8b96a5;
+    --line:#323a45; --accent:#ff7a33; --accent2:#5ec8ff; --good:#6fd08c; --warn:#ffb454;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Pretendard","Segoe UI",system-ui,sans-serif;line-height:1.6;font-size:15px}
+  .wrap{max-width:1040px;margin:0 auto;padding:48px 24px 96px}
+  h1{font-size:30px;font-weight:800;letter-spacing:-.02em;margin:0 0 6px;
+    border-left:5px solid var(--accent);padding-left:16px}
+  .sub{color:var(--dim);font-size:13.5px;margin:0 0 32px;padding-left:21px}
+  h2{font-size:20px;font-weight:700;margin:42px 0 14px;display:flex;align-items:center;gap:10px}
+  h2 .n{display:inline-flex;width:28px;height:28px;background:var(--accent);color:#15181c;
+    border-radius:7px;align-items:center;justify-content:center;font-size:14px;font-weight:800}
+  p{margin:8px 0}
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent2);
+    border-radius:8px;padding:14px 18px;margin:14px 0;font-size:14px}
+  .warn{border-left-color:var(--warn)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px;
+    background:var(--panel);border-radius:8px;overflow:hidden}
+  th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--panel2);color:var(--dim);font-weight:600;font-size:12.5px;
+    text-transform:uppercase;letter-spacing:.04em}
+  tr:last-child td{border-bottom:none}
+  td b{color:var(--accent)}
+  code{background:#0f1216;padding:2px 7px;border-radius:5px;font-size:13px;color:var(--accent2);
+    font-family:"JetBrains Mono",Consolas,monospace}
+  ul{margin:10px 0;padding-left:22px}
+  li{margin:5px 0}
+  .pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);
+    border-radius:20px;padding:2px 11px;font-size:12px;color:var(--dim);margin:0 4px 4px 0}
+  .freeze{color:var(--good);font-weight:600}
+  /* 타입 카드 */
+  .cat{display:grid;gap:14px;margin:16px 0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+    display:grid;grid-template-columns:1fr;}
+  .card .head{display:flex;align-items:baseline;gap:12px;padding:14px 18px 6px;flex-wrap:wrap}
+  .card .tag{background:var(--accent);color:#15181c;font-weight:800;font-size:13px;
+    padding:3px 10px;border-radius:6px}
+  .card .name{font-size:16px;font-weight:700}
+  .card .meta{color:var(--dim);font-size:12.5px}
+  .card .role{padding:0 18px;color:var(--ink);font-size:14px}
+  .card .find{padding:6px 18px 14px;color:var(--dim);font-size:13.5px}
+  .card .find b{color:var(--accent2)}
+  .thumbs{display:flex;gap:8px;padding:0 18px 16px;flex-wrap:wrap}
+  .thumbs img{height:96px;width:auto;border-radius:6px;border:1px solid var(--line);object-fit:cover}
+  .foot{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);
+    color:var(--dim);font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>도시 맵 모듈 키트 스펙 — 동결 v1</h1>
+  <p class="sub">브루탈리스트 사이파이 · 탑다운 조준형 뱀서 첫 도시 맵 · 2026-06-20 ·
+    결정: lv 에이전트 + Codex 독립 두 안 교차 → 유저 판정(48m 셀 · 2단 도로)</p>
+
+  <div class="note">
+    <b>이 문서의 용도</b> — ① 유저가 <b>타입별 건물 레퍼 이미지</b>를 수급하는 쇼핑 리스트,
+    ② 별도 세션이 그 이미지 + 이 스펙으로 <b>모델링</b>할 때 지킬 핸드오프 기준.
+    무드 레퍼 = <code>docs/03_reference/reference_design/</code> (메가스트럭처 16장).
+  </div>
+
+  <h2><span class="n">0</span>동결 원칙 <span class="pill freeze">재논의 금지</span></h2>
+  <ul>
+    <li>카메라 = 탑다운. <b class="freeze">빌딩 = 벽/블로커, 도로·광장 = 플레이 네거티브 스페이스(액션 무대).</b></li>
+    <li>탑다운 가시면 = <b>풋프린트 실루엣 + 옥상 + 도로변 하단 12~20m뿐.</b> 중간 샤프트는 안 보임 → 모델링 디테일 예산을 거기 <i>안</i> 태운다.</li>
+    <li>무드 = 브루탈리스트 사이파이 메가스트럭처(실사 A). 거대 단일 매스 · 하드서피스 그리블 · 수직 발광 스트립(주황/빨강) · 헤이즈/포그 · 억제된 청회색 도심.</li>
+    <li><b>소품 전면 보류</b> — 전투 패스 검증 후 (§6).</li>
+  </ul>
+
+  <h2><span class="n">1</span>그리드 / 치수 <span class="pill">유저 판정: 48m 셀</span></h2>
+  <table>
+    <tr><th>항목</th><th>값</th></tr>
+    <tr><td>그리드 셀 (스냅 단위)</td><td><b>48 m</b> · 1 unit = 1 m</td></tr>
+    <tr><td>대로 (왕복 10차선)</td><td>도로 ~35m + 커브/인도 버퍼 = 48m 타일 1셀</td></tr>
+    <tr><td>골목 (서비스 레인)</td><td>24 m (반셀)</td></tr>
+    <tr><td>풋프린트 슬롯</td><td>48² · 48×96 · 96² · 96×144 · L자(48/96 레그)</td></tr>
+    <tr><td>광장(킬존) 타일</td><td>96² (2×2셀)</td></tr>
+    <tr><td>맵 전체</td><td>6×6 셀 = <b>288×288 m</b></td></tr>
+    <tr><td>높이 티어</td><td>저층 16~24m / 미드 50~70m / 메가 120~200m</td></tr>
+  </table>
+
+  <h2><span class="n">2</span>도로 <span class="pill">유저 판정: 2단 · 셀 단위 타일 손배치</span></h2>
+  <ul>
+    <li><b>대로 48m + 골목 24m.</b> 트인 킬존 ↔ 조이는 매복 포켓의 공간 페이싱.</li>
+    <li>★도로 = <b>한 장 슬래브 아님.</b> 48m 셀 단위 <b>모듈 타일</b>을 유저가 그리드에 하나씩 손배치(오토 생성기 폐기).</li>
+    <li>타일: 직선 · 코너 · T · 십자 · 막다른길 · 광장 — 유니크 ~5, 나머지 회전. 각 타일은 평평한 셀 면 + 차선/발광은 <b>머티리얼·데칼.</b></li>
+    <li><b>배치 환경:</b> 48m 그리드 스냅 + 타일 팔레트(워크플로 미정 — 유저 호출 시 착수). <b>그리드 좌표 척추를 먼저</b> 깐다.</li>
+  </ul>
+
+  <h2><span class="n">3</span>건물 타입 카탈로그 <span class="pill">★유저 레퍼 수급 타깃</span></h2>
+  <div class="note">각 타입마다 레퍼 1~3장 → <code>reference_design/by_type/B{n}/</code> 정리. 별도 세션이 슬롯 치수에 맞춰 모델.
+    owned 사이파이 빌딩 = 0개 → 손배치 불가. Synty 섞기 금지(셰이더 클래시). <b>3단 문법 공통:</b> 포디움 + 샤프트 + 크라운.</div>
+
+  <div class="cat">
+    <div class="card">
+      <div class="head"><span class="tag">B1</span><span class="name">저층 벽 블록</span>
+        <span class="meta">풋프린트 96² / L · 저층</span></div>
+      <div class="role">역할 — 블록 경계 벽 · 채움</div>
+      <div class="find">찾을 것 · <b>넓고 낮은 브루탈 매스 + 베이스 그리블</b></div>
+      <div class="thumbs">
+        <img src="../03_reference/reference_design/7344bd08476da34fa32314f2ccbc916e.jpg" alt="ref">
+        <img src="../03_reference/reference_design/c0404a1d896a1ff9fd51f218eba0428f.jpg" alt="ref">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="head"><span class="tag">B2</span><span class="name">슬랩 타워</span>
+        <span class="meta">풋프린트 48×96 · 미드</span></div>
+      <div class="role">역할 — 대로변 벽</div>
+      <div class="find">찾을 것 · <b>깨끗한 모놀리스 슬랩</b></div>
+      <div class="thumbs">
+        <img src="../03_reference/reference_design/d39a56fc45d4a85b9df8978a8c770d8a.jpg" alt="ref">
+        <img src="../03_reference/reference_design/faa2edc8f3f9632227a60844aa30506f.jpg" alt="ref">
+        <img src="../03_reference/reference_design/203c77b370096cf28985f5473ec4085e.jpg" alt="ref">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="head"><span class="tag">B3</span><span class="name">그리블 타워</span>
+        <span class="meta">풋프린트 48² / 96² · 메가</span></div>
+      <div class="role">역할 — 랜드마크</div>
+      <div class="find">찾을 것 · <b>하드서피스 트러스 / 파이프 / 안테나</b></div>
+      <div class="thumbs">
+        <img src="../03_reference/reference_design/412a37aa0597c8501b4a59fb27b050c5.jpg" alt="ref">
+        <img src="../03_reference/reference_design/7c9d611dbe3f96598437d84678c10212.jpg" alt="ref">
+        <img src="../03_reference/reference_design/f4738c4267858e26287105d875b7f8af.jpg" alt="ref">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="head"><span class="tag">B4</span><span class="name">발광 스트립 타워</span>
+        <span class="meta">풋프린트 48² 슬림 / 48×96 · 미드~메가</span></div>
+      <div class="role">역할 — 내비 랜드마크 · 정체성</div>
+      <div class="find">찾을 것 · <b>수직 주황/빨강 발광 라인</b></div>
+      <div class="thumbs">
+        <img src="../03_reference/reference_design/0d3d44a3ecf421eb66a82b674031ac04.jpg" alt="ref">
+        <img src="../03_reference/reference_design/d36b762099893a1505f5a6466c60d398.jpg" alt="ref">
+        <img src="../03_reference/reference_design/6522c617137495326d69959289ad95ee.jpg" alt="ref">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="head"><span class="tag">B5</span><span class="name">히어로 포디움-타워</span>
+        <span class="meta">풋프린트 96² / L · 메가 150m+ · 맵당 1~2개만</span></div>
+      <div class="role">역할 — 맵 히어로 랜드마크</div>
+      <div class="find">찾을 것 · <b>포디움 베이스 + 깨끗 샤프트 + 기계 크라운 풀세트</b></div>
+      <div class="thumbs">
+        <img src="../03_reference/reference_design/0d3d44a3ecf421eb66a82b674031ac04.jpg" alt="ref">
+        <img src="../03_reference/reference_design/e1a59bb39e4fb979977b6729243a194b.jpg" alt="ref">
+      </div>
+    </div>
+  </div>
+
+  <h2><span class="n">4</span>모델링 핸드오프 기준 <span class="pill">★별도 세션이 지킬 것</span></h2>
+  <ul>
+    <li><b>스케일</b> · <code>1 unit = 1 m</code>, 실측. 풋프린트는 48m 그리드 배수 스냅(48/96/144). 건물은 풋프린트 셀을 채우되 도로 여유 남긴다.</li>
+    <li><b>피벗/축</b> · 원점 = 베이스 중앙, 건물은 Z=0 위에 서고 +Z 업. (Unity FBX 임포트 축 정합 확인)</li>
+    <li><b>비균일 스케일 금지</b> · 굽거나 늘인 스케일을 메시에 굽지 마라 → <b>NavMesh 베이크 깨짐.</b> 진짜 치수로 모델.</li>
+    <li><b>탑다운 디테일 예산</b> · 디테일은 ⓐ옥상/크라운, ⓑ도로 면하는 하단 12~20m 파사드에만. 중간 샤프트는 플랫/저폴리.</li>
+    <li><b>발광 스트립 = 별도 머티리얼/Emissive 맵</b> · 글로우를 알베도에 굽지 마라 — URP 포스트 블룸이 공짜로 띄움.</li>
+    <li><b>서피싱 = 실사/PBR 브루탈리스트</b> · Synty식 플랫 셀 셰이딩 금지(클래시).</li>
+    <li><b>익스포트</b> · 건물당 FBX(또는 .blend), 네이밍 <code>B{타입}_{풋프린트}_{티어}</code>, 원점 베이스 중앙.</li>
+    <li><b>폴리 예산</b> · 메가/히어로는 소수라 밀도 허용, 양산 타입(B1/B2)은 모듈러/인스턴스 그리블로 절약.</li>
+  </ul>
+
+  <h2><span class="n">5</span>파이프라인 순서 <span class="pill">제일 큰 것부터</span></h2>
+  <table>
+    <tr><th>#</th><th>단계</th><th>담당</th><th>완료 검증</th></tr>
+    <tr><td>1</td><td>키트 스펙 동결 (이 문서)</td><td>—</td><td><span class="freeze">✓</span></td></tr>
+    <tr><td>2</td><td>타입별 레퍼 이미지 수급 → <code>by_type/B{n}/</code></td><td><b>유저</b></td><td>5 타입 각 1장+</td></tr>
+    <tr><td>3</td><td>타입별 매스 모델링 (슬롯·핸드오프 준수)</td><td><b>별도 세션</b></td><td>탑다운서 빌딩=벽 실루엣, 디테일이 베이스+옥상에만</td></tr>
+    <tr><td>4</td><td>임포트 + 48m 그리드 배치 (대로+골목)</td><td>—</td><td>대로/골목/교차로 동선 한눈에</td></tr>
+    <tr><td>5</td><td>외곽 링 메가매스 봉쇄</td><td>—</td><td>맵 경계 닫힘(구멍 0)</td></tr>
+    <tr><td>6</td><td>NavMesh 베이크 + 이음새 검증</td><td>Gameplay</td><td>적이 도로/광장 직선 패스, 가장자리 우회 0</td></tr>
+    <tr><td>7</td><td>발광 스트립 · 헤이즈/포그 셰이더</td><td>artist</td><td>도로변+옥상 발광, 안개 깊이감</td></tr>
+    <tr><td>8</td><td>(보류) 소품 산포</td><td>—</td><td>재미 검증 후</td></tr>
+  </table>
+  <div class="note">첫 패스 = 타입 5종 중 <b>B1 · B2 · B3 우선</b>(벽+랜드마크 최소셋). 페이싱 검증 후 B4 · B5 확장.</div>
+
+  <h2><span class="n">6</span>보류 목록 <span class="pill">1맵 블록아웃 불요</span></h2>
+  <p>차량 · 간판/네온 · 실외기/파이프 독립 프롭 · 가로등/신호등 · 컨테이너/바리케이드 · 옥상 HVAC 디테일 · 잔해/물웅덩이 · 민간 드레싱. <b>전투 패스 검증 통과 후.</b></p>
+
+  <h2><span class="n">7</span>NavMesh / 인계 리스크</h2>
+  <div class="note warn">
+    <ul style="margin:0">
+      <li>빌딩 매스 = NavMesh Obstacle(Carve) 또는 walkable 제외. 셀 이음새 48m 정확 스냅(틈=우회 버그).</li>
+      <li>메가타워 비균일 스케일 금지(베이크 깨짐). 봉쇄 링 윗면 워크어블 차단(단일 전투 평면 동결).</li>
+    </ul>
+  </div>
+
+  <div class="foot">
+    원본 마크다운 = <code>docs/00_authority/2026-06-20-city-map-kit-spec.md</code> ·
+    동결 v1 · 변경 시 두 문서 동기화
+  </div>
+
+</div>
+</body>
+</html>

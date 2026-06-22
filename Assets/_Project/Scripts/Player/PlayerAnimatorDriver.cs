@@ -38,6 +38,7 @@ public class PlayerAnimatorDriver : MonoBehaviour
     static readonly int DashYHash = Animator.StringToHash("DashY");
     static readonly int CounterHash = Animator.StringToHash("Counter");
     static readonly int Skill01Hash = Animator.StringToHash("Skill01");
+    static readonly int DashAttackHash = Animator.StringToHash("DashAttack");
 
     Animator _animator;
     PlayerAim _aim;
@@ -74,7 +75,10 @@ public class PlayerAnimatorDriver : MonoBehaviour
             Debug.LogError("[PlayerAnimatorDriver] PlayerMotor를 부모 체인에서 못 찾음 — 공격 루트모션이 적용되지 않는다. 프리팹 계층(비주얼 자식이 PlayerMotor 하위인지) 확인.", this);
     }
 
-    void OnEnable() { if (moveSource != null) _lastPos = moveSource.position; }
+    void OnEnable()
+    {
+        if (moveSource != null) _lastPos = moveSource.position;
+    }
 
     /// <summary>PlayerBrain이 매 프레임 마지막에 호출.</summary>
     public void Tick()
@@ -93,13 +97,12 @@ public class PlayerAnimatorDriver : MonoBehaviour
         float speed = Mathf.Min(rawSpeed, maxSpeed);
         bool moving = speed > moveThreshold;
 
-        // facing: 공격 커밋 중엔 단계 시작 시 잠근 방향(런지가 그쪽으로 직진, 마우스 돌려도 안 꺾임).
-        // 평시엔 조준(없으면 이동 방향). 비주얼(this)만 회전 — 루트는 안 돈다.
+        // facing(이동 지향 — 하데스식): 공격 커밋 중엔 단 시작에 잠근 조준(마우스 돌려도 안 꺾임).
+        //   ★이동 중엔 '가는 방향'을 향한다(마우스 돌려도 몸이 안 돎 — 달리며 조준 회전 어색함 제거). 공격 시에만 조준 스냅(SetCombo/TriggerX).
+        //   정지 시엔 현재 facing 유지(조준으로 스냅 안 함 → 멈출 때 빙글 방지). 비주얼(this)만 회전 — 루트는 안 돈다.
         Vector3 face = (_attacking && _lockedFace.sqrMagnitude > 0.0001f)
             ? _lockedFace
-            : (_aim != null && _aim.Direction.sqrMagnitude > 0.0001f)
-                ? _aim.Direction
-                : (moving ? delta.normalized : transform.forward);
+            : (moving ? delta.normalized : transform.forward);
         face.y = 0f;
         if (face.sqrMagnitude > 0.0001f)
             transform.rotation = Quaternion.LookRotation(face.normalized, Vector3.up);
@@ -146,6 +149,8 @@ public class PlayerAnimatorDriver : MonoBehaviour
             bool dashAnim = _motor.IsDashing;
             if (dashAnim != _wasDashing) { _animator.SetBool(DashHash, dashAnim); _wasDashing = dashAnim; }
         }
+        // ★달리기 무기 처리: 별도 코드 없음 — 달리기(스프린트) 시 로코모션 run 티어(Unequip_Run)가 칼 든 팔을 아래로
+        //   내린 포즈라, 칼이 그대로 보이며 내려간 손에 들린 채 달린다. (디졸브/숨김 폐기. 팔 완전 고정은 별도 정적 포즈 레이어.)
     }
 
     /// <summary>콤보 단 설정(0=idle, 1/2/3) — AnimatorController가 ComboStep으로 Combo 상태를 전환한다.
@@ -207,6 +212,18 @@ public class PlayerAnimatorDriver : MonoBehaviour
         _animator.SetBool(DashHash, false);
         _wasDashing = false;
         _animator.SetTrigger(Skill01Hash);
+    }
+
+    /// <summary>★대시 베기(DashAttack) — 컨트롤러 Any→DashAttack 트리거. Counter/Skill과 동형(공격이라 _attacking으로
+    /// 루트모션(Attack02 전진 런지) 적용, facing 잠금, Dash bool 정리로 AnyState 경쟁 해소). 트리거 없으면 무음(안전).</summary>
+    public void TriggerDashAttack()
+    {
+        if (_animator == null) return;
+        if (_aim != null && _aim.Direction.sqrMagnitude > 0.0001f)
+            _lockedFace = _aim.Direction;
+        _animator.SetBool(DashHash, false);
+        _wasDashing = false;
+        _animator.SetTrigger(DashAttackHash);
     }
 
     /// <summary>공격·대시 클립의 루트모션을 루트(PlayerMotor)로 넘긴다 — 애니가 진실(전진/회피 거리는 클립이 소유).

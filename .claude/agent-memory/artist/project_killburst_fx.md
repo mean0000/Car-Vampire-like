@@ -10,7 +10,8 @@ metadata:
 **소스**: Vefects `Flipbook VFX/Shared/Textures/Explosion/FB_3x4_RGBC_magicExplosion_01.tga`(3x4=12프레임, guid bbb35a7724f3a8440a9562f6c75ddbaf). 알파 마스크가 4방향 별폭발→링와해 시퀀스라 탑뷰 가독성 최적. 스파크=코드생성 소프트 도트. 마스크 텍스처는 원본 알파→흰RGB로 변환해 `Materials/Tex_KillBurstMask.png`로 저장(가산이라 RGB=형태).
 
 **★URP 파티클 머티리얼 함정 (4번 헛돌고 알아낸 근본원인)**:
-- Vefects 3팩 셰이더는 전부 `#pragma surface`(BIRP surface shader) — URP에서 마젠타. "Flipbook VFX"의 `SH_Vefects_Unlit_Flipbook_URP`조차 surface라 URP 미작동(파일명만 URP). Pixel Craft·Combat Flipbook도 동일. **URP 변환=실질 불가, 새로 머티리얼 만들어야 함.**
+- Vefects 3팩(Pixel Craft·Flipbook VFX·Combat Flipbook) 셰이더는 전부 `#pragma surface`(BIRP surface shader) — URP에서 마젠타. "Flipbook VFX"의 `SH_Vefects_Unlit_Flipbook_URP`조차 surface라 URP 미작동(파일명만 URP). **이 3팩 URP 변환=실질 불가, 새로 머티리얼 만들어야 함.**
+- ★★정정(2026-06-19): **"Anime VFX URP" 팩과 "Stylized VFX URP" 팩은 URP 동등 셰이더가 패키지 내에 이미 존재.** 재질의 m_Shader guid만 BIRP→URP로 교체하면 해결됨. 상세=[[vefects-birp-urp-fix]]
 - **`new Material(Shader.Find("URP/Particles/Unlit"))` 코드생성 머티리얼은 텍스처(_BaseMap)가 흰색 폴백** = 파티클이 단색 사각형으로 나옴. AssetVersion MonoBehaviour + 파티클 부속 프로퍼티(_ColorMode/_FlipbookMode/_Mode 등)가 없어서 텍스처 샘플 패스가 안 켜짐.
 - **해결 = 검증된 파티클 머티리얼을 `new Material(baseMat)`로 복제 후 텍스처·색만 교체.** 베이스로 `Assets/Feel/FeelDemos/Letters/Materials/FeelLettersDemoSparkMaterial.mat`(URP/Particles/Unlit, 작동확인) 사용. `_BaseMap`+`_MainTex` 둘 다 채우고 _SrcBlend=SrcAlpha/_DstBlend=One/_ZWrite=0/_Surface=1/_Blend=2로 가산 오버라이드.
 - URP/Unlit(불투명 베이스)은 MeshRenderer엔 텍스처 정상, **ParticleSystemRenderer엔 단색** — 파티clel엔 반드시 Particles 계열 셰이더.

@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9ccf395462aadb428b7034964199677, type: 3}
+  m_Name: Katana_Cham_ComboAttackSet
+  m_EditorClassIdentifier: Assembly-CSharp::ComboAttackSet
+  styleName: "Katana_\uCC38\uACA9"
+  fallbackSlashPrefab: {fileID: 0}
+  steps:
+  - range: 4
+    arcHalfAngle: 62
+    forwardOffset: 0.45
+    damage: 3
+    knockback: 4
+    rangeFromSlashScale: 0
+    slashPrefab: {fileID: 0}
+    eulerOffset: {x: 0, y: 120, z: 0}
+    posOffset: {x: -0.5, y: 0, z: 0}
+    scale: 3
+    lifetime: 0.5
+    playbackSpeed: 2.5
+  - range: 4.2
+    arcHalfAngle: 66
+    forwardOffset: 0.45
+    damage: 3
+    knockback: 4
+    rangeFromSlashScale: 0
+    slashPrefab: {fileID: 0}
+    eulerOffset: {x: 0, y: -70, z: 0}
+    posOffset: {x: -0.5, y: 0, z: 0.8}
+    scale: 5
+    lifetime: 1.5
+    playbackSpeed: 1.7
+  - range: 4.5
+    arcHalfAngle: 82
+    forwardOffset: 0.55
+    damage: 3
+    knockback: 5
+    rangeFromSlashScale: 0
+    slashPrefab: {fileID: 0}
+    eulerOffset: {x: 0, y: 80, z: 0}
+    posOffset: {x: 0, y: 0, z: 0}
+    scale: 3
+    lifetime: 1.5
+    playbackSpeed: 1

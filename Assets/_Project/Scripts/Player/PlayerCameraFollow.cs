@@ -62,7 +62,10 @@ public class PlayerCameraFollow : MonoBehaviour
         _followPos = Vector3.SmoothDamp(_followPos, desired, ref _vel, followSmooth);
 
         // ★킥을 먼저 적용한 뒤(이번 프레임 풀 세기로 보임) 감쇠 — 같은 프레임에 추가→감쇠로 킥이 안 보이던 버그 수정(Codex P1).
-        transform.position = _followPos + _impactKick;
+        // ★피격 쉐이크 합성(2026-06-22): SmashFeel.Shake→LabCameraShake 오프셋을 추종 위에 얹는다(킥과 동형, XZ·unscaled).
+        //   Evaluate는 프레임당 1회 소비(시간 진행) — 이 씬엔 LabSimpleCamera 부재라 여기서 단독 호출(중복 진행 없음).
+        Vector3 shake = LabCameraShake.Evaluate();
+        transform.position = _followPos + _impactKick + shake;
         transform.rotation = rot;
 
         // 임팩트 킥 지수 감쇠(프레임률 독립) — 적용 후. unscaled라 다른 시간 연출(슬로모 등)과 독립.

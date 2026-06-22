@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>몬스터 죽음 연출 — 티어 스펙</title>
+<style>
+  :root{
+    --bg:#0e1116; --panel:#161b22; --panel2:#1c2430; --ink:#e6edf3; --dim:#9aa7b4;
+    --line:#2a3441; --cyan:#3fd0e0; --gold:#e8b341; --magenta:#e0569b;
+    --red:#ff6a3d; --green:#5fd17a; --warn:#3a2a14; --warnline:#7a5a1e;
+    --trash:#6b7785; --elite:#e8b341; --boss:#ff6a3d;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+    line-height:1.7; font-size:15.5px;
+  }
+  .wrap{max-width:920px; margin:0 auto; padding:36px 22px 90px}
+  header.hero{
+    border:1px solid var(--line); border-radius:14px; padding:26px 28px;
+    background:linear-gradient(135deg,#161b22,#10151c);
+    box-shadow:0 0 0 1px #0b0e13 inset;
+  }
+  h1{margin:0 0 6px; font-size:25px; letter-spacing:-.3px}
+  .sub{color:var(--dim); font-size:13.5px; margin:2px 0}
+  .pills{margin-top:14px; display:flex; flex-wrap:wrap; gap:8px}
+  .pill{font-size:12px; padding:4px 11px; border-radius:999px; border:1px solid var(--line); color:var(--dim)}
+  .pill.b{border-color:#2c5a64; color:var(--cyan)}
+  .pill.g{border-color:#5a4a1e; color:var(--gold)}
+
+  .flag{
+    margin:18px 0 0; border:1px solid var(--warnline); background:var(--warn);
+    border-radius:10px; padding:13px 16px; font-size:13.5px; color:#f0dca8;
+  }
+  .flag b{color:#ffd98a}
+
+  h2{margin:38px 0 12px; font-size:19px; padding-bottom:8px; border-bottom:1px solid var(--line)}
+  h2 .num{color:var(--cyan); font-variant-numeric:tabular-nums; margin-right:8px}
+  h3{margin:22px 0 8px; font-size:15.5px; color:var(--cyan)}
+  p{margin:9px 0}
+  .dim{color:var(--dim)}
+  strong{color:#fff}
+  .star{color:var(--gold)}
+  code{background:#0b0f15; border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:13px; color:#d6e0ea; font-family:"JetBrains Mono",Consolas,monospace}
+
+  ul{margin:8px 0; padding-left:20px}
+  li{margin:5px 0}
+
+  table{border-collapse:collapse; width:100%; margin:14px 0; font-size:13.8px; overflow:hidden; border-radius:10px}
+  th,td{border:1px solid var(--line); padding:10px 12px; text-align:left; vertical-align:top}
+  th{background:#1a2230; color:#cdd9e5; font-weight:600}
+  tr:nth-child(even) td{background:#12171f}
+  .tier-badge{display:inline-block; font-weight:700; padding:2px 9px; border-radius:6px; font-size:12.5px}
+  .t-trash{background:#222932; color:#aab6c3; border:1px solid #39434f}
+  .t-elite{background:#3a2f12; color:var(--elite); border:1px solid #5a4a1e}
+  .t-boss{background:#3a1d12; color:var(--boss); border:1px solid #6a3320}
+
+  .callout{border-left:3px solid var(--cyan); background:var(--panel2); border-radius:0 10px 10px 0; padding:14px 18px; margin:16px 0}
+  .callout.diverge{border-left-color:var(--magenta)}
+  .callout.diverge h3{color:var(--magenta)}
+  .callout h3{margin:0 0 8px}
+
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:12px 0}
+  @media(max-width:680px){.grid2{grid-template-columns:1fr}}
+  .card{border:1px solid var(--line); border-radius:10px; padding:14px 16px; background:var(--panel)}
+  .card h4{margin:0 0 6px; font-size:14px}
+
+  .steps{counter-reset:s; list-style:none; padding-left:0}
+  .steps li{counter-increment:s; position:relative; padding-left:30px; margin:8px 0}
+  .steps li::before{content:counter(s); position:absolute; left:0; top:1px; width:21px; height:21px; border-radius:50%; background:#1a2230; border:1px solid var(--cyan); color:var(--cyan); font-size:12px; text-align:center; line-height:20px}
+
+  .toc{border:1px solid var(--line); border-radius:10px; padding:14px 18px; margin:22px 0; background:var(--panel); font-size:14px}
+  .toc a{color:var(--dim); text-decoration:none; display:inline-block; margin:3px 14px 3px 0}
+  .toc a:hover{color:var(--cyan)}
+  pre{background:#0b0f15; border:1px solid var(--line); border-radius:8px; padding:14px 16px; overflow-x:auto; font-size:12.8px; line-height:1.55}
+  pre code{background:none; border:none; padding:0}
+  .swatch{display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:middle; margin-right:5px; border:1px solid #0008}
+  footer{margin-top:48px; padding-top:18px; border-top:1px solid var(--line); color:var(--dim); font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>몬스터 죽음 연출 — 티어 스펙</h1>
+  <div class="sub">리서치 종합 · <strong>동결 후보(proposal)</strong> · 2026-06-19</div>
+  <div class="sub">두 독립 리서치(라이브 웹 + Codex 크로스프로바이더)가 <strong>거의 완전 수렴</strong> — 발산은 1곳(§8)</div>
+  <div class="pills">
+    <span class="pill b">상태: 제안 · 동결=유저</span>
+    <span class="pill g">캐넌: 화려처치=뽕=돈 / 잡몹 싼죽음</span>
+    <span class="pill">색: 시안=액션 · 적=레드오렌지 · 마젠타=붕괴</span>
+  </div>
+</header>
+
+<div class="flag">
+  <b>⚠️ 미검증 플래그 (§1.5)</b> — 두 리서치 다 dev-blog/inference 등급(엔진 teardown 아님).
+  <b>RayFire 가격/세일 미검증</b>. Blender Cell Fracture 매뉴얼 직접 인용 아님. "게임 X 내부 구현" 주장은 추론.
+  RayFire 스킨드 내부 베이크의 모든 구성(블렌드셰입 등) 커버 여부는 구매 후 테스트 필요.
+</div>
+
+<div class="toc">
+  <strong style="color:#cdd9e5">목차 &nbsp;</strong>
+  <a href="#s1">1. 코어 원칙</a>
+  <a href="#s2">2. 티어 표</a>
+  <a href="#s3">3. 스킨드 메시 규칙</a>
+  <a href="#s4">4. 셰이더 스펙</a>
+  <a href="#s5">5. 주스 스택 순서</a>
+  <a href="#s6">6. 색 전환</a>
+  <a href="#s7">7. 퍼포먼스 규율</a>
+  <a href="#s8">8. ★발산(미결)</a>
+  <a href="#s9">9. 보유 자산</a>
+  <a href="#s10">10. 다음</a>
+</div>
+
+<h2 id="s1"><span class="num">1</span>코어 원칙</h2>
+<p>죽음 연출 예산을 <strong>보상 곡선</strong>으로 쓴다 — 평범한 죽음은 <em>확인</em>, 화려한 죽음은 <em>뽕=돈</em>.
+티어 상승을 게임플레이 보상 트리거(<strong>오버킬 · 노히트 연속 · 궁극킬</strong>)에 묶는다.
+<span class="star">★</span> 잡몹이 화려하면 위계가 붕괴(엘리트/보스가 안 특별해짐) → <strong>잡몹은 의도적으로 절제.</strong></p>
+
+<h2 id="s2"><span class="num">2</span>티어 표</h2>
+<table>
+  <thead><tr><th style="width:110px">티어</th><th>기법</th><th>주스</th><th>비용/규율</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><span class="tier-badge t-trash">Trash</span><div class="dim" style="font-size:12px;margin-top:4px">초당 다수</div></td>
+      <td>스케일-제로 팝(0.15s, DOTween) <strong>또는</strong> 디졸브 셰이더(<a href="#s8" style="color:var(--magenta)">§8 미결</a>) + 풀링 파티클 버스트 + 풀링 데칼 1</td>
+      <td>발광 플래시 1프레임. <strong style="color:var(--red)">히트스탑·쉐이크·래그돌·진짜깁 금지</strong></td>
+      <td>물리 0. 풀링(Destroy 금지). 거리&gt;12m=플래시만</td>
+    </tr>
+    <tr>
+      <td><span class="tier-badge t-elite">Elite</span></td>
+      <td>디졸브 셰이더(0.4~0.6s) + 진짜 깁 2~3(풀링) + 큰 버스트</td>
+      <td>히트스탑 1~2프레임(Feel) + 약쉐이크(0.15s, 횡방향만) + 발광 링</td>
+      <td>~5ms/event 예산. 동시 rich death 캡</td>
+    </tr>
+    <tr>
+      <td><span class="tier-badge t-boss">Boss</span><div class="dim" style="font-size:12px;margin-top:4px">특별킬</div></td>
+      <td>RayFire 런타임 파쇄(프리캐시+풀링) 또는 Blender 사전조각(죽음포즈 베이크)</td>
+      <td>슬로모(timeScale 0.15~0.2, 0.5~1.5s) + 강쉐이크 + 히트스탑 6~8프레임 + 풀스택</td>
+      <td>인카운터당 1~소수만</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s3"><span class="num">3</span>스킨드 메시 규칙 — <code>BakeMesh</code> 언제 필요한가</h2>
+<div class="grid2">
+  <div class="card">
+    <h4 style="color:var(--green)">✅ 불필요</h4>
+    <ul>
+      <li>디졸브 / 정점폭발 <strong>셰이더</strong> — GPU 스키닝이 정점셰이더 전에 돌아 <em>변형 포즈</em> 위에서 작동</li>
+      <li>RayFire SkinnedMesh 모드 (내부 베이크)</li>
+      <li>파티클 깁 (범용 청크)</li>
+      <li>래그돌 (본 구동)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4 style="color:var(--red)">⚠️ 필요</h4>
+    <p style="margin:0"><em>정적 지오메트리를 먹는 물리 경로</em> — Blender Cell Fracture 청크, 자작 비-RayFire 슬라이서.
+    죽는 순간 <code>SkinnedMeshRenderer.BakeMesh()</code>로 현재 포즈 스냅(안 하면 T포즈 청크).
+    Cell Fracture는 블렌더에서 <strong>대표 죽음포즈</strong>로 베이크 후 조각.</p>
+  </div>
+</div>
+
+<h2 id="s4"><span class="num">4</span>셰이더 정점폭발 + 디졸브 스펙 <span class="dim" style="font-size:14px">— 강점 구역, 1차 도구</span></h2>
+<p>URP ShaderGraph (Lit, Alpha Clip on). 프로퍼티: <code>_DissolveAmount</code>(0~1) · <code>_ExplodeStrength</code> · <code>_DissolveNoiseTex</code> · <code>_DissolveEdgeWidth</code> · <code>_EdgeEmissiveColor</code>(HDR) · <code>_EdgeEmissiveIntensity</code>.</p>
+<div class="grid2">
+  <div class="card">
+    <h4>정점 단계</h4>
+    <p style="margin:0">object-space 노이즈 × <code>_DissolveAmount</code> × <code>_ExplodeStrength</code> × 노멀 → Position에 가산(바깥 팬아웃).
+    <span class="dim">※셰이더는 청크 분리 못 함 — 소프트 디스인테그레이트만(하드 청크=사전조각 필요).</span></p>
+  </div>
+  <div class="card">
+    <h4>프래그 단계</h4>
+    <p style="margin:0">노이즈 − <code>_DissolveAmount</code> → Alpha Clip(0). 엣지 글로우=<code>smoothstep(0,_DissolveEdgeWidth, n−amount)</code> 반전 × <code>_EdgeEmissiveColor*Intensity</code> → Emission.</p>
+  </div>
+</div>
+<p><span class="star">★</span> <strong>구동(런타임)</strong>: <code>MaterialPropertyBlock</code>로 <code>_DissolveAmount</code> 0→1 (DOTween).
+<strong style="color:var(--red)">절대 <code>material.SetFloat</code> 금지</strong>(인스턴스 복제→인스턴싱 깨짐·GC = 호드 최다 버그). 완료 시 SetActive(false)→풀 반납.</p>
+<pre><code>// 디졸브 구동 스텁 (MPB + DOTween)
+var mpb = new MaterialPropertyBlock();
+int ID = Shader.PropertyToID("_DissolveAmount");
+DOTween.To(() =&gt; 0f, x =&gt; { mpb.SetFloat(ID, x); smr.SetPropertyBlock(mpb); },
+           1f, 0.5f).SetEase(Ease.InQuad)
+         .OnComplete(() =&gt; gameObject.SetActive(false)); // → 풀 반납</code></pre>
+
+<h2 id="s5"><span class="num">5</span>주스 스택 순서 <span class="dim" style="font-size:14px">— Elite 기준, 가감해 티어 적용</span></h2>
+<ol class="steps">
+  <li><strong>프레임0</strong>: 히트스탑(timeScale 0.05~0.15, 1~2프레임; 파티클은 unscaled) + 발광 플래시(MPB, 레드오렌지/화이트, 1프레임)</li>
+  <li><strong>프레임1~5</strong>: 쉐이크 시작(횡방향, Z줌 금지) + 파티클 버스트(위+밖) + 디졸브 트윈 시작</li>
+  <li><strong>프레임5~15</strong>: 깁(엘리트, 2~3) + 데칼 스탬프 + timeScale 복귀</li>
+  <li><strong>이후</strong>: 디졸브 완료 → 파티클 페이드 → 데칼 3~5s 페이드</li>
+</ol>
+<p class="dim"><strong style="color:#fff">원거리 가독 우선순위</strong>: ①발광 플래시 ②파티클 방사 ③디졸브 엣지 글로우. 쉐이크=느껴지나 안 보임. <strong style="color:#fff">데칼=지속 레이어(부감 최적, "여기서 죽었다").</strong></p>
+
+<h2 id="s6"><span class="num">6</span>색 전환 <span class="dim" style="font-size:14px">— 캐넌 정합</span></h2>
+<p>
+  <span class="swatch" style="background:#ff6a3d"></span><strong>생전 레드오렌지</strong>(위협)
+  &nbsp;→&nbsp; <span class="swatch" style="background:#3fd0e0"></span><strong>킬 시안/화이트 플래시</strong>(우리 액션색=킬러색)
+  &nbsp;→&nbsp; <span class="swatch" style="background:#e0569b"></span>디졸브 엣지=시안/마젠타(붕괴)
+  &nbsp;→&nbsp; <span class="swatch" style="background:#7a5f52"></span>데칼=탈채도 적갈
+</p>
+<p class="dim">UI 없이 "위협 제거" 가독. 데칼은 죽은 웅덩이가 살아있는 적으로 안 읽히게 탈채도.</p>
+
+<h2 id="s7"><span class="num">7</span>퍼포먼스 규율</h2>
+<ul>
+  <li>풀링 전부(VFX 플레이어 · 깁 · 데칼 · 오디오), <strong>Destroy 금지</strong></li>
+  <li><span class="star">★</span> <code>MaterialPropertyBlock</code> 필수 (material.SetFloat=인스턴싱 깨짐·GC)</li>
+  <li>Player Settings <strong>GPU Skinning ON</strong> (호드 50+)</li>
+  <li>거리 LOD 게이트(&gt;12m=플래시만, 50~70% GPU 절감)</li>
+  <li><strong>동시 rich death 캡</strong> — 프레임당 풍부죽음 N개, 초과분 싼 팝으로 강등</li>
+  <li>청크/데칼 1~3s 페이드로 활성 물리 수 bounded · 오디오 보이스 리미팅(AudioMixer)</li>
+</ul>
+
+<h2 id="s8"><span class="num">8</span><span style="color:var(--magenta)">★ 발산 — 미해결 노브</span> <span class="dim" style="font-size:14px">(유저/프로파일 판정)</span></h2>
+<div class="callout diverge">
+  <h3>잡몹 죽음 = 디졸브 셰이더(웹) vs 스케일-팝(Codex)</h3>
+  <table style="margin:6px 0">
+    <thead><tr><th></th><th>웹 리서치</th><th>Codex</th></tr></thead>
+    <tbody>
+      <tr><td><strong>잡몹 죽음</strong></td>
+        <td><strong>디졸브 셰이더</strong><br><span class="dim">살아있는 메시 위 GPU라 충분히 쌈</span></td>
+        <td><strong>스케일-팝 + 파티클</strong><br><span class="dim">디졸브는 엘리트부터(동시 30 디졸브=프래그먼트 화면 채움 GPU 우려)</span></td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="margin:8px 0 0"><strong>해소</strong>: 우리 밀도에서 디졸브 프래그 비용을 <strong>빌드 후 프로파일</strong>로 확정.
+  <strong style="color:var(--gold)">기본값 = Codex 보수안(잡몹 팝 / 엘리트 디졸브)으로 시작</strong>, 프로파일이 싸다 하면 잡몹 디졸브로 승격.
+  <span class="dim">(디졸브가 강점·더 예뻐 perf 허용 시 선호)</span></p>
+</div>
+
+<h2 id="s9"><span class="num">9</span>보유 자산 매핑</h2>
+<table>
+  <tbody>
+    <tr><td style="width:140px"><strong>Feel(MMFeedbacks)</strong> <span class="dim">보유</span></td><td>히트스탑(MMF_TimeScale) · 쉐이크(MMF_CameraShaker) · 오디오 덕킹 · 디졸브 float 구동(MMF_MaterialProperty). 티어별 MMF_Player 프리팹 분리(동시 죽음 코루틴 충돌 회피)</td></tr>
+    <tr><td><strong>DOTween</strong> <span class="dim">보유</span></td><td>디졸브 / 스케일 트윈</td></tr>
+    <tr><td><strong>RayFire</strong> <span class="dim">7월 예정</span></td><td>보스/특별킬. 프리캐시+RFPool <span class="dim">(세일 미검증)</span></td></tr>
+    <tr><td><strong>Vefects(URP)</strong> <span class="dim">보유</span></td><td>버스트/임팩트 파티클 리스킨</td></tr>
+  </tbody>
+</table>
+
+<h2 id="s10"><span class="num">10</span>다음</h2>
+<ol class="steps">
+  <li><strong>유저 동결 판정</strong> (이 스펙 + §8 기본값)</li>
+  <li>동결 시 → <strong>Unity 전담 세션이 구현</strong>(병렬세션 §2: 에디터는 그 세션만). 1차=디졸브 셰이더 + 잡몹/엘리트 죽음 컨트롤러 + Feel 와이어링</li>
+  <li>이 문서 + 동결 결정을 <strong>메모리에 기록</strong>(다른 세션 전파)</li>
+</ol>
+
+<footer>
+  원문 마크다운: <code>docs/02_logs/2026-06-19-monster-death-staging-research-spec.md</code><br>
+  출처: 라이브 웹 리서치 + Codex 크로스프로바이더 (둘 다 dev-blog/inference 등급 — §1.5 미검증 플래그 상단 참조)
+</footer>
+
+</div>
+</body>
+</html>

@@ -46,6 +46,8 @@ public class CaniathroxChaser : MonoBehaviour
     public RuntimeAnimatorController attackController;
     [Tooltip("공유 공격 토큰 풀 — 스포너가 모든 Chaser에 같은 참조 주입(이게 동시 공격 수를 제한).")]
     public AttackTokenPool tokenPool;
+    [Tooltip("★장판 텔레그래프 공유 풀(스포너 주입) — Coil(응축=조준) 진입 시 전방 부채꼴 예고(돌진 방향·도달거리). null이면 장판 생략(모션만).")]
+    public TelegraphPool telegraphPool;
 
     [Header("접근/공격 판정 (피하기 난이도 노브)")]
     [Tooltip("도착 판정 거리(m). 이 거리 안에 들고 토큰을 획득하면 공격을 발동한다. 발동 시 아래 biteRange로 물기/도약을 가른다.")]
@@ -82,6 +84,31 @@ public class CaniathroxChaser : MonoBehaviour
     [SerializeField] float surroundRadius = 1.6f;
     [Tooltip("스포너가 인스턴스별로 분배하는 슬롯 각도(도). 0이면 정면, 분산되면 측면·후방 포위. 스포너가 주입.")]
     [SerializeField] float slotAngleDeg = 0f;
+
+    [Header("★텔레그래프 (읽기 — Coil 진입 시 돌진 예고 부채꼴. 유저 ▶ 가독성/톤 판정)")]
+    [Tooltip("부채꼴 사거리(m) = 돌진 도달거리 예고. Lunge 전진(4.67m)+근접을 덮게 시작값 5.5(lungeRange 근처).")]
+    [SerializeField] float telegraphRadius = 5.5f;
+    [Tooltip("부채꼴 전각(도, 1~180). 돌진은 직선이라 좁게 — 방향이 또렷이 읽히되 약간의 조준 오차 폭. 시작값 50.")]
+    [SerializeField, Range(1f, 180f)] float telegraphAngleDeg = 50f;
+    [Tooltip("★채움 시간(초) = Coil(응축) 실시간 길이. JumpCoil 0.167s native ÷ Coil state speed 0.4 ≈ 0.42s(가득=Lunge 발사 근사). Coil→Lunge가 ExitTime 자동이라 AnimationEvent 없음 → 추정 채움. 유저가 튜닝.")]
+    [SerializeField, Min(0.05f)] float telegraphFillDuration = 0.42f;
+    [Tooltip("가득 찬 뒤(=발사) 잔상 유지(초). 발사 순간을 눈으로 잡게 짧게.")]
+    [SerializeField, Min(0f)] float telegraphHold = 0.12f;
+    [Tooltip("적 장판 색 = 레드-오렌지 단색(색 캐넌 §5). Crassorrid와 동일 톤.")]
+    [SerializeField] Color telegraphColor = new Color(1f, 0.30f, 0.08f, 1f);
+    [Tooltip("장판 마스터 알파(전체 진하기). Crassorrid 차용 0.85.")]
+    [SerializeField, Range(0f, 1f)] float telegraphAlpha = 0.85f;
+    [Tooltip("채움(안쪽) 알파. Crassorrid 차용 0.55.")]
+    [SerializeField, Range(0f, 1f)] float telegraphFillAlpha = 0.55f;
+    [Tooltip("외곽선(예고선) 알파. Crassorrid 차용 1.0.")]
+    [SerializeField, Range(0f, 1f)] float telegraphEdgeAlpha = 1.0f;
+    [Tooltip("외곽선 두께(월드 m). Crassorrid 차용 0.18.")]
+    [SerializeField, Min(0f)] float telegraphEdgeWorld = 0.18f;
+
+    // ── ★장판 텔레그래프 활성 추적 (gen 세대 가드 — Crassorrid 패턴. 풀 회수로 주인 바뀌면 stale 조작 차단) ──
+    TelegraphPad _activePad;
+    int _activeGen = -1;
+    bool _coilSpawned;   // ★이 Coil 진입에 장판 이미 스폰했나(엣지 가드 — Coil 아니면 false 자가치유, 매 Coil 1회).
 
     // 애니 파라미터 — 컨트롤러(CaniathroxAttack.controller)와 공유.
     static readonly int PApproach = Animator.StringToHash("isApproaching");
@@ -123,7 +150,42 @@ public class CaniathroxChaser : MonoBehaviour
     }
 
     void OnEnable()  { if (!Roster.Contains(this)) Roster.Add(this); }
-    void OnDisable() { Roster.Remove(this); ReleaseToken(); }   // 비활성/파괴 시 점유 토큰 누수 방지
+    void OnDisable()
+    {
+        Roster.Remove(this);
+        ReleaseToken();      // 비활성/파괴 시 점유 토큰 누수 방지
+        CancelTelegraph();   // ★시전 중 비활성/파괴(특히 사망) → 차오르던 장판 즉시 취소 + _coilSpawned 리셋(Crassorrid 동형).
+    }
+
+    // 차오르던 장판을 즉시 풀로 반납(gen 가드 — 이미 회수돼 남의 것이면 무시). Crassorrid.CancelTelegraph 동형.
+    void CancelTelegraph()
+    {
+        if (_activePad != null) _activePad.CancelImmediate(_activeGen);
+        _activePad = null;
+        _activeGen = -1;
+        _coilSpawned = false;   // ★Stab M-1: 독립 호출(향후 인터럽트 경로)에서도 다음 Coil 장판이 무음 스킵되지 않게 함께 리셋.
+    }
+
+    // ════════ ★텔레그래프 스폰 — Coil(응축) 진입 1회. 전방 부채꼴(돌진 방향·도달거리)을 Coil 동안 채운다. ════════
+    //   ★헌법: 텔레그래프는 가독성 VFX다 — 위치/포즈/회전 안 건드린다(Coil 예측 조준 로직은 그대로). 부채꼴은 *스폰 시점*
+    //     model.forward(=현재 조준)에 깔린다. Coil 중 예측 yaw로 몸이 더 돌아도 장판은 안 따라 돈다(이미 깐 약속 = 공정).
+    //   채움(fillDuration) = Coil 실시간 — 가득 차는 순간이 Lunge 발사 근사(Coil→Lunge ExitTime 자동, 이벤트 없음 → 추정).
+    void SpawnCoilTelegraph()
+    {
+        if (telegraphPool == null) return;   // 풀 미주입 → 장판 생략(Coil 모션만으로도 "응축" 가독 보완).
+        var pad = telegraphPool.Acquire();
+        if (pad == null) return;
+
+        Vector3 fwd = model.forward; fwd.y = 0f;
+        if (fwd.sqrMagnitude < 0.0001f) fwd = Vector3.forward; else fwd.Normalize();
+        Vector3 origin = model.position; origin.y = 0f;
+
+        pad.SpawnFan(origin, fwd, telegraphRadius, telegraphAngleDeg,
+                     telegraphFillDuration, telegraphHold,
+                     telegraphColor, telegraphAlpha, telegraphFillAlpha, telegraphEdgeAlpha, telegraphEdgeWorld);
+        _activePad = pad;
+        _activeGen = pad.Gen;
+    }
 
     // 사이클 시작 — ★위치 리셋 없음(추격은 루트모션이 데려간 자리 유지). 휴지 타이머만 재무장.
     void ResetCycle()
@@ -237,6 +299,10 @@ public class CaniathroxChaser : MonoBehaviour
         TrackTargetVelocity();   // 매 프레임 플레이어 속도 평활 — Coil 예측 조준의 입력(상태 무관 상시 추적).
         var info = modelAnimator.GetCurrentAnimatorStateInfo(0);
 
+        // ★텔레그래프 엣지 가드(Crassorrid 패턴): Coil이 *아닐* 때 _coilSpawned=false → Coil 진입 첫 프레임에만 1회 스폰.
+        //   Coil을 건너뛰는 비정상 경로(Bite 분기 등)에서 stale true 잔존으로 다음 장판이 무음 스킵되는 것까지 자가치유.
+        if (info.shortNameHash != SCoil) _coilSpawned = false;
+
         // ── 휴지(IdleAngry) → 접근 시작 / 추격 재개 ──
         if (info.shortNameHash == SIdle)
         {
@@ -296,6 +362,10 @@ public class CaniathroxChaser : MonoBehaviour
         //   ┗ 회전만(modelAnimator.speed/위치/포즈는 안 건드림). Coil은 제자리(루트모션 0)라 회전이 위치를 안 만듦.
         else if (info.shortNameHash == SCoil)
         {
+            // ★Coil 진입 1회: 전방 부채꼴 장판 스폰(돌진 방향·도달거리 예고). 스폰은 *현재* forward에 깔리고,
+            //   아래 예측 yaw로 몸이 더 돌아도 장판은 안 따라 돈다(이미 깐 약속 = 공정성). 회전/위치/포즈는 안 건드림.
+            if (!_coilSpawned) { _coilSpawned = true; SpawnCoilTelegraph(); }
+
             Vector3 toPredicted = PredictedTargetPoint() - model.position; toPredicted.y = 0f;
             if (toPredicted.sqrMagnitude > 0.0001f)
             {

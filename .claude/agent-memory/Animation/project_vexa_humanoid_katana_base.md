@@ -1,6 +1,6 @@
 ---
 name: vexa-humanoid-katana-base
-description: Vexa Generic→Humanoid conversion + KatanaMelee.controller (param contract + 3-state combo + AnimationEvents) + foot-roll finding. Player katana base + combo built 2026-06-18.
+description: Vexa Generic→Humanoid conversion + KatanaMelee.controller (param contract + 3-state combo + Counter + Skill01 RMB + AnimationEvents + direct-YAML state-add pattern) + foot-roll finding. Built 2026-06-18..20.
 metadata:
   type: project
 ---
@@ -48,3 +48,22 @@ metadata:
 - ❌ **edit-mode `Animator.Update(dt)`로 본 추적**=normalizedTime은 전진하지만 **본 트랜스폼이 안 써짐**(world pos 완전 고정). edit모드 Animator는 그래프만 평가, 스킨/본 flush 안 함([[editmode_capture_one_pose_per_invoke]] 동류).
 - ✅ **정답=`clip.SampleAnimation(go, t)` 프레임마다**(호출당 1 정확 포즈). go=Vexa 인스턴스+Animator+Vexa아바타. **RightHand를 Hips-local로** 변환해 추적(루트/바디 드리프트 제거). 결과=깨끗한 단일 슬래시창(15-17 m/s peak, S1_Attack01의 21.4와 동급).
 - ★MCP 함정 재확인: `AssetDatabase.DeleteAsset`·`CreateAnimatorControllerAtPath*` = 대화형 에러([[mcp-runcommand-interactive-trap]]). 측정용 임시 컨트롤러는 **in-memory `new AnimatorController()`**(디스크 경로 X)로 만들고 `DestroyImmediate`. 컨트롤러 편집은 LoadAssetAtPath+mutate+SetDirty+SaveAssets(delete-then-create 금지).
+
+## ★Step5 — 패링 반격 Counter 상태 (2026-06-20, 직접 YAML 편집 경로)
+- 클립 = `Frank_RPG_Katana_S1_Skill02.FBX`(guid `3a3b771ce12b8a24db0b057d2a29f34a`, Root_Motion 폴더). **155f/2.5833s 60fps** — 콤보(1.0s)보다 훨씬 긴 묵직한 보상 모션(예비 stance→리포스트→긴 회수). 모션 fileID = `1827226128182048838`(Frank 표준 Take, 콤보와 동일).
+- **컨트롤러 편집 = `.controller` YAML 직접 Edit**(MCP 대화형 함정 회피, in-memory 측정과 별개). 추가: ①`Counter` trigger 파라미터(type 9) ②`Counter` 상태(fileID `1112000000000000002`, 단일 클립·블렌드트리 아님) ③AnyState→Counter(`1112...004`, `[If Counter]`, **CUT** hasExitTime=0/dur=0/self=0) ④Counter→Locomotion(`1112...003`, **hasExitTime=1/exitTime=0.9/dur=0.1**, 조건 없음 → 모션 완결 후 이동 복귀).
+- ★**AnyState 우선순위 = [0]Dash(bool) > [1]Tumbling(trig) > [2]Counter(trig)**. Counter는 트리거라 패링 순간 1프레임만 떠서 Dash/Tumbling과 충돌 없음(그 순간 Dash bool=false). fileID 충돌 회피=Tumbling이 1111...대역 써서 **1112...대역** 사용.
+- **Skill02 임포트 = 콤보와 동일 bake(공격 루트모션 정답)**: meta `loopBlendOrientation:1`(BakeRot ON·facing 코드소유)·`loopBlendPositionY:1`(BakeY ON·grounded)·`loopBlendPositionXZ:0`(BakeXZ OFF·전진 보존). 프리스틴은 셋 다 0이었음 → Rot/Y만 1로. 검증=ForceUpdate 후 lockRootRotation=T/lockRootHeightY=T/lockRootPositionXZ=F, **길이 2.5833 불변(팽창0)**.
+- **AnimationEvent 2개**(direct meta `events:` 편집, normalized time): `OnAttackHit`@**0.581**(int=0)·`OnComboEnd`@**0.92**. 0.581=블레이드속도 정점 실측 frame90(skin FBX `Frank_Katana_Skin.FBX`로 SampleAnimation, Weapon_Blade world속도 — ★skin FBX선 weapon본이 모션 운반해서 직접 추적 가능, 휴머노이드 클립의 무기본 고정과 다름). 부차peak f57(norm0.368)=예비 deflect 동작. 검증=런타임 OnAttackHit@1.5009s·OnComboEnd@2.3767s.
+- ⚠️ OnComboEnd(0.92)가 Counter→Loco exitTime(0.9)보다 약간 뒤 — 전이 중에도 소스 상태가 계속 전진하므로 OnComboEnd는 정상 발화(콤보 클립도 동일 구조로 검증됨). 코드 계약: OnComboEnd가 권위적 언락(없으면 플레이어 영구잠금), exit-time 전이는 비주얼 복귀만.
+- 코드측(`PlayerAnimatorDriver.TriggerCounter()`→SetTrigger("Counter"), 반격중 `_attacking`=true→OnAnimatorMove deltaPosition 루트적용)=오케스트레이터 소유, 미터치. **유저 플레이로 확정할 것=반격 모션 무게감·타이밍·루트모션 전진감**.
+
+## ★Step6 — RMB 스킬 Skill01 상태 (2026-06-20, Counter와 동형 복제)
+- 코드 계약: `PlayerAnimatorDriver.TriggerSkill()`→`SetTrigger("Skill01")`. 타격/종료=`OnAttackHit(int)`·`OnComboEnd()`(Counter와 동일 함수명, 코드가 받음). 코드(`KatanaWeapon`)는 오케스트레이터 동시작업 — Animation은 컨트롤러 상태+클립 임포트+이벤트만.
+- 클립 = `Frank_RPG_Katana_S1_Skill01.FBX`(guid `e03c0e64a065f3d46a833ec7f6cfbb45`, Root_Motion 폴더). **144f/2.4s 60fps** — Counter(155f)와도 다른 길이, 콤보(60f)의 4배. 모션 fileID=`1827226128182048838`(Frank 표준 Take). ★Counter 0.31/0.87 값 복사 금지(클립마다 모션 다름).
+- 컨트롤러 편집 = `.controller` YAML 직접 Edit(Step5와 동일 경로). 추가: ①`Skill01` trigger 파라미터(type 9, Counter 다음) ②`Skill01` 상태(fileID `1114000000000000002`, 단일 클립, **m_Tag: Action**=레일 busy 판정) ③AnyState→Skill01(`1114...004`, `[If Skill01]`, **CUT** hasExitTime=0/dur=0/self=0) ④Skill01→Locomotion(`1114...003`, **hasExitTime=1/exitTime=0.88/dur=0.1**, 조건 없음).
+- ★fileID 대역 = **1114...**(Counter가 1112, Tumbling이 1111, Combo가 1113... 충돌 회피). AnyState 우선순위 = **[0]Dash > [1]Counter > [2]Skill01 > [3]Combo1**(Counter와 같은급, 공격 위·대시 아래). 전부 트리거/별개 파라미터라 1프레임 충돌 없음.
+- 임포트 bake = 공격 루트모션 정답(Step5 동일): meta `loopBlendOrientation:1`(BakeRot ON)·`loopBlendPositionY:1`(BakeY ON)·`loopBlendPositionXZ:0`(BakeXZ OFF·전진보존). 프리스틴 셋 다 0 → Rot/Y만 1. 검증=lockRootRotation=T/lockRootHeightY=T/lockRootPositionXZ=F, **길이 2.4 불변(팽창0)**.
+- **AnimationEvent 2개**(direct meta `events:`, normalized time): `OnAttackHit`@**0.556**(int=0, frame80=블레이드속도 정점 0.86 단일 강타 실측, skin FBX `Frank_Katana_Skin.FBX` SampleAnimation Weapon_Blade world속도)·`OnComboEnd`@**0.86**(frame124). 검증=런타임 OnAttackHit@1.3344s(frame80.1)·OnComboEnd@2.064s(frame123.8).
+- ★★**Skill01은 Counter의 exit 함정을 고침**: Counter는 OnComboEnd(0.92) > exitTime(0.9)이라 "전이 중 전진"에 의존했음(아슬). Skill01은 **OnComboEnd(0.86) < exitTime(0.88)** = 이벤트가 exit보다 명확히 앞서 보장 발화(여유 ~3프레임). 유저가 이 함정을 콕 집어 지시함 → 앞으로 스킬류는 이벤트<exit 원칙.
+- **유저 플레이로 확정할 것**=스킬 발동감·타격 타이밍·모션 느낌. 유저가 VFX를 별도로 붙임.

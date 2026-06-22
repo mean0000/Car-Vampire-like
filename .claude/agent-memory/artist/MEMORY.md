@@ -18,3 +18,6 @@
 - [reference_enemy_attack_vfx_industry](reference_enemy_attack_vfx_industry.md) — 업계 적 공격 VFX 4축 리서치(3층분해/호드관리/탑다운/위계) + 현행 정합 분석 + 9종 권고 5개
 - [vfx-director-infra](project_vfx_director_infra.md) — VfxDirector 싱글톤+VfxLayers 상수 v1. 호드 culling(maxConcurrent=4)+wind-up 글로우. Venosaur 임팩트 첫 전환. 잔무=KatanaCtrl 에러 해소 후 시각검증+나머지 renderQueue 교체
 - [monster-aura-board](project_monster_aura_board.md) — 오라 v2 확정(청록폐기): 레드오렌지단일+밝기차등. MonsterSignatureAura.cs v1(시각미검증). AuraGrade LV1~5 SSOT.
+- [vefects-birp-urp-fix](project_vefects_birp_urp_fix.md) — Vefects 슬래시 BIRP→URP 교체 완료(캡처검증). guid 매핑 전체 수록. 미처리=원소별 슬래시(범위 밖)
+- [katana-dissolve-fx](project_katana_dissolve_fx.md) — 칼 나노봇 디졸브 v2 런타임 수정 완료. ★MPB 함정=_Dissolve가 CBUFFER 안이면 SRP Batcher에 막힘→CBUFFER 밖 standalone 선언 필수. weaponMesh NULL 직렬화 수정+씬저장. 플레이 달리기 검증 대기.
+- [sprint-streak-fx](project_sprint_streak_fx.md) — 달리기 속도감 VFX v1(방향성 스트릭+버스트). SprintTier 기어별 강도차·BurstFlash 펀치. 컴파일0·Stab H2건 수정. 플레이 손맛=유저 판정.
