@@ -467,7 +467,7 @@ public class KatanaWeapon : WeaponBehaviour
               h.knockback);
         // 피니셔(콤보 마지막 타)는 무게, 평타는 스냅 — 닿았을 때만.
         bool finisher = comboSet != null && _step >= comboSet.StepCount;
-        if (connected) FireHitFeedback(finisher ? finisherKick : comboKick);
+        if (connected) FireHitFeedback(finisher ? finisherKick : comboKick, finisher);
     }
 
     /// <summary>반격(Skill02) 타격 — 콤보보다 강한 보상치. DoHit 공통 경로 재사용.</summary>
@@ -478,7 +478,7 @@ public class KatanaWeapon : WeaponBehaviour
                                counterForwardOffset,
                                counterDamage > 0 ? counterDamage : 1,
                                counterKnockback);                            // 넉백 0은 유효(무넉백) — 가드 강제 안 함
-        if (connected) FireHitFeedback(finisherKick);
+        if (connected) FireHitFeedback(finisherKick, true);
     }
 
     /// <summary>대시 베기(DashAttack) 타격 — 런지 강타. DoHit 공통 경로 재사용(0/미설정 폴백 가드).</summary>
@@ -489,7 +489,7 @@ public class KatanaWeapon : WeaponBehaviour
                                Mathf.Max(0f, dashAttackForwardOffset),
                                dashAttackDamage > 0 ? dashAttackDamage : 1,
                                dashAttackKnockback);
-        if (connected) FireHitFeedback(finisherKick);
+        if (connected) FireHitFeedback(finisherKick, true);
     }
 
     /// <summary>스킬(Skill01) 타격 — SkillSet 판정 + ★타격 순간(칼 벨 때) VFX·사운드.</summary>
@@ -499,16 +499,19 @@ public class KatanaWeapon : WeaponBehaviour
         var h = skillSet.hit;
         bool connected = DoHit(h.range, h.arcHalfAngle > 0f ? h.arcHalfAngle : 80f, h.forwardOffset,
               h.damage > 0 ? h.damage : 1, h.knockback);
-        if (connected) FireHitFeedback(finisherKick);
+        if (connected) FireHitFeedback(finisherKick, true);
         SpawnSkillVfx();   // ★스윙 비주얼(칼 휘두르는 순간 = 콤보 슬래시와 동일하게 적중 불문)
         PlaySkillSfx();    // ★스윙 사운드(칼 베는 소리 — 적중 불문)
     }
 
     /// <summary>타격 손맛 발동 — 칼이 적에 닿았을 때만(헛스윙 제외). 카메라 킥(조준 방향, unscaled·스냅).
     /// ★전역 히트스탑은 의도적으로 안 씀 — 일시정지/슬로모와 timeScale 소유권 충돌(게이트 Codex P0/P1, 캐넌 "전역 timeScale 금지").</summary>
-    void FireHitFeedback(float camKick)
+    void FireHitFeedback(float camKick, bool finisher)
     {
-        if (camKick > 0f) PlayerCameraFollow.Active?.AddKick(_aimDir, camKick);
+        var cam = PlayerCameraFollow.Active;
+        if (cam == null) return;
+        if (camKick > 0f) cam.AddKick(_aimDir, camKick);
+        cam.NotifyHit(finisher);   // 평타=FOV 줌펀치 / 피니셔=큰 줌펀치 + 시네마틱 줌인(투-스테이트). 크기는 카메라 소유.
     }
 
     /// <summary>부채꼴+사거리+LOS 판정으로 IDamageable에 타격. 콤보/반격 공통(파라미터만 다름).

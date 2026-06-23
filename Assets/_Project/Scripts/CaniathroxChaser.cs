@@ -105,6 +105,21 @@ public class CaniathroxChaser : MonoBehaviour
     [Tooltip("외곽선 두께(월드 m). Crassorrid 차용 0.18.")]
     [SerializeField, Min(0f)] float telegraphEdgeWorld = 0.18f;
 
+    [Header("★히트리액트 (스태거/플린치 — 카타나에 맞으면 GetHit 상태. 빈도/무게 = 유저 ▶ 판정)")]
+    [Tooltip("켜면 피격 시 GetHit(플린치) 상태로 끊고 들어간다(끊고-베기). 끄면 피격해도 플래시만(애니 반응 없음).")]
+    [SerializeField] bool enableHitReact = true;
+    [Tooltip("★포이즈(경직치) 임계 — 누적 피해가 이 값 이상이면 스태거 발동 후 0으로 리셋. " +
+             "작게=가벼운 타격에도 자주 휘청(연속 스턴락 위험 ↑·무게감 ↑), 크게=한두 방은 버티고 큰/누적 타격에만 휘청(공격할 틈 ↑). " +
+             "enemyHp=4·카타나 ~1dmg 기준 시작값 2(약 2타마다 1회). 1로 낮추면 매 타격, 99로 올리면 사실상 무경직.")]
+    [SerializeField, Min(1)] int poiseThreshold = 2;
+    [Tooltip("스태거 1회 후 다음 스태거까지 최소 간격(초) — 연타로 영구 경직락 되는 것을 막는 안전판. " +
+             "0이면 임계만으로 제어(쿨다운 없음). 시작값 0.6(플린치 길이 ~0.625s 근처라 끝나자마자 또 휘청 방지).")]
+    [SerializeField, Min(0f)] float staggerCooldown = 0.6f;
+    [Tooltip("★발동(Lunge)·물기(Bite) *실행 중*에는 경직 면역(하이퍼아머)인가. " +
+             "false(기본)=발사 중에도 끊김 → 윈드업(Coil)뿐 아니라 돌진 자체도 베어 멈출 수 있음(플레이어 강함·끊고베기 극대). " +
+             "true=일단 발사하면 끝까지 간다(공격이 위협으로 완결, 플레이어가 윈드업에 반응해야 함). 손맛 판정은 유저.")]
+    [SerializeField] bool staggerImmuneDuringStrike = false;
+
     // ── ★장판 텔레그래프 활성 추적 (gen 세대 가드 — Crassorrid 패턴. 풀 회수로 주인 바뀌면 stale 조작 차단) ──
     TelegraphPad _activePad;
     int _activeGen = -1;
@@ -114,9 +129,13 @@ public class CaniathroxChaser : MonoBehaviour
     static readonly int PApproach = Animator.StringToHash("isApproaching");
     static readonly int PAttack   = Animator.StringToHash("attack");   // → Coil(응축) →[ExitTime]→ Lunge(JumpLunge_RM, Y억제)
     static readonly int PBite     = Animator.StringToHash("bite");     // → Bite(BiteForward_RM)
-    static readonly int SIdle  = Animator.StringToHash("IdleAngry");
-    static readonly int SApp   = Animator.StringToHash("Approach");
-    static readonly int SCoil  = Animator.StringToHash("Coil");        // 응축(조준) — 예측 yaw 허용 구간. Lunge(발사)는 회전 0.
+    static readonly int PGetHit   = Animator.StringToHash("getHit");   // → GetHit(GetHitBack 플린치, 제자리·하드컷). AnyState에서 끊고 진입.
+    static readonly int SIdle    = Animator.StringToHash("IdleAngry");
+    static readonly int SApp     = Animator.StringToHash("Approach");
+    static readonly int SCoil    = Animator.StringToHash("Coil");      // 응축(조준) — 예측 yaw 허용 구간. Lunge(발사)는 회전 0.
+    static readonly int SGetHit  = Animator.StringToHash("GetHit");    // 플린치 — 이 상태 동안 드라이버는 아무것도 안 한다(애니만).
+    static readonly int SLunge   = Animator.StringToHash("Lunge");     // 발사(JumpLunge_RM) — 하이퍼아머 판정용.
+    static readonly int SBite    = Animator.StringToHash("Bite");      // 물기(BiteForward_RM) — 하이퍼아머 판정용.
 
     // Run_RM 루트모션 네이티브 속도(2.4565m / 0.600s). Animator 스텝 실측값(2026-06-13).
     // approachSpeed를 이 값으로 나눈 배율을 Approach 상태에서만 modelAnimator.speed에 적용.
@@ -127,6 +146,12 @@ public class CaniathroxChaser : MonoBehaviour
     float _restTimer;      // 휴지 카운트다운(IdleAngry 진입 후)
     bool _approaching;     // isApproaching 상태 미러
     bool _holdsToken;      // 이 적이 현재 공격 토큰을 점유 중인가(Lunge 사이클 동안 true)
+
+    // ── 히트리액트(스태거) 상태 ──
+    EnemyDamageReceiver _receiver;   // 같은 GO의 피격 수신기(OnDamaged 구독 → 끊고-베기 플린치). 풀 재활용 대비 OnEnable에서 (재)구독.
+    bool _subscribed;                // 중복 구독/누수 가드(OnEnable이 여러 번 불려도 1회만).
+    int _poise;                      // 누적 피해(경직치). poiseThreshold 넘으면 스태거 발동 후 0.
+    float _staggerCdTimer;           // 다음 스태거까지 남은 쿨다운(초). >0이면 임계 넘어도 발동 보류.
 
     // ── 예측 조준용 플레이어 속도 추적 ──
     LabPlayerController _targetPlayer;   // target에 붙은 컨트롤러(있으면 PlanarVelocity 직접 사용). 없으면 위치델타로 추정.
@@ -149,12 +174,88 @@ public class CaniathroxChaser : MonoBehaviour
         ResetCycle();
     }
 
-    void OnEnable()  { if (!Roster.Contains(this)) Roster.Add(this); }
+    void OnEnable()
+    {
+        if (!Roster.Contains(this)) Roster.Add(this);
+        SubscribeReceiver();   // ★풀 재활용 대비: 매 활성마다 (재)구독. 내부 가드로 중복 방지.
+        // 재활용 시 경직 상태 리셋(이전 생애의 포이즈/쿨다운이 새 적에 새지 않게).
+        _poise = 0;
+        _staggerCdTimer = 0f;
+        // ★풀 재활용 대비: 직전 생애에 큐됐다가 비활성으로 미소비된 getHit 트리거를 비운다(재활성 즉시 엉뚱한 플린치 방지).
+        if (modelAnimator != null) modelAnimator.ResetTrigger(PGetHit);
+    }
     void OnDisable()
     {
         Roster.Remove(this);
+        UnsubscribeReceiver(); // ★구독 대칭(누수 방지) — 비활성/파괴/사망 모두 여기로.
         ReleaseToken();      // 비활성/파괴 시 점유 토큰 누수 방지
         CancelTelegraph();   // ★시전 중 비활성/파괴(특히 사망) → 차오르던 장판 즉시 취소 + _coilSpawned 리셋(Crassorrid 동형).
+    }
+
+    // ════════ 히트리액트 구독 — 같은 GO의 EnemyDamageReceiver.OnDamaged ════════
+    //   코드는 *상태 전환만* 한다(애니가 진실, 제2원칙). 위치/포즈/넉백을 코드가 만들지 않는다.
+    void SubscribeReceiver()
+    {
+        if (_subscribed) return;
+        if (_receiver == null && model != null) _receiver = model.GetComponent<EnemyDamageReceiver>();
+        if (_receiver == null) _receiver = GetComponent<EnemyDamageReceiver>();
+        if (_receiver != null)
+        {
+            _receiver.OnDamaged += OnDamaged;
+            _subscribed = true;
+        }
+    }
+    void UnsubscribeReceiver()
+    {
+        if (_receiver != null) _receiver.OnDamaged -= OnDamaged;
+        _subscribed = false;
+        // _receiver 참조는 유지(재활성 시 재구독에 재사용) — 컴포넌트가 같은 GO라 안정.
+    }
+
+    // ════════ 피격 콜백 — 포이즈 누적 → 임계+쿨다운 통과 시 스태거 발동(끊고-베기) ════════
+    //   ★사망 타격 가드(중요): 수신기는 OnDamaged를 *Die() 전에* 쏜다(이때 _dead는 아직 false). 따라서 IsDead가
+    //     아니라 *이미 차감된* Hp<=0으로 "이 타격이 치명타인가"를 본다. 치명타면 GetHit 안 함(곧 SetActive(false)될
+    //     시체에 플린치 트리거 = 다음 재활용에 stale 트리거 잔존 위험). IsDead는 이전 프레임 사망 잔여 콜백 방어.
+    void OnDamaged(int damage, Vector3 from)
+    {
+        if (!enableHitReact || modelAnimator == null) return;
+        if (_receiver != null && (_receiver.IsDead || _receiver.Hp <= 0)) return;   // 치명타·시체는 GetHit 금지.
+        // ★이미 GetHit(플린치) 중이면 무시 — 쿨다운값과 무관하게 연쇄 스태거·큐된 트리거 퍼마락 차단(Stab+Codex 수렴).
+        if (modelAnimator.GetCurrentAnimatorStateInfo(0).shortNameHash == SGetHit) return;
+
+        _poise += Mathf.Max(1, damage);   // 0데미지 히트도 최소 1 누적(영원히 안 쌓이는 것 방지).
+        if (_poise < poiseThreshold) return;          // 아직 경직 한계 미달 — 플래시만(수신기가 이미 처리).
+        if (_staggerCdTimer > 0f) return;             // 쿨다운 중 — 누적은 유지, 발동만 보류.
+
+        // 하이퍼아머: 발사(Lunge)/물기(Bite) *실행 중* 면역 옵션(켜졌을 때만). 윈드업(Coil)·접근은 항상 끊긴다.
+        if (staggerImmuneDuringStrike)
+        {
+            var st = modelAnimator.GetCurrentAnimatorStateInfo(0).shortNameHash;
+            if (st == SLunge || st == SBite) return;   // 발사 중엔 안 끊고 통과(공격 완결 — 누적은 유지).
+        }
+
+        TriggerStagger();
+    }
+
+    // 스태거 발동 = 진행 중 동작을 *하드 컷*으로 끊고 GetHit 진입(AnyState 전환·duration 0).
+    //   ★제0원칙: crossfade로 두 동작을 뭉개지 않는다 — 컨트롤러의 AnyState→GetHit가 m_TransitionDuration=0(컷).
+    //   코드는 트리거만 세우고, 현재 동작의 부산물(토큰/장판/접근/사이클)을 정리한다(모션은 안 만듦).
+    void TriggerStagger()
+    {
+        _poise = 0;
+        _staggerCdTimer = staggerCooldown;
+
+        // 진행 중 공격의 잔재 정리 — 안 하면 GetHit 후 IdleAngry로 돌아와도 _attackFired/_holdsToken이 stale.
+        SetApproaching(false);
+        CancelTelegraph();      // 차오르던 Coil 장판 즉시 취소(이미 깐 약속을 끊고-베기로 무효화 = 공정: 베면 예고도 사라짐).
+        ReleaseToken();         // 점유 토큰 반납 — 끊겼으니 다른 적이 공격할 차례.
+        ResetCycle();           // _attackFired=false·휴지 타이머 재무장. 위치는 안 건드림(루트모션 0 클립이라 제자리 플린치).
+        modelAnimator.speed = 1f;  // 혹시 Approach 배율이 남아있던 프레임이면 즉시 정상화(공격/플린치는 네이티브).
+
+        modelAnimator.ResetTrigger(PAttack);   // 큐된 공격 트리거가 GetHit 직후 곧장 재발동하는 것 방지.
+        modelAnimator.ResetTrigger(PBite);
+        modelAnimator.ResetTrigger(PGetHit);   // ★동일 프레임 2히트 시 트리거 2개 스택→이중 GetHit 방지(Stab) — 멱등.
+        modelAnimator.SetTrigger(PGetHit);      // → AnyState→GetHit 하드컷 진입.
     }
 
     // 차오르던 장판을 즉시 풀로 반납(gen 가드 — 이미 회수돼 남의 것이면 무시). Crassorrid.CancelTelegraph 동형.
@@ -295,9 +396,14 @@ public class CaniathroxChaser : MonoBehaviour
         // ★속도 단일 진실원: 매 프레임 1f(공격 클립 네이티브)로 리셋하고, Approach 브랜치에서만 배율로 올린다.
         //   이로써 Approach 이탈 경로(target/model null, Lunge/Bite/Idle 진입 등) 전부에서 배율이 새지 않는다(Codex 지적).
         modelAnimator.speed = 1f;
+        if (_staggerCdTimer > 0f) _staggerCdTimer -= Time.deltaTime;   // 스태거 쿨다운 카운트다운(상태 무관 상시).
         if (target == null || model == null) return;
         TrackTargetVelocity();   // 매 프레임 플레이어 속도 평활 — Coil 예측 조준의 입력(상태 무관 상시 추적).
         var info = modelAnimator.GetCurrentAnimatorStateInfo(0);
+
+        // ── GetHit(플린치) 중: ★제0원칙 — 이 동작만 돈다. 드라이버는 조향·조준·공격 무엇도 하지 않는다(애니가 완결). ──
+        //   루트모션 0 클립이라 위치도 안 움직인다(제자리 휘청). GetHit→IdleAngry는 컨트롤러 ExitTime이 자동 처리.
+        if (info.shortNameHash == SGetHit) return;
 
         // ★텔레그래프 엣지 가드(Crassorrid 패턴): Coil이 *아닐* 때 _coilSpawned=false → Coil 진입 첫 프레임에만 1회 스폰.
         //   Coil을 건너뛰는 비정상 경로(Bite 분기 등)에서 stale true 잔존으로 다음 장판이 무음 스킵되는 것까지 자가치유.
