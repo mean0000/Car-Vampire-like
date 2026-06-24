@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>최종 텔레그래프 (B+C 결합) — 2026-06-24</title>
+<style>
+  :root{ --bg:#0d0f12; --panel:#15181d; --ink:#d8dde3; --dim:#8b94a0; --line:#262b32;
+         --threat:#ffa233; --info:#27e0d8; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 -apple-system,Segoe UI,Roboto,'Malgun Gothic',sans-serif}
+  header{padding:18px 22px;border-bottom:1px solid var(--line)}
+  h1{margin:0 0 4px;font-size:18px}
+  .sub{color:var(--dim);font-size:13px;max-width:860px}
+  .wrap{display:flex;gap:22px;flex-wrap:wrap;padding:20px 22px;align-items:flex-start}
+  .stage{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;flex:1 1 560px;min-width:320px}
+  canvas{width:100%;height:auto;display:block;border-radius:7px;background:#0a0c0f}
+  .side{flex:0 1 280px;min-width:240px}
+  .ctl{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+  .ctl h3{margin:0 0 10px;font-size:13px;color:var(--dim);letter-spacing:.4px;text-transform:uppercase}
+  .ctl label{display:flex;gap:9px;align-items:center;margin:9px 0;font-size:13.5px;cursor:pointer}
+  .ctl input[type=range]{flex:1}
+  button{background:#222833;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:7px 13px;cursor:pointer;font-size:13px;width:100%}
+  button:hover{border-color:#3a4350}
+  .look{font-size:13px;color:var(--dim)}
+  .look b{color:var(--ink)}
+  .look li{margin:6px 0}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;color:var(--dim);font-size:12px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:11px;height:11px;border-radius:50%;display:inline-block}
+</style>
+</head>
+<body>
+<header>
+  <h1>최종 텔레그래프 — 본체 B(언제) + 벡터 C(누구/방향) 결합</h1>
+  <div class="sub">바닥 신호(A) 폐기. 모든 커밋 적은 <b>본체가 팽창+발광 포화(회→주황→백)</b>로 "충돌까지 시간"을 깔고(=B, 항상), 그 위에 <b>나를 향한 위협 벡터선</b>이 "이놈이 나를 노린다"를 더한다(=C, 임박·거리 비례). <b>흰 플래시 = NOW(크리티컬 창)</b> + 오디오 틱(하단 비트). 목표 검증: <b>동시 커밋 3~4에서도 안 엉키나.</b></div>
+</header>
+
+<div class="wrap">
+  <div class="stage">
+    <canvas id="cv" width="600" height="460"></canvas>
+    <div class="legend">
+      <span><span class="dot" style="background:#27e0d8"></span> 플레이어(조준)</span>
+      <span><span class="dot" style="background:#5a626d"></span> 떼(비커밋)</span>
+      <span><span class="dot" style="background:#ffa233"></span> 커밋(차오름=B)</span>
+      <span><span class="dot" style="background:#ff5a32"></span> 벡터=C</span>
+      <span><span class="dot" style="background:#fff"></span> NOW</span>
+    </div>
+  </div>
+
+  <div class="side">
+    <div class="ctl">
+      <h3>조작</h3>
+      <button id="pause">⏸ 일시정지</button>
+      <label>속도 <input type="range" id="speed" min="0.3" max="1.6" step="0.1" value="1"></label>
+      <label>동시 커밋 <input type="range" id="count" min="1" max="5" step="1" value="3"> <b id="countv">3</b></label>
+      <label><input type="checkbox" id="clutter" checked> 바닥 잡동사니</label>
+      <label><input type="checkbox" id="vec" checked> 벡터(C) 표시</label>
+      <label><input type="checkbox" id="fade" checked> C 근접 페이드(혼잡 방지)</label>
+    </div>
+    <div class="ctl look">
+      <h3>볼 것</h3>
+      <ul style="margin:0;padding-left:18px">
+        <li><b>잡동사니 켜도</b> 본체 신호는 안 묻힘(A와 차이).</li>
+        <li><b>동시 3~4</b>로 올려도 각 적이 *자기 자리서* 차올라 안 엉킴.</li>
+        <li><b>C 페이드 끄기</b> → 코앞 다수서 벡터가 중앙에 몰려 혼잡해지는 것 확인(왜 페이드가 필요한지).</li>
+        <li><b>벡터 끄기</b> → B만으로도 "언제"는 읽히되 "나를 노리는 놈"이 덜 또렷.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+const TAU=Math.PI*2, W=600,H=460, CX=300, CY=232;
+let paused=false, speed=1, clutter=true, committing=3, showVec=true, doFade=true, t=0, last=0;
+let horde=[], commits=[], debris=[];
+function rng(s){return ()=>{s=(s*1103515245+12345)&0x7fffffff;return s/0x7fffffff;}}
+function build(){
+  const r=rng(13); horde=[];
+  for(let i=0;i<18;i++){const a=r()*TAU, rad=70+r()*150;
+    horde.push({x:CX+Math.cos(a)*rad, y:CY+Math.sin(a)*rad*0.82, ph:r()*TAU, sp:0.22+r()*0.3});}
+  const r2=rng(47); debris=[];
+  for(let i=0;i<18;i++) debris.push({x:24+r2()*(W-48),y:70+r2()*(H-110),s:10+r2()*26,red:r2()<0.4,rot:r2()*TAU});
+  rebuild();
+}
+function rebuild(){
+  commits=[]; const r=rng(91);
+  for(let i=0;i<committing;i++){const a=(i/committing)*TAU+0.5, rad=92+(i%3)*30;
+    commits.push({x:CX+Math.cos(a)*rad, y:CY+Math.sin(a)*rad*0.82, period:2.4+r()*0.8, offset:r()*2.6});}
+}
+build();
+function phaseOf(c){
+  const wind=1.5,nowDur=0.17,rest=0.9, per=wind+nowDur+rest+(c.period-2.4);
+  let lt=((t+c.offset)%per+per)%per;
+  if(lt<wind) return {conv:lt/wind,now:false,rest:false};
+  if(lt<wind+nowDur) return {conv:1,now:true,rest:false};
+  return {conv:0,now:false,rest:true,after:Math.max(0,1-(lt-wind-nowDur)/0.4)};
+}
+const lerp=(a,b,t)=>a+(b-a)*t;
+const mix=(c1,c2,t)=>`rgb(${Math.round(lerp(c1[0],c2[0],t))},${Math.round(lerp(c1[1],c2[1],t))},${Math.round(lerp(c1[2],c2[2],t))})`;
+const GRAY=[90,98,110],ORG=[255,150,40];
+
+function floor(ctx){
+  ctx.fillStyle='#0a0c0f'; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(255,255,255,0.035)'; ctx.lineWidth=1;
+  for(let x=0;x<=W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=20;y<=H;y+=36){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  if(clutter) for(const d of debris){ctx.save();ctx.translate(d.x,d.y);ctx.rotate(d.rot);
+    ctx.fillStyle=d.red?'rgba(120,28,24,0.5)':'rgba(70,72,78,0.45)';
+    ctx.beginPath();ctx.ellipse(0,0,d.s,d.s*0.55,0,0,TAU);ctx.fill();ctx.restore();}
+}
+function creature(ctx,x,y,size,fill,rim,rimW){
+  ctx.fillStyle=fill;
+  ctx.beginPath();ctx.ellipse(x,y,size,size*0.86,0,0,TAU);ctx.fill();
+  for(let k=0;k<5;k++){const a=k/5*TAU+0.3;ctx.beginPath();
+    ctx.ellipse(x+Math.cos(a)*size*0.92,y+Math.sin(a)*size*0.82,size*0.3,size*0.19,a,0,TAU);ctx.fill();}
+  if(rim){ctx.lineWidth=rimW||2;ctx.strokeStyle=rim;
+    ctx.beginPath();ctx.ellipse(x,y,size+1.5,size*0.86+1.5,0,0,TAU);ctx.stroke();}
+}
+function draw(ctx){
+  floor(ctx);
+  // horde
+  for(const h of horde){const px=h.x+Math.cos(h.ph+t*h.sp)*3,py=h.y+Math.sin(h.ph+t*h.sp)*2;
+    creature(ctx,px,py,9,'#3c424b','rgba(0,0,0,0.4)',1);}
+  // vectors (C) first — under bodies
+  if(showVec) for(const c of commits){
+    const p=phaseOf(c); if(p.rest&&!p.after) continue;
+    const dx=CX-c.x,dy=CY-c.y,len=Math.hypot(dx,dy),ux=dx/len,uy=dy/len;
+    let fade=1; if(doFade) fade=Math.min(1,Math.max(0.12,(len-55)/95));
+    const intensity=(p.now?1:p.conv)*fade;
+    if(intensity<=0.02) continue;
+    const reach=lerp(0,len*0.5,p.now?1:p.conv);
+    ctx.save();ctx.lineCap='round';
+    ctx.lineWidth=(p.now?8:2.5+p.conv*4.5)*Math.min(1,0.4+fade);
+    ctx.strokeStyle=p.now?`rgba(255,255,255,${0.9*Math.min(1,0.5+fade)})`:`rgba(255,90,50,${(0.18+p.conv*0.6)*fade})`;
+    ctx.beginPath();ctx.moveTo(c.x+ux*11,c.y+uy*11);ctx.lineTo(c.x+ux*(11+reach),c.y+uy*(11+reach));ctx.stroke();
+    // arrowhead near player end
+    if(intensity>0.4){const hx=c.x+ux*(11+reach),hy=c.y+uy*(11+reach),pa=Math.atan2(uy,ux);
+      ctx.fillStyle=p.now?'#fff':`rgba(255,110,60,${p.conv})`;ctx.beginPath();
+      ctx.moveTo(hx,hy);ctx.lineTo(hx-Math.cos(pa-0.5)*9,hy-Math.sin(pa-0.5)*9);
+      ctx.lineTo(hx-Math.cos(pa+0.5)*9,hy-Math.sin(pa+0.5)*9);ctx.closePath();ctx.fill();}
+    ctx.restore();
+  }
+  // bodies (B) + NOW
+  for(const c of commits){
+    const p=phaseOf(c);
+    let size=10,col='#5a626d',rim=null,rimW=2;
+    if(p.now){size=10*1.34;col='#fff';rim='#fff';rimW=4.5;}
+    else if(!p.rest){size=lerp(10,11.8,p.conv);col=mix(GRAY,ORG,p.conv);
+      rim=`rgba(255,${Math.round(lerp(150,215,p.conv))},60,${0.3+p.conv*0.6})`;rimW=2+p.conv*3;}
+    else if(p.after){col=mix(GRAY,[255,255,255],p.after*0.35);}
+    if(p.now||(!p.rest&&p.conv>0.35)){
+      const al=p.now?0.55:0.1+p.conv*0.28, g=ctx.createRadialGradient(c.x,c.y,2,c.x,c.y,size*2.8);
+      g.addColorStop(0,`rgba(255,${p.now?255:175},${p.now?255:60},${al})`);g.addColorStop(1,'rgba(255,150,40,0)');
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(c.x,c.y,size*2.8,0,TAU);ctx.fill();}
+    creature(ctx,c.x,c.y,size,col,rim,rimW);
+    if(p.now){ctx.strokeStyle='#fff';ctx.lineWidth=3;
+      for(let k=0;k<4;k++){const a=k/4*TAU+0.4;ctx.beginPath();
+        ctx.moveTo(c.x+Math.cos(a)*18,c.y+Math.sin(a)*18);ctx.lineTo(c.x+Math.cos(a)*28,c.y+Math.sin(a)*28);ctx.stroke();}}
+  }
+  // player + aim toward most imminent
+  let best=null,bv=-1; for(const c of commits){const p=phaseOf(c);const v=p.now?2:p.conv;if(v>bv){bv=v;best=c;}}
+  const aim=best||{x:CX+90,y:CY};
+  ctx.strokeStyle='rgba(39,224,216,0.5)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(CX,CY);ctx.lineTo(aim.x,aim.y);ctx.stroke();
+  ctx.fillStyle='#27e0d8';ctx.beginPath();ctx.arc(CX,CY,9,0,TAU);ctx.fill();
+  ctx.fillStyle='#0a0c0f';ctx.beginPath();ctx.arc(CX,CY,4,0,TAU);ctx.fill();
+  // NOW beat (audio tick stand-in)
+  let anyNow=commits.some(c=>phaseOf(c).now);
+  ctx.fillStyle=anyNow?'rgba(255,255,255,0.92)':'rgba(255,255,255,0.12)';
+  ctx.fillRect(12,H-18,anyNow?80:30,7);
+  ctx.fillStyle='rgba(216,221,227,0.55)';ctx.font='11px sans-serif';
+  ctx.fillText(anyNow?'♪ NOW — 크리티컬 창 (오디오 틱)':'…', 102, H-12);
+}
+const ctx=document.getElementById('cv').getContext('2d');
+function frame(ts){const dt=Math.min(0.05,(ts-last)/1000||0);last=ts;if(!paused)t+=dt*speed;draw(ctx);requestAnimationFrame(frame);}
+requestAnimationFrame(frame);
+document.getElementById('pause').onclick=e=>{paused=!paused;e.target.textContent=paused?'▶ 재생':'⏸ 일시정지';};
+document.getElementById('speed').oninput=e=>speed=+e.target.value;
+document.getElementById('clutter').onchange=e=>clutter=e.target.checked;
+document.getElementById('vec').onchange=e=>showVec=e.target.checked;
+document.getElementById('fade').onchange=e=>doFade=e.target.checked;
+document.getElementById('count').oninput=e=>{committing=+e.target.value;document.getElementById('countv').textContent=committing;rebuild();};
+</script>
+</body>
+</html>

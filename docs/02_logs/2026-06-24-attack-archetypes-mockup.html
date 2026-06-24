@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>동작 내장 텔레그래프 — 공격 아키타입 (2026-06-24)</title>
+<style>
+  :root{--bg:#0d0f12;--panel:#15181d;--ink:#d8dde3;--dim:#8b94a0;--line:#262b32;--threat:#ffa233;--info:#27e0d8}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,Segoe UI,Roboto,'Malgun Gothic',sans-serif}
+  header{padding:18px 22px;border-bottom:1px solid var(--line)}
+  h1{margin:0 0 4px;font-size:18px}
+  .sub{color:var(--dim);font-size:13px;max-width:900px}
+  .controls{padding:10px 22px;border-bottom:1px solid var(--line);background:#11141a;display:flex;gap:16px;align-items:center}
+  button{background:#222833;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 12px;cursor:pointer}
+  label{color:var(--dim);font-size:13px;display:flex;gap:7px;align-items:center}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;padding:20px 22px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+  .panel h2{margin:0 0 2px;font-size:15px}
+  .panel .badge{font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;margin-left:6px}
+  .ok{background:#16332a;color:#52e0a8}.warn{background:#3a2d16;color:#e0c152}
+  canvas{width:100%;height:auto;display:block;border-radius:7px;background:#0a0c0f;margin:8px 0}
+  .cap{color:var(--dim);font-size:12.5px;min-height:60px}
+  .cap b{color:var(--ink)} .cap .now{color:#fff}
+  .legend{padding:0 22px 22px;color:var(--dim);font-size:12.5px}
+  .legend .dot{display:inline-block;width:11px;height:11px;border-radius:50%;vertical-align:middle;margin:0 4px}
+</style>
+</head>
+<body>
+<header>
+  <h1>동작 내장 텔레그래프 — 읽히는 공격 아키타입</h1>
+  <div class="sub">텔레그래프를 *위에 얹지* 않고 <b>공격 모션 자체가 예고</b>. Codex+Animation 발산 결과. 핵심: <b class="now">흰 플래시 = NOW(커밋 비트 = 최대 위험+최대 무방비 = 크리티컬 창)</b>. ★두 교정 시연: 돌진의 NOW는 *임팩트*(돌진 자체 아님) · 점프의 NOW는 *그림자 팽창*(수직은 부감서 안 보임). 하단 비트=오디오 틱.</div>
+</header>
+<div class="controls">
+  <button id="pause">⏸ 일시정지</button>
+  <label>속도 <input type="range" id="speed" min="0.3" max="1.5" step="0.1" value="0.85"></label>
+  <span style="color:var(--dim);font-size:12px">느리게 두고 NOW 프레임을 잡아보세요</span>
+</div>
+
+<div class="grid">
+  <div class="panel"><h2>A · 돌진-임팩트 <span class="badge ok">Caniathrox·Fulgurodonte</span></h2>
+    <canvas id="cA" width="300" height="240"></canvas>
+    <div class="cap"><b>멀리서 일정 속도 접근(예고 최강) → 급제동.</b> <span class="now">NOW = 박으며 멈추는 임팩트 프레임</span> (돌진 중이 아니라!). 직선이라 옆으로 빠지면 회피 가능 = 읽기 쉬운 위험.</div></div>
+
+  <div class="panel"><h2>C · 횡-휘두르기 <span class="badge ok">Dimax — 즉시 가능</span></h2>
+    <canvas id="cC" width="300" height="240"></canvas>
+    <div class="cap"><b>팔을 반대로 빼는 코킹(방향 예고) → 수평 호.</b> <span class="now">NOW = 호가 정면을 지나는 정점</span>. 칼호=부감 최강 가독. <b>Dimax 4분할 ClawHit이 이미 이 구조 — 첫 검증 1순위.</b></div></div>
+
+  <div class="panel"><h2>B · 점프-내려찍기 <span class="badge warn">그림자 필수</span></h2>
+    <canvas id="cB" width="300" height="240"></canvas>
+    <div class="cap"><b>★수직은 부감서 안 보임 — 그림자가 진짜 텔레그래프.</b> 체공=그림자 작고 멀어짐, 낙하=그림자 급팽창. <span class="now">NOW = 착지(그림자 최대) 프레임</span>. 그림자 빼면 "언제 때릴지 모름".</div></div>
+
+  <div class="panel"><h2>D · 충전-폭발 <span class="badge warn">VFX 90% · artist</span></h2>
+    <canvas id="cD" width="300" height="240"></canvas>
+    <div class="cap"><b>제자리 = 모션 단독 안 읽힘.</b> 몸 부풀기+발광+바닥 링 채움이 예고(=절차 VFX). <span class="now">NOW = 폭발(scale peak→방출)</span>. Venodonte 원거리. 모션 의존 ❌, VFX 의존 ✓.</div></div>
+</div>
+
+<div class="legend">
+  <span class="dot" style="background:#27e0d8"></span>플레이어
+  <span class="dot" style="background:#ffa233"></span>커밋(차오름)
+  <span class="dot" style="background:#fff"></span>NOW
+  <span class="dot" style="background:#2a2d33"></span>그림자(착지 예고)
+  &nbsp; · &nbsp; 검증=인엔진 부감 캡처(이건 도식, 최종 체감은 플레이 게이트)
+</div>
+
+<script>
+const TAU=Math.PI*2;
+let paused=false, speed=0.85, t=0, last=0;
+const lerp=(a,b,t)=>a+(b-a)*t, clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), ease=t=>t*t*(3-2*t);
+function ph(period,off){return (((t+off)/period)%1+1)%1;}
+
+function floor(ctx,W,H){
+  ctx.fillStyle='#0a0c0f';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(255,255,255,0.04)';ctx.lineWidth=1;
+  for(let x=0;x<=W;x+=34){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=18;y<=H;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+}
+function creature(ctx,x,y,size,fill,rim,rimW){
+  ctx.fillStyle=fill;ctx.beginPath();ctx.ellipse(x,y,size,size*0.86,0,0,TAU);ctx.fill();
+  for(let k=0;k<5;k++){const a=k/5*TAU+0.3;ctx.beginPath();
+    ctx.ellipse(x+Math.cos(a)*size*0.92,y+Math.sin(a)*size*0.82,size*0.3,size*0.19,a,0,TAU);ctx.fill();}
+  if(rim){ctx.lineWidth=rimW||2;ctx.strokeStyle=rim;ctx.beginPath();ctx.ellipse(x,y,size+1.5,size*0.86+1.5,0,0,TAU);ctx.stroke();}
+}
+function player(ctx,x,y){
+  ctx.fillStyle='#27e0d8';ctx.beginPath();ctx.arc(x,y,8,0,TAU);ctx.fill();
+  ctx.fillStyle='#0a0c0f';ctx.beginPath();ctx.arc(x,y,3.5,0,TAU);ctx.fill();
+}
+function nowMark(ctx,x,y,r){
+  ctx.strokeStyle='#fff';ctx.lineWidth=3;
+  for(let k=0;k<4;k++){const a=k/4*TAU+0.4;ctx.beginPath();
+    ctx.moveTo(x+Math.cos(a)*(r+6),y+Math.sin(a)*(r+6));ctx.lineTo(x+Math.cos(a)*(r+16),y+Math.sin(a)*(r+16));ctx.stroke();}
+}
+function glow(ctx,x,y,r,col,a){const g=ctx.createRadialGradient(x,y,2,x,y,r);
+  g.addColorStop(0,col.replace('A',a));g.addColorStop(1,col.replace('A','0'));ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill();}
+function shock(ctx,x,y,p){ // expanding ring at impact, p 0..1
+  ctx.strokeStyle=`rgba(255,255,255,${0.6*(1-p)})`;ctx.lineWidth=3*(1-p)+0.5;
+  ctx.beginPath();ctx.ellipse(x,y+4,10+p*26,(10+p*26)*0.5,0,0,TAU);ctx.stroke();}
+function beat(ctx,W,H,now){ctx.fillStyle=now?'rgba(255,255,255,0.92)':'rgba(255,255,255,0.12)';
+  ctx.fillRect(8,H-12,now?44:20,5);
+  ctx.fillStyle='rgba(216,221,227,0.5)';ctx.font='9px sans-serif';ctx.fillText(now?'♪ NOW':'…',58,H-8);}
+
+// ===== A: charge-impact =====
+function drawA(ctx){const W=300,H=240;floor(ctx,W,H);
+  const px=232,py=120; player(ctx,px,py);
+  const p=ph(3.4,0); let ex,size=11,col='#6a6f78',rim=null,now=false,stretch=1;
+  if(p<0.30){ // telegraph: cock back at far left + emissive
+    const k=p/0.30; ex=64-lerp(0,8,k); col=`rgb(${Math.round(lerp(106,255,k))},${Math.round(lerp(111,150,k))},${Math.round(lerp(120,50,k))})`;
+    rim=`rgba(255,170,60,${0.2+k*0.6})`; if(k>0.4){glow(ctx,ex,py,size*2.4,'rgba(255,150,40,A)',0.12+k*0.2);}
+  } else if(p<0.52){ // charge
+    const k=(p-0.30)/0.22; ex=lerp(56,px-20,ease(k)); stretch=1.5; col='#ff8a3a';
+    ctx.strokeStyle='rgba(255,120,50,0.25)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(56,py);ctx.lineTo(ex,py);ctx.stroke();
+  } else if(p<0.60){ // IMPACT (NOW)
+    ex=px-20; now=true; col='#fff'; size=12; const ip=(p-0.52)/0.08; shock(ctx,ex,py,ip); glow(ctx,ex,py,size*3,'rgba(255,255,255,A)',0.5);
+  } else { const k=(p-0.60)/0.40; ex=lerp(px-20,56,ease(k)); col='#6a3a34'; } // retreat
+  ctx.save();if(stretch!=1){ctx.translate(ex,py);ctx.scale(stretch,1/Math.sqrt(stretch));ctx.translate(-ex,-py);}
+  creature(ctx,ex,py,size,col,rim,2.5);ctx.restore();
+  if(now)nowMark(ctx,ex,py,size); beat(ctx,W,H,now);
+}
+
+// ===== C: horizontal sweep =====
+function drawC(ctx){const W=300,H=240;floor(ctx,W,H);
+  const px=150,py=150; player(ctx,px,py);
+  const ex=150,ey=66, p=ph(2.8,0); let col='#6a6f78',rim=null,now=false,armA;
+  // enemy above player, sweeps an arc across the bottom (toward player)
+  if(p<0.42){const k=p/0.42; armA=lerp(-0.4,-1.5,k); // cock back (pull away from sweep dir)
+    col=`rgb(${Math.round(lerp(106,255,k))},${Math.round(lerp(111,150,k))},${Math.round(lerp(120,50,k))})`; rim=`rgba(255,170,60,${0.2+k*0.55})`;
+  } else if(p<0.58){const k=(p-0.42)/0.16; armA=lerp(-1.5,1.5,ease(k)); col='#ff9a3a';
+    // arc trail
+    ctx.strokeStyle='rgba(255,150,60,0.7)';ctx.lineWidth=8;ctx.lineCap='round';
+    ctx.beginPath();ctx.arc(ex,ey,40,Math.PI/2-1.5,Math.PI/2+ (armA),false);ctx.stroke();
+    if(Math.abs(armA)<0.25){now=true;} // apex passes front = NOW
+  } else {const k=(p-0.58)/0.42; armA=lerp(1.5,-0.4,ease(k)); col='#6a3a34';}
+  if(now){ctx.strokeStyle='rgba(255,255,255,0.85)';ctx.lineWidth=9;ctx.lineCap='round';
+    ctx.beginPath();ctx.arc(ex,ey,40,Math.PI/2-0.5,Math.PI/2+0.5,false);ctx.stroke();}
+  creature(ctx,ex,ey,11,now?'#fff':col,rim,2.5);
+  // arm indicator
+  ctx.strokeStyle=now?'#fff':'rgba(255,150,60,0.8)';ctx.lineWidth=4;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(ex,ey);ctx.lineTo(ex+Math.sin(armA)*34,ey+Math.cos(armA)*34);ctx.stroke();
+  if(now)nowMark(ctx,ex,ey,12); beat(ctx,W,H,now);
+}
+
+// ===== B: leap-slam (shadow telegraph) =====
+function drawB(ctx){const W=300,H=240;floor(ctx,W,H);
+  const px=150,py=140; player(ctx,px,py);
+  const startX=80,startY=180, landX=px-2,landY=py-4;
+  const p=ph(3.2,0); let now=false;
+  if(p<0.22){ // crouch windup
+    const k=p/0.22; const col=`rgb(${Math.round(lerp(106,255,k))},${Math.round(lerp(111,150,k))},${Math.round(lerp(120,50,k))})`;
+    ctx.save();ctx.translate(startX,startY);ctx.scale(1.15,0.8);ctx.translate(-startX,-startY);
+    creature(ctx,startX,startY,11,col,`rgba(255,170,60,${0.2+k*0.5})`,2.5);ctx.restore();
+  } else if(p<0.60){ // airborne — SHADOW at landing grows; body small & "high"
+    const k=(p-0.22)/0.38;
+    // shadow at landing: small->growing (key telegraph)
+    const sr=lerp(5,17,ease(k));
+    ctx.fillStyle=`rgba(0,0,0,${0.35+k*0.35})`;ctx.beginPath();ctx.ellipse(landX,landY+8,sr,sr*0.5,0,0,TAU);ctx.fill();
+    ctx.strokeStyle=`rgba(255,90,50,${0.3+k*0.5})`;ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(landX,landY+8,sr,sr*0.5,0,0,TAU);ctx.stroke();
+    // body: arcs from start to above-landing, drawn smaller (faux height)
+    const bx=lerp(startX,landX,ease(k)), by=lerp(startY,landY-34,ease(k)), bs=lerp(11,7.5,k);
+    creature(ctx,bx,by,bs,'#ff8a3a',null,2);
+  } else if(p<0.68){ // LAND = NOW
+    now=true; const ip=(p-0.60)/0.08; shock(ctx,landX,landY,ip);
+    glow(ctx,landX,landY,30,'rgba(255,255,255,A)',0.5);
+    creature(ctx,landX,landY,12.5,'#fff','#fff',4);
+  } else { const k=(p-0.68)/0.32; creature(ctx,landX,landY,11,'#6a3a34',null,2);}
+  if(now)nowMark(ctx,landX,landY,13); beat(ctx,W,H,now);
+}
+
+// ===== D: charge-burst (VFX driven) =====
+function drawD(ctx){const W=300,H=240;floor(ctx,W,H);
+  const px=92,py=150; player(ctx,px,py);
+  const ex=210,ey=120, p=ph(2.9,0); let now=false,size=11,col='#6a6f78',rim=null;
+  if(p<0.58){ // charging: swell + emissive + ground ring fill
+    const k=p/0.58; size=lerp(11,13.5,k); col=`rgb(${Math.round(lerp(106,255,k))},${Math.round(lerp(111,160,k))},${Math.round(lerp(120,60,k))})`;
+    rim=`rgba(255,180,70,${0.25+k*0.6})`; glow(ctx,ex,ey,size*2.6,'rgba(255,160,50,A)',0.1+k*0.3);
+    // ground ring fill (arc grows)
+    ctx.strokeStyle=`rgba(255,150,60,${0.4+k*0.4})`;ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(ex,ey+4,22,-Math.PI/2,-Math.PI/2+TAU*k,false);ctx.stroke();
+  } else if(p<0.66){ now=true; col='#fff'; size=10; const ip=(p-0.58)/0.08;
+    shock(ctx,ex,ey,ip); glow(ctx,ex,ey,size*4,'rgba(255,255,255,A)',0.55);
+  } else { col='#6a3a34'; }
+  creature(ctx,ex,ey,size,col,rim,2.5);
+  if(now)nowMark(ctx,ex,ey,size); beat(ctx,W,H,now);
+}
+
+const ctxs={A:document.getElementById('cA').getContext('2d'),C:document.getElementById('cC').getContext('2d'),
+  B:document.getElementById('cB').getContext('2d'),D:document.getElementById('cD').getContext('2d')};
+function frame(ts){const dt=Math.min(0.05,(ts-last)/1000||0);last=ts;if(!paused)t+=dt*speed;
+  drawA(ctxs.A);drawC(ctxs.C);drawB(ctxs.B);drawD(ctxs.D);requestAnimationFrame(frame);}
+requestAnimationFrame(frame);
+document.getElementById('pause').onclick=e=>{paused=!paused;e.target.textContent=paused?'▶ 재생':'⏸ 일시정지';};
+document.getElementById('speed').oninput=e=>speed=+e.target.value;
+</script>
+</body>
+</html>
