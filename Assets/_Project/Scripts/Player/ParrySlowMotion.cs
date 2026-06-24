@@ -30,11 +30,18 @@ public class ParrySlowMotion : MonoBehaviour
     [Tooltip("1.0으로 복귀하는 시간(초, 실시간).")]
     [SerializeField, Min(0.01f)] float rampDuration = 0.4f;
 
+    [Header("★클래시(공격 맞받음) — 짧은 프리즈만(긴 슬로모 ❌)")]
+    [Tooltip("맞받음 성공 순간 짧은 정지(초, 실시간) = '탁'. 슬로모 없이 프리즈만 — 호드서 빈번해도 안 늘어지게. 0이면 끔.")]
+    [SerializeField, Min(0f)] float clashFreeze = 0.05f;
+    [Tooltip("연속 클래시 프리즈 최소 간격(초) — 호드서 매 타격 클래시해도 화면이 계속 멎지 않게(스터터 방지). 이 안엔 프리즈 생략(데미지·시안은 무기가 별도).")]
+    [SerializeField, Min(0f)] float clashCooldown = 0.13f;
+
     float _baseFixedDelta;
     float _hitStop;     // unscaled 남은 정지 시간
     bool _slowActive;
     float _slowHold;
     float _slowRamp;
+    float _clashCdTimer;   // 클래시 프리즈 쿨다운 잔여(unscaled)
 
     void Awake()
     {
@@ -59,7 +66,9 @@ public class ParrySlowMotion : MonoBehaviour
     void OnDisable()
     {
         if (health != null) health.Parried -= OnParry;
-        if (_hitStop > 0f || _slowActive) Restore();   // 비활성화 중 timeScale 잔존 방지
+        // ★Codex: timeScale 소유자 — 클래시 프리즈가 _hitStop<=0로 막 전환된 1프레임 갭에 비활성화되면 _slowActive=false라
+        //   조건부 복원이 누수(timeScale 0 잔존=게임 프리즈). Update 안전망과 동일 기준(timeScale≠1)까지 포함해 복원.
+        if (_hitStop > 0f || _slowActive || !Mathf.Approximately(Time.timeScale, 1f)) Restore();
     }
 
     void OnParry()
@@ -71,8 +80,20 @@ public class ParrySlowMotion : MonoBehaviour
         _slowRamp = rampDuration;
     }
 
+    /// <summary>★공격 맞받음(클래시) — 짧은 프리즈만(긴 슬로모 ❌). 무기(KatanaWeapon)가 클래시 성공 시 호출.
+    /// 내부 쿨다운으로 호드 빈번 클래시가 화면을 계속 멎게 하지 않는다(timeScale 단일 소유자 경유로 안전).</summary>
+    public void Clash()
+    {
+        if (_clashCdTimer > 0f) return;       // 쿨다운 중 — 프리즈 생략(데미지/시안 플래시는 무기가 별도 처리)
+        _clashCdTimer = clashCooldown;
+        if (clashFreeze <= 0f) return;
+        _hitStop = Mathf.Max(_hitStop, clashFreeze);   // 프리즈만 — _slowActive는 안 켠다(짧은 탁).
+    }
+
     void Update()
     {
+        if (_clashCdTimer > 0f) _clashCdTimer -= Time.unscaledDeltaTime;   // 쿨다운은 상태 무관 상시 감쇠(아래 조기 반환 전).
+
         if (_hitStop <= 0f && !_slowActive)
         {
             if (!Mathf.Approximately(Time.timeScale, 1f)) Restore();   // 안전망 — 잔존 복구
@@ -85,7 +106,9 @@ public class ParrySlowMotion : MonoBehaviour
         if (_hitStop > 0f)
         {
             _hitStop -= udt;     // 슬로모 타이머는 멈춤(프리즈→슬로우 순서 보존)
-            final = hitStopScale;
+            // ★M-1(부분): HitStop.cs가 동시 활성이면 그 스케일 아래로 안 덮어쓴다(0으로 stomp 방지). 단방향 완화 —
+            //   전역 timeScale 소유권 전체 통합 중재(HitStop↔ParrySlowMotion 양방향)는 별도 과제(현 프로토 미발화).
+            final = Mathf.Max(hitStopScale, HitStop.ActiveScale);
         }
         else if (_slowHold > 0f)
         {

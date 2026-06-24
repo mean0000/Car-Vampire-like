@@ -43,8 +43,11 @@ public class CombatSliceSpawner : MonoBehaviour
     [SerializeField, Min(0f)] float radiusJitter = 4f;
 
     [Header("군중 AI — 공격 토큰 (동시 공격 제한 노브)")]
-    [Tooltip("동시에 돌진(Lunge/Bite)할 수 있는 최대 적 수 = 동시 텔레그래프 수. ★호드가 커도 이 수만 동시 공격이라 *읽힌다*(DMC식 군중). 크게=정신없고 위협적, 작게=하나씩 읽기 쉬움.")]
+    [Tooltip("동시에 돌진(Lunge/Bite)할 수 있는 최대 적 수 = 동시 텔레그래프 수. ★호드가 커도 이 수만 동시 공격이라 *읽힌다*(DMC식 군중). 크게=정신없고 위협적, 작게=하나씩 읽기 쉬움. ★플레이 중 슬라이더 조정 즉시 반영.")]
     [SerializeField, Range(1, 12)] int maxAttackTokens = 4;
+    [Tooltip("★cap 풀기(읽고-베기 핵심 게이트) — 켜면 maxAttackTokens 무시하고 swarmSize까지 전부 동시 커밋(사실상 무제한). " +
+             "'동시 커밋 cap이 재미를 만드나, 결함(호드-듀얼 충돌)을 가리나'를 양쪽으로 본다. 풀어도 떼-듀얼이 결합돼 있으면 동사가 진짜.")]
+    [SerializeField] bool uncapTokens = false;
 
     [Header("피격 (EnemyDamageReceiver — 읽고-베기 = 금방 안 죽어야 함)")]
     [Tooltip("Caniathrox HP. 3~4 권장(읽을 시간 확보). receiver의 maxHp 인스펙터 값을 덮는다.")]
@@ -117,6 +120,14 @@ public class CombatSliceSpawner : MonoBehaviour
     // 끊임없이 몰려오기 — 죽은(비활성) 적을 회수하고 swarmSize가 되게 보충(respawnInterval throttle).
     void Update()
     {
+        // ★cap 런타임 반영 — 인스펙터 maxAttackTokens/uncapTokens를 플레이 중 즉시 풀에 밀어넣는다(슬라이더로 손맛 튜닝·게이트 테스트).
+        //   continuousSwarm 여부와 무관하게 매 프레임(저비용) — 1회 스폰 모드에서도 cap 조정이 먹게.
+        if (_tokenPool != null)
+        {
+            int desired = uncapTokens ? Mathf.Max(maxAttackTokens, swarmSize) : maxAttackTokens;
+            if (_tokenPool.MaxTokens != desired) _tokenPool.SetMax(desired);
+        }
+
         if (!_canSpawn || !continuousSwarm || playerTarget == null) return;
 
         // 시체 회수: receiver.Die가 SetActive(false) → 여기서 Destroy(메모리 누적 방지). null도 정리.
@@ -169,9 +180,18 @@ public class CombatSliceSpawner : MonoBehaviour
         receiver.SetMaxHp(enemyHp);
 
         // ③ Chaser 와이어링 + 텔레그래프 풀.
+        // ★H-1: Animator 검증 — 없으면 Chaser가 Awake에서 자기비활성화되며 GO가 _alive 슬롯을 영구 점유해 보충이 무음 중단된다.
+        //   GetComponentInChildren는 루트(self)도 포함하므로 정상 프리팹은 통과. 프리팹 파손 시 즉시 fail-fast(취소+Destroy).
+        var animator = enemy.GetComponentInChildren<Animator>();
+        if (animator == null)
+        {
+            Debug.LogError("[CombatSliceSpawner] Caniathrox 프리팹에 Animator 없음 — 이 스폰 취소(슬롯 누수 방지).", caniathroxPrefab);
+            Destroy(enemy);
+            return;
+        }
         var chaser = enemy.AddComponent<CaniathroxChaser>();
         chaser.model = enemy.transform;
-        chaser.modelAnimator = enemy.GetComponentInChildren<Animator>();
+        chaser.modelAnimator = animator;
         chaser.target = playerTarget;
         chaser.attackController = attackController;
         chaser.tokenPool = _tokenPool;

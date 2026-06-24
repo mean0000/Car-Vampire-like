@@ -9,13 +9,20 @@
 // MonoBehaviour 아님(순수 C# 객체) — 씬/프리팹 구조를 건드리지 않고 스포너가 코드로만 소유·주입.
 public class AttackTokenPool
 {
-    readonly int _maxTokens;
+    int _maxTokens;
     int _inUse;
 
     public AttackTokenPool(int maxTokens)
     {
         _maxTokens = Mathf_Max(1, maxTokens);   // 최소 1 보장(0이면 아무도 공격 못 함)
     }
+
+    /// <summary>현재 cap(동시 커밋 상한).</summary>
+    public int MaxTokens => _maxTokens;
+
+    /// <summary>런타임 cap 조정(프로토 슬라이더/uncap) — 동시 커밋 수 변경. 줄여도 이미 점유한 토큰은
+    /// 사이클 끝(IdleAngry 복귀)에 자연 반납되므로 강제 회수 안 함(_inUse가 새 cap을 잠시 넘을 수 있으나 TryAcquire가 막음).</summary>
+    public void SetMax(int maxTokens) => _maxTokens = Mathf_Max(1, maxTokens);
 
     /// <summary>공격 토큰 1개 획득 시도. 여분이 있으면 점유하고 true, 없으면 false.</summary>
     public bool TryAcquire()

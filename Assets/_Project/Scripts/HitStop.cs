@@ -10,9 +10,14 @@ using UnityEngine;
 public class HitStop : MonoBehaviour
 {
     static HitStop _inst;
+    const float ActiveTimeScale = 0.05f;   // 정지 중 timeScale(완전 0은 물리/이펙트 얼어붙은 티).
 
     float _resumeAt;          // unscaled 기준 복귀 시각
     bool _active;
+
+    /// <summary>지금 히트스탑이 timeScale을 잡고 있나 — 잡고 있으면 그 스케일, 아니면 1. 다른 timeScale 연출
+    /// (ParrySlowMotion 클래시 프리즈 등)이 자기 값과 Max로 조율해 서로 0으로 덮어쓰지 않게(소유권 경합 완화).</summary>
+    public static float ActiveScale => (_inst != null && _inst._active) ? ActiveTimeScale : 1f;
 
     /// <summary>seconds 동안 시간 정지(스케일 0.05 — 완전 0은 물리/이펙트가 얼어붙은 티가 남). 중첩 시 더 긴 쪽으로 연장.</summary>
     public static void Do(float seconds)
@@ -29,7 +34,7 @@ public class HitStop : MonoBehaviour
     void Begin(float seconds)
     {
         // 다른 시간 연출(Zone 슬로우 등)이 생기면 여기서 소유권 조율 — 현재는 단독 소유.
-        if (!_active) Time.timeScale = 0.05f;
+        if (!_active) Time.timeScale = ActiveTimeScale;
         _active = true;
         _resumeAt = Mathf.Max(_resumeAt, Time.unscaledTime + seconds);
     }

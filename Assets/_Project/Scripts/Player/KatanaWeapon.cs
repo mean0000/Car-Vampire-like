@@ -82,6 +82,19 @@ public class KatanaWeapon : WeaponBehaviour
     [Tooltip("대시 베기 안전 워치독(초, 스케일 시간) — OnComboEnd 누락/하드컷 시 _dashAttacking 고착 방지(Counter와 동형).")]
     [SerializeField] float dashAttackMaxDuration = 3.5f;
 
+    [Header("★맞받음 / 클래시 (읽고-베기 코어 동사 — 적이 *타격하는 순간* 베면 클래시)")]
+    [Tooltip("켜면 적이 *실제 타격 실행 중*(IAttackCommit.IsStriking = 돌진·물기 발사)일 때 베면 클래시: 데미지 ×배수 + 전파 + 짧은 프리즈(탁) + 시안. " +
+             "★커밋 전체가 아니라 *타격 순간*만(수동 겹침 아닌 의도적 맞받음). 흰 NOW 펄스가 그 순간 신호. 끄면 일반 콤보.")]
+    [SerializeField] bool timingCritEnabled = true;
+    [Tooltip("클래시 데미지 배수(평타 데미지 ×N). 보통 맞받은 적을 한 방에 — 단 '안전'이 아니라 '흐름/스펙터클' 보상.")]
+    [SerializeField, Min(1f)] float critDamageMult = 4f;
+    [Tooltip("★크리티컬 전파 반경(m) — 크리티컬 지점 주변 이 거리의 적에게 작은 피해(밀집 호드를 가르는 복도). 0이면 전파 끔.")]
+    [SerializeField, Min(0f)] float critPropagationRadius = 3f;
+    [Tooltip("전파 피해량(작게 — 호드를 '가르는' 연출이지 광역 학살 아님). 밀도 있을 때만 빛난다.")]
+    [SerializeField, Min(0)] int critPropagationDamage = 1;
+    [Tooltip("크리티컬 카메라 킥(m) — 평타/피니셔보다 크게(크리티컬 '팝'). 전역 timeScale 안 씀(캐넌).")]
+    [SerializeField] float critKick = 0.4f;
+
     [Header("타격 손맛 (스냅·경쾌 — 칼이 적에 닿는 순간만 발동, 헛스윙엔 안 남)")]
     // ★전역 히트스탑(Time.timeScale)은 이 프로젝트에서 금지 — 일시정지 UI(레벨업/상자/정산/사망)·ParrySlowMotion과
     //   timeScale 소유권 충돌(게이트 Codex P0/P1). 스냅 손맛은 timeScale 무관한 카메라 킥으로만. 미세 프리즈는
@@ -111,9 +124,19 @@ public class KatanaWeapon : WeaponBehaviour
     Vector3 _liveAim = Vector3.forward;   // 매 프레임 최신 조준 — 단 시작(BeginCombo/Advance)에 _aimDir로 캡처.
     readonly HashSet<IDamageable> _hitThisSwing = new HashSet<IDamageable>();
     readonly Collider[] _overlap = new Collider[128];
+    // ── ★타이밍-크리티컬 ── (전파는 DoHit 루프 종료 후 별 버퍼로 — _overlap 덮어쓰기 방지)
+    readonly Collider[] _propOverlap = new Collider[128];   // ★H-3: _overlap과 동일 크기(조밀 무제한 호드서 전파 포화 완화)
+    readonly List<Vector3> _critCenters = new List<Vector3>(8);   // 이번 스윙의 크리티컬 지점(루프 후 전파)
+    bool _lastSwingCrit;   // 직전 DoHit에서 크리티컬이 났나(손맛 킥 강도 선택용)
+    ParrySlowMotion _clashFx;   // 클래시 프리즈 트리거(지연 해석·캐시). 플레이어의 ParrySlowMotion 재사용.
+    bool _clashFxResolved;
 
     public override void Initialize(Transform owner, PlayerAnimatorDriver animator)
     {
+        // ★Stab H-1: Owner가 바뀔 수 있으니 ClashFx 캐시 무효화(이전 Owner 계층의 stale ParrySlowMotion 잔존 → 클래시 프리즈 무음 누락 방지).
+        _clashFx = null;
+        _clashFxResolved = false;
+
         // 재진입 가드(Stab H-2): 재초기화 시 콤보 이벤트 이전 구독 먼저 해제(base는 AttackHit 가드 내장).
         if (AnimatorDriver != null)
         {
@@ -465,9 +488,13 @@ public class KatanaWeapon : WeaponBehaviour
               Mathf.Max(0f, h.forwardOffset),
               h.damage > 0 ? h.damage : 1,
               h.knockback);
-        // 피니셔(콤보 마지막 타)는 무게, 평타는 스냅 — 닿았을 때만.
+        // 피니셔(콤보 마지막 타)는 무게, 평타는 스냅 — 닿았을 때만. ★크리티컬이면 더 큰 '팝' 킥(critKick).
         bool finisher = comboSet != null && _step >= comboSet.StepCount;
-        if (connected) FireHitFeedback(finisher ? finisherKick : comboKick, finisher);
+        if (connected)
+        {
+            float kick = _lastSwingCrit ? critKick : (finisher ? finisherKick : comboKick);
+            FireHitFeedback(kick, finisher || _lastSwingCrit);
+        }
     }
 
     /// <summary>반격(Skill02) 타격 — 콤보보다 강한 보상치. DoHit 공통 경로 재사용.</summary>
@@ -527,6 +554,8 @@ public class KatanaWeapon : WeaponBehaviour
         const float pointBlank = 0.9f;
 
         _hitThisSwing.Clear();
+        _critCenters.Clear();
+        _lastSwingCrit = false;
         int n = Physics.OverlapSphereNonAlloc(origin, gather, _overlap, enemyMask, QueryTriggerInteraction.Collide);
         if (n == _overlap.Length)
             Debug.LogWarning("[KatanaWeapon] OverlapSphere 버퍼(128)가 가득 — 일부 타격 누락 가능(버퍼 증대 검토).");
@@ -547,8 +576,64 @@ public class KatanaWeapon : WeaponBehaviour
                     continue;
             }
             _hitThisSwing.Add(dmg);
-            dmg.TakeHit(dmgAmt, origin, kb);
+
+            // ★타이밍-크리티컬: 이 적이 *공격을 커밋 중*이면(IAttackCommit) 크리티컬 — 데미지 배수 + 전파 예약.
+            //   커밋 아닌 적(접근·서성)은 일반 타격. "커밋한 놈을 베면 크리티컬"이 공격 타이밍 듀얼의 코어.
+            bool crit = false;
+            if (timingCritEnabled)
+            {
+                // ★맞받음: 적이 *실제 타격 실행 중*(IsStriking = 돌진/물기 발사)일 때만 클래시. 윈드업(Coil)·접근은 일반 타격.
+                var commit = _overlap[i].GetComponentInParent<IAttackCommit>();
+                crit = commit != null && commit.IsStriking;
+            }
+            int outDmg = crit ? Mathf.Max(1, Mathf.RoundToInt(dmgAmt * critDamageMult)) : dmgAmt;
+            if (crit)
+            {
+                // ★Codex#3/M-5: TakeHit(사망 가능) *전에* 시안 플래시 발동 — 비치사 크리티컬서 확실히 보이게.
+                //   같은 컴포넌트가 IDamageable+ICritReact라 GetComponentInParent 중복 없이 dmg 캐스트로 해결.
+                (dmg as ICritReact)?.OnCritHit();
+                _critCenters.Add(_overlap[i].transform.position);
+            }
+            dmg.TakeHit(outDmg, origin, kb);
+        }
+
+        // ★크리티컬 전파 — 루프 종료 후(_hitThisSwing 완성·_overlap 자유) 별 버퍼로. 크리티컬마다 주변 호드를 가르는 복도.
+        if (_critCenters.Count > 0)
+        {
+            _lastSwingCrit = true;
+            ClashFx()?.Clash();   // ★클래시 프리즈("탁") — 내부 쿨다운으로 호드 스터터 방지. 스윙당 1회.
+            if (critPropagationRadius > 0f && critPropagationDamage > 0)
+                for (int c = 0; c < _critCenters.Count; c++) Propagate(_critCenters[c], kb);
         }
         return _hitThisSwing.Count > 0;
+    }
+
+    /// <summary>크리티컬 전파 — center 주변 critPropagationRadius 내 적에게 작은 피해. 이미 이 스윙에 맞은 적은 제외.
+    /// 밀집 호드를 가르는 '복도' 연출 = 크리티컬 보상의 핵심(데미지 증가가 아니라 공간 상태 전복).
+    /// ★별 버퍼(_propOverlap) 사용 — DoHit이 순회 중인 _overlap을 덮어쓰지 않게.</summary>
+    /// <summary>클래시 프리즈 발동원(플레이어 ParrySlowMotion) — 지연 1회 해석 후 캐시. 없으면 null(무음 폴백).</summary>
+    ParrySlowMotion ClashFx()
+    {
+        if (!_clashFxResolved)
+        {
+            _clashFxResolved = true;
+            if (Owner != null)
+                _clashFx = Owner.GetComponentInChildren<ParrySlowMotion>(true) ?? Owner.GetComponentInParent<ParrySlowMotion>();
+        }
+        return _clashFx;
+    }
+
+    void Propagate(Vector3 center, float kb)
+    {
+        int n = Physics.OverlapSphereNonAlloc(center, critPropagationRadius, _propOverlap, enemyMask, QueryTriggerInteraction.Collide);
+        if (n == _propOverlap.Length)
+            Debug.LogWarning("[KatanaWeapon] 전파 버퍼(128) 포화 — 일부 전파 피해 누락 가능(버퍼 증대 검토).");
+        for (int i = 0; i < n; i++)
+        {
+            var d = _propOverlap[i].GetComponentInParent<IDamageable>();
+            if (d == null || _hitThisSwing.Contains(d)) continue;   // 직접 타격·다른 전파 센터와 중복 차단
+            _hitThisSwing.Add(d);
+            d.TakeHit(critPropagationDamage, center, kb * 0.5f);
+        }
     }
 }

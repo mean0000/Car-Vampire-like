@@ -25,7 +25,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CaniathroxChaser : MonoBehaviour
+public class CaniathroxChaser : MonoBehaviour, IAttackCommit
 {
     // ── 분리(separation) 계산용 전역 로스터 — 활성 추격자 전부를 가볍게 순회 ──
     static readonly List<CaniathroxChaser> Roster = new List<CaniathroxChaser>();
@@ -120,6 +120,16 @@ public class CaniathroxChaser : MonoBehaviour
              "true=일단 발사하면 끝까지 간다(공격이 위협으로 완결, 플레이어가 윈드업에 반응해야 함). 손맛 판정은 유저.")]
     [SerializeField] bool staggerImmuneDuringStrike = false;
 
+    [Header("★타격 데미지 (커밋이 위협이 되게 — '빗나가면 맞는다', 타이밍 듀얼의 위험 절반)")]
+    [Tooltip("켜면 발사(Lunge)/물기(Bite) *실행 중* 플레이어가 strikeHitRadius 안에 있으면 1회 피해. " +
+             "끄면 적이 플레이어를 못 때림(전파/가독만 격리 테스트). 듀얼의 *위험*(빗나가면 맞음)을 만들려면 켠다. " +
+             "★커밋 중 베이면(끊고-베기) 이 타격은 발생 전에 취소된다 = '읽고 먼저 벤 보상'.")]
+    [SerializeField] bool enableStrikeDamage = true;
+    [Tooltip("타격 피해량. PlayerHealth maxHp 기준(예: 100 HP에 8~12 = 여러 방 버티되 위협적). 0이면 무피해.")]
+    [SerializeField, Min(0)] int strikeDamage = 10;
+    [Tooltip("타격 명중 반경(m) — 발사/물기 실행 중 플레이어가 이 거리 안이면 맞는다. 옆으로 빠져 거리>반경이면 빗나감(회피).")]
+    [SerializeField, Min(0.1f)] float strikeHitRadius = 2.0f;
+
     // ── ★장판 텔레그래프 활성 추적 (gen 세대 가드 — Crassorrid 패턴. 풀 회수로 주인 바뀌면 stale 조작 차단) ──
     TelegraphPad _activePad;
     int _activeGen = -1;
@@ -160,6 +170,47 @@ public class CaniathroxChaser : MonoBehaviour
     Vector3 _lastTargetPos;              // 폴백 추정용 직전 타겟 위치
     bool _hasLastTargetPos;              // 첫 프레임 가드(델타 폭발 방지)
 
+    // ── ★타격 데미지(듀얼 위험 절반) ──
+    IDamageable _targetHealth;           // 플레이어 피격 인터페이스(지연 해석·캐시). 발사/물기 명중 시 TakeHit.
+    bool _struckThisAttack;              // 이번 공격 사이클에 플레이어를 이미 때렸나(1회 가드). 새 사이클/공격 진입에 리셋.
+
+    // ════════ IAttackCommit — 타이밍-크리티컬 판정용 "지금 커밋 중인가" ════════
+    //   커밋 = 응축(Coil, 텔레그래프)·발사(Lunge)·물기(Bite). 접근(Approach)/휴지(Idle)/플린치(GetHit)는 비커밋.
+    //   무기(KatanaWeapon)가 적중 시 이걸 읽어 "커밋한 놈을 베면 크리티컬"을 판정한다(공격 타이밍 듀얼).
+    public bool IsCommittingAttack
+    {
+        get
+        {
+            if (modelAnimator == null) return false;
+            int s = modelAnimator.GetCurrentAnimatorStateInfo(0).shortNameHash;
+            return s == SCoil || s == SLunge || s == SBite;
+        }
+    }
+
+    // ★맞받음(클래시) 창 — 실제 타격 실행(발사 Lunge / 물기 Bite)만. 윈드업(Coil)·접근 제외.
+    //   "달려드는 그 순간을 만나 베면 클래시"의 좁은 창(수동 겹침이 아니라 의도적 타이밍 메).
+    public bool IsStriking
+    {
+        get
+        {
+            if (modelAnimator == null) return false;
+            int s = modelAnimator.GetCurrentAnimatorStateInfo(0).shortNameHash;
+            return s == SLunge || s == SBite;
+        }
+    }
+
+    // ════════ 커밋 신호 구동 — 본체 글로우(회→주황 차오름) + NOW(타격 순간 흰 플래시) ════════
+    //   가독은 receiver(본체 MPB)가 그린다. 드라이버는 *상태→진행도*만 넘긴다(코드가 위치/포즈 안 만듦, 헌법 준수).
+    //   Coil(응축)=윈드업 차오름(normalizedTime 0→1) · Lunge/Bite(발사·물기)=NOW(흰 플래시) · 그 외=꺼짐.
+    void UpdateCommitSignal(AnimatorStateInfo info)
+    {
+        if (_receiver == null) return;
+        int s = info.shortNameHash;
+        if (s == SCoil)               _receiver.DriveCommit(Mathf.Clamp01(info.normalizedTime), false);
+        else if (s == SLunge || s == SBite) _receiver.DriveCommit(1f, true);
+        else                          _receiver.DriveCommit(0f, false);
+    }
+
     void Awake()
     {
         if (modelAnimator == null)
@@ -181,6 +232,8 @@ public class CaniathroxChaser : MonoBehaviour
         // 재활용 시 경직 상태 리셋(이전 생애의 포이즈/쿨다운이 새 적에 새지 않게).
         _poise = 0;
         _staggerCdTimer = 0f;
+        _struckThisAttack = false;   // 재활용 시 타격 가드 리셋(이전 생애 잔존 방지).
+        _targetHealth = null;        // 타겟 재해석(스포너가 재할당할 수 있음 — 지연 캐시 재구축).
         // ★풀 재활용 대비: 직전 생애에 큐됐다가 비활성으로 미소비된 getHit 트리거를 비운다(재활성 즉시 엉뚱한 플린치 방지).
         if (modelAnimator != null) modelAnimator.ResetTrigger(PGetHit);
     }
@@ -204,6 +257,9 @@ public class CaniathroxChaser : MonoBehaviour
             _receiver.OnDamaged += OnDamaged;
             _subscribed = true;
         }
+#if UNITY_EDITOR
+        else Debug.LogWarning("[CaniathroxChaser] EnemyDamageReceiver 미발견 — 커밋 신호/끊고-베기 비활성(model·루트에 receiver 확인).", this);
+#endif
     }
     void UnsubscribeReceiver()
     {
@@ -293,6 +349,7 @@ public class CaniathroxChaser : MonoBehaviour
     {
         SetApproaching(false);
         _attackFired = false;
+        _struckThisAttack = false;   // 새 사이클 = 새 공격 → 타격 가드 리셋(스태거 인터럽트 후 다음 공격도 다시 때릴 수 있게).
         _restTimer = restBeforeApproach;
     }
 
@@ -397,9 +454,12 @@ public class CaniathroxChaser : MonoBehaviour
         //   이로써 Approach 이탈 경로(target/model null, Lunge/Bite/Idle 진입 등) 전부에서 배율이 새지 않는다(Codex 지적).
         modelAnimator.speed = 1f;
         if (_staggerCdTimer > 0f) _staggerCdTimer -= Time.deltaTime;   // 스태거 쿨다운 카운트다운(상태 무관 상시).
-        if (target == null || model == null) return;
+        if (target == null || model == null) { _receiver?.DriveCommit(0f, false); return; }   // ★Codex#6: 색 잔존 방지(글로우 클리어 후 이탈).
         TrackTargetVelocity();   // 매 프레임 플레이어 속도 평활 — Coil 예측 조준의 입력(상태 무관 상시 추적).
         var info = modelAnimator.GetCurrentAnimatorStateInfo(0);
+
+        // ★커밋 신호 구동(읽고-베기 가독) — 매 프레임 현재 상태로 본체 글로우/NOW를 갱신. GetHit 포함 모든 경로 전에 호출(비커밋 클리어).
+        UpdateCommitSignal(info);
 
         // ── GetHit(플린치) 중: ★제0원칙 — 이 동작만 돈다. 드라이버는 조향·조준·공격 무엇도 하지 않는다(애니가 완결). ──
         //   루트모션 0 클립이라 위치도 안 움직인다(제자리 휘청). GetHit→IdleAngry는 컨트롤러 ExitTime이 자동 처리.
@@ -450,6 +510,7 @@ public class CaniathroxChaser : MonoBehaviour
                 {
                     if (tokenPool != null) _holdsToken = true;   // 풀 없으면(폴백) 토큰 개념 무시하고 그냥 공격
                     _attackFired = true;
+                    _struckThisAttack = false;         // 새 공격 발동 → 타격 가드 리셋(이 커밋이 명중하면 1회 피해).
                     SetApproaching(false);             // 다음 사이클까지 접근 끔
                     modelAnimator.speed = 1f;          // 공격 클립은 네이티브 속도(배율 누수 방지)
 
@@ -479,8 +540,25 @@ public class CaniathroxChaser : MonoBehaviour
                 model.rotation = Quaternion.RotateTowards(model.rotation, want, turnSpeed * Time.deltaTime);
             }
         }
-        // ── Lunge/Bite 중: ★회전 0 엄수(궤적 보존). 속도는 위 단일 리셋이 1f 유지(공격 클립 네이티브). 상태머신이 완결. ──
-        //   이 드라이버는 정체성 동작 중 아무것도 하지 않는다. 예측 조준은 Coil에서 끝났고, 발사는 고정 방향.
+        // ── Lunge/Bite 실행 중: ★회전/위치/포즈 안 건드림(궤적 보존·제2원칙). 단 "타격 명중" *조건*만 읽어 플레이어에 피해. ──
+        //   위치를 *읽는* 것 = 조건(ArrivedAtTarget과 동형)이지 위치를 *만드는* 것 아님. 회전 0 엄수는 그대로.
+        //   빗나가면(플레이어가 옆으로 빠져 거리>반경) 안 맞음 = 듀얼의 위험 절반. 커밋 중 베이면 끊고-베기(GetHit)로
+        //   이 상태를 벗어나므로 이 분기 자체가 안 돌아 타격이 취소된다 = "읽고 먼저 벤 보상". 1회 가드(_struckThisAttack).
+        else if (info.shortNameHash == SLunge || info.shortNameHash == SBite)
+        {
+            if (enableStrikeDamage && !_struckThisAttack && strikeDamage > 0
+                && PlanarDistanceToTarget() <= strikeHitRadius)
+            {
+                // ★H-2: fake-null 재해석 — 씬 재로드/target 교체로 캐시가 파괴된 객체(zombie ref)면 다시 해석(MissingReferenceException 방지).
+                if (_targetHealth == null || (_targetHealth as UnityEngine.Object) == null)
+                    _targetHealth = target.GetComponentInParent<IDamageable>();
+                if (_targetHealth != null)
+                {
+                    _struckThisAttack = true;
+                    _targetHealth.TakeHit(strikeDamage, model.position, 0f);   // 무적/패링(퍼펙트 회피)은 PlayerHealth가 자체 처리.
+                }
+            }
+        }
     }
 
     // 정지 상태(IdleAngry)에서 접근 직전 머리 방향을 steering 합성 방향으로 1회 정렬.
