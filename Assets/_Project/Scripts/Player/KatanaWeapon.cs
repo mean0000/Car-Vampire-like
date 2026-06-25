@@ -68,6 +68,12 @@ public class KatanaWeapon : WeaponBehaviour
     /// <summary>칼 메시(weaponAnchor) — PlayerAnimatorDriver가 달리기 시 숨길 대상을 자동 연결할 때 읽는다(수동 할당 누락 방지).</summary>
     public Transform WeaponAnchor => weaponAnchor;
 
+    [Header("★Skill01 차징 (RMB 홀드 → 놓으면 발동 / 차징 중 공격 팬텀 방출)")]
+    [Tooltip("켜면 Skill01이 차징식 — RMB 누르는 동안 기를 모으고(최대 chargeMax), 놓으면 발동. 끄면 레거시 즉발.")]
+    [SerializeField] bool chargeSkill = true;
+    [Tooltip("최대 차징 시간(초). 0.83 ≈ 50프레임 @60fps. 이 시간 동안 ChargePhantomEmitter가 공격 팬텀을 방출.")]
+    [SerializeField, Min(0.05f)] float chargeMax = 0.83f;
+
     [Header("대시 베기 (대시 중 좌클릭 — DashAttack, 클립 Attack02)")]
     [Tooltip("대시 베기 사거리(m). 런지 강타.")]
     [SerializeField] float dashAttackRange = 3f;
@@ -119,6 +125,8 @@ public class KatanaWeapon : WeaponBehaviour
     float _skillFallbackTimer;      // 스킬 안전 워치독(스케일 시간)
     bool _dashAttacking;            // 대시 베기(DashAttack) 진행 중 — _step/_countering/_skilling과 독립
     float _dashAttackFallbackTimer; // 대시 베기 안전 워치독(스케일 시간)
+    bool _charging;                 // ★Skill01 차징 진행 중(RMB 홀드). ChargePhantomEmitter가 IsCharging을 읽어 팬텀 방출.
+    float _chargeTime;              // 누적 차징 시간(초, chargeMax 캡)
 
     Vector3 _aimDir = Vector3.forward;    // 단 시작 시 잠근 조준 — 타격 판정 방향(facing/런지와 통일). 단 진행 중 고정.
     Vector3 _liveAim = Vector3.forward;   // 매 프레임 최신 조준 — 단 시작(BeginCombo/Advance)에 _aimDir로 캡처.
@@ -182,6 +190,8 @@ public class KatanaWeapon : WeaponBehaviour
         _skillFallbackTimer = 0f;
         _dashAttacking = false;  // 회피(새 대시)가 진행 중 대시 베기도 가로챔
         _dashAttackFallbackTimer = 0f;
+        _charging = false;       // 회피(새 대시)가 차징도 가로챔(대시 우선)
+        _chargeTime = 0f;
         _lastAdvanceTime = -1f;
         AnimatorDriver?.SetCombo(0);
         base.Cancel();           // 레일: 액션 유예도 끔(캔슬 즉시 busy 해제)
@@ -233,7 +243,7 @@ public class KatanaWeapon : WeaponBehaviour
         //   창 안 첫 좌클릭은 이 분기로 곧장 카운터가 되어, '콤보 진행 중 창' 시나리오는 정상 흐름에서 발생하지 않는다.
         if (input.primaryDown)
         {
-            if (_countering || _skilling || _dashAttacking) { /* 반격/스킬/대시베기 모션 중 입력 무시 — 클립 끝까지 커밋 */ }
+            if (_countering || _skilling || _dashAttacking || _charging) { /* 반격/스킬/대시베기/차징 중 좌클릭 무시 — 커밋(차징 중엔 안 침) */ }
             else if (_counterTimer > 0f && _step == 0) BeginCounter();
             else if (_step == 0)
             {
@@ -248,12 +258,29 @@ public class KatanaWeapon : WeaponBehaviour
 
         // ★대시 베기(DashAttack) — 대시 중 좌클릭을 PlayerBrain이 대시 끝 프레임에 주입. idle일 때만(콤보/반격/스킬/대시베기 중 무시).
         //   대시가 직전 콤보를 Cancel하므로 보통 _step==0이 보장됨.
-        if (input.dashAttack && _step == 0 && !_countering && !_skilling && !_dashAttacking)
+        if (input.dashAttack && _step == 0 && !_countering && !_skilling && !_dashAttacking && !_charging)
             BeginDashAttack();
 
-        // ★우클릭 스킬(Skill01) — SkillSet 할당 + idle + 쿨다운 준비 시 발동. 콤보/카운터/스킬 진행 중엔 IsBusy로 막힌다.
-        //   (대시 중 RMB는 PlayerBrain이 억제 — 대시 커밋 보호.)
-        if (input.secondaryDown && skillSet != null && !IsBusy && _skillCdTimer <= 0f)
+        // ★우클릭 스킬(Skill01) — 차징식(chargeSkill) 또는 레거시 즉발.
+        //   차징: RMB 누름→진입(idle+쿨다운 준비), 홀드 동안 누적(chargeMax 캡), 뗌→발동. 차징 중 ChargePhantomEmitter가 팬텀 방출.
+        //   (대시 중 RMB down은 PlayerBrain이 억제 — 대시 커밋 보호.)
+        if (skillSet != null && chargeSkill)
+        {
+            if (!_charging)
+            {
+                if (input.secondaryDown && !IsBusy && _skillCdTimer <= 0f
+                    && _step == 0 && !_countering && !_skilling && !_dashAttacking)
+                    BeginCharge();
+            }
+            else
+            {
+                // ★뗌·입력유실·포커스손실·같은프레임 탭 전부 수렴 — secondaryHeld가 끊기면 차징 종료(고착 방지).
+                //   secondaryUp 단독 의존 금지(Stab H-2 / Codex CRITICAL·HIGH 수렴): up 엣지를 놓치면 영구 고착 → 소프트락.
+                if (!input.secondaryHeld) ReleaseCharge();
+                else _chargeTime = Mathf.Min(_chargeTime + dt, chargeMax);
+            }
+        }
+        else if (input.secondaryDown && skillSet != null && !IsBusy && _skillCdTimer <= 0f)
             BeginSkill();
 
         // 입력 버퍼 감쇠
@@ -391,6 +418,22 @@ public class KatanaWeapon : WeaponBehaviour
         AnimatorDriver?.SetCombo(0);
     }
 
+    /// <summary>★Skill01 차징 시작 — RMB 누름. 전방(팬텀 방출 방향)을 현재 조준으로 잠금. 페이로드는 ReleaseCharge.</summary>
+    void BeginCharge()
+    {
+        _aimDir = _liveAim;
+        _charging = true;
+        _chargeTime = 0f;
+    }
+
+    /// <summary>★차징 종료 — RMB 뗌. v1: 차징 비주얼 다이얼 단계라 페이로드 보류(종료만).
+    /// 추후(비트3): ChargeTime01로 발동 강도 스케일 + BeginSkill로 실제 스킬 발동 + 쿨다운 적용.</summary>
+    void ReleaseCharge()
+    {
+        _charging = false;
+        _chargeTime = 0f;
+    }
+
     /// <summary>★대시 베기 — 대시 끝 좌클릭 시 DashAttack(Attack02) 발동. Counter/Skill과 동형(busy로 잠김, 타격=OnHitFrame
     /// _dashAttacking 분기, 종료=OnComboEnd). facing은 발동 순간 조준에 잠금. 공격이라 _attacking으로 Attack02 런지가 적용됨.</summary>
     void BeginDashAttack()
@@ -463,6 +506,11 @@ public class KatanaWeapon : WeaponBehaviour
 
     // ── 디버그 시각화용 읽기전용 접근자(HitboxDebugManager 전용) — 전투 로직 무관 ──
     public Transform DebugOwner => Owner;
+    // ── 차징 상태(ChargePhantomEmitter 전용 읽기) ──
+    public bool IsCharging => _charging;
+    public float ChargeTime01 => chargeMax > 0f ? Mathf.Clamp01(_chargeTime / chargeMax) : 0f;
+    /// <summary>차징 시작 시 잠근 조준 방향 — 팬텀 전방 방출 방향.</summary>
+    public Vector3 ChargeAimDir => _aimDir;
     public int DebugStep => _step;
     /// <summary>공격 중이면 잠근 방향(_aimDir), 평시엔 라이브 조준(_liveAim) — 프리뷰용.</summary>
     public Vector3 DebugAimDir => _step >= 1 ? _aimDir : _liveAim;
