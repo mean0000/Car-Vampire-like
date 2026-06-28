@@ -73,6 +73,9 @@ public class KatanaWeapon : WeaponBehaviour
     [SerializeField] bool chargeSkill = true;
     [Tooltip("최대 차징 시간(초). 0.83 ≈ 50프레임 @60fps. 이 시간 동안 ChargePhantomEmitter가 공격 팬텀을 방출.")]
     [SerializeField, Min(0.05f)] float chargeMax = 0.83f;
+    [Tooltip("발동 최소 차징(초). 이보다 짧게 떼면 불발 — 빈 탭이 풀 스킬을 쏘는 것 방지(Stab M-2). 불발은 쿨다운도 소비 안 함. " +
+             "chargeMax보다 크게 두면 영구 불발이니 주의(Inspector 설정값).")]
+    [SerializeField, Min(0f)] float minChargeToFire = 0.12f;
 
     [Header("대시 베기 (대시 중 좌클릭 — DashAttack, 클립 Attack02)")]
     [Tooltip("대시 베기 사거리(m). 런지 강타.")]
@@ -110,6 +113,39 @@ public class KatanaWeapon : WeaponBehaviour
     [Tooltip("피니셔(콤보 마지막 타)·반격·대시베기·스킬 카메라 킥(m) — 무게는 여기에 실린다. 평타보다 크게.")]
     [SerializeField] float finisherKick = 0.28f;
 
+    [Header("★타격 사운드 (임시 플레이스홀더 — 2D 손맛, 거리감쇠 X. 음색은 유저 귀 판정)")]
+    // ★필-볼트 롤백: 기각되면 meleeSfxEnabled=false로 즉시 끈다(노브 0 경로). 2D PlayOneShot(PlaySkillSfx와 동일 정책).
+    //   2층 구조: ①swish=스윙 시작(헛스윙 포함) ②impact=적중 순간만(FireHitFeedback=connected 가드라 빗맞음 자동 제외).
+    //   ★정석 타이밍: impact는 OnAttackHit 정렬(애니가 진실). swish는 본래 윈드업 AnimationEvent가 소유해야 하나,
+    //     임시 플레이스홀더라 코드(BeginCombo/Advance)에서 스윙 시작에 낸다 — 추후 클립 OnSwishWhoosh 이벤트로 이관 권장.
+    [Tooltip("★마스터 토글 — 끄면 swish/impact 둘 다 무음(롤백 경로).")]
+    [SerializeField] bool meleeSfxEnabled = true;
+    [Tooltip("베기 swish(휘두름) 클립 — 스윙 시작에 재생(헛스윙도 남). 비우면 무음. 임시=Vefects Slash_Classic.")]
+    [SerializeField] AudioClip swishClip;
+    [Tooltip("swish 볼륨 — ★캐넌 첫 볼륨 0.03~0.15. 안 들리면 올린다(반대보다 안전).")]
+    [SerializeField, Range(0f, 1f)] float swishVolume = 0.10f;
+    [Tooltip("swish 기준 피치. 낮추면 무겁게/길게, 높이면 가볍게/날카롭게.")]
+    [SerializeField, Range(0.5f, 2f)] float swishPitch = 1f;
+    [Tooltip("swish 피치 랜덤 폭(±) — 연속 스윙 동일음 피로 완화. 0이면 고정.")]
+    [SerializeField, Range(0f, 0.5f)] float swishPitchJitter = 0.05f;
+    [Tooltip("임팩트 thud/cut 클립 — 적중 순간만 재생(헛스윙 무음). 비우면 무음. 임시=Vefects Impact_01.")]
+    [SerializeField] AudioClip impactClip;
+    [Tooltip("impact 볼륨 — ★캐넌 첫 볼륨 0.03~0.15. '한 방' 강조라 swish보다 약간 크게.")]
+    [SerializeField, Range(0f, 1f)] float impactVolume = 0.14f;
+    [Tooltip("impact 기준 피치 — DD 묵직: 살짝 낮춰 바디/무게. 더 낮추면 더 묵직.")]
+    [SerializeField, Range(0.5f, 2f)] float impactPitch = 0.95f;
+    [Tooltip("impact 피치 랜덤 폭(±) — 연타 동일음 피로 완화.")]
+    [SerializeField, Range(0f, 0.5f)] float impactPitchJitter = 0.04f;
+
+    [Header("★이동 self-cancel (후딜 제거 — DD/DMC식: 회수를 이동으로 끊어 즉시 로코모션)")]
+    // ★캔슬창 이후(hit 지남)에만 — 윈드업~스트라이크는 이동 불가로 베기 무게/간지 보존(트윈스틱 붕괴 방지선).
+    //   클릭(콤보지속)·회피(대시)가 이동캔슬보다 우선(Advance 분기 뒤 배치). 피니셔(comboMax)는 제외(대시-온리 커밋 캐넌 유지).
+    [Tooltip("★마스터 토글 — 끄면 이동으로 회수 캔슬 안 됨(롤백/이전 동작).")]
+    [SerializeField] bool moveCancelEnabled = true;
+    [Tooltip("이동 캔슬 데드존 — 이 크기 이상의 이동 입력만 회수를 끊는다(미세 드리프트로 매 베기 캔슬 방지). 0.2 권장. " +
+             "★하한 0.01 — 0이면 zero벡터(미입력)도 통과해 캔슬창마다 자동 리셋(Stab H-1). 끄려면 moveCancelEnabled 토글.")]
+    [SerializeField, Range(0.01f, 1f)] float moveCancelDeadzone = 0.2f;
+
     int _step;            // 0=idle, 1..comboMax 진행 중
     bool _windowOpen;     // 캔슬 윈도우(다음 단 입력 가능) — AnimationEvent가 연다
     bool _buffered;       // 입력 버퍼
@@ -127,6 +163,7 @@ public class KatanaWeapon : WeaponBehaviour
     float _dashAttackFallbackTimer; // 대시 베기 안전 워치독(스케일 시간)
     bool _charging;                 // ★Skill01 차징 진행 중(RMB 홀드). ChargePhantomEmitter가 IsCharging을 읽어 팬텀 방출.
     float _chargeTime;              // 누적 차징 시간(초, chargeMax 캡)
+    int _skillHitSeq;               // ★Skill01 베기 타격(DoSkillHit) 누적 카운터 — ChargePhantomEmitter가 '벨 때' 슬래시 VFX 발동용으로 폴링.
 
     Vector3 _aimDir = Vector3.forward;    // 단 시작 시 잠근 조준 — 타격 판정 방향(facing/런지와 통일). 단 진행 중 고정.
     Vector3 _liveAim = Vector3.forward;   // 매 프레임 최신 조준 — 단 시작(BeginCombo/Advance)에 _aimDir로 캡처.
@@ -190,6 +227,7 @@ public class KatanaWeapon : WeaponBehaviour
         _skillFallbackTimer = 0f;
         _dashAttacking = false;  // 회피(새 대시)가 진행 중 대시 베기도 가로챔
         _dashAttackFallbackTimer = 0f;
+        if (_charging) AnimatorDriver?.TriggerSkillCancel();   // ★H-1(Stab High·Codex 수렴): Skill01Charge/Hold(Action)→Locomotion. 비대시 Cancel(사망·스턴·미래) 시 speed0 홀드 영구 고착(소프트락) 방지
         _charging = false;       // 회피(새 대시)가 차징도 가로챔(대시 우선)
         _chargeTime = 0f;
         _lastAdvanceTime = -1f;
@@ -225,9 +263,11 @@ public class KatanaWeapon : WeaponBehaviour
         // ★레일 자가치유(진행 플래그) — busy가 풀렸는데(유예 만료 + Animator가 Action 아님) 진행 플래그가 남아 있으면
         //   액션 진입 실패(전이 경쟁·★"Action" 태그 누락)로 보고 진행 상태도 닫는다. busy(이동)뿐 아니라 입력 게이트
         //   (특히 _countering이 입력을 묵살하는 것)까지 자가 복구 — Codex M. 정상 동작 중엔 IsBusy=true라 발화 안 함.
-        if (!IsBusy && (_step > 0 || _countering || _skilling || _dashAttacking))
+        if (!IsBusy && (_step > 0 || _countering || _skilling || _dashAttacking || _charging))
         {
             // 독립 if — 이론적 다중 플래그 동시 고착도 전부 닫는다(Stab H-2). 각 End/Reset은 SetCombo(0) 멱등이라 중복 안전.
+            // ★M-1(Stab): _charging 고아 정리(다른 진행 플래그와 동형). IsBusy=false면 Animator는 이미 비-Action(Charge/Hold 탈출)이라 SkillCancel 불요.
+            if (_charging) { _charging = false; _chargeTime = 0f; }
             if (_skilling) EndSkill();
             if (_countering) EndCounter();
             if (_dashAttacking) EndDashAttack();
@@ -295,6 +335,18 @@ public class KatanaWeapon : WeaponBehaviour
         //   무한 연타 억제는 인공 쿨다운이 아니라 "3타 회수 + 대시캔슬 리듬"으로 한다(공격→대시→공격).
         if (_windowOpen && _buffered && _step >= 1 && _step < comboMax)
             Advance();
+        // ★이동 self-cancel(후딜 제거) — 캔슬창 이후(hit 지남) 이동 입력이 오면 회수를 끊고 로코모션으로(DD/DMC).
+        //   Advance(클릭=콤보지속) 분기 뒤 else라 클릭이 이김. 회피(대시)는 PlayerBrain이 더 먼저 Cancel. 피니셔(comboMax) 제외.
+        //   소프트캔슬(ResetCombo+base.Cancel) — 하드 Cancel()과 달리 counter/skill/charge·_counterTimer 안 건드림(Codex).
+        else if (moveCancelEnabled
+                 && _step >= 1 && _step < comboMax
+                 && _windowOpen && _hitDone
+                 && !_countering && !_skilling && !_dashAttacking && !_charging
+                 && input.move.sqrMagnitude >= moveCancelDeadzone * moveCancelDeadzone)
+        {
+            ResetCombo();    // 콤보 진행 idle로(SetCombo(0) → Combo→Loco 전이 = 기존 복귀 경로)
+            base.Cancel();   // 레일 유예 해제(busy 즉시 이동 양보)
+        }
     }
 
     void BeginCombo()
@@ -307,6 +359,7 @@ public class KatanaWeapon : WeaponBehaviour
         _lastAdvanceTime = -1f;
         AnimatorDriver?.SetCombo(1);
         BeginAction();   // 레일: 진입 유예 켬 → Animator가 Combo1(Action) 들 때까지 busy 유지
+        PlayMeleeSwish();   // ★스윙 시작 = swish(휘두름). 헛스윙도 남(적중 불문). 강타 impact는 FireHitFeedback(connected).
     }
 
     void Advance()
@@ -319,6 +372,7 @@ public class KatanaWeapon : WeaponBehaviour
         _lastAdvanceTime = Time.time;
         AnimatorDriver?.SetCombo(_step);
         BeginAction();   // 레일: 다음 단 전이 갭 유예(이미 Action 상태라 안전망 성격)
+        PlayMeleeSwish();   // ★다음 단 스윙 시작 = swish(각 단마다 휘두름음).
     }
 
     /// <summary>★패링 반격 — 카운터 창 안에서 좌클릭 시 Skill02 발동. 콤보 _step과 독립(busy로 잠김),
@@ -409,6 +463,37 @@ public class KatanaWeapon : WeaponBehaviour
         _skillSfxSource.PlayOneShot(skillSet.sfx.clip, skillSet.sfx.volume);
     }
 
+    // ── ★타격 사운드(임시 플레이스홀더) — swish/impact 2D one-shot. 피치 독립 위해 소스 분리(겹쳐도 서로 안 끌림). ──
+    AudioSource _swishSource;    // 2D one-shot(swish 전용). 첫 사용 시 생성(PlaySkillSfx 정책).
+    AudioSource _impactSource;   // 2D one-shot(impact 전용).
+
+    /// <summary>★베기 swish — 스윙 시작에 2D 재생(헛스윙 포함). 피치 지터로 연속 스윙 단조로움 완화. 비었거나 토글 off면 무음.</summary>
+    void PlayMeleeSwish()
+    {
+        if (!meleeSfxEnabled || swishClip == null) return;
+        if (_swishSource == null) _swishSource = NewMeleeSfxSource();
+        _swishSource.pitch = Mathf.Max(0.01f, swishPitch + Random.Range(-swishPitchJitter, swishPitchJitter));   // ★M-1(Stab): pitch 0 바닥 가드 — 튜닝 슬라이더가 0(무음)에 닿지 않게.
+        _swishSource.PlayOneShot(swishClip, swishVolume);
+    }
+
+    /// <summary>★임팩트 thud/cut — 칼이 적에 닿았을 때만(FireHitFeedback이 connected에서만 호출 → 헛스윙 자동 제외, 가드 일원화).</summary>
+    void PlayMeleeImpact()
+    {
+        if (!meleeSfxEnabled || impactClip == null) return;
+        if (_impactSource == null) _impactSource = NewMeleeSfxSource();
+        _impactSource.pitch = Mathf.Max(0.01f, impactPitch + Random.Range(-impactPitchJitter, impactPitchJitter));   // ★M-1(Stab): pitch 0 바닥 가드.
+        _impactSource.PlayOneShot(impactClip, impactVolume);
+    }
+
+    /// <summary>2D one-shot 소스 생성 — 손맛 사운드는 카메라 거리감쇠 X(spatialBlend=0, PlaySkillSfx와 동일 정책).</summary>
+    AudioSource NewMeleeSfxSource()
+    {
+        var s = gameObject.AddComponent<AudioSource>();
+        s.playOnAwake = false;
+        s.spatialBlend = 0f;
+        return s;
+    }
+
     /// <summary>스킬 종료 공통 경로 — 클립 OnComboEnd(정상)와 워치독/자가치유(폴백) 둘 다 여기로.</summary>
     void EndSkill()
     {
@@ -424,14 +509,30 @@ public class KatanaWeapon : WeaponBehaviour
         _aimDir = _liveAim;
         _charging = true;
         _chargeTime = 0f;
+        // ★눈에 보이는 차징: 윈드업(프레임 0→70) 재생 후 프레임 70에서 홀드(Skill01Charge→Skill01Hold).
+        //   RMB 누르는 내내 홀드 유지(팬텀은 _charging으로 계속 방출). 발동(베기)은 ReleaseCharge→BeginSkill이 낸다.
+        // ★L-1(Stab): 다른 액션 진입(BeginCombo/Counter/Skill/DashAttack)과 달리 BeginAction() 의도적 생략 —
+        //   불발(abort) 시 즉시 IsBusy=false라야 반응성 유지(유예 남으면 abort 후 묶임). 차징 중 입력 게이트는 _charging이 대신.
+        AnimatorDriver?.TriggerSkillCharge();
     }
 
-    /// <summary>★차징 종료 — RMB 뗌. v1: 차징 비주얼 다이얼 단계라 페이로드 보류(종료만).
-    /// 추후(비트3): ChargeTime01로 발동 강도 스케일 + BeginSkill로 실제 스킬 발동 + 쿨다운 적용.</summary>
+    /// <summary>★차징 종료(비트3 페이로드) — RMB 뗌. 최소 차징(minChargeToFire) 이상이면 Skill01 발동(BeginSkill), 미만이면 불발.
+    /// 불발은 쿨다운도 소비 안 함(빈 탭 가드 — Stab M-2). 발동 경로/판정/VFX·SFX/쿨다운/종료는 전부 BeginSkill·DoSkillHit이 소유
+    /// (레거시 즉발과 단일 경로 — 분기 없음). 발동 방향은 BeginSkill이 발동 순간 조준(_liveAim)으로 재잠금.
+    /// ★차징 시간→발동 강도 스케일(ChargeTime01)은 아직 안 건다 — '크레딧(저작감)' 다이얼로 유저 판정 후 얹는다(현재 차징은 팬텀 수만 구동).</summary>
     void ReleaseCharge()
     {
+        // ★게이트 수렴 수정(Stab M-1 ≡ Codex RISK5): minChargeToFire가 chargeMax를 넘으면 _chargeTime(chargeMax 캡)이
+        //   영원히 못 미쳐 *영구 무음 불발*. 사용처에서 chargeMax로 클램프 → 최악도 '풀차징에 발동'(영구 죽음 제거).
+        //   OnValidate 라이프사이클 추가 없이 국소 1줄(클램프=Codex / 경고 대신 동작 보존 — 두 안 통합).
+        bool fire = _chargeTime >= Mathf.Min(minChargeToFire, chargeMax);
         _charging = false;
         _chargeTime = 0f;
+        // ★발동: BeginSkill이 _skilling/쿨다운/워치독 세팅 + Skill01 트리거(→Skill01Strike, 프레임 70부터 베기 이어재생).
+        //   데미지(DoSkillHit)는 베기 구간의 OnAttackHit(@norm0.556=프레임80)에서만 발동(윈드업서 발동 안 함).
+        // ★불발(최소차징 미달): 윈드업/홀드를 idle로 되돌린다 — 안 그러면 윈드업 트리거가 쏜 홀드에 고착(소프트락).
+        if (fire) BeginSkill();
+        else AnimatorDriver?.TriggerSkillCancel();
     }
 
     /// <summary>★대시 베기 — 대시 끝 좌클릭 시 DashAttack(Attack02) 발동. Counter/Skill과 동형(busy로 잠김, 타격=OnHitFrame
@@ -508,9 +609,16 @@ public class KatanaWeapon : WeaponBehaviour
     public Transform DebugOwner => Owner;
     // ── 차징 상태(ChargePhantomEmitter 전용 읽기) ──
     public bool IsCharging => _charging;
+    /// <summary>★차징 *윈드업*(Skill01Charge 재생, 프레임 0→70) 중인가 — 팬텀은 이 동안만 방출(홀드/베기 제외 = 애니에 결속).
+    /// _charging ∧ Animator가 윈드업 상태. 홀드(프레임70 동결) 진입 시 false → 방출 멈춤.</summary>
+    public bool IsChargeWindup => _charging && AnimatorDriver != null && AnimatorDriver.IsInSkillChargeWindup;
     public float ChargeTime01 => chargeMax > 0f ? Mathf.Clamp01(_chargeTime / chargeMax) : 0f;
     /// <summary>차징 시작 시 잠근 조준 방향 — 팬텀 전방 방출 방향.</summary>
     public Vector3 ChargeAimDir => _aimDir;
+    /// <summary>★Skill01 베기 타격(DoSkillHit) 누적 횟수 — ChargePhantomEmitter가 증가를 감지해 '벨 때' 슬래시 VFX 1발 발동(윈드업 아닌 실제 베기).</summary>
+    public int SkillHitSeq => _skillHitSeq;
+    /// <summary>★Skill01 판정 사거리(m) — ChargePhantomEmitter가 팬텀 전진 거리 상한으로 읽음(차징 공격 사거리만큼만 나감). 스킬 SO 없으면 0.</summary>
+    public float SkillRange => skillSet != null ? skillSet.hit.range : 0f;
     public int DebugStep => _step;
     /// <summary>공격 중이면 잠근 방향(_aimDir), 평시엔 라이브 조준(_liveAim) — 프리뷰용.</summary>
     public Vector3 DebugAimDir => _step >= 1 ? _aimDir : _liveAim;
@@ -577,12 +685,14 @@ public class KatanaWeapon : WeaponBehaviour
         if (connected) FireHitFeedback(finisherKick, true);
         SpawnSkillVfx();   // ★스윙 비주얼(칼 휘두르는 순간 = 콤보 슬래시와 동일하게 적중 불문)
         PlaySkillSfx();    // ★스윙 사운드(칼 베는 소리 — 적중 불문)
+        _skillHitSeq++;    // ★'벨 때' 신호 — ChargePhantomEmitter가 이 증가를 폴링해 차징 슬래시 VFX 1발 발동(윈드업 아닌 실제 베기에).
     }
 
     /// <summary>타격 손맛 발동 — 칼이 적에 닿았을 때만(헛스윙 제외). 카메라 킥(조준 방향, unscaled·스냅).
     /// ★전역 히트스탑은 의도적으로 안 씀 — 일시정지/슬로모와 timeScale 소유권 충돌(게이트 Codex P0/P1, 캐넌 "전역 timeScale 금지").</summary>
     void FireHitFeedback(float camKick, bool finisher)
     {
+        PlayMeleeImpact();   // ★임팩트 thud — FireHitFeedback은 connected에서만 호출되므로 헛스윙 자동 무음. 카메라 유무와 독립(맨 앞).
         var cam = PlayerCameraFollow.Active;
         if (cam == null) return;
         if (camKick > 0f) cam.AddKick(_aimDir, camKick);
