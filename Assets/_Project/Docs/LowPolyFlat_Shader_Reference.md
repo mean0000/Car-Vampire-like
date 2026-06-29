@@ -7,7 +7,7 @@
 | 파일 | 경로 |
 |---|---|
 | 셰이더 | `Assets/_Project/Shaders/LowPolyFlat.shader` |
-| 기본 머티리얼 | `Assets/_Project/Material/M_LowPolyFlat.mat` |
+| 기본 머티리얼 | `Assets/_Project/Materials/M_LowPolyFlat.mat` |
 
 ---
 
