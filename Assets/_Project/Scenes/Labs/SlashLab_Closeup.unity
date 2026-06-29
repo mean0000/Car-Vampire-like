@@ -1727,12 +1727,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ChargePhantomEmitter
   weapon: {fileID: 1749597489}
   ghostShader: {fileID: 0}
-  interval: 0.08
-  forwardSpeed: 6
-  scatter: 1.2
-  lifetime: 0.45
-  ghostColor: {r: 0.3, g: 1.4, b: 1.7, a: 1}
-  startAlpha: 0.7
+  phantomSet: {fileID: 11400000, guid: d4f1a07b9e2c45a86b3f0d27c91e5a68, type: 2}
 --- !u!21 &1622954140
 Material:
   serializedVersion: 8
@@ -2097,6 +2092,7 @@ MonoBehaviour:
   weaponAnchor: {fileID: 1604825401}
   chargeSkill: 1
   chargeMax: 0.83
+  minChargeToFire: 0.12
   dashAttackRange: 3
   dashAttackArcHalf: 60
   dashAttackForwardOffset: 0.5

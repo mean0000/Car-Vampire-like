@@ -1867,8 +1867,26 @@ MonoBehaviour:
   distance: 15
   yaw: 0
   followSmooth: 0.12
+  cinematicPitchDelta: -6
+  cinematicDistanceDelta: -2.5
+  cinematicFovDelta: -4
+  cinematicInSpeed: 11
+  cinematicOutSpeed: 3.5
+  cinematicHold: 0.14
+  lightFovPunch: 1.2
+  finisherFovPunch: 4
+  fovPunchReturn: 9
+  fovNarrowCap: 7
   impactKickReturn: 14
   impactKickMax: 0.6
+  densityRadius: 9
+  densityMask:
+    serializedVersion: 2
+    m_Bits: 128
+  lowDensityCount: 3
+  highDensityCount: 14
+  highDensityJuiceScale: 0.35
+  lowDensitySustain: 0.2
 --- !u!81 &1725341291
 AudioListener:
   m_ObjectHideFlags: 0
@@ -1937,7 +1955,7 @@ Transform:
   m_GameObject: {fileID: 1725341289}
   serializedVersion: 2
   m_LocalRotation: {x: 0.38268346, y: 0, z: 0, w: 0.9238795}
-  m_LocalPosition: {x: 0, y: 35.9, z: -10.606601}
+  m_LocalPosition: {x: 0, y: 29.58, z: -16.92}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2058,6 +2076,11 @@ MonoBehaviour:
   dashAttackDamage: 8
   dashAttackKnockback: 6
   dashAttackMaxDuration: 3.5
+  timingCritEnabled: 1
+  critDamageMult: 4
+  critPropagationRadius: 3
+  critPropagationDamage: 1
+  critKick: 0.4
   comboKick: 0.12
   finisherKick: 0.28
 --- !u!1 &1787452449
@@ -2256,6 +2279,7 @@ MonoBehaviour:
   spawnRadius: 18
   radiusJitter: 4
   maxAttackTokens: 4
+  uncapTokens: 0
   enemyHp: 4
   colliderRadius: 0.9
   colliderHeight: 2

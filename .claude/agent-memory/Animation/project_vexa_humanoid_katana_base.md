@@ -22,7 +22,7 @@ metadata:
 - ★**watch-item = idle 왼발 상수 roll** L≈0.20 vs R≈0.10. 출처=Frank 소스클립/공유아바타(Vexa 바인드 무죄). **미수정 — 유저 눈 판정 후 투자**. 45도/15m 톱다운서 안 보일 가능성 큼.
 
 ## Step3 — KatanaMelee.controller (파라미터 계약 + 콤보 3상태)
-- 경로 `Assets/_Project/Animation/KatanaMelee.controller`.
+- 경로 `Assets/_Project/Animations/KatanaMelee.controller`.
 - ★**파라미터 계약(코드 구동)**: `Speed`(float)·`MoveX`(float)·`MoveY`(float)·`Attack`(trigger, **미사용이지만 보존** — 구 코드 폴백)·`Dash`(bool)·**`ComboStep`(int, 2026-06-18 추가)**.
 - **Locomotion**(default) = 2D FreeformDirectional 블렌드트리(px=MoveX py=MoveY). ★blendParameter Float 필수([[blendtree-param-must-be-float]]).
 - **Dash** = Evade_F RM 단일 상태. AnyState→Dash `[If Dash]` CUT. (콤보 작업서 미터치 — AnyState엔 Dash만 남음.)

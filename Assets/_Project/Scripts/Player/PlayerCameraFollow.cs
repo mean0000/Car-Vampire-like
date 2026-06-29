@@ -79,6 +79,14 @@ public class PlayerCameraFollow : MonoBehaviour
     [Tooltip("저밀도 지속 시 은은한 시네마틱 풀인 가중(0~1). 0이면 평소 완전 가독 고정. 작게 권장(0.2).")]
     [SerializeField, Range(0f, 1f)] float lowDensitySustain = 0.2f;
 
+    [Header("스프린트 프레이밍 (질주 — 룩어헤드 + 풀백)")]
+    [Tooltip("질주 중 이동 방향으로 카메라를 미리 내보내는 거리(m) — 갈 곳을 보여줘 속도감↑(플레이어가 화면 뒤로 드리프트). 0=없음.")]
+    [SerializeField] float sprintLead = 3f;
+    [Tooltip("질주 중 카메라를 뒤로 빼는 거리(m) — 시야 넓혀 속도감↑. 0=없음.")]
+    [SerializeField] float sprintPullback = 2.5f;
+    [Tooltip("질주 프레이밍 진입/복귀 속도(1/초) — 클수록 빨리 붙고 빨리 풀림.")]
+    [SerializeField, Min(0.1f)] float sprintBlendSpeed = 6f;
+
     Camera _cam;
     float _baseFov;
     bool _hasFov;            // 퍼스펙티브 카메라일 때만 FOV 채널 사용
@@ -87,6 +95,8 @@ public class PlayerCameraFollow : MonoBehaviour
     Vector3 _followPos;      // 킥/시네마틱을 뺀 순수 베이스 추종 위치(SmoothDamp 대상)
     bool _followInit;
     Vector3 _impactKick;     // 전투 임팩트 킥 오프셋(unscaled 감쇠)
+    PlayerMotor _motor;      // 스프린트 프레이밍 소스 — target에서 해석(없으면 스프린트 프레이밍 무동작)
+    float _sprint;           // 0~1 — 질주 프레이밍 블렌드(_motor.IsSprinting 추종, 스무딩)
 
     float _cinematic;        // 0~1 — 현재 시네마틱 블렌드(unscaled로 cinTarget 추종)
     float _transient;        // 0~1 — 피니셔 트리거 일시 가중(hold 후 감쇠)
@@ -110,10 +120,12 @@ public class PlayerCameraFollow : MonoBehaviour
     {
         // FOV 베이스는 Start에서 — 다른 컴포넌트가 Start에서 FOV를 만질 수 있어 Awake 캡처는 이르다(옛 리그 리뷰 M-3 교훈).
         if (_cam != null && !_cam.orthographic) { _baseFov = _cam.fieldOfView; _hasFov = true; }
+        // 인스펙터로 target이 미리 꽂힌 경우 모터 해석(런타임 SetTarget 경로는 거기서 해석).
+        if (target != null && _motor == null) _motor = target.GetComponent<PlayerMotor>();
     }
 
     /// <summary>런타임에 타깃을 바꿔 끼울 때(플레이어 스폰 후 와이어링).</summary>
-    public void SetTarget(Transform t) { target = t; }
+    public void SetTarget(Transform t) { target = t; _motor = t != null ? t.GetComponent<PlayerMotor>() : null; }
 
     // ── 손맛 API ──────────────────────────────────────────────
 
@@ -195,8 +207,23 @@ public class PlayerCameraFollow : MonoBehaviour
         _fovPunch = Mathf.Lerp(_fovPunch, 0f, 1f - Mathf.Exp(-fovPunchReturn * udt));   // ★_hasFov 무관 감쇠(ortho 전환 후 누적 폭주 방지)
 
         // --- 충격: 킥(unscaled 감쇠) + LabCameraShake 오프셋(킥과 동형, XZ·unscaled, 프레임당 1회 소비) ---
+        // --- 스프린트 프레이밍: 이동방향 룩어헤드 + 뒤로 풀백(가산 오프셋 — base/시네마틱 재구성에 불간섭) ---
+        //     knob 0이면 오프셋 0(자기복원). _sprint 스무딩으로 진입/복귀가 부드럽게 이징된다.
+        float sprintT = (_motor != null && _motor.IsSprinting) ? 1f : 0f;
+        // ★스프린트 프레이밍은 *이동(scaled)에 결합* — 전투 주스(unscaled)와 달리 월드가 멈추면(히트스탑/일시정지) 같이 멈춘다.
+        //   (Codex 게이트=시간축 의도적 결정 / Stab N-2=히트스탑 중 시네마틱과 누적 완화). 정지 프레임 dt=0이면 블렌드 동결.
+        float sdt = Mathf.Min(Time.deltaTime, 0.1f);
+        _sprint = Mathf.MoveTowards(_sprint, sprintT, sprintBlendSpeed * sdt);
+        Vector3 sprintOffset = Vector3.zero;
+        if (_sprint > 0.0001f && _motor != null)
+        {
+            Vector3 v = _motor.Velocity; v.y = 0f;
+            Vector3 leadDir = v.sqrMagnitude > 0.01f ? v.normalized : Vector3.zero;
+            sprintOffset = (leadDir * sprintLead + rot * Vector3.back * sprintPullback) * _sprint;
+        }
+
         Vector3 shake = LabCameraShake.Evaluate();
-        transform.position = framedPos + _impactKick + shake;
+        transform.position = framedPos + _impactKick + shake + sprintOffset;
         transform.rotation = rot;
 
         _impactKick = Vector3.Lerp(_impactKick, Vector3.zero, 1f - Mathf.Exp(-impactKickReturn * udt));

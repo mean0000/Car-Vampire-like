@@ -1,13 +1,26 @@
 ---
 name: katana-locomotion-speed-tiers
-description: KatanaMelee.controller Locomotion 블렌드트리 구조(Speed 1D × MoveXY 2D) + Shift 스프린트 run 티어 배선 + ★Unequip_Run 무기 납도 정합 함정. Built 2026-06-21.
+description: KatanaMelee.controller Locomotion 블렌드트리 구조(Speed 1D × MoveXY 2D) + Shift 스프린트 run 티어 배선. ★현행(06-28)=Run 티어=S2_Run 8way @ TimeScale 1.35(Walk와 동일 클립·무기OUT). ★Run_Stance3 단일클립 폐기(loopTime meta 편집이 reimport서 0으로 되돌아가 freeze 재발). Built 2026-06-21, fixed 2026-06-28.
 metadata:
   type: project
 ---
 
-# 카타나 로코모션 Speed 티어 (2026-06-21)
+# 카타나 로코모션 Speed 티어 (2026-06-21, ★06-28 Run 티어 수정)
 
-`Assets/_Project/Animation/KatanaMelee.controller` Locomotion 상태의 블렌드트리. 유저가 Shift 스프린트(PlayerMotor sprintSpeed=8.5, 평소 moveSpeed=5) 추가 → run 티어에 `Frank_RPG_Katana_Unequip_Run_Faster_Velocity` 배선 요청.
+## ★★2026-06-28 스프린트 freeze 수정 — 현행 진실(아래 06-21 Run_Stance3 서술은 폐기됨)
+- **증상**(유저): Shift 스프린트 시 run 애니가 1회 후 freeze(발 멈춤). 걷기는 정상.
+- **근본원인**: Run 티어(Speed=2, blendtree `-8800000000000000002`)가 단일 클립 `Run_Stance3`(guid d5a6fa7a...)였는데 **디스크 meta가 `loopTime: 0`**(=비루프). 06-21에 loopTime 0→1 직접 편집했으나 **그 meta 편집이 살아남지 못함**(reimport/git revert로 0 복귀) → 비루프 클립이 1회 재생 후 마지막 프레임 동결.
+- **수정**(=옵션 a, 가장 견고): Run 티어를 **Walk와 동일한 S2_Run 8way 세트로 repoint**(8자식, 전부 네이티브 `loop:1`·무기 OUT) + 각 자식 `m_TimeScale: 1.35`(스프린트=빠른 런 read + 발슬라이드 완화). 컨트롤러 YAML 직접 편집.
+  - **왜 견고한가**: FBX 클립 meta 편집(loopTime)은 reimport서 안 살아남는다(이미 1번 실패). 네이티브로 loop=1인 클립(S2_Run, Walk서 검증됨)을 가리키면 meta 의존 0. + 8way 방향성(좌/우/뒤 스프린트 정상) + 무기상태 Walk와 통일(임계서 칼 깜빡임 박멸).
+- **드라이버 코드 무변(의도)**: `blend = Clamp(0,2)` 그대로 둠 = Speed가 2(run 티어)에 닿아야 함(클램프-1로 줄이면 run 티어가 영영 안 켜짐 — 하지 말 것). 주석만 현행 반영.
+- **검증**(MCP): Locomotion top=Speed Simple1D 3자식 / thr2 Run blendtree 8자식 전부 isLooping=True·timeScale 1.35 / 콘솔 에러0. SAVED. 손맛(속도감·슬라이드 정도)=유저 플레이 게이트.
+- **남은 발슬라이드**: 실속도 9/15/24 m/s(sprintTierSpeeds)인데 measure cap maxSpeed=12라 blend≈2 고정. 고정 cadence(TimeScale 1.35)는 24 m/s를 다 못 가림(화이트박스 허용). 진짜 해법=속도비례 재생속도(blendtree 자식 TimeScale은 정적이라 파라미터 구동 불가→코드가 Animator.speed를 *로코모션 한정*으로 스케일하거나 별도 1D Speed→playbackSpeed 곡선). 노브=각 Run 자식 m_TimeScale.
+
+---
+
+## (구) 2026-06-21 빌드 — ★Run_Stance3 부분은 위 06-28 수정으로 폐기됨
+
+`Assets/_Project/Animations/KatanaMelee.controller` Locomotion 상태의 블렌드트리. 유저가 Shift 스프린트(PlayerMotor sprintSpeed=8.5, 평소 moveSpeed=5) 추가 → run 티어에 `Frank_RPG_Katana_Unequip_Run_Faster_Velocity` 배선 요청.
 
 ## ★작업 전 진실: Speed 파라미터가 죽어 있었다
 - PlayerAnimatorDriver는 측정 평면속도 → **Speed 블렌드(0=idle, 1=walk@walkSpeedRef5, 2=run@runSpeedRef8.5)** 를 매 프레임 set. MoveX/MoveY(facing 프레임 투영, 45° 스냅)도 set.

@@ -1,0 +1,88 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c3f9a2e5b1d4068af83e15c9d264b70, type: 3}
+  m_Name: Katana_Cham_Skill01PhantomSet
+  m_EditorClassIdentifier: Assembly-CSharp::ChargePhantomSet
+  setName: Katana_Skill01_Phantom
+  phantoms:
+  - name: Attack01
+    enabled: 1
+    frames:
+    - {fileID: 4300000, guid: 827ce8eba440fe14ab4ef229dcd9434b, type: 2}
+    - {fileID: 4300000, guid: 859db202e14d0a84da9a3f885739f3ce, type: 2}
+    - {fileID: 4300000, guid: a03779d6b2b76ec40b3e58821fed6a60, type: 2}
+    - {fileID: 4300000, guid: 891d3cd6ea83d4c4e918266e58de5a49, type: 2}
+    - {fileID: 4300000, guid: 73aea68124ff04d45898a0aee692b7d5, type: 2}
+    - {fileID: 4300000, guid: 003c8fc86510de6478c9c7e64a23f3c4, type: 2}
+    - {fileID: 4300000, guid: 2a2d255cf8295c44a9ac50439d36009e, type: 2}
+    - {fileID: 4300000, guid: ef2c06b9e72b3b64999ac27a9700b72f, type: 2}
+    - {fileID: 4300000, guid: 82948cc927a909945954b889070ae148, type: 2}
+    - {fileID: 4300000, guid: 07f34c77c8a76404d8748ed975db0dc7, type: 2}
+    slashEulerOffset: {x: 120, y: 0, z: 0}
+    slashPosOffset: {x: 0, y: 0, z: 0}
+    slashScale: 0
+  - name: Attack02
+    enabled: 0
+    frames:
+    - {fileID: 4300000, guid: 7d59e957b359cd34eb9ae3261a54fc01, type: 2}
+    - {fileID: 4300000, guid: 4ec964018d2458344a586ad2f53fe443, type: 2}
+    - {fileID: 4300000, guid: 77e6ad488b02812429c3b6226c9d66a1, type: 2}
+    - {fileID: 4300000, guid: 6039c659c775d064680f39b7740dfe68, type: 2}
+    - {fileID: 4300000, guid: 8d4be75a2e8867b46b75fd0de666ac31, type: 2}
+    - {fileID: 4300000, guid: a32059b7c97693a489d7578384c96e99, type: 2}
+    - {fileID: 4300000, guid: 463d47fe93c1a124aa3cd848b284cda7, type: 2}
+    - {fileID: 4300000, guid: 507b8a70c45f7d44686e3adcefae8993, type: 2}
+    - {fileID: 4300000, guid: d82af545fdf626443917844b56a636fa, type: 2}
+    - {fileID: 4300000, guid: e4645589a5e3c5d4c9a4a132e03b9c9c, type: 2}
+    slashEulerOffset: {x: 0, y: 0, z: 0}
+    slashPosOffset: {x: 0, y: 0, z: 0}
+    slashScale: 0
+  - name: Attack03
+    enabled: 0
+    frames:
+    - {fileID: 4300000, guid: fd059d7966dd00d46a4c4d6300491b67, type: 2}
+    - {fileID: 4300000, guid: b7d39fa1e48163a4c85cc2efc230ca6a, type: 2}
+    - {fileID: 4300000, guid: 377767846e3010543bab9bd6f86402b6, type: 2}
+    - {fileID: 4300000, guid: 7faf849b71cf39c4d85b678c5db5263c, type: 2}
+    - {fileID: 4300000, guid: 493e6a93d3fd30943b15bd449d662865, type: 2}
+    - {fileID: 4300000, guid: 75fd1c17354f4d84b9fc16ded0ab42e5, type: 2}
+    - {fileID: 4300000, guid: 15bca8a4558bd36409d8a5e6055ac33e, type: 2}
+    - {fileID: 4300000, guid: d65a7eb597949d544a47d5eb2701d2f9, type: 2}
+    - {fileID: 4300000, guid: da1b8c7e5af05324b95cf71ffc74e8b4, type: 2}
+    - {fileID: 4300000, guid: a3a07660e84b47a4a97fdb9e2b40198a, type: 2}
+    slashEulerOffset: {x: 0, y: 0, z: 0}
+    slashPosOffset: {x: 0, y: 0, z: 0}
+    slashScale: 0
+  emission:
+    phantomCount: 2
+    emissionOrder: 
+    windupDuration: 0.7
+    lifetime: 1
+    travelRange: 1.75
+    slashFraction: 1
+    scatter: 0
+  ghost:
+    fadeStart: 0.6
+    color: {r: 0.3, g: 1.4, b: 1.7, a: 1}
+    startAlpha: 0.314
+  slashVfx:
+    prefab: {fileID: 9219226224801346606, guid: 6c66384d10aa9db49b01bfaf9e9a1052, type: 3}
+    onCharge: 1
+    chargeFireAt: 0.35
+    onCut: 0
+    delay: 0.12
+    eulerOffset: {x: 0, y: 120, z: 0}
+    posOffset: {x: -0.5, y: 0, z: 0}
+    scale: 1
+    lifetime: 0.5
+    playbackSpeed: 1.5
+    parentToWeapon: 0

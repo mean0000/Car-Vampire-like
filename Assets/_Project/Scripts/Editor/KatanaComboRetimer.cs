@@ -31,7 +31,7 @@ public static class KatanaComboRetimer
     const string Combo1_Fbx = "Assets/Frank_Slash_Pack/Assets/Animations/Frank_SlashPack_Katana/FBX_Animation/Root_Motion/Frank_RPG_Katana_S1_Combo01_01.FBX";
     const string Combo3_Fbx = "Assets/Frank_Slash_Pack/Assets/Animations/Frank_SlashPack_Katana/FBX_Animation/Root_Motion/Frank_RPG_Katana_S1_Combo01_03.FBX";
 
-    const string OutDir = "Assets/_Project/Animation";
+    const string OutDir = "Assets/_Project/Animations";
     const string Combo1_Out = OutDir + "/S1_Combo01_01_Retimed.anim";
     const string Combo3_Out = OutDir + "/S1_Combo01_03_Retimed.anim";
 

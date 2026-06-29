@@ -28,6 +28,15 @@ public class PlayerAnimatorDriver : MonoBehaviour
     [Header("Damping")]
     [SerializeField] float speedDamp = 0.1f;
     [SerializeField] float dirDamp = 0.08f;
+    [Tooltip("★이동 시 몸 회전 속도(도/초) — 낮을수록 부드럽게 돌고(각짐↓·둔함↑), 높을수록 즉각 스냅. WASD 8방향의 '딱딱한 방향 전환'을 이걸로 완화한다. 공격/대시 중엔 무시(즉시 잠금 — 런지/회피 크리스프 유지).")]
+    [SerializeField] float faceTurnRate = 600f;
+
+    public enum FacingMode { FaceMovement, FaceMouse, Hybrid }
+    [Header("Facing Mode (비교용 — 플레이 중 F키 순환)")]
+    [Tooltip("몸이 뭘 보나: FaceMovement=이동 방향(하데스) / FaceMouse=마우스(트윈스틱) / Hybrid=질주는 이동·그 외는 조준. 직접 비교용.")]
+    [SerializeField] FacingMode facingMode = FacingMode.Hybrid;
+    [Tooltip("facingMode 순환 키.")]
+    [SerializeField] KeyCode cycleFacingKey = KeyCode.F;
 
     static readonly int SpeedHash = Animator.StringToHash("Speed");
     static readonly int MoveXHash = Animator.StringToHash("MoveX");
@@ -38,6 +47,8 @@ public class PlayerAnimatorDriver : MonoBehaviour
     static readonly int DashYHash = Animator.StringToHash("DashY");
     static readonly int CounterHash = Animator.StringToHash("Counter");
     static readonly int Skill01Hash = Animator.StringToHash("Skill01");
+    static readonly int SkillChargeHash = Animator.StringToHash("SkillCharge");
+    static readonly int SkillCancelHash = Animator.StringToHash("SkillCancel");
     static readonly int DashAttackHash = Animator.StringToHash("DashAttack");
 
     Animator _animator;
@@ -73,11 +84,22 @@ public class PlayerAnimatorDriver : MonoBehaviour
         // 배선 실패를 무음으로 두지 않는다 — _motor 없으면 공격 루트모션이 조용히 죽으므로 즉시 노출(Codex).
         if (_motor == null)
             Debug.LogError("[PlayerAnimatorDriver] PlayerMotor를 부모 체인에서 못 찾음 — 공격 루트모션이 적용되지 않는다. 프리팹 계층(비주얼 자식이 PlayerMotor 하위인지) 확인.", this);
+        // _aim도 대칭으로 노출(Stab 게이트) — 없으면 Hybrid facing이 조준을 못 써 transform.forward로 무음 폴백된다.
+        if (_aim == null)
+            Debug.LogError("[PlayerAnimatorDriver] PlayerAim을 부모 체인에서 못 찾음 — Hybrid facing이 조준 방향 대신 transform.forward로 폴백. 계층 확인.", this);
     }
 
     void OnEnable()
     {
         if (moveSource != null) _lastPos = moveSource.position;
+    }
+
+    // 비교용 하니스 HUD — 현재 facing 모드 표시(고른 뒤 OnGUI/enum/순환 전부 제거).
+    void OnGUI()
+    {
+        var style = new GUIStyle(GUI.skin.label) { fontSize = 22, fontStyle = FontStyle.Bold };
+        style.normal.textColor = Color.cyan;
+        GUI.Label(new Rect(14f, 10f, 760f, 40f), $"[{cycleFacingKey}] Facing: {facingMode}  (FaceMovement / FaceMouse / Hybrid 순환)", style);
     }
 
     /// <summary>PlayerBrain이 매 프레임 마지막에 호출.</summary>
@@ -86,6 +108,10 @@ public class PlayerAnimatorDriver : MonoBehaviour
         if (moveSource == null) return;
         float dt = Time.deltaTime;
         if (dt <= 0f) return;
+
+        // 비교용 하니스: 플레이 중 facing 모드 순환(고른 뒤 떼어낼 임시 코드)
+        if (Input.GetKeyDown(cycleFacingKey))
+            facingMode = (FacingMode)(((int)facingMode + 1) % 3);
 
         // 평면(XZ) 변위만 — 지면 추종 y 변화는 로코모션과 무관.
         Vector3 cur = moveSource.position;
@@ -97,15 +123,29 @@ public class PlayerAnimatorDriver : MonoBehaviour
         float speed = Mathf.Min(rawSpeed, maxSpeed);
         bool moving = speed > moveThreshold;
 
-        // facing(이동 지향 — 하데스식): 공격 커밋 중엔 단 시작에 잠근 조준(마우스 돌려도 안 꺾임).
-        //   ★이동 중엔 '가는 방향'을 향한다(마우스 돌려도 몸이 안 돎 — 달리며 조준 회전 어색함 제거). 공격 시에만 조준 스냅(SetCombo/TriggerX).
-        //   정지 시엔 현재 facing 유지(조준으로 스냅 안 함 → 멈출 때 빙글 방지). 비주얼(this)만 회전 — 루트는 안 돈다.
-        Vector3 face = (_attacking && _lockedFace.sqrMagnitude > 0.0001f)
-            ? _lockedFace
-            : (moving ? delta.normalized : transform.forward);
+        // facing 3안 비교(F키 순환). 공격 중엔 항상 단 시작 잠근 조준(_lockedFace). 비주얼(this)만 회전 — 루트는 안 돈다.
+        Vector3 aimFace = (_aim != null && _aim.Direction.sqrMagnitude > 0.0001f) ? _aim.Direction : transform.forward;
+        Vector3 moveFace = moving ? delta.normalized : transform.forward;
+        Vector3 face;
+        if (_attacking && _lockedFace.sqrMagnitude > 0.0001f)
+            face = _lockedFace;
+        else if (facingMode == FacingMode.FaceMovement)
+            face = moveFace;                                                     // 이동 방향(하데스식)
+        else if (facingMode == FacingMode.FaceMouse)
+            face = aimFace;                                                      // 마우스 조준(트윈스틱)
+        else
+            face = (_motor != null && _motor.IsSprinting) ? moveFace : aimFace; // 하이브리드: 질주=이동, 그 외=조준
         face.y = 0f;
         if (face.sqrMagnitude > 0.0001f)
-            transform.rotation = Quaternion.LookRotation(face.normalized, Vector3.up);
+        {
+            Quaternion targetRot = Quaternion.LookRotation(face.normalized, Vector3.up);
+            // ★몸 회전 스무딩 — 이동 facing은 turnRate로 스르륵 돈다(WASD 8방향이라도 각진 스냅 제거).
+            //   공격 잠금(_attacking)·대시 중엔 즉시 스냅(런지/회피 방향 크리스프 유지). faceTurnRate 크게=옛 즉시동작 복원.
+            bool snap = _attacking || (_motor != null && _motor.IsDashing);
+            transform.rotation = snap
+                ? targetRot
+                : Quaternion.RotateTowards(transform.rotation, targetRot, faceTurnRate * dt);
+        }
 
         // movement = facing 프레임 투영 → MoveX(우측 스트레이프) / MoveY(전진 +, 뒷걸음 −)
         Vector3 fwd = transform.forward; fwd.y = 0f;
@@ -149,8 +189,9 @@ public class PlayerAnimatorDriver : MonoBehaviour
             bool dashAnim = _motor.IsDashing;
             if (dashAnim != _wasDashing) { _animator.SetBool(DashHash, dashAnim); _wasDashing = dashAnim; }
         }
-        // ★달리기 무기 처리: 별도 코드 없음 — 달리기(스프린트) 시 로코모션 run 티어(Unequip_Run)가 칼 든 팔을 아래로
-        //   내린 포즈라, 칼이 그대로 보이며 내려간 손에 들린 채 달린다. (디졸브/숨김 폐기. 팔 완전 고정은 별도 정적 포즈 레이어.)
+        // ★달리기 무기 처리: 별도 코드 없음 — run 티어(Speed=2)는 walk 티어와 동일한 S2_Run 8way(무기 OUT) 세트를
+        //   m_TimeScale 1.35로 더 빠르게 돌린다(스프린트=빠른 런 + 발슬라이드 완화). 무기 상태가 walk와 통일되어 임계서
+        //   칼 깜빡임 없음. (구 Run_Stance3 단일 클립은 loop=0이라 스프린트 중 1회 후 freeze → 폐기.)
     }
 
     /// <summary>콤보 단 설정(0=idle, 1/2/3) — AnimatorController가 ComboStep으로 Combo 상태를 전환한다.
@@ -214,6 +255,34 @@ public class PlayerAnimatorDriver : MonoBehaviour
         _animator.SetTrigger(Skill01Hash);
     }
 
+    /// <summary>★Skill01 차징 윈드업(RMB 누름) — 컨트롤러 AnyState→Skill01Charge 트리거. 윈드업(프레임 0→70)을
+    /// 재생한 뒤 프레임 70(차징완료 포즈)에서 홀드(Skill01Hold)한다. 발동(베기)은 RMB 뗄 때 <see cref="TriggerSkill"/>
+    /// (Skill01 트리거 → Skill01Strike, 프레임 70부터 이어재생)이 별도로 낸다 — 윈드업은 재생하지 않는다.
+    /// facing 잠금 + Dash bool 정리(AnyState 경쟁 해소)는 다른 액션 트리거와 동형. 트리거 없으면 무음(안전).</summary>
+    public void TriggerSkillCharge()
+    {
+        if (_animator == null) return;
+        if (_aim != null && _aim.Direction.sqrMagnitude > 0.0001f)
+            _lockedFace = _aim.Direction;
+        _animator.SetBool(DashHash, false);
+        _wasDashing = false;
+        _animator.ResetTrigger(SkillCancelHash);   // ★잔류 가드: 대시-취소가 쏜 SkillCancel이 AnyState→Dash에 밀려 미소비로 남으면 새 차징을 즉시 취소시킴 → 새 차징 전 클리어
+        _animator.SetTrigger(SkillChargeHash);
+    }
+
+    /// <summary>★Skill01 차징 취소(최소차징 전 RMB 뗌 = 불발) — 컨트롤러 Skill01Charge/Hold→Locomotion 트리거.
+    /// 윈드업/홀드만 idle로 되돌린다(베기 미발동). 차징 시작이 윈드업 트리거를 쐈는데 불발 시 홀드에 고착되는
+    /// 소프트락을 막는다. 트리거 없으면 무음(안전).</summary>
+    public void TriggerSkillCancel()
+    {
+        if (_animator == null) return;
+        _animator.SetTrigger(SkillCancelHash);
+    }
+
+    /// <summary>★차징 윈드업(Skill01Charge) 재생 중인가 — ChargePhantomEmitter가 *윈드업에만* 팬텀 방출하도록 읽음(홀드/베기 제외).
+    /// Base Layer(0) 현재 상태명으로 판정. 액션 진입 전이가 전부 CUT(0)이라 윈드업 0→70 동안만 true, 프레임70 홀드 진입 시 false.</summary>
+    public bool IsInSkillChargeWindup => _animator != null && _animator.GetCurrentAnimatorStateInfo(0).IsName("Skill01Charge");
+
     /// <summary>★대시 베기(DashAttack) — 컨트롤러 Any→DashAttack 트리거. Counter/Skill과 동형(공격이라 _attacking으로
     /// 루트모션(Attack02 전진 런지) 적용, facing 잠금, Dash bool 정리로 AnyState 경쟁 해소). 트리거 없으면 무음(안전).</summary>
     public void TriggerDashAttack()
@@ -234,6 +303,13 @@ public class PlayerAnimatorDriver : MonoBehaviour
     {
         if (_motor == null) return;
         if (!_attacking && !_motor.IsDashing) return;   // 공격 커밋 중이거나 대시 창 동안만 루트모션을 위치로 적용
+        // ★차징 윈드업/게이더링 홀드는 제자리 — 루트모션 억제. 이유 둘: ①게이더링 홀드(Skill01Hold)는 매 루프
+        //   사이클마다 클립을 전진 재생해 루트모션이 누적(실측 ~0.26m/s, 홀드 3s=0.78m 슬라이드)되므로 차단해야
+        //   "기 모으며 제자리"가 된다. ②윈드업(Skill01Charge) 제자리화로 팬텀 출발점이 고정된다.
+        //   클립은 윈드업/홀드/베기 공유라 bake로 분리 불가 → 상태별 억제(코드가 위치를 *만들지* 않고 클립 변위를 *억제만* — 헌법 부합).
+        //   베기(Skill01Strike) 런지는 정상 적용(아래 경로). 이름 판정은 기존 IsInSkillChargeWindup과 동형 결속.
+        var st = _animator.GetCurrentAnimatorStateInfo(0);
+        if (st.IsName("Skill01Charge") || st.IsName("Skill01Hold")) return;
         _motor.ApplyRootStep(_animator.deltaPosition);
     }
 

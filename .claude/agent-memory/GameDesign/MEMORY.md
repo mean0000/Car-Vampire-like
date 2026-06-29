@@ -20,5 +20,11 @@
 - [★VS 보호/영토/패링 선례](reference_vs_protect_territory_parry.md) — 2026-06-16 웹리서치. ★VS코어=카이팅(이동만이 방어)→농성·영토 정지점거는 정면충돌. 선례: DRG:S 에스코트모드(캡처존+호드, 호불호·간헐모드면 작동)/Death Must Die 닷지롤(포지셔닝→반응게임 전환=패링 정당근거, 단 상시회피)/Rock&Road(VS+타워디펜스=과설계신호). 결론=보호/영토는 간헐이벤트면OK·상시척추면 위험
 - [★급습+호드+성장 결합 추적](reference_ambush_horde_growth.md) — 2026-06-15 웹리서치. ★결합=드묾(빈공간,함정아님). 3문제 답: 급습이유=Dishonored 아드레날린(미발각→전투강화, "no trouble"넘어)+백스탭배수 3~30x(과감해야 작동)/스타일쿠션=Desperados유한증원(발각도 이김)vs Intravenous2·Dishonored1 반례(한쪽만보상)/호드리듬=L4D Peak Fade(스폰0+stress decay)+DRG:S 어그로캡32+예산제+RoR2크레딧. 차용Top5
 
+- [★단순입력→파워판타지 메커니즘 실측](reference_simple_input_power_fantasy.md) — 2026-06-25 핀 사냥. 관전자함정 해법=자동깔되 결정에 보상(점수=돈)더. DMC오토어시스트(×0.8수동보상)·Hi-Fi Rush(자동싱크+타이밍뎀)·★Warframe Slash Dash("선긋기" 실존:방향입력→사거리자동연쇄+모멘텀)·Katana Zero Dragon·Prototype(3D수직의존=탑다운갭). 우리 화려함=돈이 이미 절반
+- [★최근 distinctive 액션로그라이트 실측](reference_distinctive_action_roguelikes.md) — 2026-06-25 Explore조사. 탑다운서 "잘해보임" 성공/실패 사례 + 진부함경계(신선함=실행이지 피치아님)
+
+## 핀 / 코어 동사
+- [★코어 핀 사냥 (파워판타지 vs dread 갈림길)](project_pin_point_hunt.md) — 2026-06-25. ★진짜충돌=메커니즘아니라 *감정목표*(Prototype 파워판타지 vs 06-24 dread vs §0.1 한마리쫄깃). 읽고-베기 거취=제거❌/관대화+톤전환하면 핀엔진으로 생존(메커니즘 양립, 충돌점=관대함·톤). 핀후보=오케"선을고른다"(Slash Dash선례). 유저 톤판정이 1번
+
 ## 판정 기준
 - [★뽕 우선 (경제분류/farm 스프레드시트 ❌)](feedback_pong_over_systematization.md) — 무기/성장 트리 단일 판정=뽕(시각 파워판타지 러시). §17.10 친화=경제루트류 systematization이 뽕 죽임. 트리 운전대=뽕, farm분류=부차. 극단=더 큰 뽕 에스컬레이트

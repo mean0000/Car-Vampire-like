@@ -7,7 +7,7 @@ metadata:
 
 달리기 시작 시 "상체로 칼 집어넣기" 순수 이동 연출(2026-06-21). combat 액션 아님 — 액션 레일(IsActionPlaying=layer0 Action태그)과 완전 무관, busy/공격 영향 0.
 
-**KatanaMelee.controller (`Assets/_Project/Animation/`) layer 1 "UpperUnequip":**
+**KatanaMelee.controller (`Assets/_Project/Animations/`) layer 1 "UpperUnequip":**
 - mask=`UpperBody.mask`(guid 802696c7d6b1df644ac81db43b54eddd, fileID 31900000) — 트윈스틱서 만들었다 지운 걸 git(5b4fdc5a7)서 그대로 재생성. 휴머노이드 muscle mask(m_Elements:[], m_Mask 13비트): **ON=Body/Head/양Arm/양Fingers/양HandIK · OFF=Root/양Leg/양FootIK**. (m_Mask 문자열 그대로 재사용)
 - blend=**Override**(m_BlendingMode 0), **m_DefaultWeight 0**(평시 안 보임)
 - 상태: `UB_Empty`(default, m_Motion fileID 0 빈모션) + `Unequip`(클립 Frank_RPG_Katana_Unequip, **tag 비어있음=Action 없음**)

@@ -113,13 +113,15 @@ public class PlayerMotor : MonoBehaviour
     /// <summary>PlayerBrain이 매 프레임 Aim 다음에 호출. aimDir = 정지 중 대시 방향 폴백(조준 쪽으로 회피).</summary>
     public void Tick(in PlayerInputState input, Vector3 aimDir, bool locked)
     {
+        // ★스프린트 플래그는 *어떤 early-return보다 먼저* 리셋(Stab M-1/Codex 수렴) — timeScale=0(정산/일시정지)로
+        //   dt<=0 빠져나가도 IsSprinting이 직전 값으로 고착돼, unscaled 카메라가 멈춘 화면서 스프린트 프레이밍을 끄는 것 방지.
+        _sprinting = false;              // 기본 false — 아래 일반 이동 경로에서만 true(대시/공격 early-return 경로는 false 유지)
+        _sprintBurstedThisFrame = false; // 엣지 1프레임만 true(주스가 이 프레임에 카메라킥/스피드라인)
         float dt = Time.deltaTime;
         if (dt <= 0f) return;
 
         _dashAppliedThisFrame = false;   // 매 프레임 초기화 — 이후 OnAnimatorMove의 ApplyRootStep가 읽는다(Update→OnAnimatorMove 순서 보장)
         _dashStartedThisFrame = false;   // 엣지 1프레임만 true(드라이버가 DashX/DashY를 이 프레임에 잠금)
-        _sprinting = false;              // 기본 false — 아래 일반 이동 경로에서만 true(대시/공격 early-return 경로는 false 유지)
-        _sprintBurstedThisFrame = false; // 엣지 1프레임만 true(주스가 이 프레임에 카메라킥/스피드라인)
         // 무적 창 감쇠 — ★unscaled: i-frame은 사람 반응(회피 타이밍)에 귀속(§7). _dashStartTime(unscaled)과 정합.
         //   scaled로 감쇠하면 패링 슬로모 중 대시 시 무적이 timeScale 배율만큼 과장된다(Stab High). 이동 종료 후에도 남은 i-frame 유지.
         if (_iframeTimer > 0f) _iframeTimer -= Time.unscaledDeltaTime;
@@ -147,12 +149,14 @@ public class PlayerMotor : MonoBehaviour
         // (대시는 위에서 이미 처리 — 회피는 이 잠금을 무시하고 빠져나간다.) 공격은 스프린트 기어를 리셋(멈춰서 벰).
         if (locked) { _velocity = Vector3.zero; _sprintHoldTime = 0f; _sprintTier = -1; return; }
 
-        // 달리기 보류(2026-06-21) — 탑다운 손맛 레버리지 약해 비활성화. 코드는 dormant(재개 시 false 제거).
-        _sprinting = false;
+        // 달리기 재개(2026-06-28) — 모멘텀 슬래셔 코어(질주 손맛 화이트박스). Shift 홀드 + 실제 이동이면 스프린트.
+        //   여기 도달 시 비대시·비공격(locked) 보장(위에서 early-return) — 추가 가드 불필요.
+        _sprinting = input.sprintHeld && move.sqrMagnitude > 0.01f;
         if (_sprinting)
         {
-            // ★계단식 버스트 가속: 단계별 기본속도 + 단계 내 완만한 크립, 단계 시간 지나면 다음 단계로 '순간 점프'.
-            //   속도를 직접 세팅(MoveTowards 아님)해 버스트가 즉시 튀고(10→…→40!), 크립은 완만히 차오른다. 방향은 입력 즉응(스프린트 커밋).
+            // ★계단식 버스트 가속: 단계별 기본속도 + 단계 내 완만한 크립, 단계 시간 지나면 다음 단계 속도로 목표 상승.
+            //   목표 spd는 단계 상승 시 즉시 점프하나, 실제 _velocity는 아래 MoveTowards(acceleration)로 부드럽게 따라붙는다
+            //   (2026-06-28 관성화 — 각진 달리기 해소). 방향도 같은 MoveTowards로 곡선 전환. 크립은 완만히 차오름.
             _sprintHoldTime += dt;
             int n = sprintTierSpeeds != null ? sprintTierSpeeds.Length : 0;
             float spd;
@@ -165,7 +169,12 @@ public class PlayerMotor : MonoBehaviour
                 if (tier != _sprintTier) { _sprintBurstedThisFrame = _sprintTier >= 0; _sprintTier = tier; }   // 단계 상승=버스트(시작 진입 제외)
             }
             else { spd = moveSpeed; _sprintTier = 0; }   // 배열 비면 폴백
-            _velocity = move.normalized * spd;
+            // ★스프린트도 걷기와 같은 velocity inertia(MoveTowards) — 속도 벡터가 곡선지며 티어 속도로 이행(달리기 각짐 해소, Codex+나 진단).
+            //   트레이드오프: 티어 '버스트'(순간 점프)가 부드러운 가속 빌드로 바뀜(펀치↓ 부드러움↑). 펀치 원하면 별도 sprintAccel 노브로 분리 가능.
+            //   가속/감속 분리 = 걷기와 동일 정책(역방향=감속) — Stab 게이트: 스프린트가 이 분기를 빠뜨려 역전이 더 빨리 수렴하던 것 수정.
+            Vector3 targetVel = move.normalized * spd;
+            bool sprintSpeedingUp = Vector3.Dot(targetVel, _velocity) >= 0f && targetVel.sqrMagnitude >= _velocity.sqrMagnitude;
+            _velocity = Vector3.MoveTowards(_velocity, targetVel, (sprintSpeedingUp ? acceleration : deceleration) * dt);
         }
         else
         {

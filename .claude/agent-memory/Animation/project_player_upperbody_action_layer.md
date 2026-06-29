@@ -10,8 +10,8 @@ metadata:
 유저 확정: "공격하면서 자유롭게 이동" = 상체=공격·하체=로코모션·몸=조준향·클립 전진런지 폐기. 플레이어 self-cancel 캐넌이라 몬스터 commit-lock 비적용(이 결정이 구 '제자리 커밋'을 대체).
 
 ## 만든 에셋
-- `Assets/_Project/Animation/UpperBody.mask` (guid `802696c7d6b1df644ac81db43b54eddd`, AvatarMask fileID 31900000). Humanoid 그룹 마스크(transform path 아님). **m_Mask hex = 13그룹×8자(104자)**, 각 그룹 `01000000`(on)/`00000000`(off): Root0·Body1·Head1·LeftLeg0·RightLeg0·LeftArm1·RightArm1·LeftFingers1·RightFingers1·LeftFootIK0·RightFootIK0·LeftHandIK1·RightHandIK1. 검증=`GetHumanoidBodyPartActive` 그대로 나옴.
-- `Assets/_Project/Animation/KatanaMelee.controller` = **2 레이어**로 개편.
+- `Assets/_Project/Animations/UpperBody.mask` (guid `802696c7d6b1df644ac81db43b54eddd`, AvatarMask fileID 31900000). Humanoid 그룹 마스크(transform path 아님). **m_Mask hex = 13그룹×8자(104자)**, 각 그룹 `01000000`(on)/`00000000`(off): Root0·Body1·Head1·LeftLeg0·RightLeg0·LeftArm1·RightArm1·LeftFingers1·RightFingers1·LeftFootIK0·RightFootIK0·LeftHandIK1·RightHandIK1. 검증=`GetHumanoidBodyPartActive` 그대로 나옴.
+- `Assets/_Project/Animations/KatanaMelee.controller` = **2 레이어**로 개편.
 
 ## 레이어 구조 (디스크 검증 PASS, 에러0)
 - **Layer 0 = Base Layer**(mask 없음, Override, defaultWeight 0[기존값 유지, Animator가 0번은 항상 1로 취급]). 상태=Locomotion(default 2D FreeformDir)+Dash. AnyState→Dash만.

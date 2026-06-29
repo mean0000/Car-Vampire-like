@@ -42,4 +42,22 @@ Unity는 클립에 "시간별 속도 커브"가 없다. 비균일 리타이밍�
 
 ## 미검증(유저 빌드 게이트)
 실제 손맛(굼뜸 제거됐나, 1.5×가 과한가/모자란가)은 플레이로만 확정. 재튜닝 = 위 상수 바꿔 메뉴 재실행.
-[[project_vexa_humanoid_katana_base]] [[project_frank_fbx_animevent_gotchas]] [[feedback_player_self_cancel_canon]]
+
+## ★2026-06-28 DD식 전진 스텝인 설계조사 (설계만, 미구현 — 유저가 변수1=후딜제거 코드 먼저)
+유저 요구: Combo1(기본 베기)에 Death's Door식 **모던/절제 전진 스텝인**(~0.3~0.6m). 실측·검증 결과:
+- ★**리타이머는 순수 time-warp** — translation(전진) 저작 능력 0. BakeXZ는 *기존* XZ 보존일 뿐 *생성* 불가. Combo1 소스는 net 전진 0이라 어떤 bake 플래그도 전진 못 만든다. → 유저옵션 Ⓐ("BakeXZ로 전진저작") 불가.
+- ★**측정(avgSpeed×len = net 전진, SampleAnimation 프로파일=궤적):** S1_Combo01_01(현 Combo1)=net **0m** (RootT.z가 0.046→0.123(norm.42)→0.046 = 앞으로 0.16m world 기울었다 *복귀*, foot은 안 옮김). **S1_Attack01(유저 후보Ⓑ)=net 0m=완전 제자리**(가설 반증!). S1_Attack02=**0.41m** 전방프론트로드(strike@n.32서 1.16m peak→리커버리 0.41m로 settle=DD형이나 *내려찍기 chop*·다른 스윙). S2_Attack02=0.53m 동형. S1_Combo01_03(Combo3 런지)=**1.34m**, ★**백로드**(norm.58→1.0서 +0.6m 계속 슬라이드=유저혐오 "둥둥 미끄럼"). Combo2=0.05m.
+- ★~~전진 저작 레버 = RootT.z~~ **(06-29 측정으로 반증·정정)**: 권장값은 그대로(norm0→hit +0.4m, 회수 flat hold=DD 플랜트, 스윙 포즈 불변·루트만 이동) — 단 **레버는 RootT.z가 아니라 MotionT.z다**(아래 §06-29 참조). 정적 커브로 "RootT.z가 forward 같다" 본 게 함정이었음([[measure-rootmotion-by-stepping]] 캐넌 적중).
+
+## ★2026-06-29 전진 스텝인 구현 완료 (phase2, 측정검증·미커밋)
+- ★★**휴머노이드 루트모션 forward 드라이버 = `MotionT.z`이지 `RootT.z`가 아니다**(SampleAnimation 측정으로 결정). 검증법: clip 클론에 +0.4 ramp을 RootT.z에 ADD→SampleAnimation net=**0.000(무반응)**; 같은 ramp을 MotionT.z에 ADD→net=**0.4282**. RootT.z는 이 클립서 루트모션에 **inert**(reference/IK 추정). 06-28 핸드오프·구메모리의 "RootT.z가 0.046→0.123→0.046로 전진구동" = 정적커브 오독. **편집·측정 항상 MotionT.z**.
+- 측정도구 = `clip.SampleAnimation(go, t)` (go=Frank_Stealth_Kill_Skin.fbx 인스턴스, avatar=human). SampleAnimation transform.position.z = 런타임 deltaPosition 적분과 등가(=applyRootMotion이 실제 적용할 값). ★에디트모드 `Animator.Update`는 휴머노이드 루트모션을 transform에 미적용이라 SampleAnimation이 정답. `averageSpeed=(0,0,0)`도 net0 교차확인.
+- **저작 = MotionT.z 커브 REPLACE**(ADD 아님!). ADD하면 기존 bump-return이 비쳐 hit후 0.586→0.428로 **뒤로 드리프트=recoil**(유저 금지). REPLACE= v0(0.0099 보존)→ A*smoothstep([0,hitT]) →hitT후 flat hold(v0+A). 62키 time그리드·loop설정 보존, SmoothTangents.
+- **calibration**: raw amplitude A와 SampleAnimation net은 ~k=1.0705 배(아바타 projection). 목표 net 0.40 → **A=0.3736**(raw). 1패스 측정→k계산→A=0.40/k 2패스로 정확히 landing.
+- **결과(디스크 reload 검증)**: net forward **0.000→0.4000m**. 프로파일 0→0.388@n0.25→**0.400@n0.30(hit norm0.279서 적재완료)**→n1.00까지 flat 0.400(recoil 0). len 0.8777·humanMotion True·loop False·**137바인딩 불변**·MotionT.x/y·RootT.z 전부 미변경(surgical). **이벤트 3개 norm 불변**(OnAttackHit 0.2788·OnComboWindow 0.4121·OnComboEnd 0.9088). **guid 3291e7ea 불변**(in-place SetEditorCurve+SaveAssets, 메인 fileID 7400000 type2). 콘솔 에러 0.
+- 노브: A=0.3736(=net0.40). 더/덜 전진은 A 비례조정(net목표×0.934). hitT=0.2447(OnAttackHit 시간)서 적재완료. **잔여리스크=foot-slide**(클립이 발 안 옮김, 0.4m/~0.16s 스텝) — 정지 더미 베기 손맛은 **유저 플레이 게이트**. ★구코드 무변경(애니가 진실, OnAnimatorMove가 deltaPosition 자동적용).
+- ★**phase2 차단요인(검증):** Combo1·Combo3 **소스 FBX 이벤트 0개** = 리타이머 현재 재실행 시 `FindEventTime("OnAttackHit")` throw. 이벤트는 retimed .anim에만 생존(C1: hit n0.279/0.245s·window n0.412·end n0.909, len0.878). → 재실행 전 ①소스 FBX 이벤트 복원(meta) 또는 ②경계를 .anim/상수서 읽도록 리타이머 수정, 또는 ③소스 우회=retimed .anim 직접편집(이벤트·리타이밍 보존, guid 3291e7ea 불변 = 추천). 컨트롤러 Combo1 m_Motion = KatanaMelee.controller **line 609** guid 3291e7ea type2 / Combo3 = line 1081 guid 702d3829.
+- ★**롤백:** _Project/Animations/ (복수) 의 .anim·.controller = **git-untracked**(git status의 Animation 단수 삭제는 구경로 reorg). git 안전망 없음 → 신기능 regen 전 .anim 수동 백업복사 필수·swap이면 원guid(3291e7ea) 기록. 소스 FBX는 tracked·미편집.
+- **Combo1 회수단축 다이얼(Q3, 별개변수):** 리타이머에 `Combo1_RecoverySpeed` 없음(현 Combo1=Seg(0,hit,1.5)+Seg(hit,end,1.0), 회수 평속). Combo3_RecoverySpeed가 정확히 동형 선례 → Combo1도 3세그(…+Seg(window,end,RecoverySpeed>1)) 추가로 회수클립 자체 가속 가능(권장 ~1.3-1.5). 단 코드 self-cancel(오케스트레이터 변수1)과 *스택*되니 그것부터 체감 후 튜닝(이중 단축 주의).
+
+[[project_vexa_humanoid_katana_base]] [[project_frank_fbx_animevent_gotchas]] [[feedback_player_self_cancel_canon]] [[project_katana_combo2_event_gap]]

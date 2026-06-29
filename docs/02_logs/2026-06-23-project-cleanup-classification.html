@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>프로젝트 정리 — 분류 기준 & 실행 기록</title>
+<style>
+  :root{
+    --bg:#0e1116; --panel:#161b22; --panel2:#1c2430; --ink:#e6edf3; --dim:#9aa7b4;
+    --line:#2a3441; --cyan:#3fd0e0; --gold:#e8b341; --magenta:#e0569b;
+    --red:#ff6a3d; --green:#5fd17a; --warn:#3a2a14; --warnline:#7a5a1e;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+    line-height:1.7; font-size:15.5px;
+  }
+  .wrap{max-width:920px; margin:0 auto; padding:36px 22px 90px}
+  header.hero{
+    border:1px solid var(--line); border-radius:14px; padding:26px 28px;
+    background:linear-gradient(135deg,#161b22,#10151c);
+    box-shadow:0 0 0 1px #0b0e13 inset;
+  }
+  h1{margin:0 0 6px; font-size:25px; letter-spacing:-.3px}
+  .sub{color:var(--dim); font-size:13.5px; margin:2px 0}
+  .pills{margin-top:14px; display:flex; flex-wrap:wrap; gap:8px}
+  .pill{font-size:12px; padding:4px 11px; border-radius:999px; border:1px solid var(--line); color:var(--dim)}
+  .pill.b{border-color:#2c5a64; color:var(--cyan)}
+  .pill.g{border-color:#5a4a1e; color:var(--gold)}
+  .pill.ok{border-color:#2f5a3a; color:var(--green)}
+
+  h2{margin:38px 0 12px; font-size:19px; padding-bottom:8px; border-bottom:1px solid var(--line)}
+  h2 .num{color:var(--cyan); font-variant-numeric:tabular-nums; margin-right:8px}
+  h3{margin:22px 0 8px; font-size:15.5px; color:var(--cyan)}
+  p{margin:9px 0}
+  .dim{color:var(--dim)}
+  strong{color:#fff}
+  .star{color:var(--gold)}
+  code{background:#0b0f15; border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:13px; color:#d6e0ea; font-family:"JetBrains Mono",Consolas,monospace}
+
+  ul{margin:8px 0; padding-left:20px}
+  li{margin:5px 0}
+
+  table{border-collapse:collapse; width:100%; margin:14px 0; font-size:13.8px; overflow:hidden; border-radius:10px}
+  th,td{border:1px solid var(--line); padding:10px 12px; text-align:left; vertical-align:top}
+  th{background:#1a2230; color:#cdd9e5; font-weight:600}
+  tr:nth-child(even) td{background:#12171f}
+
+  .risk{display:inline-block; font-weight:700; padding:2px 9px; border-radius:6px; font-size:12px; white-space:nowrap}
+  .r-none{background:#222932; color:#aab6c3; border:1px solid #39434f}
+  .r-low{background:#1d3326; color:var(--green); border:1px solid #2f5a3a}
+  .r-high{background:#3a1d12; color:var(--red); border:1px solid #6a3320}
+
+  .callout{border-left:3px solid var(--cyan); background:var(--panel2); border-radius:0 10px 10px 0; padding:14px 18px; margin:16px 0}
+  .callout h3{margin:0 0 8px}
+  .callout.gold{border-left-color:var(--gold)}
+  .callout.gold h3{color:var(--gold)}
+
+  pre{background:#0b0f15; border:1px solid var(--line); border-radius:8px; padding:14px 16px; overflow-x:auto; font-size:12.8px; line-height:1.6; font-family:"JetBrains Mono",Consolas,monospace; color:#cdd9e5}
+  pre code{background:none; border:none; padding:0}
+  pre .c{color:var(--dim)}
+  pre .k{color:var(--cyan)}
+  pre .y{color:var(--gold)}
+
+  .toc{border:1px solid var(--line); border-radius:10px; padding:14px 18px; margin:22px 0; background:var(--panel); font-size:14px}
+  .toc a{color:var(--dim); text-decoration:none; display:inline-block; margin:3px 14px 3px 0}
+  .toc a:hover{color:var(--cyan)}
+
+  .gate-ok{color:var(--green); font-weight:700}
+  .stat{display:flex; gap:14px; flex-wrap:wrap; margin-top:14px}
+  .stat .box{flex:1; min-width:130px; border:1px solid var(--line); border-radius:10px; padding:13px 15px; background:var(--panel)}
+  .stat .n{font-size:24px; font-weight:800; color:var(--cyan); font-variant-numeric:tabular-nums}
+  .stat .n.g{color:var(--gold)}
+  .stat .l{font-size:12.5px; color:var(--dim); margin-top:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>프로젝트 정리 — 분류 기준 &amp; 실행 기록</h1>
+  <p class="sub">2026-06-23 · 스크립트 / 씬 / 에셋 / 이미지 정리 세션</p>
+  <p class="sub">분류 축 = <strong>버전관리 위치 × Unity 참조 위험도</strong></p>
+  <div class="pills">
+    <span class="pill b">게이트: 직렬화 에셋 이동·다중 파일</span>
+    <span class="pill ok">Stab + Codex 병렬 점검 통과</span>
+    <span class="pill g">GUID 보존 병합</span>
+  </div>
+  <div class="stat">
+    <div class="box"><div class="n">108</div><div class="l">이미지 삭제</div></div>
+    <div class="box"><div class="n">3</div><div class="l">중복 폴더 병합</div></div>
+    <div class="box"><div class="n g">541MB</div><div class="l">Assets 밖으로</div></div>
+    <div class="box"><div class="n">9</div><div class="l">stale 경로 정정</div></div>
+  </div>
+</header>
+
+<div class="toc">
+  <a href="#s1">1. 분류 기준</a>
+  <a href="#s2">2. 분류 결과 &amp; 처리</a>
+  <a href="#s3">3. 안 건드린 것</a>
+  <a href="#s4">4. 경로 기반 참조 위험점</a>
+  <a href="#s5">5. 게이트 결과</a>
+  <a href="#s6">6. 검사 명령</a>
+</div>
+
+<div class="callout gold">
+  <h3>한 줄 요약</h3>
+  흩어진 파일을 <strong>"버전관리 위치 × Unity 참조 위험도"</strong> 두 축으로 분류해, 위험 낮은 것부터(루트 스크래치 삭제) 높은 것까지(GUID 참조 폴더 병합) 순서대로 처리했다. 삭제·이동은 전부 <code>.meta</code> 동반, 병합은 GUID 보존을 전제로 했다.
+</div>
+
+<h2 id="s1"><span class="num">1</span>분류 기준 (Decision Tree)</h2>
+<p>파일을 만났을 때 던진 질문 순서:</p>
+<pre><code><span class="k">①</span> Unity Assets/ 안인가?
+   <span class="c">NO →</span> 버전관리/ignore 여부 확인
+        ├ git-ignore된 스크래치(_*.png 등) → <span class="y">[A] 삭제 안전</span>
+        └ 추적 안 됨·잡파일                → <span class="y">[F] 정리</span>
+   <span class="c">YES ↓</span>
+<span class="k">②</span> .meta가 있는 임포트 자산인가? (GUID 보유)
+   <span class="k">③</span> 다른 자산이 GUID로 참조하는가?  <span class="c">← 검사 필수</span>
+        <span class="c">NO(디버그 캡처 등)</span>            → <span class="y">[B] .meta 동반 삭제</span>
+        <span class="c">YES</span>                          → 이동만, 삭제 금지
+   <span class="k">④</span> 어디에 속해야 맞나? (씬/구조 일관성)
+        루즈 씬 → <span class="y">[C]</span> 정규 폴더로 이동(.meta 동반)
+        대용량 비런타임(.unitypackage) → <span class="y">[D]</span> Assets 밖으로
+        단수/복수 중복 폴더 → <span class="y">[E]</span> 병합(파일+.meta, GUID 보존)</code></pre>
+
+<h3>핵심 원칙</h3>
+<ul>
+  <li><strong>GUID는 .meta에 산다.</strong> 파일+.meta를 <em>함께</em> 옮기면 경로가 바뀌어도 씬·프리팹·컨트롤러의 참조는 GUID로 살아남는다. → 이동은 안전.</li>
+  <li><strong>경로 기반 참조는 GUID 보존으로 안 지켜진다.</strong> <code>AssetDatabase.LoadAssetAtPath</code>, 하드코딩 경로 문자열, 권한 화이트리스트 등은 따로 추적·수정해야 한다. <span class="dim">← 이번 세션 위험점 전부 여기서 나옴.</span></li>
+  <li><strong>삭제 전 참조 검사는 재량 아님(게이트).</strong> 미참조 확인 후에만 삭제.</li>
+</ul>
+
+<h2 id="s2"><span class="num">2</span>분류 결과 &amp; 처리</h2>
+<table>
+  <thead><tr><th>분류</th><th>대상</th><th>위험도</th><th>처리</th></tr></thead>
+  <tbody>
+    <tr><td><strong>[A]</strong> 루트 스크래치</td><td><code>_*.png</code> ~95, <code>vfx_*.png</code>, <code>_aimDir</code>, <code>_caniathrox_export.obj</code>, <code>_codex_tasklayers.txt</code>, <code>_vidframe/</code>, <code>CLAUDE.md.bak</code></td><td><span class="risk r-none">없음</span><br><span class="dim">Unity 밖·git-ignore</span></td><td>삭제</td></tr>
+    <tr><td><strong>[B]</strong> Assets 디버그 PNG</td><td><code>katana_d*</code>, <code>katana_dissolve_*</code>, <code>katana_edge_test</code>, <code>kd_*</code>, <code>ui_preview</code> (11개)</td><td><span class="risk r-low">낮음</span><br><span class="dim">GUID 미참조 확인</span></td><td>.meta 동반 삭제</td></tr>
+    <tr><td><strong>[C]</strong> 루즈 테스트 씬</td><td><code>_PlayerStackTest.unity</code>, <code>_ProjectileLookLab.unity</code></td><td><span class="risk r-low">낮음</span><br><span class="dim">빌드세팅 미등록</span></td><td><code>_Project/Scenes/Labs/</code>로 이동</td></tr>
+    <tr><td><strong>[D]</strong> 대용량 비런타임</td><td><code>Flipbook_VFX_Bundle_URP...</code>, <code>Stylized_VFX_Bundle_URP...</code> (541MB)</td><td><span class="risk r-none">없음</span><br><span class="dim">임포트 완료·ignore</span></td><td>루트 <code>_packages/</code>로 이동</td></tr>
+    <tr><td><strong>[E]</strong> 중복 폴더 병합</td><td><code>Animation</code>→<code>Animations</code> (4) · <code>Material</code>→<code>Materials</code> (5) · <code>Prefab</code>→<code>Prefabs</code> (19)</td><td><span class="risk r-high">높음</span><br><span class="dim">GUID 참조 자산</span></td><td>파일+.meta 병합, 빈 폴더+.meta 삭제</td></tr>
+    <tr><td><strong>[F]</strong> 경로 정정</td><td>(E·B 이동의 부수효과)</td><td>—</td><td>§4 참조</td></tr>
+  </tbody>
+</table>
+<p class="dim">합계: <strong>이미지 108개 삭제 · 폴더 3쌍 병합 · 567MB Assets 밖으로.</strong></p>
+
+<h2 id="s3"><span class="num">3</span>안 건드린 것 (의도적 제외)</h2>
+<ul>
+  <li><strong>스크립트</strong> — <code>_Project/Scripts/</code> 아래 카테고리별(Player/Run/Upgrade/Audio/Meta/MapGen/Data/Debug/Editor)로 이미 정리돼 있어 손대지 않음. <span class="dim">(198개 .cs, 루즈 .cs 0)</span></li>
+  <li><strong>벤더 데모 씬·에셋</strong> — Feel/LMHPOLY/POLYBOX/Vefects/Synty 등 패키지 소유물은 정리 대상 아님.</li>
+  <li><strong>범위 밖 (다음 세션 후보)</strong> — <code>_Project/Image/</code>(단수지만 복수 짝 없음), <code>_FrankCaptureView/</code>·<code>_SidekickTest/</code>·<code>__AnimCaptures/</code>(스크래치성 캡처 폴더), <code>_Project/Setting/</code>(단수).</li>
+</ul>
+
+<h2 id="s4"><span class="num">4</span>발견·수정한 경로 기반 참조 (위험점)</h2>
+<p>GUID로 안 지켜지는 참조들 — 게이트(Stab+Codex)와 자가검사로 색출:</p>
+<table>
+  <thead><tr><th>파일</th><th>문제</th><th>수정</th></tr></thead>
+  <tbody>
+    <tr><td><code>Scripts/Editor/KatanaComboRetimer.cs</code></td><td><code>OutDir = "_Project/Animation"</code> (단수) — 리타이밍 클립을 옛 폴더에 <em>쓰는</em> 상수. 재실행 시 폴더 부활+중복 클립</td><td>→ <code>Animations</code></td></tr>
+    <tr><td><code>Docs/LowPolyFlat_Shader_Reference.md</code></td><td>머티리얼 경로 <code>_Project/Material/</code> stale</td><td>→ <code>Materials/</code></td></tr>
+    <tr><td><code>.claude/settings.local.json</code> (196·198행)</td><td>권한 화이트리스트가 <code>_Project\Prefab\</code> 단수 하드코딩 <span class="dim">(Stab P1)</span></td><td>→ <code>Prefabs\</code> ×3</td></tr>
+    <tr><td><code>.claude/agent-memory/Animation/*.md</code> (5건)</td><td>컨트롤러/마스크 경로 <code>_Project/Animation/</code> stale</td><td>→ <code>Animations/</code></td></tr>
+  </tbody>
+</table>
+
+<h2 id="s5"><span class="num">5</span>게이트 결과 <span class="gate-ok">— 비누설(원문)</span></h2>
+<div class="callout">
+  <h3>Codex (크로스프로바이더)</h3>
+  기능적 클린. SUSPECT 1건 = 셰이더 문서 stale 경로(런타임 위험 0) → 수정.
+</div>
+<div class="callout">
+  <h3>Stab (Unity/C# QA)</h3>
+  P1 1건 = <code>settings.local.json</code> 단수 Prefab 경로(런타임 무영향, 재실행 시 빈 결과) → 수정. <strong>나머지 전부 클린</strong>: EditorBuildSettings · GUID 정합(KatanaMelee.controller 내 Retimed/UpperBody guid 일치) · orphan meta 0 · 삭제 PNG 이름참조 0 · 병합 동명충돌 0.
+</div>
+<p><strong>JSON 무결성:</strong> node 표준 파서로 <code>settings.local.json</code> <span class="gate-ok">VALID</span> 확정 <span class="dim">(python/PowerShell 파서는 환경 헛경보).</span></p>
+
+<h2 id="s6"><span class="num">6</span>검사 명령 (재현용)</h2>
+<pre><code><span class="c"># 삭제 전 — 디버그 PNG GUID 미참조 확인</span>
+for f in katana_d0 kd_solid ui_preview ...; do
+  guid=$(grep -m1 'guid:' "Assets/$f.png.meta" | awk '{print $2}')
+  grep -rl "$guid" Assets/_Project Assets/Scenes   <span class="c"># 결과 없음 = 안전</span>
+done
+
+<span class="c"># 병합 전 — 이름 충돌 검사</span>
+comm -12 &lt;(ls Animation|grep -v .meta|sort) &lt;(ls Animations|grep -v .meta|sort)
+
+<span class="c"># 병합 후 — 경로 기반 참조 잔존 색출</span>
+grep -rnE '_Project[\\/]+(Animation|Material|Prefab)[\\/]' Assets ProjectSettings .claude \
+  | grep -vE 'Animations|Materials|Prefabs'
+
+<span class="c"># orphan/missing .meta</span>
+find Assets/_Project -name '*.meta' | while read m; do [ -e "${m%.meta}" ] || echo "ORPHAN $m"; done</code></pre>
+
+</div>
+</body>
+</html>
