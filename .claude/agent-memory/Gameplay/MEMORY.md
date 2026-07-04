@@ -1,5 +1,6 @@
 # Gameplay Agent Memory Index
 
+- [AtomLab OneCut 원자 테스트 랩 스캐폴드](project_2026_07_04_atomlab_onecut.md) — 채널 토글 패턴(Awake캐시→off=0스왑), 씬/코드 위치, 콤보 range 실측값, 병렬 Sound 산출물 주의
 - [플레이 검증 실전 기법](project_playmode_verification_tricks.md) — 조준 강제 코루틴 트릭, superSize 캡처, RT 덤프 진단, 플레이모드 이탈 대응
 - [애니 클립 배선 실측 기법](project_anim_clip_wiring.md) — Mixamo 좌우 분류(avgSpeed/angSpeed), 아크 Bake XZ 함정, 컨트롤러 스왑 파라미터 재주입
 - [playmode-verify-pattern](project_playmode_verify_pattern.md) — RunManager 씬 전부 timeScale=0 부팅(CombatLab 포함)→StartMission 필수, RunCommand 멀티프레임 검증 패턴

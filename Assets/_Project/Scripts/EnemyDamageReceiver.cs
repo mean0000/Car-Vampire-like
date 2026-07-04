@@ -133,6 +133,9 @@ public class EnemyDamageReceiver : MonoBehaviour, IDamageable, ICritReact
     float _flashTimer;
     Vector3 _knockVel;
 
+    // ── ★AtomLab 디버그 채널 토글 캐시 — 원자 테스트 랩(AtomLabRig)이 off↔on 스왑할 때의 원값(Awake 시점). ──
+    float _origFlashTime, _origShakeAmplitude, _origHitStopDuration;
+
     // ── ★커밋 신호 + 크리티컬 플래시 ──
     float _commitWindup01;   // 커밋 윈드업 진행(0=비커밋, 1=타격 직전). 드라이버가 DriveCommit으로 구동.
     bool _commitActive;      // 직전 프레임 커밋 중이었나 — CommitStarted 엣지(1회) 검출용.
@@ -149,6 +152,10 @@ public class EnemyDamageReceiver : MonoBehaviour, IDamageable, ICritReact
     void Awake()
     {
         _hp = Mathf.Max(1, maxHp);
+        // ★AtomLab 채널 토글 원값 캐시 — off는 이 값을 0으로 스왑, on은 이 값으로 복원(SetXEnabled 참조).
+        _origFlashTime = flashTime;
+        _origShakeAmplitude = shakeAmplitude;
+        _origHitStopDuration = hitStopDuration;
         if (model == null) model = transform;
         if (renderers == null || renderers.Length == 0)
             renderers = GetComponentsInChildren<Renderer>(true);
@@ -341,4 +348,19 @@ public class EnemyDamageReceiver : MonoBehaviour, IDamageable, ICritReact
         _visualDirty = false;
         RestoreBase();
     }
+
+    #region ★AtomLab 디버그 채널 토글 (원자 테스트 랩 전용 — AtomLabRig가 구동. off=0 스왑, on=Awake 캐시값 복원)
+    /// <summary>피격 플래시 채널 on/off — off는 flashTime 0(ComposeVisual hit01이 항상 0 → 플래시 무발동).</summary>
+    public void SetFlashEnabled(bool on)
+    {
+        flashTime = on ? _origFlashTime : 0f;
+        if (!on) _flashTimer = 0f;   // ★Stab M-1: 진행 중 플래시 즉시 끔 — flashTime=0 재정규화(_flashTimer/0.0001=1)로 흰색 스파이크 새는 것 방지.
+    }
+
+    /// <summary>피격 카메라 쉐이크 채널 on/off — off는 shakeAmplitude 0(TakeHit의 SmashFeel.Shake 호출 자체가 가드로 스킵).</summary>
+    public void SetShakeEnabled(bool on) => shakeAmplitude = on ? _origShakeAmplitude : 0f;
+
+    /// <summary>피격 히트스탑 채널 on/off — off는 hitStopDuration 0(TakeHit의 SmashFeel.HitStop 호출이 가드로 스킵).</summary>
+    public void SetHitStopEnabled(bool on) => hitStopDuration = on ? _origHitStopDuration : 0f;
+    #endregion
 }

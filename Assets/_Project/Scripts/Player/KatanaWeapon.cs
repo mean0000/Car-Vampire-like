@@ -221,6 +221,17 @@ public class KatanaWeapon : WeaponBehaviour
     PlayerMotor _motor;         // ★히트 글라이드 대상(지연 해석·캐시) — 위치 소유자.
     bool _motorResolved;
 
+    // ── ★AtomLab 디버그 채널 토글 캐시 — off↔on 스왑의 기준점(직렬화값 원본). ──
+    float _origComboKick, _origFinisherKick;
+    bool _origHitGlideEnabled;
+
+    void Awake()
+    {
+        _origComboKick = comboKick;
+        _origFinisherKick = finisherKick;
+        _origHitGlideEnabled = hitGlideEnabled;
+    }
+
     public override void Initialize(Transform owner, PlayerAnimatorDriver animator)
     {
         // ★Stab H-1: Owner가 바뀔 수 있으니 ClashFx 캐시 무효화(이전 Owner 계층의 stale ParrySlowMotion 잔존 → 클래시 프리즈 무음 누락 방지).
@@ -654,6 +665,20 @@ public class KatanaWeapon : WeaponBehaviour
         return s;
     }
 
+    #region ★AtomLab 디버그 채널 토글 (원자 테스트 랩 전용 — AtomLabRig가 구동. off=0/false 스왑, on=Awake 캐시값 복원)
+    /// <summary>타격 사운드 채널 on/off — meleeSfxEnabled 직결(PlayMeleeSwish/PlayMeleeImpact가 이 값으로 가드).</summary>
+    public void SetSfxEnabled(bool on) => meleeSfxEnabled = on;
+
+    /// <summary>입력측 피드백 채널 on/off — 카메라 킥(comboKick/finisherKick)과 히트 글라이드(hitGlideEnabled) 일괄.
+    /// off는 킥 0(FireHitFeedback의 AddKick이 사실상 무동작) + 글라이드 끔, on은 Awake 캐시값으로 복원.</summary>
+    public void SetInputFeedbackEnabled(bool on)
+    {
+        comboKick = on ? _origComboKick : 0f;
+        finisherKick = on ? _origFinisherKick : 0f;
+        hitGlideEnabled = on && _origHitGlideEnabled;
+    }
+    #endregion
+
     // ── 디버그 시각화용 읽기전용 접근자(HitboxDebugManager 전용) — 전투 로직 무관 ──
     public Transform DebugOwner => Owner;
     // ── 차징 상태(ChargePhantomEmitter 전용 읽기) ──
@@ -701,7 +726,7 @@ public class KatanaWeapon : WeaponBehaviour
             // ★멀티킬도 크리급 킥(07-04) — 한 스윙 다수 처치 = '쾅'. 글라이드는 커밋 크리만(돌파 표식 의미 보존).
             bool multiKill = multiKillFreezeCount > 0 && _lastSwingKills >= multiKillFreezeCount;
             float kick = (_lastSwingCrit || multiKill) ? critKick : (finisher ? finisherKick : comboKick);
-            FireHitFeedback(kick, finisher || _lastSwingCrit || multiKill);
+            FireHitFeedback(kick, finisher || _lastSwingCrit || multiKill, false);   // ★평타(크리/멀티킬 포함)=줌펀치 제외(유저 07-04). 카메라 킥/스냅은 유지.
             // ★히트 글라이드 — 맞혔을 때만 짧은 추가 전진("빗나가면 짧게, 맞히면 길게"). 헛스윙은 클립 런지만.
             //   ★커밋 크리티컬이면 긴 글라이드(돌파 표식 — 읽고 베면 실제로 뚫린다): 갈린 틈에 몸이 들어가는 물리 보상.
             if (hitGlideEnabled)
@@ -720,7 +745,7 @@ public class KatanaWeapon : WeaponBehaviour
                                counterForwardOffset,
                                counterDamage > 0 ? counterDamage : 1,
                                counterKnockback);                            // 넉백 0은 유효(무넉백) — 가드 강제 안 함
-        if (connected) FireHitFeedback(finisherKick, true);
+        if (connected) FireHitFeedback(finisherKick, true, true);
     }
 
     /// <summary>대시 베기(DashAttack) 타격 — 런지 강타. DoHit 공통 경로 재사용(0/미설정 폴백 가드).</summary>
@@ -731,7 +756,7 @@ public class KatanaWeapon : WeaponBehaviour
                                Mathf.Max(0f, dashAttackForwardOffset),
                                dashAttackDamage > 0 ? dashAttackDamage : 1,
                                dashAttackKnockback);
-        if (connected) FireHitFeedback(finisherKick, true);
+        if (connected) FireHitFeedback(finisherKick, true, true);
     }
 
     /// <summary>스킬(Skill01) 타격 — SkillSet 판정 + ★타격 순간(칼 벨 때) VFX·사운드.</summary>
@@ -741,7 +766,7 @@ public class KatanaWeapon : WeaponBehaviour
         var h = skillSet.hit;
         bool connected = DoHit(h.range, h.arcHalfAngle > 0f ? h.arcHalfAngle : 80f, h.forwardOffset,
               h.damage > 0 ? h.damage : 1, h.knockback);
-        if (connected) FireHitFeedback(finisherKick, true);
+        if (connected) FireHitFeedback(finisherKick, true, true);
         SpawnSkillVfx();   // ★스윙 비주얼(칼 휘두르는 순간 = 콤보 슬래시와 동일하게 적중 불문)
         PlaySkillSfx();    // ★스윙 사운드(칼 베는 소리 — 적중 불문)
         _skillHitSeq++;    // ★'벨 때' 신호 — ChargePhantomEmitter가 이 증가를 폴링해 차징 슬래시 VFX 1발 발동(윈드업 아닌 실제 베기에).
@@ -749,13 +774,14 @@ public class KatanaWeapon : WeaponBehaviour
 
     /// <summary>타격 손맛 발동 — 칼이 적에 닿았을 때만(헛스윙 제외). 카메라 킥(조준 방향, unscaled·스냅).
     /// ★전역 히트스탑은 의도적으로 안 씀 — 일시정지/슬로모와 timeScale 소유권 충돌(게이트 Codex P0/P1, 캐넌 "전역 timeScale 금지").</summary>
-    void FireHitFeedback(float camKick, bool finisher)
+    void FireHitFeedback(float camKick, bool finisher, bool zoomPunch)
     {
         PlayMeleeImpact();   // ★임팩트 thud — FireHitFeedback은 connected에서만 호출되므로 헛스윙 자동 무음. 카메라 유무와 독립(맨 앞).
         var cam = PlayerCameraFollow.Active;
         if (cam == null) return;
         if (camKick > 0f) cam.AddKick(_aimDir, camKick);
-        cam.NotifyHit(finisher);   // 평타=FOV 줌펀치 / 피니셔=큰 줌펀치 + 시네마틱 줌인(투-스테이트). 크기는 카메라 소유.
+        // ★줌펀치(NotifyHit FOV)는 스킬/반격/대시베기에만 — 평타 콤보엔 제외(유저 07-04: 매 평타 줌은 과함, 스펙터클을 피크에 아낀다).
+        if (zoomPunch) cam.NotifyHit(finisher);   // 스킬 피니셔=큰 줌펀치 + 시네마틱 줌인(투-스테이트). 크기는 카메라 소유.
     }
 
     /// <summary>부채꼴(기본)/절단선(lineCut=가르기)+사거리+LOS 판정으로 IDamageable에 타격. 콤보/반격 공통(파라미터만 다름).
