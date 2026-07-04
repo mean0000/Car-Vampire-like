@@ -1,9 +1,51 @@
 ---
 name: katana-combo-pattern
-description: 카타나 콤보 3단(KatanaWeapon+PlayerAnimatorDriver ComboStep int) QA — 핵심 hazard + 안전 전제 (2026-06-18 초기, 2026-06-21 RestartCombo+comboLoopCooldown 추가 업데이트)
+description: 카타나 콤보 3단(KatanaWeapon+PlayerAnimatorDriver ComboStep int) QA — 핵심 hazard + 안전 전제 (2026-06-18 초기, 2026-06-21 RestartCombo+comboLoopCooldown 추가, ★2026-07-04 RestartCombo/comboLoopCooldown 코드에서 완전 제거 확인+3세그 스트라이크스냅 리타임 리뷰 추가)
 metadata:
   type: project
 ---
+
+## ★2026-07-04 갱신 — RestartCombo/comboLoopCooldown 폐기 확인 (메모리 스테일 정정)
+
+아래 "comboLoopCooldown QA"·"RestartCombo 안전 확인" 섹션(2026-06-21 작성)은 **더 이상 코드에 없음** —
+`grep -r "RestartCombo|comboLoopCooldown" Assets/` 전체 0건(2026-07-04 확인). 현재 KatanaWeapon.cs 설계:
+- **피니셔(comboMax=3)는 클릭으로 재시작 불가** — `_step < comboMax` 가드가 Advance/이동캔슬 양쪽에 있어 3단에서 버퍼 입력은 그냥 감쇠 소멸(회수는 대시로만 캔슬, 자연종료=OnComboEnd→ResetCombo).
+- 무한 연타 억제는 인공 쿨다운이 아니라 "3타 회수 + 대시캔슬 리듬"(공격→대시→공격) 캐넌으로 대체(주석 명시).
+- 위 구식 섹션은 참고용으로만 남기고 **재적용 금지** — 다음에 이 파일을 읽는 세션은 이 갱신 노트를 신뢰할 것.
+
+## ★2026-07-04 QA — 평타 3세그 리타임(스트라이크 스냅) 리뷰 결과
+
+**대상**: `KatanaComboRetimer.cs`(2세그→3세그 개편, 이벤트를 소스 대신 상수에서 저작) + 리타임 클립 3종
+(`S1_Combo01_01/02/03_Retimed.anim`) + `KatanaMelee.controller`(Combo2 m_Motion repoint). Critical/High **0**.
+
+- **★과거 Combo2 이벤트갭 소프트락 클래스 — 수정 확인(검증완료, 재발 아님)**: 세 클립 모두 `m_Events`에
+  정확히 3개(OnAttackHit int=1/2/3 → OnComboWindow → OnComboEnd), 시간순 hit<window<end 엄수 확인
+  (파일 실측: C1 0.2694/0.3226/0.6340, C2 0.1572/0.2313/0.6895, C3 0.1489/0.2023/0.8344 — 오케 실측치와
+  소수점 4자리까지 일치). 이전엔 Combo2 FBX 서브클립에 이벤트 0개라 소스-읽기 방식이면 OnComboEnd
+  미발화 위험(자가치유로 결국 회복되나 그 스윙은 무피해+정지). 상수 저작 방식으로 원천 차단 확인.
+- **가드 로직 무영향 확인**: `TimeMap.Map()`은 모든 구간 speed>0(1.25/2.2/1.4/1.0)이라 단조증가 보장 —
+  이벤트 순서 역전 불가. `strikeStart = Clamp(hit-lead, 1e-4, win-1e-4)` 방어로 구간 길이 항상 양수(NaN/0나눔 불가).
+- **캔슬창 타이밍 회귀 없음**: StrikeSpeed(2.2×)는 windup→hit 구간만 압축, 캔슬창(window→end)은
+  RecoverySpeed(1.4×, 피니셔만 1.0×)로만 압축 — "스트라이크 가속이 캔슬창을 과도 단축"은 기각(구조상
+  분리된 구간). 창 폭 C1 0.311s/C2 0.458s/C3 0.632s, 전부 inputBufferTime(0.5s) 대비 여유 있음.
+- **Combo2 repoint 댕글링 없음**: 옛 FBX 서브클립 guid(`ebd5d44d967e97b46bc091fc4a362265`)로 project-wide
+  grep(.controller/.overrideController/.asset/.unity/.prefab) 0건. Combo1=3291e7ea/Combo2=fda78cae(신규)/
+  Combo3=702d3829, 전부 m_Tag: Action 보존, 컨트롤러의 CUT 전이(HasExitTime:0, TransitionDuration:0,
+  ConditionMode:6 Equals) 구조 불변 확인.
+- **위상(Fix B) 무회귀 확인**: `PlayerAnimatorDriver.ComboLayerActivelyPlaying()`의 `!_comboActive→return false`
+  게이트 존재 확인(상하체분리 v4/FixB 픽스, 클립 길이와 무관하게 동작 — 대시캔슬 시 busy 해제는 여전히
+  `_comboActive` 플래그 기반이지 normalizedTime 절대값 기반이 아니므로 클립이 짧아져도 안전).
+- **Low(정보성, 수정 요구 안 함)**: ①피스와이즈 리샘플이 세그 경계(strikeStart, window) 2곳에 탄젠트
+  스케일 불연속("코너")을 남김 — 리샘플 기법 고유 트레이드오프(2세그 구버전에도 있었음, 이번에 경계 1개
+  늘어남), 시각적으로 튀면 Animation 에이전트가 앵커 키 주변 탄젠트 수동 스무딩 검토. ②Defs()에 hitNorm
+  < windowNorm < endNorm 순서 assert 없음(현재값은 전부 정상이나 향후 오타 시 클램프가 살리되 스트라이크
+  구간이 레이저-씬 얇아짐, 크래시는 안 남). ③KatanaMelee.controller diff가 매우 큼(수백 라인) — Unity의
+  SetDirty+Save 시 전체 YAML 재직렬화(블록 재정렬+공백 정규화)가 원인, 실제 의미변경은 Combo2 m_Motion
+  1줄뿐임을 diff 라인별 대조로 확인(공포성 diff, 버그 아님).
+- **극단 케이스(로우, 사변적 — 방어 코드 요구 안 함)**: 0.3~0.6s급 프레임 히치(GC/씬로드 스톨)로 같은
+  프레임에 OnComboWindow+OnComboEnd가 겹쳐 발화하면 ResetCombo()가 윈도우를 먼저 닫아버려 그 프레임의
+  버퍼 입력이 체인 안 되고 소멸할 수 있음 — 소프트락 아님(자가치유·ResetCombo 정상 완주), 이번 리타임과
+  무관한 이벤트-드리븐 Animator 일반론적 위험(현재 창 폭 0.31~0.63s면 발생 확률 극히 낮음, 재발 안건 아님).
 
 ## 아키텍처 전제
 

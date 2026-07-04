@@ -1,11 +1,20 @@
 ---
 name: katana-combo-retimer
-description: Re-runnable Editor script that NON-UNIFORMLY retimes a humanoid muscle clip (faster windup/recovery, normal contact) by physically resampling all curves + remapping events. Combo1 windup + Combo3 recovery sped up 1.5x (2026-06-21).
+description: Re-runnable Editor script that NON-UNIFORMLY retimes humanoid muscle clips by physically resampling all curves + remapping events. ★현행=2026-07-04 3세그 스트라이크 스냅(윈드업1.25/스트라이크2.2/회수1.4·피니셔1.0/lead0.07)으로 Combo1/2/3 전부 재프로파일. 이벤트는 소스 미의존 상수 저작. (구=2026-06-21 2세그 windup1.5).
 metadata:
   type: project
 ---
 
-# 카타나 콤보 비균일 리타이밍 (2026-06-21)
+# ★★2026-07-04 3세그 스트라이크 스냅 개편 (현행 — 유저 "베는 순간 확 빠르게")
+유저 요구=①전체 속도↑ ②베는 순간 스냅(윈드업 보통·스트라이크 확 빠르게·회수 보통). 브루트 상태-분절 대신 리타임 채택(분절=콤보 분기 구조라 배선 그래프 폭발, 상세 [[project_katana_combo_strike_snap_assessment]]).
+- **3세그/콤보**: Windup[0,hit−lead]×1.25 · **Strike[hit−lead,window]×2.2(★스냅)** · Recovery[window,end]×1.4(C1·2)/1.0(C3 피니셔 무게). lead=0.07s(컨택 직전 휘두름을 스냅 창에 브래킷). 노브 전부 const 단일 진실원.
+- **★이벤트=소스 미의존 상수 저작**(WriteRetimed가 authoredEvents 받아 map remap): C1/C3 소스 FBX 이벤트 0개라 FindEventTime throw + Combo가 이벤트없이 구워지면 소프트락([[project_katana_combo2_event_gap]]). 원본 FBX 노름 상수(ComboDef)에서 3개 저작→항상 정확히 3개 remap. norm=C1 0.367/0.484/0.920·C2 0.200/0.344/0.910·C3 0.206/0.318/0.920.
+- **Combo2도 이제 retimed .anim**(guid fda78cae 신규) — 별도 메뉴 "Repoint Combo2 Motion"으로 상태 m_Motion 1회 물림(에디터 API). 재튜닝(속도 const 변경+Retime 재실행)은 컨트롤러 무변(Combo2 in-place 덮어씀 guid 보존).
+- 결과: C1 0.878→0.691·C2 1.133→0.762·C3 1.130→0.918s. guid C1/C3 보존. 배선 100% 보존(라이브 실측). ★재-bake로 C1 +0.40m 스텝인 소실(dormant/masked라 무영향). ★repoint SaveAssets가 pre-Fix-B HEAD에 in-memory Fix B 플러시(diff 488줄, 양성). 손맛=유저 게이트.
+
+---
+
+# (구) 카타나 콤보 비균일 리타이밍 (2026-06-21) — 아래는 2세그 시절 기록(메커니즘 동일, 세그/노브만 위로 대체)
 
 유저 요구: 전체 속도(uniform m_Speed)가 아니라 **구간별** — Combo1 윈드업만 빠르게, Combo3 회수만 빠르게, 타격+캔슬창 가독은 평속 보존. 굼뜬 불쾌함 제거.
 

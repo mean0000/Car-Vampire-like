@@ -47,16 +47,16 @@ LLM 코딩 실수 줄이는 행동 지침. 사소한 작업엔 판단으로. **�
 
 ## Project: ZombieCrush (Unity)
 
-- Engine: Unity (C#) · Solution: `ZombieCrush.sln` · ⚠️현행 방향=조준형 뱀서 피벗 ([[vampire_survivors_pivot]])
+- Engine: Unity (C#) · Solution: `ZombieCrush.sln` · ⚠️현행 방향=조준형 뱀서 피벗 (권위: `docs/00_authority/2026-06-16-vampire-survivors-pivot-spec.md`)
 - **설치 에셋(우선 활용):** **DOTween**(트윈 — Lerp/코루틴 대신) · **COZY Pro**(날씨/시간대 API) · **Feel**(게임감 — 쉐이크·히트스탑·MMFeedbacks)
 - **Unity 규칙:** MonoBehaviour 수명주기 임의 추가/제거 금지 · SerializeField/public 변경 시 Inspector 연결 확인 후 수정 · 요청 안 한 성능최적화(풀링·코루틴 전환) 금지 · 기존 씬/프리팹 *구조 재배치* 금지(단 필요한 직렬화 값·Inspector·참조 수정은 허용 — 변경 후 연결 확인)
 
 ## Model Selection (요약 — 풀버전: 운영정책 doc)
 
 **모델 선택을 유저에게 묻지 말고 능동 전환.** 기준 = 불확실성·레버리지 high vs 기계적. 게임감은 코드 단계에서 나오므로 설계자(오케스트레이터)가 구현까지 잡아 의도 보존.
-- **현재 활성:** 오케스트레이터 = **Opus 4.8** (Fable 부재로 겸임) · 기계적 위임 = **Sonnet** (Gameplay 에이전트). [[feedback_delegate_all_fable]]
+- **현재 활성:** 오케스트레이터 = **Fable 5** (2026-07-02 복귀) · 중간 위임 = **Opus 4.8** (Gameplay `model: opus`) · 기계적 위임 = **Sonnet** (Gameplay 에이전트). [[feedback_delegate_all_fable]]
 - **오케스트레이터 직접(위임 금지), effort `xhigh`:** 게임 중심/fun · 그래픽·라이팅·미적 판정 · 게임감/주스 · 코어 방향·루프 *최종 판단* · 레벨/페이싱 · 물리·3+스크립트 아키텍처. (단 무기/성장/이코노미/런 *구조 설계*는 `gd` 에이전트 드래프트→유저 판정)
-- **Sonnet 위임 (3관문 전부 충족 시만):** ①객관 수락기준 작성가능 ②실패 즉시 감지(테스트/씬재현/콘솔) ③국소·가역·"더 나은 느낌" 판단 불필요. 하나라도 어긋나면 Opus. 검색·탐색·스펙동결 값조정=전형. 복잡 와이어링·게임감 섞임=Gameplay `model: opus`. **핸드오프 게이트: Sonnet 게임플레이 패치는 Opus가 diff+플레이어블 결과 확인 후 수락**(그럴싸한 평범+미표시 리스크 방어).
+- **Sonnet 위임 (3관문 전부 충족 시만):** ①객관 수락기준 작성가능 ②실패 즉시 감지(테스트/씬재현/콘솔) ③국소·가역·"더 나은 느낌" 판단 불필요. 하나라도 어긋나면 Opus. 검색·탐색·스펙동결 값조정=전형. 복잡 와이어링·게임감 섞임=Gameplay `model: opus`. **핸드오프 게이트: Sonnet 게임플레이 패치는 오케스트레이터가 diff+플레이어블 결과 확인 후 수락**(그럴싸한 평범+미표시 리스크 방어).
 - **막힘 서킷브레이커:** 하위 위임이 헛돌면 즉시 오케스트레이터가 회수해 직접. 같은 티어 재시도 금지. 모호하면 한 티어 위로.
 - 전환은 짧게 announce. 작은 편집엔 3단 춤(Plan→구현→리뷰) 생략. **라우팅=품질/레버리지로만(토큰 보존 아님).** Max 한도 비-binding 확인(2026-06-27 유저)·품질 우선 → 토큰 아끼려 경계선 작업을 Sonnet에 떠넘기기 ❌, 애매하면 Opus. Sonnet 위임은 *진짜 at-parity*거나 병렬성 이득일 때만. [[feedback_delegate_all_fable]]
 - **병렬 세션:** 여러 Claude 세션/공유 working tree로 작업하면 운영정책 §2 먼저 읽고 파일 파티션·Unity 전담 세션을 확정. (락 시스템 금지)
