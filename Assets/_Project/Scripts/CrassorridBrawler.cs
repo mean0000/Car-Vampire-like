@@ -27,7 +27,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CrassorridBrawler : MonoBehaviour
+public class CrassorridBrawler : MonoBehaviour, IAttackCommit
 {
     static readonly List<CrassorridBrawler> Roster = new List<CrassorridBrawler>();
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -125,6 +125,10 @@ public class CrassorridBrawler : MonoBehaviour
     [Tooltip("히트스탑 길이(초). ★0.04~0.06 권장 — 브루트 연타라 길면 거슬린다. 프로젝트 HitStop이 timeScale 0.05·OnDestroy 복원 가드(영구정지 불가능).")]
     [SerializeField, Range(0f, 0.12f)] float hitStopDuration = 0.05f;
 
+    [Header("★슬램 실피해 (ReadAndCut 정식 배선 — 장판 약속 == 피해 영역)")]
+    [Tooltip("슬램 착탄 피해(플레이어 HP 100 기준). 브루트 한 방의 무게 — dash-or-die(대시 i-frame이 회피 답, PlayerHealth가 무적 판정). 0=피해 없음(구 연출 랩 호환).")]
+    [SerializeField, Min(0)] int slamDamage = 30;
+
     // ════════ ★★스매시 = 3구간 분할 (SmashAttack_RM 한 take를 frame 범위로 쪼갬) ════════
     //   ★왜 분할인가(헌법 준수): 한 state.speed는 클립 전체 균일 → "느린 무거운 윈드업 + 빠른 committed 슬램 + 회수"의
     //    속도 셰이핑을 단일 클립으로 불가 → 같은 take를 frame 범위만 다르게 3분할, 구간별 *정적 state.speed*로.
@@ -170,6 +174,12 @@ public class CrassorridBrawler : MonoBehaviour
     TelegraphPad _activePad;
     int _activeGen = -1;
 
+    // ── ★커밋 신호·실피해 (ReadAndCut 정식 배선 — 구 연출 랩엔 receiver/PlayerHealth 없음 = 자동 생략) ──
+    EnemyDamageReceiver _receiver;   // 같은 GO(스포너가 드라이버보다 먼저 부착). null이면 커밋 신호 생략.
+    PlayerHealth _playerHealth;      // 슬램 실피해 대상 — 첫 슬램에 1회 해석(구 랩 캡슐엔 없음 → 경고 1회 후 생략).
+    bool _healthResolved;
+    bool _slamDamageApplied;         // ★Strike당 실피해 1회 가드(Stab M-1) — PlayerHealth 피격무적(끌 수 있는 값)에 위탁 안 함. _windupSpawned와 동형.
+
     // ── ★텔레그래프 원점 캐시 — Windup서 깐 약속 지점(공정). SmashHit가 *여기*에 임팩트를 떨군다
     //   (현재 model.forward로 재계산 ❌ — 슬램 도중 전진·회전했어도 약속 지점 = 실제 착탄점). ──
     Vector3 _telegraphOrigin;
@@ -184,6 +194,7 @@ public class CrassorridBrawler : MonoBehaviour
             Debug.LogError("[CrassorridBrawler] modelAnimator가 드라이버와 다른 GameObject — SmashHit AnimationEvent SendMessage 미도달 위험(장판 ForceFull 동기 실패). 드라이버를 Animator GO에 붙여라.");
         if (attackController != null) modelAnimator.runtimeAnimatorController = attackController;
         else Debug.LogError("[CrassorridBrawler] attackController 미할당");
+        _receiver = GetComponent<EnemyDamageReceiver>();   // 커밋 신호 대상(읽고-베기 가독·읽기 슬로모). 구 랩=null 허용.
         // ★루트모션이 전진을 만든다(제2원칙). OnAnimatorMove 미구현 → Unity 자동 적용(증폭 없음 — Dimax처럼 게인 안 씀, 클립 전진 그대로).
         modelAnimator.applyRootMotion = true;
         ResetCombatState();
@@ -207,6 +218,9 @@ public class CrassorridBrawler : MonoBehaviour
         _smashFired = false;
         _windupSpawned = false;
         _approaching = false;
+        _slamDamageApplied = false;
+        _healthResolved = false;   // ★풀링/재타겟 대비(Stab M-2) — stale PlayerHealth 캐시가 무피해 브루트를 만들지 않게.
+        _playerHealth = null;
         _slamCooldownUntil = 0f;   // ★풀링 재활성 시 stale 쿨다운이 첫 슬램을 막지 않게 리셋(첫 교전은 쿨다운 0).
         if (modelAnimator != null)
         {
@@ -338,15 +352,27 @@ public class CrassorridBrawler : MonoBehaviour
         // ★속도 단일 진실원: 매 프레임 1f로 리셋(상태.speed는 컨트롤러가 들고 있음 — Roar/스매시 구간 배속).
         //   Approach 브랜치에서만 배율로 올린다 → 이탈 경로 전부에서 배율 안 샘.
         modelAnimator.speed = 1f;
-        if (target == null || model == null) { ReleaseToken(); CancelTelegraph(); UnregisterSlam(); return; }   // ★H-1: 동상
+        if (target == null || model == null) { _receiver?.DriveCommit(0f, false); ReleaseToken(); CancelTelegraph(); UnregisterSlam(); return; }   // ★H-1: 동상 (+커밋 글로우 클리어 — Caniathrox Codex#6 패턴)
 
         var info = modelAnimator.GetCurrentAnimatorStateInfo(0);
         int s = info.shortNameHash;
+
+        // ★커밋 신호 구동(읽고-베기 가독·읽기 슬로모) — Windup=차오름(0→1), Strike=NOW(흰 플래시), 그 외=꺼짐.
+        //   receiver 미부착(구 연출 랩)이면 생략. Recovery는 비커밋(회수=커밋 종료 — IAttackCommit 계약: 커밋=텔레그래프~타격 실행).
+        if (_receiver != null)
+        {
+            if (s == SWindup)      _receiver.DriveCommit(Mathf.Clamp01(info.normalizedTime), false);
+            else if (s == SStrike) _receiver.DriveCommit(1f, true);
+            else                   _receiver.DriveCommit(0f, false);
+        }
 
         // ★H-1 엣지 가드(Dimax 패턴): Windup이 *아닐* 때 _windupSpawned를 false로 → Windup 진입 첫 프레임에만 1회 스폰.
         //   (구) Strike 분기에서만 리셋하면, Strike를 건너뛰고 Recovery→Idle로 떨어지는 비정상 복귀 경로에서 stale true가 남아
         //    다음 Windup 장판 스폰이 무음 스킵될 수 있다. 상태 기반 엣지 가드가 그 경로까지 자가치유.
         if (s != SWindup) _windupSpawned = false;
+
+        // ★Strike 이탈 시 실피해 1회 가드 리셋(Stab M-1) — _windupSpawned와 동형 엣지 가드.
+        if (s != SStrike) _slamDamageApplied = false;
 
         // ★슬램 등록 엣지 가드(자가치유): 슬램 구간(Windup/Strike/Recovery)이 *아닌데* 아직 등록돼 있으면 해제.
         //   Recovery 정상 경로는 SRecovery 분기가 풀지만, Strike 건너뛰고 Idle/Approach로 떨어지는 비정상 복귀에서
@@ -509,29 +535,75 @@ public class CrassorridBrawler : MonoBehaviour
             _activeGen = -1;
         }
 
+        // 임팩트 위치 = 텔레그래프 약속 지점(현재 forward 재계산 ❌ — 슬램 도중 전진·회전 무시, 깐 약속 = 착탄).
+        //   실피해와 임팩트 주스가 *같은* 원점을 공유(약속 == 피해 영역 == 연출, 공정성 §북극성6).
+        Vector3 impactOrigin = ResolveImpactOrigin();
+        _hasTelegraphOrigin = false;   // 이번 슬램 소비 — 다음 Windup이 다시 깐다(stale 원점 재사용 차단).
+
+        // ★슬램 실피해 — 장판 원 안(XZ)의 플레이어에게(ReadAndCut 정식 배선). 대시 i-frame은 PlayerHealth가 판정.
+        ApplySlamDamage(impactOrigin);
+
         // ════════ ★임팩트 주스 — 닿는 *순간의 충격*(유저 2026-06-14 "위협 안 됨, 압박감 없음") ════════
-        //   장판 동기(위)와 *별개* 추가. 텔레그래프 원점(_telegraphOrigin = 공정한 약속 지점)에 떨군다.
-        FireSmashImpact();
-        // 향후 광역 데미지/넉백 히트박스는 게임플레이 단계에서 이 이벤트에 훅(애니=타이밍의 진실).
+        //   장판 동기(위)와 *별개* 추가. 텔레그래프 원점(공정한 약속 지점)에 떨군다.
+        FireSmashImpact(impactOrigin);
+    }
+
+    // 텔레그래프 약속 지점 우선, 미스폰(풀 미주입 등) 폴백 = 현재 전방(임팩트가 무위치로 사라지지 않게).
+    Vector3 ResolveImpactOrigin()
+    {
+        if (_hasTelegraphOrigin) return _telegraphOrigin;
+        Vector3 fwd = model != null ? model.forward : Vector3.forward; fwd.y = 0f;
+        if (fwd.sqrMagnitude < 0.0001f) fwd = Vector3.forward; else fwd.Normalize();
+        Vector3 o = (model != null ? model.position : transform.position) + fwd * telegraphForwardOffset;
+        o.y = 0f;
+        return o;
+    }
+
+    // ★슬램 광역 피해 — 텔레그래프 원(r=telegraphRadius) 안의 플레이어만. 넉백 0(플레이어 위치는 모터 단일소유 — 밀지 않는다).
+    void ApplySlamDamage(Vector3 origin)
+    {
+        if (_slamDamageApplied) return;   // ★Strike당 1회(Stab M-1) — 이벤트 이중발화/클립 재설계 사고에도 자가 방어.
+        _slamDamageApplied = true;
+        if (slamDamage <= 0 || target == null) return;
+        if (!_healthResolved)
+        {
+            _healthResolved = true;
+            _playerHealth = target.GetComponentInParent<PlayerHealth>();
+            if (_playerHealth == null) _playerHealth = target.GetComponentInChildren<PlayerHealth>();
+            if (_playerHealth == null)
+                Debug.LogWarning("[CrassorridBrawler] PlayerHealth 미발견 — 슬램 실피해 비활성(구 연출 랩이면 정상. 무음 소실 방지 경고).", this);
+        }
+        if (_playerHealth == null || _playerHealth.IsDead) return;
+        Vector3 p = target.position; p.y = 0f;
+        Vector3 o = origin; o.y = 0f;
+        if (Vector3.Distance(p, o) <= telegraphRadius)
+            _playerHealth.TakeHit(slamDamage, origin, 0f);
+    }
+
+    // ════════ IAttackCommit — 읽고-베기 듀얼 계약(커밋=Windup~Strike · 타격 실행=Strike만. Recovery/접근=비커밋) ════════
+    public bool IsCommittingAttack
+    {
+        get
+        {
+            if (modelAnimator == null || !modelAnimator.isActiveAndEnabled) return false;
+            int s = modelAnimator.GetCurrentAnimatorStateInfo(0).shortNameHash;
+            return s == SWindup || s == SStrike;
+        }
+    }
+
+    public bool IsStriking
+    {
+        get
+        {
+            if (modelAnimator == null || !modelAnimator.isActiveAndEnabled) return false;
+            return modelAnimator.GetCurrentAnimatorStateInfo(0).shortNameHash == SStrike;
+        }
     }
 
     // ★임팩트 VFX + 카메라 쉐이크 + 히트스탑 — SmashHit 닿는 순간. 텔레그래프 약속 지점에 충격.
-    void FireSmashImpact()
+    void FireSmashImpact(Vector3 impactOrigin)
     {
         if (!impactEnabled) return;
-
-        // 임팩트 위치 = 텔레그래프 약속 지점(현재 forward 재계산 ❌ — 슬램 도중 전진·회전 무시, 깐 약속 = 착탄).
-        //   텔레그래프 미스폰(풀 미주입 등)이면 폴백으로 현재 전방을 쓴다(임팩트가 무위치로 사라지지 않게).
-        Vector3 impactOrigin;
-        if (_hasTelegraphOrigin) impactOrigin = _telegraphOrigin;
-        else
-        {
-            Vector3 fwd = model != null ? model.forward : Vector3.forward; fwd.y = 0f;
-            if (fwd.sqrMagnitude < 0.0001f) fwd = Vector3.forward; else fwd.Normalize();
-            impactOrigin = (model != null ? model.position : transform.position) + fwd * telegraphForwardOffset;
-            impactOrigin.y = 0f;
-        }
-        _hasTelegraphOrigin = false;   // 이번 슬램 소비 — 다음 Windup이 다시 깐다(stale 원점 재사용 차단).
 
         // 1) 임팩트 VFX(충격파+먼지+그을림) — 텔레그래프 반경과 일치(약속 == 피해 영역).
         if (impactPool != null)

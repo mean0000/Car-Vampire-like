@@ -59,6 +59,9 @@ public class PlayerMotor : MonoBehaviour
     float _iframeTimer;       // >0 = 무적 중(누른 순간부터 iframeDuration). 이동창과 별개로 흐른다.
     float _dashStartTime = -999f;  // 마지막 대시 시작 시각(unscaledTime) — 퍼펙트 회피 창(대시 시작 프레임) 판정 기준
     Vector3 _dashDir;         // 대시 진행 방향(키보드/조준, 자유방향) — 이동은 코드가 이 방향으로 버스트
+    Vector3 _glideDir;        // ★히트 글라이드(맞히면 길게) — 공격 적중 시 무기가 주입하는 짧은 추가 전진 방향
+    float _glideTimer;        // >0 = 글라이드 진행 중
+    float _glideSpeed;        // 글라이드 속도(m/s) = 거리/시간
     float _rechargeTimer;     // 다음 1스택 충전까지(스택<max일 때만 흐름)
     int _dashCharges;
     bool _dashStartedThisFrame;  // 이번 프레임 대시가 시작됐나 — 애니 드라이버가 엣지에서 DashX/DashY를 잠근다
@@ -68,6 +71,7 @@ public class PlayerMotor : MonoBehaviour
     float _sprintHoldTime;    // 스프린트 누적 시간 — 단계/크립 계산(비스프린트 시 0)
     int _sprintTier = -1;     // 현재 스프린트 단계(-1=비스프린트, 0..N-1)
     bool _sprintBurstedThisFrame;  // 이번 프레임 단계 버스트(순간 점프) 발생 — 카메라/VFX 주스가 읽는다
+    float _actionMove01;      // ★무빙 평타(07-04) — locked 중 허용 이동 배율(0=완전 잠금). ApplyRootStep의 velocity 소거 여부도 결정.
 
     public bool IsDashing => _dashTimer > 0f;
     /// <summary>스프린트(달리기) 의도 중인가 — Shift 홀드 + 실제 이동 + 대시/공격 아님.</summary>
@@ -110,13 +114,16 @@ public class PlayerMotor : MonoBehaviour
         _groundOffset = col != null ? col.bounds.center.y - col.bounds.min.y : 0f;
     }
 
-    /// <summary>PlayerBrain이 매 프레임 Aim 다음에 호출. aimDir = 정지 중 대시 방향 폴백(조준 쪽으로 회피).</summary>
-    public void Tick(in PlayerInputState input, Vector3 aimDir, bool locked)
+    /// <summary>PlayerBrain이 매 프레임 Aim 다음에 호출. aimDir = 정지 중 대시 방향 폴백(조준 쪽으로 회피).
+    /// actionMove01 = ★무빙 평타(07-04): locked 중에도 이 배율로 걷기 이동 허용(0=기존 완전 잠금. 무기가 액션별로 결정).</summary>
+    public void Tick(in PlayerInputState input, Vector3 aimDir, bool locked, float actionMove01 = 0f)
     {
         // ★스프린트 플래그는 *어떤 early-return보다 먼저* 리셋(Stab M-1/Codex 수렴) — timeScale=0(정산/일시정지)로
         //   dt<=0 빠져나가도 IsSprinting이 직전 값으로 고착돼, unscaled 카메라가 멈춘 화면서 스프린트 프레이밍을 끄는 것 방지.
         _sprinting = false;              // 기본 false — 아래 일반 이동 경로에서만 true(대시/공격 early-return 경로는 false 유지)
         _sprintBurstedThisFrame = false; // 엣지 1프레임만 true(주스가 이 프레임에 카메라킥/스피드라인)
+        // ★무빙 평타 상태 — early-return 전에 확정(ApplyRootStep이 같은 프레임에 읽어 velocity 소거 여부 결정).
+        _actionMove01 = locked ? Mathf.Clamp01(actionMove01) : 0f;
         float dt = Time.deltaTime;
         if (dt <= 0f) return;
 
@@ -145,9 +152,41 @@ public class PlayerMotor : MonoBehaviour
             if (_dashTimer > 0f) { UpdateDash(dt); return; }   // 이번 프레임 대시 시작 — 고정 방향·고정 속도 버스트
         }
 
-        // 공격 커밋(콤보 등) 중엔 이동 입력을 무시하고 즉시 정지 — 제자리 공격이라 발 미끄러짐이 사라진다.
-        // (대시는 위에서 이미 처리 — 회피는 이 잠금을 무시하고 빠져나간다.) 공격은 스프린트 기어를 리셋(멈춰서 벰).
-        if (locked) { _velocity = Vector3.zero; _sprintHoldTime = 0f; _sprintTier = -1; return; }
+        // ★히트 글라이드(맞히면 길게) — 공격 적중 직후의 짧은 추가 전진. locked(공격 커밋) 중에도 적용(그게 목적).
+        //   대시는 위에서 이미 early-return(대시가 위치 소유). 벽가드+지면 파이프라인 공유 — 위치 소유는 Motor 단일 유지.
+        //   ★가산 설계(Codex P1-2 판정): 같은 프레임 루트모션(ApplyRootStep)과 순차 *가산*이 의도 — 두 쓰기 모두
+        //   벽가드+지면을 각자 통과해 안전. "적중 전진 과다" 여부는 랩 관찰 항목(hitGlideDistance 노브).
+        if (_glideTimer > 0f)
+        {
+            _glideTimer -= dt;
+            Vector3 gnext = transform.position + WallGuardedStep(_glideDir * (_glideSpeed * dt));
+            gnext.y = SampleGround(gnext) + _groundOffset;
+            transform.position = gnext;
+        }
+
+        // 공격 커밋(콤보 등) 중 — 기본은 이동 입력 무시+즉시 정지(제자리 공격). ★무빙 평타(_actionMove01>0)면
+        // 걷기 경로를 감쇠 배율로 재사용해 계속 움직인다(스프린트 ❌ — 공격 중 질주 금지, 기어 리셋 유지).
+        // 루트모션 스텝인·히트 글라이드와는 *가산* — 세 쓰기 모두 벽가드+지면 경유(위치 소유 Motor 단일).
+        if (locked)
+        {
+            _sprintHoldTime = 0f; _sprintTier = -1;
+            if (_actionMove01 > 0f)
+            {
+                Vector3 lockedTarget = move * (moveSpeed * _actionMove01);
+                bool lockedSpeedingUp = Vector3.Dot(lockedTarget, _velocity) >= 0f
+                                        && lockedTarget.sqrMagnitude >= _velocity.sqrMagnitude;
+                _velocity = Vector3.MoveTowards(_velocity, lockedTarget, (lockedSpeedingUp ? acceleration : deceleration) * dt);
+                if (_velocity.sqrMagnitude > 0.0001f)
+                {
+                    Vector3 anext = transform.position + WallGuardedStep(_velocity * dt);
+                    anext.y = SampleGround(anext) + _groundOffset;
+                    transform.position = anext;
+                }
+                return;
+            }
+            _velocity = Vector3.zero;
+            return;
+        }
 
         // 달리기 재개(2026-06-28) — 모멘텀 슬래셔 코어(질주 손맛 화이트박스). Shift 홀드 + 실제 이동이면 스프린트.
         //   여기 도달 시 비대시·비공격(locked) 보장(위에서 early-return) — 추가 가드 불필요.
@@ -211,7 +250,29 @@ public class PlayerMotor : MonoBehaviour
         Vector3 next = transform.position + WallGuardedStep(worldDelta);
         next.y = SampleGround(next) + _groundOffset;
         transform.position = next;
-        _velocity = Vector3.zero;   // 루트모션 구동 중 속도 꼬리 제거 — 공격 종료 후 미끄러짐 방지
+        // 루트모션 구동 중 속도 꼬리 제거(공격 종료 후 미끄러짐 방지) — ★단 무빙 평타 중엔 유지(07-04):
+        // 매 프레임 소거하면 Tick의 MoveTowards가 0부터 재가속해 이동이 기어간다(~acceleration×dt로 캡).
+        if (_actionMove01 <= 0f) _velocity = Vector3.zero;
+    }
+
+    /// <summary>★무빙 평타 상태 즉시 종료(Codex P1, 07-04) — 콤보 종료/캔슬 시 무기가 호출. Update가 캐시한
+    /// _actionMove01이 같은 프레임 애니 이벤트(OnComboEnd→ResetCombo) 후의 OnAnimatorMove까지 stale로 남아
+    /// 속도 꼬리가 다음 일반 프레임으로 새는 것 차단(콤보 끝='딱 멈춤' 계약 복원).</summary>
+    public void ClearActionMove()
+    {
+        _actionMove01 = 0f;
+        _velocity = Vector3.zero;
+    }
+
+    /// <summary>★히트 글라이드 — 공격이 *맞았을 때만* 짧은 추가 전진("빗나가면 짧게, 맞히면 길게" 공간층 배려).
+    /// 루트모션 런지(클립 소유) 위에 얹는 코드 미끄러짐. 적용은 Tick(벽가드+지면 공유) — 위치 소유 Motor 단일.</summary>
+    public void AddGlide(Vector3 dir, float distance, float duration)
+    {
+        dir.y = 0f;
+        if (distance <= 0f || duration <= 0f || dir.sqrMagnitude < 0.0001f) return;
+        _glideDir = dir.normalized;
+        _glideTimer = duration;
+        _glideSpeed = distance / duration;
     }
 
     void RechargeDash(float dt)
@@ -238,6 +299,7 @@ public class PlayerMotor : MonoBehaviour
 
         // ★대시는 스프린트 기어를 리셋한다 — 대시 자체가 속도 순간이고, 재스프린트는 0단부터 다시 버스트하며 spool(무음 점프 방지, Stab H-2).
         _sprintHoldTime = 0f; _sprintTier = -1;
+        _glideTimer = 0f;   // ★대시가 잔여 히트 글라이드를 지운다 — 대시 종료 후 유령 전진 방지(위치 소유 경합 차단)
 
         // 대시 방향을 몸 facing(=조준) 프레임에 투영해 '어느 Step 클립'을 고를지 정한다.
         // 비주얼이 aimDir을 향한 채 Step_F(+Z local)를 재생하면 그 루트모션이 aimDir로 회전돼 전진 회피가 된다.

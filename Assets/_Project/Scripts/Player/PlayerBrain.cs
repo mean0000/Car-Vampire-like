@@ -76,7 +76,8 @@ public class PlayerBrain : MonoBehaviour
 
         _weapon?.Tick(input, _aim.Direction);      // 2) 공격 — 상태(IsBusy)를 먼저 확정(캔슬됐으면 idle)
         bool busy = _weapon != null && _weapon.IsBusy;
-        _motor.Tick(input, _aim.Direction, busy);  // 3) 이동·대시 — 공격 커밋 중(busy)이면 Motor 입력이동 양보
+        _motor.Tick(input, _aim.Direction, busy,   // 3) 이동·대시 — 공격 커밋 중(busy)이면 Motor 입력이동 양보
+                    _weapon != null ? _weapon.ActionMoveMult : 0f);   //    ★무빙 평타(07-04): 무기가 허용한 배율만큼은 걷기 유지(콤보만, 무기 소유 OCP)
         _animator?.SetAttacking(busy);             //    공격 중엔 루트모션이 위치를 주도(OnAnimatorMove)
         _animator?.Tick();                         // 4) 상태 → 애니 파라미터 반영
         _footsteps?.Tick();                        // 5) 발소리 — 확정된 위치(이동·루트모션) 이후 거리 적산

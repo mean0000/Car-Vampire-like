@@ -43,7 +43,9 @@ public class HitStop : MonoBehaviour
     {
         if (_active && Time.unscaledTime >= _resumeAt)
         {
-            Time.timeScale = 1f;
+            // ★Codex P1(게이트): 다른 timeScale 연출(ParrySlowMotion 슬로우/프리즈)이 그 사이 값을 잡았으면
+            //   1로 강제 복원하지 않는다(진행 중 슬로모 파괴 방지) — 자기 값일 때만 복원(아니면 소유자가 복원).
+            if (Mathf.Approximately(Time.timeScale, ActiveTimeScale)) Time.timeScale = 1f;
             _active = false;
         }
     }

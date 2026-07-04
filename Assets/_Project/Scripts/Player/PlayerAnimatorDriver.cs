@@ -31,6 +31,23 @@ public class PlayerAnimatorDriver : MonoBehaviour
     [Tooltip("★이동 시 몸 회전 속도(도/초) — 낮을수록 부드럽게 돌고(각짐↓·둔함↑), 높을수록 즉각 스냅. WASD 8방향의 '딱딱한 방향 전환'을 이걸로 완화한다. 공격/대시 중엔 무시(즉시 잠금 — 런지/회피 크리스프 유지).")]
     [SerializeField] float faceTurnRate = 600f;
 
+    [Header("★상하체 완전 분리 (07-04 — SoD/RUINER식, 상체 공격이 하체에 무영향)")]
+    // ★상체 레이어 웨이트 구동(07-04 위상 디싱크 확정 수정, Fix B): 두 로코모션 클럭(상체 UB_Loco·하체 Base Locomotion)이
+    //   동시에 weight>0이 되는 상황을 아예 없앤다 — 걷기 정상상태에선 상체를 Base가 구동(weight 0)해 다리와 같은 클럭 = 위상 자동 정합.
+    //     · Base가 상체 소유(액션/대시)      → 0 즉시 (Base 전신이 상체까지 보임, 위상 정합)
+    //     · 콤보 진행                        → 1 즉시 (크리스프 진입)
+    //     · 그 외(콤보 직후 복귀 + 걷기)      → 0으로 이즈아웃(comboLayerBlendTime) — 정적 콤보-끝-포즈 → Base 라이브 로코모션 블렌드
+    //   콤보 종료 시 컨트롤러는 Combo 상태가 마지막 프레임을 홀드(Combo→UB_Loco 전이 제거)하고, 웨이트 이즈아웃이 그 *정적* 포즈를
+    //   Base 로코모션으로 블렌드한다. 정적 포즈라 클럭이 안 끼어 위상 무관 = 디싱크 원천 소멸. 단일 블렌드라 복귀 튐도 없다.
+    [Tooltip("★콤보→걷기 복귀 웨이트 이즈아웃 시간(초). 콤보 종료 후 상체 레이어를 이 시간에 걸쳐 1→0으로 내려 " +
+             "정적 콤보-끝-포즈를 Base 라이브 로코모션으로 블렌드한다(단일 블렌드=튐 없음). 짧을수록 크리스프, 길수록 부드럽게 안착.")]
+    [SerializeField] float comboLayerBlendTime = 0.12f;
+    [Tooltip("★콤보 스텝인(Day2 '밀어넣고 멈춤' 전진 루트모션) 억제 — 완전 분리에선 기본 ON(true). " +
+             "이유: 정지 콤보에서 다리가 idle 스탠스인데 루트모션이 전진시키면 발이 미끄러진다(브리프 §2). " +
+             "★현 아키텍처(콤보=UpperBody 마스크 레이어, Root 제외)에선 콤보가 애초에 전진 루트모션을 delta에 싣지 않아 이 값과 무관하게 스텝인이 없다. " +
+             "이 노브는 억제 경로를 명시적으로 남겨둔 것이며, Day2 스텝인의 진짜 부활은 콤보를 Root 포함 레이어로 되돌리는 컨트롤러 변경이 필요하다(그럴 경우 다리가 다시 콤보 골반을 따라간다).")]
+    [SerializeField] bool suppressComboStepIn = true;
+
     public enum FacingMode { FaceMovement, FaceMouse, Hybrid }
     [Header("Facing Mode (비교용 — 플레이 중 F키 순환)")]
     [Tooltip("몸이 뭘 보나: FaceMovement=이동 방향(하데스) / FaceMouse=마우스(트윈스틱) / Hybrid=질주는 이동·그 외는 조준. 직접 비교용.")]
@@ -42,6 +59,7 @@ public class PlayerAnimatorDriver : MonoBehaviour
     static readonly int MoveXHash = Animator.StringToHash("MoveX");
     static readonly int MoveYHash = Animator.StringToHash("MoveY");
     static readonly int ComboStepHash = Animator.StringToHash("ComboStep");
+    static readonly int AttackHash = Animator.StringToHash("Attack");   // ★콤보 1단 진입 트리거(ANY→Combo1, CanTransitionToSelf) — 홀드된 Combo에서 재시작 가능
     static readonly int DashHash = Animator.StringToHash("Dash");
     static readonly int DashXHash = Animator.StringToHash("DashX");
     static readonly int DashYHash = Animator.StringToHash("DashY");
@@ -58,6 +76,12 @@ public class PlayerAnimatorDriver : MonoBehaviour
     bool _wasDashing;
     bool _attacking;   // 공격 커밋 중 = 루트모션을 위치로 적용(PlayerBrain이 매 프레임 갱신)
     Vector3 _lockedFace;   // 콤보 단 시작 시 잠근 facing — 공격 중 몸/런지 방향 고정(단 사이엔 재캡처)
+    int _comboLayer = -1;       // ★상체 콤보 오버라이드 레이어("UpperBodyCombo") 인덱스(컨트롤러에 없으면 -1 → 웨이트 구동 스킵, 무해)
+    bool _comboActive;          // ★콤보(평타) 진행 중인가 — 스텝인 억제 게이트의 소스(SetCombo가 설정). 반격/스킬/대시베기는 false(Base 전신).
+                                //   ★웨이트 게이트는 더 이상 이 값이 아니라 "Base가 상체를 소유하는가"(LayerHasActionTag(0)‖IsDashing)로 구동(07-04 튐 수정).
+    bool _suppressStepIn;       // ★스텝인 억제 스냅샷(Stab H-1) — Tick 시점에 확정. OnAnimatorMove가 라이브 _comboActive 대신 이걸 읽어,
+                                //   같은 프레임 후반 애니 이벤트(OnComboEnd→SetCombo(0))가 게이트를 뒤집는 레이스 차단.
+    float _comboWeight;         // ★상체 레이어 웨이트 상태(Fix B) — MoveTowards 이즈아웃이 프레임 간 값을 이어가려면 필요. SetLayerWeight의 최근값과 동치.
 
     /// <summary>공격 클립 타격 정점(AnimationEvent OnAttackHit)이 발화 → 무기가 구독해 판정.</summary>
     public event System.Action<int> AttackHit;
@@ -75,6 +99,11 @@ public class PlayerAnimatorDriver : MonoBehaviour
         // 단 자동적용(자식만 이동)은 OnAnimatorMove 정의로 차단되고, 우리가 공격 중에만 루트(부모)에 수동 적용한다.
         // 로코모션 클립은 In_Place(루트≈0)라 비공격 프레임의 delta는 무시한다.
         _animator.applyRootMotion = true;
+        // ★상하체 완전 분리: 상체 콤보 오버라이드 레이어 인덱스 캐시(이름으로 — 레이어 재정렬에 견고). 없으면 -1.
+        _comboLayer = _animator.GetLayerIndex("UpperBodyCombo");
+        // 배선 실패를 무음 강등으로 두지 않는다(_motor/_aim 정책과 일관, Stab M-1) — 레이어 못 찾으면 상체 콤보 오버라이드가 조용히 죽는다.
+        if (_comboLayer < 0)
+            Debug.LogError("[PlayerAnimatorDriver] UpperBodyCombo 레이어 못 찾음 — 상체 콤보 오버라이드 비활성.", this);
         if (moveSource == null) moveSource = transform.parent;
         if (moveSource != null)
         {
@@ -176,6 +205,28 @@ public class PlayerAnimatorDriver : MonoBehaviour
         _animator.SetFloat(MoveXHash, moveX, dirDamp, dt);
         _animator.SetFloat(MoveYHash, moveY, dirDamp, dt);
 
+        // ★상하체 완전 분리 + 위상 디싱크 확정 수정(07-04 Fix B) — 상체 콤보 레이어(UpperBodyCombo, UpperBody 마스크)의 웨이트를
+        //   세 갈래로 구동해, 두 로코모션 클럭(상체 UB_Loco·하체 Base Locomotion)이 동시에 weight>0이 되는 상황을 아예 없앤다.
+        //     ① Base가 상체 소유(액션 태그 or 대시)  → 0 즉시. Counter/Skill01*/DashAttack/Dash가 상체까지 보이고, 위상은 Base 소유라 정합.
+        //     ② 콤보 진행(_comboActive)             → 1 즉시. 베기 상체가 크리스프하게 켜진다.
+        //     ③ 그 외(콤보 직후 복귀 + 걷기 정상상태) → 0으로 이즈아웃(comboLayerBlendTime). 컨트롤러가 Combo 상태를 홀드(Combo→UB_Loco
+        //        전이 제거)하므로 이 이즈아웃은 *정적* 콤보-끝-포즈를 Base 라이브 로코모션으로 블렌드한다. 정적 포즈=클럭 없음=위상 무관.
+        //   왜 위상 정합인가: 걷기 정상상태에서 weight가 0에 도달하면 상체를 Base가 구동(다리와 동일 클럭) → 팔-다리 위상 자동 일치.
+        //   구버전(v3)은 걷기 중 weight를 상수 1로 둬 UB_Loco가 Base와 독립 클럭 → 콤보 직후 팔-다리 위상이 영구 어긋났다(디싱크). 이게 그 수정.
+        //   P2b(Base 액션 종료 후 스냅): 액션 중 weight=0이었고 종료 후에도 ③이 MoveTowards(0→0)라 0 유지 → 0→1 스냅 없음 = UB_Loco 드리프트 위상 팝 없음.
+        //   ⚠️Base는 콤보 중 Locomotion 상태에 머문다(컨트롤러가 Combo 상태를 상체 레이어로 이관 — Base엔 ComboStep 전이 없음).
+        _suppressStepIn = _comboActive && suppressComboStepIn;   // ★프레임-초 스냅샷(Stab H-1) — 콤보 전체 스텝인 억제. 애니 이벤트가 _comboActive 뒤집어도 이번 프레임 게이트 불변.
+        if (_comboLayer >= 0)
+        {
+            // LayerHasActionTag(0)은 이미 IsActionPlaying(busy/이동잠금)이 쓰는 검증된 술어 — Counter/Skill01*/DashAttack 전부 "Action" 태그.
+            bool baseOwnsUpperBody = LayerHasActionTag(0) || (_motor != null && _motor.IsDashing);
+            if (baseOwnsUpperBody)      _comboWeight = 0f;                 // ① Base 전신 소유 → 즉시 0(위상 정합)
+            else if (_comboActive)      _comboWeight = 1f;                 // ② 콤보 진행 → 즉시 1(크리스프)
+            else                        _comboWeight = Mathf.MoveTowards(  // ③ 복귀/걷기 → 0으로 이즈아웃(정적 콤보-끝-포즈 → Base 로코모션)
+                                            _comboWeight, 0f, dt / Mathf.Max(0.0001f, comboLayerBlendTime));
+            _animator.SetLayerWeight(_comboLayer, _comboWeight);
+        }
+
         // 대시: 시작 엣지에서 방향(어느 Step 클립)을 잠그고, bool 엣지로 상태 진입/복귀를 구동한다.
         // DashX/DashY = facing 프레임의 카디널 방향(우=+X, 전진=+Y) → 블렌드트리가 한 Step 클립을 100% 고른다.
         // 한 동작=한 클립: 대시 진행 중 이 값은 고정(매 프레임 갱신 안 함) — 모션 정체성 보존.
@@ -185,6 +236,8 @@ public class PlayerAnimatorDriver : MonoBehaviour
             {
                 _animator.SetFloat(DashXHash, _motor.DashLocalX);
                 _animator.SetFloat(DashYHash, _motor.DashLocalY);
+                // ★대시=즉각 캐넌(Stab M-1): 대시 시작 프레임엔 위 웨이트 게이트가 이미 _motor.IsDashing=true를 읽어 상체 레이어를
+                //   0으로 스냅한다(StartDash가 _dashTimer 세팅→IsDashing 즉시 true, 드라이버 Tick은 모터 뒤에 돈다). 별도 스냅 불필요.
             }
             bool dashAnim = _motor.IsDashing;
             if (dashAnim != _wasDashing) { _animator.SetBool(DashHash, dashAnim); _wasDashing = dashAnim; }
@@ -198,6 +251,7 @@ public class PlayerAnimatorDriver : MonoBehaviour
     /// 단 시작(step≥1) = 이 단의 facing 잠금 지점(이후 마우스를 돌려도 몸/런지 방향은 이 순간 조준에 고정).</summary>
     public void SetCombo(int step)
     {
+        _comboActive = step >= 1;   // ★상하체 분리 게이트의 단일 소스 — 콤보만 하체 오버라이드/스텝인-억제 대상(반격/스킬/대시베기 제외)
         if (step >= 1)
         {
             if (_aim != null && _aim.Direction.sqrMagnitude > 0.0001f)
@@ -205,6 +259,12 @@ public class PlayerAnimatorDriver : MonoBehaviour
         }
         else _lockedFace = Vector3.zero;   // 콤보 종료 — 잔존 잠금 제거(self-cancel 경로에서 옛 방향 재사용 방지)
         _animator.SetInteger(ComboStepHash, step);
+        // ★콤보 1단 진입 = Attack 트리거로 ANY→Combo1 발화(컨트롤러 CanTransitionToSelf=1). Combo→UB_Loco 전이를 제거해
+        //   콤보 종료 시 상체 레이어가 직전 Combo 상태의 마지막 프레임을 홀드하므로, 다음 콤보는 그 홀드된 상태에서 자기 자신으로
+        //   재진입해야 한다(단발-후-단발이 흔한 경로). ComboStep==1 int 조건은 재생 내내 참이라 CanTransitionToSelf와 함께 쓰면
+        //   매 프레임 재발화(프레임0 동결)하므로, 소비형 트리거를 쓴다(1회 발화 후 자동 소진). 1단에서만 발화 — 연계 2/3단은
+        //   ComboStep==2/3 전이가 담당하고, BeginCombo가 SetCombo(1)을 콤보 시작에만 호출하므로 재생 중 재발화가 없다.
+        if (step == 1) _animator.SetTrigger(AttackHash);
     }
 
     /// <summary>공격 커밋 여부 — true인 프레임에만 루트모션 변위를 루트로 적용(PlayerBrain이 busy로 갱신).</summary>
@@ -220,11 +280,38 @@ public class PlayerAnimatorDriver : MonoBehaviour
         get
         {
             if (_animator == null) return false;
-            if (_animator.GetCurrentAnimatorStateInfo(0).IsTag("Action")) return true;
-            // 전이 진행 중엔 도착 상태가 Action이면 이미 액션 진입으로 친다(요청→진입 갭의 busy 누수 방지).
-            if (_animator.IsInTransition(0) && _animator.GetNextAnimatorStateInfo(0).IsTag("Action")) return true;
+            // Base 레이어(0)=Counter/Skill01*/DashAttack(전신 액션, 끝나면 Locomotion으로 전이 → 태그가 정확히 풀린다).
+            if (LayerHasActionTag(0)) return true;
+            // 상체 콤보 레이어=Combo1/2/3. ★Fix B로 Combo→UB_Loco 전이를 제거해 콤보 종료 후 Combo 상태를 마지막 프레임에
+            //   홀드하므로, 태그만 보면 busy가 영구 true가 된다 → '실제 재생 중'일 때만 busy로 친다(홀드=끝=busy 아님).
+            if (_comboLayer >= 0 && ComboLayerActivelyPlaying()) return true;
             return false;
         }
+    }
+
+    /// <summary>한 레이어의 현재(또는 전이 중 도착) 상태가 "Action" 태그인가 — 요청→진입 갭의 busy 누수 방지.</summary>
+    bool LayerHasActionTag(int layer)
+    {
+        if (_animator.GetCurrentAnimatorStateInfo(layer).IsTag("Action")) return true;
+        if (_animator.IsInTransition(layer) && _animator.GetNextAnimatorStateInfo(layer).IsTag("Action")) return true;
+        return false;
+    }
+
+    /// <summary>★상체 콤보 레이어가 지금 '재생 중'인가 — 홀드된(끝난)·중단된(캔슬된) Combo는 제외(Fix B).
+    /// Combo→UB_Loco 전이를 제거해 콤보 종료/캔슬 후 Combo 상태가 강제 종료 없이 남으므로, Action 태그만으로는
+    /// busy가 영구/장시간 true가 된다. 구 설계는 Combo→UB_Loco 전이가 태그를 풀어 busy를 해제했고, 이 메서드가 그 역할을 대체한다.
+    /// 두 겹으로 판정한다:
+    ///  ① _comboActive 게이트(Stab P0) — 대시캔슬/자가캔슬이 스윙 도중 Cancel()→SetCombo(0)으로 _comboActive를 끈다.
+    ///     이 게이트가 없으면 중단된 클립이 자연 종료(normalizedTime≥1)될 때까지 busy가 붙어 대시 직후 이동이 얼어붙는다
+    ///     (대시캔슬=이 무기의 코어 캐넌 경로). _comboActive가 콤보 논리 종료(정상 종료·캔슬 공통)를 정확히 반영한다.
+    ///  ② normalizedTime 안전망 — _comboActive가 (이벤트 누락 등으로) 고착돼도 Animator가 끝났으면(≥1) busy 해제 → KatanaWeapon 자가치유 발화.</summary>
+    bool ComboLayerActivelyPlaying()
+    {
+        if (!_comboActive) return false;   // ① 논리 종료(정상/캔슬 공통) — 대시캔슬 busy-freeze 방지
+        var cur = _animator.GetCurrentAnimatorStateInfo(_comboLayer);
+        if (cur.IsTag("Action") && cur.normalizedTime < 1f) return true;   // ② 진행 중(마지막 프레임 홀드 전) — 고착 시 안전망
+        if (_animator.IsInTransition(_comboLayer) && _animator.GetNextAnimatorStateInfo(_comboLayer).IsTag("Action")) return true;  // 진입 전이 중
+        return false;
     }
 
     /// <summary>★패링 반격(Skill02) — 컨트롤러 Any→Counter 트리거. 카타나가 카운터 창 입력 시 호출.
@@ -310,6 +397,13 @@ public class PlayerAnimatorDriver : MonoBehaviour
         //   베기(Skill01Strike) 런지는 정상 적용(아래 경로). 이름 판정은 기존 IsInSkillChargeWindup과 동형 결속.
         var st = _animator.GetCurrentAnimatorStateInfo(0);
         if (st.IsName("Skill01Charge") || st.IsName("Skill01Hold")) return;
+        // ★상하체 완전 분리(07-04 v2): 콤보 스텝인(전진 루트모션) 억제 — 완전 분리에선 정지 콤보 다리가 idle 스탠스라
+        //   전진 루트모션이 발을 미끄러뜨린다(브리프 §2). 그래서 콤보 전체 스텝인 억제(_suppressStepIn = _comboActive && suppressComboStepIn).
+        //   ★단 현 아키텍처(콤보=UpperBody 마스크 레이어, Root 제외)에선 콤보가 애초에 delta에 전진을 싣지 않아 억제 여부와 무관하게 delta≈0.
+        //   반격/스킬/대시베기(_comboActive=false)는 Base 전신(Root 포함)이라 그 커밋 런지가 정상 적용된다.
+        //   ★스냅샷 판독(Stab H-1) — 라이브 _comboActive를 읽으면 종료 프레임 애니 이벤트(OnComboEnd)가 게이트를 풀어
+        //   마지막 프레임 루트 delta가 새어 나간다(ClearActionMove와 거울상 레이스).
+        if (_suppressStepIn) return;
         _motor.ApplyRootStep(_animator.deltaPosition);
     }
 

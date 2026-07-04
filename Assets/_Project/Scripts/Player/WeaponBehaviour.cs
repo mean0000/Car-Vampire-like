@@ -33,6 +33,10 @@ public abstract class WeaponBehaviour : MonoBehaviour
     // ⚠️ 파생 무기가 OnDestroy를 오버라이드하면 base.OnDestroy()를 반드시 호출할 것.
     protected virtual void OnDestroy() => Cleanup();
 
+    /// <summary>★액션 중 이동 배율(0=완전 잠금) — Motor가 locked 중에도 이 배율로 걷기 이동을 허용(무빙 평타, 07-04).
+    /// 어느 액션에서 허용할지는 무기가 판단해 노출(OCP — Brain은 값만 전달). 기본 0 = 기존 정지 커밋.</summary>
+    public virtual float ActionMoveMult => 0f;
+
     [Tooltip("★레일: 액션 요청→Animator 진입까지의 busy 유예(초). 전이 1~2프레임 갭 동안 잠금을 유지해 이동 누수를 막는다.")]
     [SerializeField] float actionPendingGrace = 0.12f;
     float _actionGrace;   // >0 = 액션 진입 대기 중(busy 유지). Animator가 Action 상태에 들면 IsActionPlaying이 이어받는다.

@@ -59,6 +59,8 @@ public class EnemyDamageReceiver : MonoBehaviour, IDamageable, ICritReact
     [SerializeField, Min(0.02f)] float commitNowFlashTime = 0.1f;
     [Tooltip("발광(_EmissionColor) 강도 배수 — URP 블룸과 함께 '차오름'을 발광으로. 머티리얼에 _EmissionColor 없으면 자동 무시.")]
     [SerializeField, Min(0f)] float commitEmission = 2f;
+    [Tooltip("★이 개체의 커밋이 '읽기 슬로모'를 발동할 가치가 있나 — 엘리트/시그니처 공격만 true. 호드 잡몹 전부가 슬로모 후보면 소음+쿨다운 낭비(Codex 조건 4).")]
+    [SerializeField] bool highValueCommit = true;
 
     [Header("★크리티컬 피격 (커밋 적을 벤 순간 — 시안=내 액션, 일반 흰 피격과 구별)")]
     [Tooltip("크리티컬 피격 시 본체 플래시 색 — 시안(색 캐넌: 나=시안 액션). 일반 피격(흰색)과 구별돼 '크리티컬을 냈다'가 읽힌다.")]
@@ -72,14 +74,46 @@ public class EnemyDamageReceiver : MonoBehaviour, IDamageable, ICritReact
     [Tooltip("넉백 감쇠율(클수록 빨리 멈춤). 짧게 튕기고 멈추게.")]
     [SerializeField, Min(0.1f)] float knockbackDamp = 14f;
 
+    [Header("★피격 스태거 (잡몹 억제 상태 — 2026-07-04 나·Codex·gd 3자 수렴)")]
+    [Tooltip("피격 시 스태거 상태 진입 — '맞으면 행동이 끊긴다'. 추격/접촉딜 정지는 드라이버(SwarmChaser)가 IsStaggered를 읽어 구현. " +
+             "★기본 꺼짐 — RB 잡몹만 켠다(스포너 SetStaggerOnHit). 루트모션 몹(늑대/브루트)은 HitReact 애니/커밋 상태가 담당.")]
+    [SerializeField] bool staggerOnHit = false;
+    [Tooltip("스태거 지속(초). 0.4~0.8 권장(Codex 0.55) — 재타격 시 리프레시(스택 깊이 ❌, Vermintide 수치 깊이 수입 금지).")]
+    [SerializeField, Min(0f)] float staggerDuration = 0.55f;
+    [Tooltip("★스태거 중 받는 데미지 배수(Vermintide 커플링 — 억제=처치 가속). HP2 잡몹이 경직 중 후속타 원킬(1×2=2) = 처치 경제 기준선.")]
+    [SerializeField, Min(1f)] float staggeredDamageMult = 2f;
+
     // ── 이벤트 (드라이버가 구독: 인터럽트/정리). 구독자 없어도 무해. ──
     /// <summary>피격 시. 인자 = (데미지, 가해 위치). 드라이버가 윈드업 취소(스태거 인터럽트)에 쓴다.</summary>
     public event Action<int, Vector3> OnDamaged;
     /// <summary>사망 시(HP 0). 드라이버/스포너가 정리(토큰 반납·장판 취소 등)에 쓴다.</summary>
     public event Action OnDied;
+    /// <summary>피격 넉백 통지 — (가해 위치, 넉백 m/s). SwarmChaser 등 물리(RB) 몹이 구독해 임펄스로 *진짜* 밀린다(밀어버리기).
+    /// knockbackResponse(비주얼 오프셋)와 독립 — RB 몹은 response=0으로 두고 이 이벤트로만 변위(이중소유 방지).</summary>
+    public event Action<Vector3, float> OnKnocked;
+    /// <summary>★전역(정적) — 아무 개체나 사망. PerformanceGauge(처리효율 스텁)가 구독. ⚠️구독자는 OnDisable서 해제(정적 누수 방지).</summary>
+    public static event Action<EnemyDamageReceiver> AnyDied;
+    /// <summary>★전역(정적) — 아무 개체나 크리티컬 피격(읽고-처리 성공). PerformanceGauge가 구독.</summary>
+    public static event Action<EnemyDamageReceiver> AnyCritHit;
+    /// <summary>★전역(정적) — 커밋 신호 *시작* 엣지(비커밋→커밋 전이 1회). ReadSlowmoTrigger(읽기 슬로모)가 구독.</summary>
+    public static event Action<EnemyDamageReceiver> CommitStarted;
 
     public bool IsDead => _dead;
     public int Hp => _hp;
+    /// <summary>이 개체의 커밋이 읽기 슬로모 발동 가치가 있나 — ReadSlowmoTrigger가 필터로 읽는다.</summary>
+    public bool HighValueCommit => highValueCommit;
+    /// <summary>★스태거(피격 경직) 중인가 — 드라이버(SwarmChaser)가 추격/접촉딜 정지에, TakeHit이 데미지 배수에 읽는다.</summary>
+    public bool IsStaggered => staggerOnHit && !_dead && Time.time < _staggeredUntil;
+
+    /// <summary>스포너가 런타임 주입 시 호출 — RB 잡몹만 스태거 켠다(루트모션 몹 기본 꺼짐 유지).</summary>
+    public void SetStaggerOnHit(bool on) => staggerOnHit = on;
+
+    /// <summary>★외부 스태거 부여(도미노 연쇄 등) — 기존 잔여 시간보다 길 때만 연장. staggerOnHit 꺼진 몹엔 무효.</summary>
+    public void ApplyStagger(float duration)
+    {
+        if (!staggerOnHit || _dead) return;
+        _staggeredUntil = Mathf.Max(_staggeredUntil, Time.time + duration);
+    }
 
     /// <summary>스포너가 런타임 주입 시 최대 HP 설정. ★Awake 전(권장: AddComponent 직후, SetActive 전)에 부르면
     /// Awake가 이 값으로 _hp를 초기화한다. Awake 후 호출 시 현재 _hp도 즉시 갱신(미피격 상태 가정 — 풀 재활용 경로).</summary>
@@ -91,6 +125,9 @@ public class EnemyDamageReceiver : MonoBehaviour, IDamageable, ICritReact
 
     int _hp;
     bool _dead;
+    float _staggeredUntil;   // ★스태거 만료 시각 — ★의도적으로 *스케일* 시간(Time.time): 몹 이동/물리와 같은 도메인이라
+                             //   슬로모/히트스탑 중 세계와 함께 늘어지는 게 일관(unscaled면 슬로모 중 적이 먼저 깨어남).
+                             //   히트스탑 겹침 드리프트(+15~25%, 항상 관대한 방향)는 인지된 트레이드오프(Stab M-4=Codex P2, 07-04).
     MaterialPropertyBlock _mpb;
     Color[] _baseColors;     // 렌더러별 원래 _BaseColor(플래시 복원용)
     float _flashTimer;
@@ -98,6 +135,7 @@ public class EnemyDamageReceiver : MonoBehaviour, IDamageable, ICritReact
 
     // ── ★커밋 신호 + 크리티컬 플래시 ──
     float _commitWindup01;   // 커밋 윈드업 진행(0=비커밋, 1=타격 직전). 드라이버가 DriveCommit으로 구동.
+    bool _commitActive;      // 직전 프레임 커밋 중이었나 — CommitStarted 엣지(1회) 검출용.
     float _commitNowTimer;   // NOW 흰 펄스 잔여(초) — ★진입 엣지 1회만(발사 전 구간 흰색 고착 방지, Stab H-1/Codex#5).
     bool _nowLatched;        // now=true 연속 구간 내 1회 펄스 가드(매 프레임 재발동 스트로브 방지).
     float _critFlashTimer;   // 크리티컬 시안 플래시 잔여(초).
@@ -136,11 +174,20 @@ public class EnemyDamageReceiver : MonoBehaviour, IDamageable, ICritReact
     {
         if (_dead) return;
 
-        _hp = Mathf.Max(0, _hp - Mathf.Max(0, damage));   // ★음수 클램프(Stab M-3): public Hp가 -N으로 안 새게.
+        // ★스태거 커플링(07-04) — *이미* 경직 중이면 배수 적용(억제→처치 가속), 그 후 경직 리프레시.
+        int applied = Mathf.Max(0, damage);
+        if (IsStaggered && staggeredDamageMult > 1f)
+            applied = Mathf.Max(1, Mathf.RoundToInt(applied * staggeredDamageMult));
+        if (staggerOnHit) _staggeredUntil = Mathf.Max(_staggeredUntil, Time.time + staggerDuration);   // ★Max 연장(Stab M-3) — 더 긴 외부 스태거를 평타가 단축 못 하게(ApplyStagger와 대칭).
+
+        _hp = Mathf.Max(0, _hp - applied);   // ★음수 클램프(Stab M-3): public Hp가 -N으로 안 새게.
         bool lethal = _hp <= 0;
 
         // 1) 플래시 재무장 — ComposeVisual이 LateUpdate에 합성 적용(같은 프레임 반영).
         _flashTimer = flashTime;
+
+        // 1.5) ★넉백 통지 — RB 몹(SwarmChaser)이 구독해 임펄스로 밀린다(밀어버리기 물리). 비주얼 오프셋(아래 2)과 독립.
+        if (knockback > 0f) OnKnocked?.Invoke(from, knockback);
 
         // 2) 넉백(약) — 가해 위치 반대 방향 평면 임펄스. 응답 계수로 줄여 루트모션과 안 싸우게.
         if (knockbackResponse > 0f && knockback > 0f)
@@ -157,8 +204,10 @@ public class EnemyDamageReceiver : MonoBehaviour, IDamageable, ICritReact
         if (hitStopDuration > 0f)
             SmashFeel.HitStop(Mathf.Min(hitStopDuration * fs, MaxHitStop));   // ★상한 클램프(Stab H-2)
 
-        // 4) 인터럽트/정리 통지
-        OnDamaged?.Invoke(damage, from);
+        // 4) 인터럽트/정리 통지 — ★applied(스태거 배수 반영값) 전달: 구독자가 실제 깎인 값을 본다.
+        //   ⚠️암묵 결합(Stab M-1): CaniathroxChaser 포이즈가 이 값을 누적 — 루트모션 몹에 staggerOnHit을 켜는 순간
+        //   경직 중 피격 ×2가 포이즈 임계 도달도 2배로 당긴다. 켤 일이 생기면 포이즈 임계를 같이 재튜닝할 것.
+        OnDamaged?.Invoke(applied, from);
         if (lethal) Die();
     }
 
@@ -168,8 +217,10 @@ public class EnemyDamageReceiver : MonoBehaviour, IDamageable, ICritReact
         _dead = true;
         _knockVel = Vector3.zero;
         _commitWindup01 = 0f; _commitNowTimer = 0f; _nowLatched = false; _critFlashTimer = 0f; _flashTimer = 0f;
+        _commitActive = false;
         RestoreBase();                  // 플래시/커밋 글로우 원복(사망 연출이 색을 잡아먹지 않게)
         OnDied?.Invoke();               // 드라이버/스포너 정리 훅
+        AnyDied?.Invoke(this);          // ★전역 통지 — 처리효율 게이지(실적) 가산
         // ★사망 연출(디졸브·파쇄)은 스펙터클 비트에서 이 훅에 붙인다. v1은 비활성으로 마무리(시체 잔존 방지).
         gameObject.SetActive(false);
     }
@@ -201,8 +252,13 @@ public class EnemyDamageReceiver : MonoBehaviour, IDamageable, ICritReact
     /// 비커밋(접근·휴지) 프레임엔 DriveCommit(0,false)로 꺼야 한다(드라이버가 매 프레임 상태로 결정).</summary>
     public void DriveCommit(float windup01, bool now)
     {
-        if (!enableCommitSignal) { _commitWindup01 = 0f; _commitNowTimer = 0f; _nowLatched = false; return; }
+        // ★_dead 가드(Stab L-1): 외부 GO 드라이버가 사망 후 호출해도 죽은 개체가 CommitStarted(읽기 슬로모)를 못 쏘게.
+        if (_dead || !enableCommitSignal) { _commitWindup01 = 0f; _commitNowTimer = 0f; _nowLatched = false; _commitActive = false; return; }
         _commitWindup01 = Mathf.Clamp01(windup01);
+        // ★커밋 시작 엣지(비커밋→커밋) 1회 전역 통지 — 읽기 슬로모 트리거용(연속 프레임 재발동 없음).
+        bool committing = _commitWindup01 > 0.001f;
+        if (committing && !_commitActive) CommitStarted?.Invoke(this);
+        _commitActive = committing;
         // NOW = 진입 엣지 1회 펄스(연속 now=true 구간에 1번만). 발사 전 구간 흰색 고착·매프레임 재발동 방지.
         if (now) { if (!_nowLatched) { _commitNowTimer = commitNowFlashTime; _nowLatched = true; } }
         else _nowLatched = false;
@@ -213,6 +269,7 @@ public class EnemyDamageReceiver : MonoBehaviour, IDamageable, ICritReact
     {
         if (_dead) return;
         _critFlashTimer = critFlashTime;
+        AnyCritHit?.Invoke(this);   // ★전역 통지 — 읽고-처리 성공 = 처리효율 게이지 가산
     }
 
     // ════════ 본체 색 합성 — 우선순위: 크리티컬(시안) > 일반 피격(흰) > NOW(흰) > 윈드업(회→주황) > base ════════
@@ -279,6 +336,8 @@ public class EnemyDamageReceiver : MonoBehaviour, IDamageable, ICritReact
         _commitWindup01 = 0f;
         _commitNowTimer = 0f;
         _nowLatched = false;
+        _commitActive = false;
+        _staggeredUntil = 0f;   // ★풀링 재사용 시 stale 스태거 잔존 방지(Stab M-2) — 형제 상태 필드와 동일 리셋 계약.
         _visualDirty = false;
         RestoreBase();
     }

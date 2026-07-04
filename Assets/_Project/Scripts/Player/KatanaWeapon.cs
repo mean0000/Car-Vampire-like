@@ -36,6 +36,24 @@ public class KatanaWeapon : WeaponBehaviour
         return r;
     }
 
+    [Header("★가르기 (Layer 2 기본 동사 — 커서=베고 지나갈 선. 콤보 판정을 부채꼴→절단선으로)")]
+    [Tooltip("켜면 콤보(평타) 판정이 부채꼴 대신 조준 방향 절단선(폭 lineCutWidth) — '내가 그은 선을 따라 호드가 갈라진다'. " +
+             "끄면 기존 부채꼴(랩 A/B 토글). 반격/스킬/대시베기는 기존 판정 유지.")]
+    [SerializeField] bool lineCutEnabled = true;
+    [Tooltip("절단선 전체 폭(m) — 커서 갭 관용(마그네티즘 겸). 넓을수록 관대·덜 정밀(방향 선택 가치 보존 주의 — Codex 리스크).")]
+    [SerializeField, Min(0.2f)] float lineCutWidth = 1.6f;
+
+    [Header("★히트 글라이드 (공간층 배려 — 빗나가면 짧게, 맞히면 길게)")]
+    [Tooltip("켜면 콤보 적중 시 조준 방향으로 짧은 추가 전진(PlayerMotor.AddGlide) — 루트모션 런지(클립 소유) 위의 적중 보상.")]
+    [SerializeField] bool hitGlideEnabled = true;
+    [Tooltip("적중 시 추가 전진 거리(m). 카탈로그: miss=클립 런지만 / hit=+이 값.")]
+    [SerializeField, Min(0f)] float hitGlideDistance = 0.25f;
+    [Tooltip("★커밋 글라이드(m) — 이번 스윙이 크리티컬(커밋 적 타격)이면 일반 글라이드 대신 이 거리로 파고든다. " +
+             "'커밋=돌파 표식'의 물리 보상(읽고 베면 뚫린다 — 2026-07-04 나·Codex 수렴, Codex 제안 0.8~1.2). 0=차등 없음.")]
+    [SerializeField, Min(0f)] float commitGlideDistance = 1.0f;
+    [Tooltip("추가 전진에 걸리는 시간(초) — 짧을수록 스냅.")]
+    [SerializeField, Min(0.02f)] float hitGlideDuration = 0.12f;
+
     [Header("Layers")]
     [SerializeField] LayerMask enemyMask = 1 << 7;
     [SerializeField] LayerMask obstacleMask = 1 << 8;
@@ -103,6 +121,12 @@ public class KatanaWeapon : WeaponBehaviour
     [SerializeField, Min(0)] int critPropagationDamage = 1;
     [Tooltip("크리티컬 카메라 킥(m) — 평타/피니셔보다 크게(크리티컬 '팝'). 전역 timeScale 안 씀(캐넌).")]
     [SerializeField] float critKick = 0.4f;
+    [Tooltip("★크리 창 확장(07-04) — 켜면 IsStriking(타격 실행)뿐 아니라 *커밋 전체*(IsCommittingAttack = 윈드업 포함)에 크리. " +
+             "브루트(윈드업 0.8s=읽기 창, Strike 0.15s)에서 읽고-베기가 실제로 성립하게. ★기본 꺼짐 — 06-24 맞받음-only 동작 보존, ReadAndCut 랩 씬만 명시 ON(A/B).")]
+    [SerializeField] bool critOnWindup = false;
+    [Tooltip("★멀티킬 프리즈 임계(한 스윙 처치 수) — 이 수 이상 베면 클래시 프리즈('탁')+크리급 카메라 킥. 무쌍 '쓸려나가는 질량감'(07-04). " +
+             "★전역 timeScale 직접 안 씀 — ParrySlowMotion(ClashFx) 소유 경로 재사용(내부 쿨다운 포함). 0=끔.")]
+    [SerializeField, Min(0)] int multiKillFreezeCount = 3;
 
     [Header("타격 손맛 (스냅·경쾌 — 칼이 적에 닿는 순간만 발동, 헛스윙엔 안 남)")]
     // ★전역 히트스탑(Time.timeScale)은 이 프로젝트에서 금지 — 일시정지 UI(레벨업/상자/정산/사망)·ParrySlowMotion과
@@ -136,6 +160,13 @@ public class KatanaWeapon : WeaponBehaviour
     [SerializeField, Range(0.5f, 2f)] float impactPitch = 0.95f;
     [Tooltip("impact 피치 랜덤 폭(±) — 연타 동일음 피로 완화.")]
     [SerializeField, Range(0f, 0.5f)] float impactPitchJitter = 0.04f;
+
+    [Header("★무빙 평타 (07-04 유저 지시 — 좌클릭 콤보 3타, 이동하며 베기)")]
+    [Tooltip("★마스터 토글 — 콤보(평타) 중 이동 입력이 감쇠 배율로 계속 움직인다. 반격/스킬/대시베기는 기존 정지 커밋 유지. " +
+             "★켜면 이동 self-cancel(Day2)은 자동 무력화 — 이동이 '이탈 신호'가 아니게 되고, 켠 채 두면 이동 홀드 시 매 타 ResetCombo로 3타 도달 불가라 상호배타(끄면 Day2 정지베기+이동캔슬 복귀 = A/B).")]
+    [SerializeField] bool comboMoveEnabled = true;
+    [Tooltip("콤보 중 이동 속도 배율(moveSpeed 기준). 0.6~0.7 권장 — 전력 이동이면 베기 무게가 죽는다. ⚠️공격 클립이 전신이라 발 미끄러짐 있음 — 상체분리(미착수) 전 화이트박스 트레이드오프.")]
+    [SerializeField, Range(0.1f, 1f)] float comboMoveSpeedMult = 0.65f;
 
     [Header("★이동 self-cancel (후딜 제거 — DD/DMC식: 회수를 이동으로 끊어 즉시 로코모션)")]
     // ★캔슬창 이후(hit 지남)에만 — 윈드업~스트라이크는 이동 불가로 베기 무게/간지 보존(트윈스틱 붕괴 방지선).
@@ -173,14 +204,30 @@ public class KatanaWeapon : WeaponBehaviour
     readonly Collider[] _propOverlap = new Collider[128];   // ★H-3: _overlap과 동일 크기(조밀 무제한 호드서 전파 포화 완화)
     readonly List<Vector3> _critCenters = new List<Vector3>(8);   // 이번 스윙의 크리티컬 지점(루프 후 전파)
     bool _lastSwingCrit;   // 직전 DoHit에서 크리티컬이 났나(손맛 킥 강도 선택용)
+    int _lastSwingKills;   // 직전 DoHit 처치 수(멀티킬 프리즈/킥 승급용)
+
+    /// <summary>★칼 액션 활성(콤보·반격·스킬·대시베기) — SwarmChaser 스윙 가드(전방 접촉 무효, 07-04 배려)가 읽는다.
+    /// ★콤보만이 아니라 모든 칼 액션 포함(Stab M-5) — "공격=방어" 기대와 체감 괴리 방지.</summary>
+    public bool IsSwingActive => _step >= 1 || _countering || _skilling || _dashAttacking;
+
+    /// <summary>★스윙 가드 기준 방향 = 콤보 잠금 조준(_aimDir). ★플레이어 *루트*는 회전하지 않는다(모델 자식만 돎) —
+    /// 외부에서 transform.forward를 쓰면 월드 +Z 고정 방향을 보호하는 버그(Codex P1, 07-04). 반드시 이걸 읽을 것.</summary>
+    public Vector3 SwingGuardForward => _step >= 1 ? _aimDir : _liveAim;
+
+    /// <summary>★무빙 평타(07-04) — 콤보 중에만 이동 배율 노출. 반격/스킬/대시베기=0(정지 커밋 유지).</summary>
+    public override float ActionMoveMult => comboMoveEnabled && _step >= 1 ? comboMoveSpeedMult : 0f;
     ParrySlowMotion _clashFx;   // 클래시 프리즈 트리거(지연 해석·캐시). 플레이어의 ParrySlowMotion 재사용.
     bool _clashFxResolved;
+    PlayerMotor _motor;         // ★히트 글라이드 대상(지연 해석·캐시) — 위치 소유자.
+    bool _motorResolved;
 
     public override void Initialize(Transform owner, PlayerAnimatorDriver animator)
     {
         // ★Stab H-1: Owner가 바뀔 수 있으니 ClashFx 캐시 무효화(이전 Owner 계층의 stale ParrySlowMotion 잔존 → 클래시 프리즈 무음 누락 방지).
         _clashFx = null;
         _clashFxResolved = false;
+        _motor = null;            // 동일 사유 — Motor 캐시도 무효화
+        _motorResolved = false;
 
         // 재진입 가드(Stab H-2): 재초기화 시 콤보 이벤트 이전 구독 먼저 해제(base는 AttackHit 가드 내장).
         if (AnimatorDriver != null)
@@ -339,6 +386,7 @@ public class KatanaWeapon : WeaponBehaviour
         //   Advance(클릭=콤보지속) 분기 뒤 else라 클릭이 이김. 회피(대시)는 PlayerBrain이 더 먼저 Cancel. 피니셔(comboMax) 제외.
         //   소프트캔슬(ResetCombo+base.Cancel) — 하드 Cancel()과 달리 counter/skill/charge·_counterTimer 안 건드림(Codex).
         else if (moveCancelEnabled
+                 && !comboMoveEnabled   // ★무빙 평타와 상호배타(07-04) — 이동이 상시 허용이면 '이동=이탈 신호'가 성립 안 함(매 타 ResetCombo 사고 방지)
                  && _step >= 1 && _step < comboMax
                  && _windowOpen && _hitDone
                  && !_countering && !_skilling && !_dashAttacking && !_charging
@@ -591,6 +639,7 @@ public class KatanaWeapon : WeaponBehaviour
         _hitDone = false;
         _lastAdvanceTime = -1f;
         AnimatorDriver?.SetCombo(0);
+        Motor()?.ClearActionMove();   // ★무빙 평타 즉시 종료(Codex P1) — 같은 프레임 stale 속도 꼬리 누수 차단
     }
 
     /// <summary>현재 콤보 단의 공격 스텝(1-based). 범위 밖이면 마지막 단으로 클램프, 비면 안전 기본값.</summary>
@@ -643,13 +692,23 @@ public class KatanaWeapon : WeaponBehaviour
               h.arcHalfAngle > 0f ? h.arcHalfAngle : 50f,
               Mathf.Max(0f, h.forwardOffset),
               h.damage > 0 ? h.damage : 1,
-              h.knockback);
+              h.knockback,
+              lineCutEnabled);   // ★가르기 — 콤보(평타)만 절단선 판정(반격/스킬/대시베기는 기존 부채꼴)
         // 피니셔(콤보 마지막 타)는 무게, 평타는 스냅 — 닿았을 때만. ★크리티컬이면 더 큰 '팝' 킥(critKick).
         bool finisher = comboSet != null && _step >= comboSet.StepCount;
         if (connected)
         {
-            float kick = _lastSwingCrit ? critKick : (finisher ? finisherKick : comboKick);
-            FireHitFeedback(kick, finisher || _lastSwingCrit);
+            // ★멀티킬도 크리급 킥(07-04) — 한 스윙 다수 처치 = '쾅'. 글라이드는 커밋 크리만(돌파 표식 의미 보존).
+            bool multiKill = multiKillFreezeCount > 0 && _lastSwingKills >= multiKillFreezeCount;
+            float kick = (_lastSwingCrit || multiKill) ? critKick : (finisher ? finisherKick : comboKick);
+            FireHitFeedback(kick, finisher || _lastSwingCrit || multiKill);
+            // ★히트 글라이드 — 맞혔을 때만 짧은 추가 전진("빗나가면 짧게, 맞히면 길게"). 헛스윙은 클립 런지만.
+            //   ★커밋 크리티컬이면 긴 글라이드(돌파 표식 — 읽고 베면 실제로 뚫린다): 갈린 틈에 몸이 들어가는 물리 보상.
+            if (hitGlideEnabled)
+            {
+                float glide = (_lastSwingCrit && commitGlideDistance > 0f) ? commitGlideDistance : hitGlideDistance;
+                Motor()?.AddGlide(_aimDir, glide, hitGlideDuration);
+            }
         }
     }
 
@@ -699,21 +758,28 @@ public class KatanaWeapon : WeaponBehaviour
         cam.NotifyHit(finisher);   // 평타=FOV 줌펀치 / 피니셔=큰 줌펀치 + 시네마틱 줌인(투-스테이트). 크기는 카메라 소유.
     }
 
-    /// <summary>부채꼴+사거리+LOS 판정으로 IDamageable에 타격. 콤보/반격 공통(파라미터만 다름).
+    /// <summary>부채꼴(기본)/절단선(lineCut=가르기)+사거리+LOS 판정으로 IDamageable에 타격. 콤보/반격 공통(파라미터만 다름).
     /// 반환=하나라도 적중했는가(손맛 피드백을 헛스윙엔 안 내기 위함).</summary>
-    bool DoHit(float range, float arcHalf, float forwardOffset, int dmgAmt, float kb)
+    bool DoHit(float range, float arcHalf, float forwardOffset, int dmgAmt, float kb, bool lineCut = false)
     {
         if (Owner == null) return false;
 
         // ★히트존 원점을 조준 방향으로 전진 — 보이는 슬래시 위치에 정합(Codex 권고; 발밑 중심 아님).
         Vector3 origin = Owner.position + _aimDir * Mathf.Max(0f, forwardOffset);
         Vector3 eye = origin + Vector3.up * eyeHeight;
-        float gather = range + 0.5f;
+        // ★가르기(lineCut)는 선분 대각(끝×폭/2)까지 수집 반경 확장 — 구석 적이 Overlap에서부터 안 빠지게(Codex P2).
+        float gather = (lineCut
+            ? Mathf.Sqrt(range * range + lineCutWidth * lineCutWidth * 0.25f)
+            : range) + 0.5f;
         const float pointBlank = 0.9f;
+        // ★절단선 축은 XZ 평면 정규화(Stab L-2) — _aimDir.y 잔존 시 투영(along)이 축소되는 것 방지. 판정 전용.
+        Vector3 lineAxis = _aimDir; lineAxis.y = 0f;
+        lineAxis = lineAxis.sqrMagnitude > 0.0001f ? lineAxis.normalized : Vector3.forward;
 
         _hitThisSwing.Clear();
         _critCenters.Clear();
         _lastSwingCrit = false;
+        _lastSwingKills = 0;
         int n = Physics.OverlapSphereNonAlloc(origin, gather, _overlap, enemyMask, QueryTriggerInteraction.Collide);
         if (n == _overlap.Length)
             Debug.LogWarning("[KatanaWeapon] OverlapSphere 버퍼(128)가 가득 — 일부 타격 누락 가능(버퍼 증대 검토).");
@@ -724,10 +790,20 @@ public class KatanaWeapon : WeaponBehaviour
 
             Vector3 to = _overlap[i].transform.position - origin; to.y = 0f;
             float dist = to.magnitude;
-            if (dist > range) continue;
+            if (lineCut)
+            {
+                // ★가르기 — 부채꼴 각 대신 절단선: 조준 축 투영이 앞쪽(0..range)이고 축에서 폭/2 이내만("내가 그은 선").
+                //   ★사거리도 원거리(dist)가 아니라 투영(along)으로 — 선분 구석(along≈range·perp>0)의 적이 대각선
+                //   거리 때문에 빠지지 않게(Codex P2 게이트 수정). 폭=커서 갭 관용(마그네티즘 겸). 등 뒤 -0.2m 관용.
+                float along = Vector3.Dot(to, lineAxis);
+                if (along < -0.2f || along > range) continue;
+                float halfWidth = lineCutWidth * 0.5f;
+                if ((to - lineAxis * along).sqrMagnitude > halfWidth * halfWidth) continue;
+            }
+            else if (dist > range) continue;
             if (dist > pointBlank)
             {
-                if (Vector3.Angle(_aimDir, to) > arcHalf) continue;
+                if (!lineCut && Vector3.Angle(_aimDir, to) > arcHalf) continue;
                 Vector3 los = (_overlap[i].transform.position + Vector3.up * eyeHeight) - eye;
                 float ll = los.magnitude;
                 if (ll > 0.001f && Physics.Raycast(eye, los / ll, ll, obstacleMask, QueryTriggerInteraction.Ignore))
@@ -740,9 +816,10 @@ public class KatanaWeapon : WeaponBehaviour
             bool crit = false;
             if (timingCritEnabled)
             {
-                // ★맞받음: 적이 *실제 타격 실행 중*(IsStriking = 돌진/물기 발사)일 때만 클래시. 윈드업(Coil)·접근은 일반 타격.
+                // ★크리 창: 기본=커밋 전체(critOnWindup — 브루트 윈드업 0.8s가 읽기 창, 07-04 확장).
+                //   끄면 기존 맞받음-only(IsStriking = 돌진/물기/내려찍기 발사 순간만).
                 var commit = _overlap[i].GetComponentInParent<IAttackCommit>();
-                crit = commit != null && commit.IsStriking;
+                crit = commit != null && (commit.IsStriking || (critOnWindup && commit.IsCommittingAttack));
             }
             int outDmg = crit ? Mathf.Max(1, Mathf.RoundToInt(dmgAmt * critDamageMult)) : dmgAmt;
             if (crit)
@@ -752,7 +829,11 @@ public class KatanaWeapon : WeaponBehaviour
                 (dmg as ICritReact)?.OnCritHit();
                 _critCenters.Add(_overlap[i].transform.position);
             }
+            // ★멀티킬 카운트 — TakeHit 전후 생사 비교(receiver 캐스트, 다른 IDamageable 타입은 카운트 제외).
+            var edr = dmg as EnemyDamageReceiver;
+            bool wasAlive = edr != null && !edr.IsDead;
             dmg.TakeHit(outDmg, origin, kb);
+            if (wasAlive && edr.IsDead) _lastSwingKills++;
         }
 
         // ★크리티컬 전파 — 루프 종료 후(_hitThisSwing 완성·_overlap 자유) 별 버퍼로. 크리티컬마다 주변 호드를 가르는 복도.
@@ -763,6 +844,10 @@ public class KatanaWeapon : WeaponBehaviour
             if (critPropagationRadius > 0f && critPropagationDamage > 0)
                 for (int c = 0; c < _critCenters.Count; c++) Propagate(_critCenters[c], kb);
         }
+        // ★멀티킬 프리즈(07-04 무쌍 '쓸려나가는 질량감') — 크리와 동일 소유 경로(ClashFx=ParrySlowMotion, 내부 쿨다운).
+        //   전파 킬은 Propagate 내부라 이 카운트에 안 잡힘(직접 벤 것만 — '내가 그은 선'의 성과).
+        else if (multiKillFreezeCount > 0 && _lastSwingKills >= multiKillFreezeCount)
+            ClashFx()?.Clash();
         return _hitThisSwing.Count > 0;
     }
 
@@ -779,6 +864,18 @@ public class KatanaWeapon : WeaponBehaviour
                 _clashFx = Owner.GetComponentInChildren<ParrySlowMotion>(true) ?? Owner.GetComponentInParent<ParrySlowMotion>();
         }
         return _clashFx;
+    }
+
+    /// <summary>히트 글라이드 대상(PlayerMotor) — 지연 1회 해석 후 캐시(ClashFx와 동형). 없으면 null(글라이드 무동작).</summary>
+    PlayerMotor Motor()
+    {
+        if (!_motorResolved)
+        {
+            _motorResolved = true;
+            if (Owner != null)
+                _motor = Owner.GetComponent<PlayerMotor>() ?? Owner.GetComponentInParent<PlayerMotor>();
+        }
+        return _motor;
     }
 
     void Propagate(Vector3 center, float kb)
