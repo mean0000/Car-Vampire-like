@@ -33,6 +33,14 @@ public class KatanaWeapon : WeaponBehaviour
     [Tooltip("시야(LOS) 레이캐스트 눈높이(m) — 공통.")]
     [SerializeField] float eyeHeight = 1f;
 
+    /// <summary>콜라이더 표면 최근접점 — ★Collider.ClosestPoint는 convex 전용 API(Stab H-2 가드):
+    /// 비convex 메시 콜라이더(미래 로스터가 FBX 딸림 콜라이더를 쓸 경우)는 중심 폴백(구 피벗 동작) — 무음 오작동 대신 보수 강등.</summary>
+    static Vector3 SurfacePoint(Collider col, Vector3 point)
+    {
+        if (col is MeshCollider mc && !mc.convex) return col.transform.position;
+        return col.ClosestPoint(point);
+    }
+
     /// <summary>실효 사거리 = hit.range(폴백 1.8) × (rangeFromVfxScale면 짝지어진 VFX scale). 콤보 단·액션 공용(공통 어휘).</summary>
     static float EffectiveRange(WeaponHitData h, WeaponVfxData v)
     {
@@ -753,27 +761,46 @@ public class KatanaWeapon : WeaponBehaviour
             var dmg = _overlap[i].GetComponentInParent<IDamageable>();
             if (dmg == null || _hitThisSwing.Contains(dmg)) continue;
 
-            Vector3 to = _overlap[i].transform.position - origin; to.y = 0f;
+            // ★표면 거리 판정(P0-1, 관용 감사 G1 — 2026-07-05): 구 피벗(중심) 거리는 덩치 클수록 판정이 상대적으로
+            //   짧아지고(Crassorrid r=1.8), 절단선 반폭(0.8m) < 잡몹 캡슐 반경(0.9m)이라 몸 가장자리 스침이 빗나갔다.
+            //   콜라이더 표면 최근접점 기준 = 대상 반경이 모든 검사(거리·절단선 폭·각도)에 자동 포함.
+            //   (적 허트박스=캡슐 관례라 ClosestPoint 유효 — convex 한정 API. origin이 콜라이더 안이면 origin 반환=밀착 타격.)
+            Vector3 to = SurfacePoint(_overlap[i], origin) - origin; to.y = 0f;
             float dist = to.magnitude;
-            if (lineCut)
-            {
-                // ★가르기 — 부채꼴 각 대신 절단선: 조준 축 투영이 앞쪽(0..range)이고 축에서 폭/2 이내만("내가 그은 선").
-                //   ★사거리도 원거리(dist)가 아니라 투영(along)으로 — 선분 구석(along≈range·perp>0)의 적이 대각선
-                //   거리 때문에 빠지지 않게(Codex P2 게이트 수정). 폭=커서 갭 관용(마그네티즘 겸). 등 뒤 -0.2m 관용.
-                float along = Vector3.Dot(to, lineAxis);
-                if (along < -0.2f || along > range) continue;
-                float halfWidth = lineCutWidth * 0.5f;
-                if ((to - lineAxis * along).sqrMagnitude > halfWidth * halfWidth) continue;
-            }
-            else if (dist > range) continue;
+            // ★초근접 구제 우선(P0-2, Codex 게이트 지적): 표면 기준 pointBlank 안이면 모양(절단선/부채꼴)·각도 면제
+            //   — 구 순서는 절단선 필터(등 뒤 -0.2m)가 먼저 돌아 밀착한 적이 구제를 못 받았다.
+            //   ★표면 기준이라 면제 실효 반경이 덩치만큼 커진다(r1.8 브루트=중심 2.7m) — "몸 표면이 0.9m 안이면
+            //   그게 밀착"이 맞는 시맨틱으로 수용(Codex M-1). 단 LOS는 면제 안 함(아래 — 유저 판정 07-05).
             if (dist > pointBlank)
             {
-                if (!lineCut && Vector3.Angle(_aimDir, to) > arcHalf) continue;
-                Vector3 los = (_overlap[i].transform.position + Vector3.up * eyeHeight) - eye;
-                float ll = los.magnitude;
-                if (ll > 0.001f && Physics.Raycast(eye, los / ll, ll, obstacleMask, QueryTriggerInteraction.Ignore))
-                    continue;
+                if (lineCut)
+                {
+                    // ★가르기 — 절단선 *선분*(-0.2..range) 대 적 *표면*의 최근접 거리가 폭/2 이내면 타격("내가 그은 선").
+                    //   ★게이트 수정(Codex HIGH, P0): ClosestPoint(origin)은 '원점 최근접 표면점'이라 폭 판정에 쓰면
+                    //   몸이 절단선에 *옆으로* 걸친 큰 적을 놓친다 → 축 위에서 적 중심에 가장 가까운 점(axisPoint)을
+                    //   먼저 구하고, *그 점* 기준 표면 거리로 폭을 잰다(수직 캡슐 허트박스엔 수학적으로 정확).
+                    //   along 클램프가 선분 경계를 겸해 끝단(range)·등 뒤(-0.2m)에도 폭만큼의 둥근 관용이 생긴다
+                    //   (범위 끝 관용 — 관용 감사 카탈로그 정합). 폭=커서 갭 관용(마그네티즘 겸).
+                    Vector3 centerTo = _overlap[i].transform.position - origin; centerTo.y = 0f;
+                    float along = Mathf.Clamp(Vector3.Dot(centerTo, lineAxis), -0.2f, range);
+                    Vector3 axisPoint = origin + lineAxis * along;
+                    Vector3 lateral = SurfacePoint(_overlap[i], axisPoint) - axisPoint; lateral.y = 0f;
+                    float halfWidth = lineCutWidth * 0.5f;
+                    if (lateral.sqrMagnitude > halfWidth * halfWidth) continue;
+                }
+                else
+                {
+                    if (dist > range) continue;
+                    if (Vector3.Angle(_aimDir, to) > arcHalf) continue;
+                }
             }
+            // ★LOS는 항상 검사(유저 판정 07-05 — Stab H-1): 초근접 면제는 모양(절단선/부채꼴)·각도까지만, 벽 뒤는 못 벤다
+            //   (가르기="내가 그은 선" 정체성 보존). 진짜 밀착이면 사이에 장애물이 물리적으로 못 끼므로 체감 실손 0 —
+            //   표면 기준 전환이 만든 '얇은 벽 너머 대형 몸통 자동명중' 케이스만 제거.
+            Vector3 los = (_overlap[i].transform.position + Vector3.up * eyeHeight) - eye;
+            float ll = los.magnitude;
+            if (ll > 0.001f && Physics.Raycast(eye, los / ll, ll, obstacleMask, QueryTriggerInteraction.Ignore))
+                continue;
             _hitThisSwing.Add(dmg);
 
             // ★타이밍-크리티컬: 이 적이 *공격을 커밋 중*이면(IAttackCommit) 크리티컬 — 데미지 배수 + 전파 예약.
