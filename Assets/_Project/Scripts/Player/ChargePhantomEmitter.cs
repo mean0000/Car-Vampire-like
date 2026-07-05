@@ -360,23 +360,15 @@ public class ChargePhantomEmitter : MonoBehaviour
         SpawnSlashGo(pos, rot, anchor, sv.scale);
     }
 
-    /// <summary>슬래시 VFX 프리팹 1개 인스턴스화 공통 경로 — 차징/베기 공유. 콤보 슬래시(PlayerAttackVfx)와 동일 규약
-    /// (임베디드 사운드 차단, PlayOnAwake=false 프리팹도 강제 Play, 스케일/속도 0폴백, lifetime 후 소멸).</summary>
+    /// <summary>슬래시 VFX 프리팹 1개 인스턴스화 공통 경로 — 차징/베기 공유. 스폰 마무리(사운드 차단·강제 Play·
+    /// 스케일/속도 0폴백·수명)는 <see cref="WeaponVfxSpawner"/> 단일 경로(2026-07-05 중복 3벌 통합).
+    /// lifetime 폴백만 이 데이터 고유값(0.5, 스포너 기본 1.5와 다름)이라 여기서 선해석해 넘긴다.</summary>
     void SpawnSlashGo(Vector3 pos, Quaternion rot, Transform anchor, float scale)
     {
         var sv = phantomSet.slashVfx;
-        var go = Instantiate(sv.prefab, pos, rot);
-        if (sv.parentToWeapon && anchor != null) go.transform.SetParent(anchor, true);
-        PlayerAttackVfx.StripEmbeddedAudio(go);
-        float s = scale > 0f ? scale : 1f;
-        if (!Mathf.Approximately(s, 1f)) go.transform.localScale *= s;
-        float spd = sv.playbackSpeed > 0f ? sv.playbackSpeed : 1f;
-        foreach (var ps in go.GetComponentsInChildren<ParticleSystem>())
-        {
-            if (!Mathf.Approximately(spd, 1f)) { var main = ps.main; main.simulationSpeed *= spd; }
-            ps.Play(false);
-        }
-        Destroy(go, sv.lifetime > 0f ? sv.lifetime : 0.5f);
+        WeaponVfxSpawner.Spawn(sv.prefab, pos, rot, scale, sv.playbackSpeed,
+                               sv.lifetime > 0f ? sv.lifetime : 0.5f,
+                               sv.parentToWeapon ? anchor : null);
     }
 
     Phantom GetPhantom()

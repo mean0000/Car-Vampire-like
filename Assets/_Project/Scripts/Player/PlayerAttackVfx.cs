@@ -37,47 +37,22 @@ public class PlayerAttackVfx : MonoBehaviour
 
     void OnAttack(int comboStep)
     {
-        // ★콤보(intParameter 1/2/3)만 슬래시. 스킬/반격(0)은 자기 전용 VFX를 따로 띄운다(KatanaWeapon.skillVfxPrefab 등)
-        //   — 여기서 막지 않으면 step[0]으로 클램프돼 콤보1 슬래시가 스킬/반격에 잘못 뜬다.
+        // ★콤보(intParameter 1/2/3)만 슬래시. 스킬/반격(0)은 자기 전용 VFX를 따로 띄운다(WeaponActionSet.vfx 경로)
+        //   — 여기서 막지 않으면 step[0]으로 클램프돼 콤보1 슬래시가 스킬/반격에 잘못 뜬다(Codex 리스크 재확인 2026-07-05).
         if (comboStep < 1) return;
         if (comboSet == null) return;
         if (!comboSet.TryGetStep(comboStep, out var step)) return;
 
-        GameObject prefab = step.slashPrefab != null ? step.slashPrefab : comboSet.fallbackSlashPrefab;
-        if (prefab == null) return;
+        var v = step.vfx;
+        GameObject prefab = v != null && v.prefab != null ? v.prefab : comboSet.fallbackSlashPrefab;
+        if (prefab == null || v == null) return;
 
+        // 콤보 슬래시 기준은 무기 앵커 고정(basis 무시 — 콤보는 항상 휘두름 정합). pos/rot 계산만 여기서,
+        // 스폰 마무리(사운드 차단·강제 Play·스케일/속도 폴백·수명)는 WeaponVfxSpawner 단일 경로(2026-07-05 중복 3벌 통합).
         Transform a = weaponAnchor != null ? weaponAnchor : (_driver != null ? _driver.transform : transform);
-        Vector3 pos = a.TransformPoint(step.posOffset);
-        Quaternion rot = a.rotation * Quaternion.Euler(step.eulerOffset);
-
-        var go = Instantiate(prefab, pos, rot);
-        StripEmbeddedAudio(go);   // ★VFX는 시각 전용 — 프리팹의 playOnAwake 사운드가 PlayerAttackSfx와 중복되던 것 차단(사운드 단일 소유)
-        if (parentToWeapon) go.transform.SetParent(a, true);
-        float s = step.scale > 0f ? step.scale : 1f;
-        if (!Mathf.Approximately(s, 1f)) go.transform.localScale *= s;
-
-        // ★슬래시 재생 속도 + 강제 재생.
-        // 속도: 파티클 simulationSpeed에 곱(0이면 1로 폴백; 미설정 직렬화값 0 함정 가드).
-        // 재생: 일부 슬래시 프리팹은 PlayOnAwake=false라 Instantiate만으론 안 뜸
-        //       → 스폰 시 모든 파티클을 명시적으로 Play(어떤 슬래시든 동작, 데이터 주도 스왑 빈틈 메움).
-        float spd = step.playbackSpeed > 0f ? step.playbackSpeed : 1f;
-        foreach (var ps in go.GetComponentsInChildren<ParticleSystem>())
-        {
-            if (!Mathf.Approximately(spd, 1f))
-            {
-                var main = ps.main;
-                main.simulationSpeed *= spd;
-            }
-            ps.Play(false);
-        }
-
-        Destroy(go, step.lifetime > 0f ? step.lifetime : 1.5f);
-    }
-
-    /// <summary>스폰된 VFX 인스턴스의 임베디드 AudioSource를 즉시 차단 — VFX 프리팹(예: Vefects)은 playOnAwake 사운드를 달고 오는데,
-    /// 우리 게임의 손맛 사운드는 PlayerAttackSfx/SkillSet.sfx가 단일 소유한다(2D·통제 가능). Instantiate 직후 Stop()으로 첫 프레임 발성 차단.</summary>
-    public static void StripEmbeddedAudio(GameObject go)
-    {
-        foreach (var a in go.GetComponentsInChildren<AudioSource>(true)) { a.playOnAwake = false; a.Stop(); a.enabled = false; }
+        Vector3 pos = a.TransformPoint(v.posOffset);
+        Quaternion rot = a.rotation * Quaternion.Euler(v.eulerOffset);
+        WeaponVfxSpawner.Spawn(prefab, pos, rot, v.scale, v.playbackSpeed, v.lifetime,
+                               parentToWeapon ? a : null);
     }
 }

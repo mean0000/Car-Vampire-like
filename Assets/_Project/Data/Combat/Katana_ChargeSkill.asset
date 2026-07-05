@@ -9,19 +9,24 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 51f4d7230df42f141b23da021850ad86, type: 3}
-  m_Name: Katana_Cham_Skill01Set
-  m_EditorClassIdentifier: Assembly-CSharp::SkillSet
-  skillName: Katana_Skill01
+  m_Script: {fileID: 11500000, guid: 445491dc8e5788ca40376b09e7196db3, type: 3}
+  m_Name: Katana_ChargeSkill
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponActionSet
+  actionId: Katana_ChargeSkill
+  animator:
+    triggerName: Skill01
+    chargeTriggerName: SkillCharge
+    cancelTriggerName: SkillCancel
+  timing:
+    cooldown: 0
+    maxDuration: 3.5
   hit:
     range: 3.5
     arcHalfAngle: 80
     forwardOffset: 0.5
     damage: 20
     knockback: 7
-  timing:
-    cooldown: 0
-    maxDuration: 3.5
+    rangeFromVfxScale: 0
   vfx:
     basis: 0
     prefab: {fileID: 0}
@@ -30,6 +35,11 @@ MonoBehaviour:
     scale: 0.75
     playbackSpeed: 1
     lifetime: 2
+    parentToWeapon: 0
   sfx:
     clip: {fileID: 0}
     volume: 0.7
+  charge:
+    enabled: 1
+    chargeMax: 0.83
+    minChargeToFire: 0.12

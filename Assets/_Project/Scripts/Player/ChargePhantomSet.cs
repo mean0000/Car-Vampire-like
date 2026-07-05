@@ -2,7 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// ★Skill01 차징 팬텀 데이터(통합 SO) — 차징 윈드업 중 전방으로 슉슉슉 방출하는 *베는 잔상*의 정의.
-/// <see cref="SkillSet"/>·<see cref="ComboAttackSet"/>과 같은 데이터 주도 규약: 팬텀 셋이 늘면 이 SO를 하나 더 만들어 채우면 끝(코드 무수정).
+/// <see cref="WeaponActionSet"/>·<see cref="ComboAttackSet"/>과 같은 데이터 주도 규약: 팬텀 셋이 늘면 이 SO를 하나 더 만들어 채우면 끝(코드 무수정).
 /// <see cref="ChargePhantomEmitter"/>가 phantomSet으로 참조. ★타이밍(윈드업 경계)은 여기 없다 — 애니가 진실(KatanaWeapon.IsChargeWindup).
 ///
 /// 통합이지만 Inspector에서 접이식 블록(phantoms/emission/ghost/slashVfx)으로 분리돼 보인다.

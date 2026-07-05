@@ -63,11 +63,8 @@ public class PlayerAnimatorDriver : MonoBehaviour
     static readonly int DashHash = Animator.StringToHash("Dash");
     static readonly int DashXHash = Animator.StringToHash("DashX");
     static readonly int DashYHash = Animator.StringToHash("DashY");
-    static readonly int CounterHash = Animator.StringToHash("Counter");
-    static readonly int Skill01Hash = Animator.StringToHash("Skill01");
-    static readonly int SkillChargeHash = Animator.StringToHash("SkillCharge");
-    static readonly int SkillCancelHash = Animator.StringToHash("SkillCancel");
-    static readonly int DashAttackHash = Animator.StringToHash("DashAttack");
+    // ★액션 트리거 해시(Counter/Skill01/SkillCharge/SkillCancel/DashAttack)는 더 이상 여기 하드코딩하지 않는다 —
+    //   WeaponActionSet.animator(SO)가 이름을 소유하고 WeaponAnimatorData.Resolve()가 해시를 캐시(2026-07-05 슬롯화).
 
     Animator _animator;
     PlayerAim _aim;
@@ -314,73 +311,50 @@ public class PlayerAnimatorDriver : MonoBehaviour
         return false;
     }
 
-    /// <summary>★패링 반격(Skill02) — 컨트롤러 Any→Counter 트리거. 카타나가 카운터 창 입력 시 호출.
-    /// 반격은 공격이라 IsBusy(=_attacking)로 루트모션이 적용된다(별도 게이트 불필요). 몸 facing을
-    /// 현재 조준에 잠가 히트박스 _aimDir과 통일(콤보 SetCombo의 잠금과 동형). 종료 시 SetCombo(0)이 잠금 해제.
-    /// 컨트롤러에 Counter 트리거가 없으면 SetTrigger는 무음 무동작(안전).</summary>
-    public void TriggerCounter()
+    /// <summary>★액션 진입(반격/스킬/대시베기 공통) — 데이터 주도 트리거(2026-07-05 슬롯화). 트리거 이름은
+    /// <see cref="WeaponActionSet"/>.animator(SO)가 소유하고 해시는 Resolve 캐시 — 구 TriggerCounter/TriggerSkill/
+    /// TriggerDashAttack의 일반화(동작 보존). 액션은 공격이라 IsBusy(=_attacking)로 루트모션이 적용된다(별도 게이트 불필요).
+    /// 몸 facing을 현재 조준에 잠가 히트박스 _aimDir과 통일(콤보 SetCombo의 잠금과 동형). 종료 시 SetCombo(0)이 잠금 해제.
+    /// ★AnyState 경쟁 해소: 직전 대시의 Dash bool이 남아 있으면 Any→Dash(우선순위 0)가 액션 전이를 이긴다 —
+    /// 요청 시 Dash bool을 즉시 꺼 확실히 진입(엣지 추적도 동기화). hash 0(이름 미설정)이면 무동작(안전).</summary>
+    public void TriggerAction(int triggerHash)
     {
-        if (_animator == null) return;
-        if (_aim != null && _aim.Direction.sqrMagnitude > 0.0001f)
-            _lockedFace = _aim.Direction;
-        // ★AnyState 경쟁 해소: 직전 대시의 Dash bool이 남아 있으면 Any→Dash(우선순위 0)가 Any→Counter(2)를 이긴다.
-        //   반격 요청 시 Dash bool을 즉시 꺼 Counter가 확실히 진입하게 한다(엣지 추적도 동기화).
-        _animator.SetBool(DashHash, false);
-        _wasDashing = false;
-        _animator.SetTrigger(CounterHash);
-    }
-
-    /// <summary>★우클릭 스킬(Skill01) — 컨트롤러 Any→Skill01 트리거. Counter와 동형(공격이라 루트모션 적용,
-    /// facing 잠금, Dash bool 정리로 AnyState 경쟁 해소). 컨트롤러에 Skill01 트리거가 없으면 무음 무동작(안전).</summary>
-    public void TriggerSkill()
-    {
-        if (_animator == null) return;
+        if (_animator == null || triggerHash == 0) return;
         if (_aim != null && _aim.Direction.sqrMagnitude > 0.0001f)
             _lockedFace = _aim.Direction;
         _animator.SetBool(DashHash, false);
         _wasDashing = false;
-        _animator.SetTrigger(Skill01Hash);
+        _animator.SetTrigger(triggerHash);
     }
 
-    /// <summary>★Skill01 차징 윈드업(RMB 누름) — 컨트롤러 AnyState→Skill01Charge 트리거. 윈드업(프레임 0→70)을
-    /// 재생한 뒤 프레임 70(차징완료 포즈)에서 홀드(Skill01Hold)한다. 발동(베기)은 RMB 뗄 때 <see cref="TriggerSkill"/>
-    /// (Skill01 트리거 → Skill01Strike, 프레임 70부터 이어재생)이 별도로 낸다 — 윈드업은 재생하지 않는다.
-    /// facing 잠금 + Dash bool 정리(AnyState 경쟁 해소)는 다른 액션 트리거와 동형. 트리거 없으면 무음(안전).</summary>
-    public void TriggerSkillCharge()
+    /// <summary>★차징 윈드업(RMB 누름) — 구 TriggerSkillCharge의 일반화. 윈드업(프레임 0→70)을 재생한 뒤 프레임 70
+    /// (차징완료 포즈)에서 홀드한다. 발동(베기)은 릴리스 때 <see cref="TriggerAction"/>이 별도로 낸다(윈드업 재재생 없음).
+    /// facing 잠금 + Dash bool 정리(AnyState 경쟁 해소)는 TriggerAction과 동형.
+    /// cancelHash 잔류 가드: 대시-취소가 쏜 취소 트리거가 AnyState→Dash에 밀려 미소비로 남으면 새 차징을 즉시
+    /// 취소시킴 → 새 차징 전 클리어. chargeHash 0이면 무동작(안전).</summary>
+    public void TriggerCharge(int chargeHash, int cancelHash)
     {
-        if (_animator == null) return;
+        if (_animator == null || chargeHash == 0) return;
         if (_aim != null && _aim.Direction.sqrMagnitude > 0.0001f)
             _lockedFace = _aim.Direction;
         _animator.SetBool(DashHash, false);
         _wasDashing = false;
-        _animator.ResetTrigger(SkillCancelHash);   // ★잔류 가드: 대시-취소가 쏜 SkillCancel이 AnyState→Dash에 밀려 미소비로 남으면 새 차징을 즉시 취소시킴 → 새 차징 전 클리어
-        _animator.SetTrigger(SkillChargeHash);
+        if (cancelHash != 0) _animator.ResetTrigger(cancelHash);
+        _animator.SetTrigger(chargeHash);
     }
 
-    /// <summary>★Skill01 차징 취소(최소차징 전 RMB 뗌 = 불발) — 컨트롤러 Skill01Charge/Hold→Locomotion 트리거.
-    /// 윈드업/홀드만 idle로 되돌린다(베기 미발동). 차징 시작이 윈드업 트리거를 쐈는데 불발 시 홀드에 고착되는
-    /// 소프트락을 막는다. 트리거 없으면 무음(안전).</summary>
-    public void TriggerSkillCancel()
+    /// <summary>★차징 취소(최소차징 전 릴리스 = 불발 / 하드컷 복귀) — 구 TriggerSkillCancel의 일반화.
+    /// 컨트롤러 Charge/Hold→Locomotion 트리거로 윈드업/홀드만 idle로 되돌린다(베기 미발동). 차징 시작이 윈드업
+    /// 트리거를 쐈는데 불발 시 홀드에 고착되는 소프트락을 막는다. hash 0이면 무동작(안전).</summary>
+    public void TriggerActionCancel(int cancelHash)
     {
-        if (_animator == null) return;
-        _animator.SetTrigger(SkillCancelHash);
+        if (_animator == null || cancelHash == 0) return;
+        _animator.SetTrigger(cancelHash);
     }
 
     /// <summary>★차징 윈드업(Skill01Charge) 재생 중인가 — ChargePhantomEmitter가 *윈드업에만* 팬텀 방출하도록 읽음(홀드/베기 제외).
     /// Base Layer(0) 현재 상태명으로 판정. 액션 진입 전이가 전부 CUT(0)이라 윈드업 0→70 동안만 true, 프레임70 홀드 진입 시 false.</summary>
     public bool IsInSkillChargeWindup => _animator != null && _animator.GetCurrentAnimatorStateInfo(0).IsName("Skill01Charge");
-
-    /// <summary>★대시 베기(DashAttack) — 컨트롤러 Any→DashAttack 트리거. Counter/Skill과 동형(공격이라 _attacking으로
-    /// 루트모션(Attack02 전진 런지) 적용, facing 잠금, Dash bool 정리로 AnyState 경쟁 해소). 트리거 없으면 무음(안전).</summary>
-    public void TriggerDashAttack()
-    {
-        if (_animator == null) return;
-        if (_aim != null && _aim.Direction.sqrMagnitude > 0.0001f)
-            _lockedFace = _aim.Direction;
-        _animator.SetBool(DashHash, false);
-        _wasDashing = false;
-        _animator.SetTrigger(DashAttackHash);
-    }
 
     /// <summary>공격·대시 클립의 루트모션을 루트(PlayerMotor)로 넘긴다 — 애니가 진실(전진/회피 거리는 클립이 소유).
     /// 공격 커밋 중이거나 대시 창 동안만 적용한다. 그 외(In_Place 로코모션, delta≈0)는 무시해

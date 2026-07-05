@@ -1995,6 +1995,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerBrain
   dashKey: 32
   sprintKey: 304
+  skillKey: 101
+  ultimateKey: 114
 --- !u!114 &1450077381
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2176,6 +2178,12 @@ MonoBehaviour:
   slowFactor: 0.18
   holdDuration: 0.2
   rampDuration: 0.6
+  clashFreeze: 0.05
+  clashCooldown: 0.13
+  readSlowFactor: 0.3
+  readSlowDuration: 0.18
+  readSlowCooldown: 2.5
+  readSlowRampDuration: 0.15
 --- !u!114 &1450077390
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2869,6 +2877,11 @@ MonoBehaviour:
   moveThreshold: 0.3
   speedDamp: 0.1
   dirDamp: 0.08
+  faceTurnRate: 600
+  comboLayerBlendTime: 0.12
+  suppressComboStepIn: 1
+  facingMode: 2
+  cycleFacingKey: 102
 --- !u!1 &1725341289
 GameObject:
   m_ObjectHideFlags: 0
@@ -2906,8 +2919,29 @@ MonoBehaviour:
   distance: 15
   yaw: 0
   followSmooth: 0.12
+  cinematicPitchDelta: -6
+  cinematicDistanceDelta: -2.5
+  cinematicFovDelta: -4
+  cinematicInSpeed: 11
+  cinematicOutSpeed: 3.5
+  cinematicHold: 0.14
+  lightFovPunch: 1.2
+  finisherFovPunch: 4
+  fovPunchReturn: 9
+  fovNarrowCap: 7
   impactKickReturn: 14
   impactKickMax: 0.6
+  densityRadius: 9
+  densityMask:
+    serializedVersion: 2
+    m_Bits: 128
+  lowDensityCount: 3
+  highDensityCount: 14
+  highDensityJuiceScale: 0.35
+  lowDensitySustain: 0.2
+  sprintLead: 3
+  sprintPullback: 2.5
+  sprintBlendSpeed: 6
 --- !u!81 &1725341291
 AudioListener:
   m_ObjectHideFlags: 0
@@ -3076,29 +3110,47 @@ MonoBehaviour:
   startCooldown: 0.08
   comboSet: {fileID: 11400000, guid: c1a1170a20bde8546a64afe9d9cbb1f7, type: 2}
   eyeHeight: 1
+  lineCutEnabled: 1
+  lineCutWidth: 1.6
+  hitGlideEnabled: 1
+  hitGlideDistance: 0.25
+  commitGlideDistance: 1
+  hitGlideDuration: 0.12
   enemyMask:
     serializedVersion: 2
     m_Bits: 128
   obstacleMask:
     serializedVersion: 2
     m_Bits: 256
+  chargeSkillAction: {fileID: 11400000, guid: e1e38bd61408f4f42a3582ef2f3d6d21, type: 2}
+  skillAction: {fileID: 0}
+  ultimateAction: {fileID: 0}
+  counterAction: {fileID: 11400000, guid: 6457fa883d7d0cd43af3eda6499e09bd, type: 2}
+  dashAttackAction: {fileID: 11400000, guid: 950af1c1bcd8a884a8e433348278b71b, type: 2}
   counterWindow: 0.6
-  counterRange: 3
-  counterArcHalf: 70
-  counterForwardOffset: 0.5
-  counterDamage: 12
-  counterKnockback: 6
-  counterMaxDuration: 3.5
-  skillSet: {fileID: 11400000, guid: bb933dc9f8f25b949b2eb44c5f5a0585, type: 2}
   weaponAnchor: {fileID: 1604825401}
-  dashAttackRange: 3
-  dashAttackArcHalf: 60
-  dashAttackForwardOffset: 0.5
-  dashAttackDamage: 8
-  dashAttackKnockback: 6
-  dashAttackMaxDuration: 3.5
+  timingCritEnabled: 1
+  critDamageMult: 4
+  critPropagationRadius: 3
+  critPropagationDamage: 1
+  critKick: 0.4
+  critOnWindup: 0
+  multiKillFreezeCount: 3
   comboKick: 0.12
   finisherKick: 0.28
+  meleeSfxEnabled: 1
+  swishClip: {fileID: 0}
+  swishVolume: 0.1
+  swishPitch: 1
+  swishPitchJitter: 0.05
+  impactClip: {fileID: 0}
+  impactVolume: 0.14
+  impactPitch: 0.95
+  impactPitchJitter: 0.04
+  comboMoveEnabled: 1
+  comboMoveSpeedMult: 0.65
+  moveCancelEnabled: 1
+  moveCancelDeadzone: 0.2
 --- !u!1 &1969498553 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 100022, guid: a1926410b13a7ee47bb907df03589011, type: 3}

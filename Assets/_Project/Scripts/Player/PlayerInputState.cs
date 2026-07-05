@@ -21,4 +21,7 @@ public struct PlayerInputState
     public bool secondaryDown;  // 보조(RMB) 눌림 엣지
     public bool secondaryHeld;  // 보조 홀드
     public bool secondaryUp;    // 보조 뗌 엣지(거합 발도 릴리스 등 — 홀드 후 놓는 순간이 입력)
+
+    public bool skillDown;      // ★E 스킬 슬롯 눌림 엣지(2026-07-05 슬롯화 — 컨트롤 스킴 동결: RMB차징·E·R궁)
+    public bool ultimateDown;   // ★R 궁극기 슬롯 눌림 엣지
 }

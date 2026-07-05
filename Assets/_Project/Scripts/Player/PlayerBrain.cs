@@ -14,6 +14,8 @@ public class PlayerBrain : MonoBehaviour
 {
     [SerializeField] KeyCode dashKey = KeyCode.Space;
     [SerializeField] KeyCode sprintKey = KeyCode.LeftShift;   // ★달리기 — 누르고 있는 동안 스프린트
+    [SerializeField] KeyCode skillKey = KeyCode.E;            // ★E 스킬 슬롯(컨트롤 스킴 동결 2026-06-26)
+    [SerializeField] KeyCode ultimateKey = KeyCode.R;         // ★R 궁극기 슬롯
 
     bool _bufferedAttack;   // 대시 중 좌클릭 기억 → 대시 끝 첫 프레임에 대시 베기로 주입(만료 없음 — 대시는 짧고 재대시 시 폐기)
 
@@ -57,6 +59,8 @@ public class PlayerBrain : MonoBehaviour
             _bufferedAttack = input.primaryDown;
             input.primaryDown = false;             // 같은 프레임 좌클릭이 콤보를 재시작해 대시를 씹는 것 방지(대시 베기로 보존됨)
             input.secondaryDown = false;           // 같은 프레임 우클릭(스킬)도 무효 — 회피가 이김
+            input.skillDown = false;               // ★E/R도 RMB와 동일 정책(대시가 이김 — Codex 리스크 지적 반영, 2026-07-05)
+            input.ultimateDown = false;
         }
         // ★대시 커밋 보호 + 입력 버퍼: 대시 진행 중 좌클릭은 버리지 말고 기억 → 대시 끝나는 즉시 재주입.
         //   대시는 커밋(공격이 못 끊음)이지만 입력은 보존해 "눌렀는데 안 나감"을 없앤다 = 회피→공격 흐름의 핵심.
@@ -66,6 +70,8 @@ public class PlayerBrain : MonoBehaviour
             if (input.primaryDown) _bufferedAttack = true;   // ★대시 중 좌클릭 = 대시 베기 예약(대시 끝에 발동)
             input.primaryDown = false;             // 대시 중엔 콤보 시작 보류(대시 끝나고 대시 베기로 주입)
             input.secondaryDown = false;           // 대시 중엔 스킬 발동 보류(대시 커밋 — 끝난 뒤 RMB로)
+            input.skillDown = false;               // ★E/R도 동일(대시 커밋 — 버퍼 없이 무효, RMB와 같은 정책)
+            input.ultimateDown = false;
         }
         else if (_bufferedAttack)
         {
@@ -97,5 +103,7 @@ public class PlayerBrain : MonoBehaviour
         secondaryDown = Input.GetMouseButtonDown(1),
         secondaryHeld = Input.GetMouseButton(1),
         secondaryUp = Input.GetMouseButtonUp(1),
+        skillDown = Input.GetKeyDown(skillKey),
+        ultimateDown = Input.GetKeyDown(ultimateKey),
     };
 }

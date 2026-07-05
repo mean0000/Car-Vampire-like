@@ -1337,6 +1337,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1120539782}
   - component: {fileID: 1120539781}
+  - component: {fileID: 1120539783}
   m_Layer: 0
   m_Name: Directional Light
   m_TagString: Untagged
@@ -1424,6 +1425,35 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1120539783
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1120539780}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_CustomShadowLayers: 0
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_ShadowRenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_Version: 4
+  m_LightLayerMask: 1
+  m_ShadowLayerMask: 1
+  m_RenderingLayers: 1
+  m_ShadowRenderingLayers: 1
 --- !u!21 &1191661648
 Material:
   serializedVersion: 8
@@ -1813,6 +1843,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerBrain
   dashKey: 32
   sprintKey: 304
+  skillKey: 101
+  ultimateKey: 114
 --- !u!114 &1450077381
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1929,7 +1961,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eb1e6e6d99fbc464db49e3e1f2f6d90e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAttackSfx
-  swingClip: {fileID: 8300000, guid: 6e0bdec41ec14d5418e3fe352d1d6e48, type: 3}
+  swingClip: {fileID: 8300000, guid: 705af9e5a235e452aa9a2da992fdc9b8, type: 3}
   volume: 0.6
   spatialBlend: 0
   source: {fileID: 0}
@@ -2552,24 +2584,13 @@ MonoBehaviour:
   obstacleMask:
     serializedVersion: 2
     m_Bits: 256
+  chargeSkillAction: {fileID: 11400000, guid: e1e38bd61408f4f42a3582ef2f3d6d21, type: 2}
+  skillAction: {fileID: 0}
+  ultimateAction: {fileID: 0}
+  counterAction: {fileID: 11400000, guid: 6457fa883d7d0cd43af3eda6499e09bd, type: 2}
+  dashAttackAction: {fileID: 11400000, guid: 950af1c1bcd8a884a8e433348278b71b, type: 2}
   counterWindow: 0.6
-  counterRange: 3
-  counterArcHalf: 70
-  counterForwardOffset: 0.5
-  counterDamage: 12
-  counterKnockback: 6
-  counterMaxDuration: 3.5
-  skillSet: {fileID: 11400000, guid: bb933dc9f8f25b949b2eb44c5f5a0585, type: 2}
   weaponAnchor: {fileID: 1604825401}
-  chargeSkill: 1
-  chargeMax: 0.83
-  minChargeToFire: 0.12
-  dashAttackRange: 3
-  dashAttackArcHalf: 60
-  dashAttackForwardOffset: 0.5
-  dashAttackDamage: 8
-  dashAttackKnockback: 6
-  dashAttackMaxDuration: 3.5
   timingCritEnabled: 1
   critDamageMult: 4
   critPropagationRadius: 5

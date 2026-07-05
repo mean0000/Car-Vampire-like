@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 445491dc8e5788ca40376b09e7196db3, type: 3}
+  m_Name: Katana_DashAttack
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponActionSet
+  actionId: Katana_DashAttack
+  animator:
+    triggerName: DashAttack
+    chargeTriggerName: 
+    cancelTriggerName: 
+  timing:
+    cooldown: 0
+    maxDuration: 3.5
+  hit:
+    range: 3
+    arcHalfAngle: 60
+    forwardOffset: 0.5
+    damage: 8
+    knockback: 6
+    rangeFromVfxScale: 0
+  vfx:
+    basis: 1
+    prefab: {fileID: 0}
+    eulerOffset: {x: 0, y: 0, z: 0}
+    posOffset: {x: 0, y: 0, z: 0}
+    scale: 1
+    playbackSpeed: 1
+    lifetime: 1.5
+    parentToWeapon: 0
+  sfx:
+    clip: {fileID: 0}
+    volume: 0.7
+  charge:
+    enabled: 0
+    chargeMax: 0.83
+    minChargeToFire: 0.12

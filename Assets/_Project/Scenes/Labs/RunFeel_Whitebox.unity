@@ -6263,6 +6263,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerBrain
   dashKey: 32
   sprintKey: 304
+  skillKey: 101
+  ultimateKey: 114
 --- !u!114 &1450077381
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6446,6 +6448,10 @@ MonoBehaviour:
   rampDuration: 0.6
   clashFreeze: 0.05
   clashCooldown: 0.13
+  readSlowFactor: 0.3
+  readSlowDuration: 0.18
+  readSlowCooldown: 2.5
+  readSlowRampDuration: 0.15
 --- !u!114 &1450077390
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7060,6 +7066,8 @@ MonoBehaviour:
   speedDamp: 0.1
   dirDamp: 0.08
   faceTurnRate: 600
+  comboLayerBlendTime: 0.12
+  suppressComboStepIn: 1
   facingMode: 2
   cycleFacingKey: 102
 --- !u!114 &1604825406
@@ -7607,35 +7615,32 @@ MonoBehaviour:
   startCooldown: 0.08
   comboSet: {fileID: 11400000, guid: c1a1170a20bde8546a64afe9d9cbb1f7, type: 2}
   eyeHeight: 1
+  lineCutEnabled: 1
+  lineCutWidth: 1.6
+  hitGlideEnabled: 1
+  hitGlideDistance: 0.25
+  commitGlideDistance: 1
+  hitGlideDuration: 0.12
   enemyMask:
     serializedVersion: 2
     m_Bits: 128
   obstacleMask:
     serializedVersion: 2
     m_Bits: 256
+  chargeSkillAction: {fileID: 11400000, guid: e1e38bd61408f4f42a3582ef2f3d6d21, type: 2}
+  skillAction: {fileID: 0}
+  ultimateAction: {fileID: 0}
+  counterAction: {fileID: 11400000, guid: 6457fa883d7d0cd43af3eda6499e09bd, type: 2}
+  dashAttackAction: {fileID: 11400000, guid: 950af1c1bcd8a884a8e433348278b71b, type: 2}
   counterWindow: 0.6
-  counterRange: 3
-  counterArcHalf: 70
-  counterForwardOffset: 0.5
-  counterDamage: 12
-  counterKnockback: 6
-  counterMaxDuration: 3.5
-  skillSet: {fileID: 11400000, guid: bb933dc9f8f25b949b2eb44c5f5a0585, type: 2}
   weaponAnchor: {fileID: 1604825401}
-  chargeSkill: 1
-  chargeMax: 0.83
-  minChargeToFire: 0.12
-  dashAttackRange: 3
-  dashAttackArcHalf: 60
-  dashAttackForwardOffset: 0.5
-  dashAttackDamage: 8
-  dashAttackKnockback: 6
-  dashAttackMaxDuration: 3.5
   timingCritEnabled: 1
   critDamageMult: 4
   critPropagationRadius: 3
   critPropagationDamage: 1
   critKick: 0.4
+  critOnWindup: 0
+  multiKillFreezeCount: 3
   comboKick: 0.12
   finisherKick: 0.28
   meleeSfxEnabled: 1
@@ -7647,6 +7652,8 @@ MonoBehaviour:
   impactVolume: 0.14
   impactPitch: 0.95
   impactPitchJitter: 0.04
+  comboMoveEnabled: 1
+  comboMoveSpeedMult: 0.65
   moveCancelEnabled: 1
   moveCancelDeadzone: 0.2
 --- !u!1 &1762629610
