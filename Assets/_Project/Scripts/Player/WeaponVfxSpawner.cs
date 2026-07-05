@@ -22,7 +22,13 @@ public static class WeaponVfxSpawner
         float spd = playbackSpeed > 0f ? playbackSpeed : 1f;
         foreach (var ps in go.GetComponentsInChildren<ParticleSystem>())
         {
-            if (!Mathf.Approximately(spd, 1f)) { var main = ps.main; main.simulationSpeed *= spd; }
+            var main = ps.main;
+            // ★unscaled 재생(07-05 붕괴 채널과 동반 정리, 핸드오프 지적) — scaled면 히트스탑(킬 0.077s) 중
+            //   슬래시가 같이 얼어 '랙'으로 읽힌다. 플레이어 피드백 VFX는 시간 정지에도 제 박자로 흐른다.
+            //   ⚠️수용 트레이드오프(Codex M): 아래 Destroy(lifetime)는 스케일 시간 — 슬로모 중 다 탄 파티클의
+            //   *빈* GO가 최대 수백 ms 더 잔존(전 슬래시 프리팹=버스트·비루프라 시각 영향 0, 정리 기계 추가 안 함).
+            main.useUnscaledTime = true;
+            if (!Mathf.Approximately(spd, 1f)) main.simulationSpeed *= spd;
             ps.Play(false);
         }
         Object.Destroy(go, lifetime > 0f ? lifetime : 1.5f);

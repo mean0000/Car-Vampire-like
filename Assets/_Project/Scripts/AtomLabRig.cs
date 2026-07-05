@@ -8,7 +8,8 @@ using UnityEngine;
 ///   1=사운드 · 2=플래시 · 3=쉐이크 · 4=히트스탑 · 5=입력측 킥/글라이드
 ///   6=콤보 스냅 — ★스냅은 리타임된 .anim 클립에 구워져 런타임 클린 토글 불가. 베스트에포트로
 ///     Animator.speed 1.0↔snapOffSpeed 스왑(러프 A/B). playerAnimator 미배선이면 로그 스텁만.
-///   7=예약(미래 "붕괴" 채널 — 아직 미배선, 라벨 슬롯만)
+///   7=★붕괴(방향성 붕괴 — 거합 문법, 2026-07-05 배선) — 더미의 DirectionalCollapse.enabled 토글.
+///     off면 죽음이 기존 즉시 소멸(A/B). dummyCollapse 미배선이면 더미에서 자동 탐색.
 ///   R=더미 리셋/리스폰 · K=1방킬 토글(maxHp 50↔1)
 ///
 /// ★시작 기본=전 채널 ON(현행 풀 손맛이 베이스라인) — 유저가 키로 하나씩 꺼서 제로 베이스라인을 만든다.
@@ -23,6 +24,8 @@ public class AtomLabRig : MonoBehaviour
     [SerializeField] KatanaWeapon katana;
     [Tooltip("★콤보 스냅 A/B(6)용 플레이어 Animator. 비우면 '스냅 토글 미배선' 로그만 남는다.")]
     [SerializeField] Animator playerAnimator;
+    [Tooltip("★붕괴 채널(7)용 더미의 DirectionalCollapse. 비우면 dummy에서 자동 탐색(Awake).")]
+    [SerializeField] DirectionalCollapse dummyCollapse;
 
     [Header("콤보 스냅 A/B (6) — 베스트에포트")]
     [Tooltip("스냅 OFF 근사 Animator.speed(1.0=원본 유지, 낮출수록 느긋). 클립에 구운 스냅의 완전 재현은 불가 — 러프 대조용.")]
@@ -35,14 +38,22 @@ public class AtomLabRig : MonoBehaviour
     [SerializeField] KeyCode hitStopKey = KeyCode.Alpha4;
     [SerializeField] KeyCode inputFeedbackKey = KeyCode.Alpha5;
     [SerializeField] KeyCode snapKey = KeyCode.Alpha6;
-    [SerializeField] KeyCode collapseKey = KeyCode.Alpha7;   // ★예약 — 미배선
+    [SerializeField] KeyCode collapseKey = KeyCode.Alpha7;   // ★붕괴(방향성 — DirectionalCollapse.enabled 토글)
     [SerializeField] KeyCode resetKey = KeyCode.R;
     [SerializeField] KeyCode killToggleKey = KeyCode.K;
 
     // 채널 on/off 상태 — HUD 표시용. 시작 기본 전부 ON(베이스라인).
     bool _sfxOn = true, _flashOn = true, _shakeOn = true, _hitStopOn = true, _inputFeedbackOn = true;
-    bool _snapOn = true;    // 6 — Animator.speed A/B
-    bool _oneShotKill;      // K — maxHp 50↔1 (기본 50 = OFF)
+    bool _snapOn = true;     // 6 — Animator.speed A/B
+    bool _collapseOn = true; // 7 — 방향성 붕괴(컴포넌트 enabled 토글). 시작 ON = 리그 컨벤션(전 채널 베이스라인)
+    bool _oneShotKill;       // K — maxHp 50↔1 (기본 50 = OFF)
+
+    void Awake()
+    {
+        if (dummyCollapse == null && dummy != null)
+            dummyCollapse = dummy.GetComponent<DirectionalCollapse>();
+        if (dummyCollapse != null) dummyCollapse.enabled = _collapseOn;   // 시작 상태 동기화
+    }
 
     void Update()
     {
@@ -53,7 +64,11 @@ public class AtomLabRig : MonoBehaviour
         if (Input.GetKeyDown(inputFeedbackKey)) { _inputFeedbackOn = !_inputFeedbackOn; katana?.SetInputFeedbackEnabled(_inputFeedbackOn); }
         if (Input.GetKeyDown(snapKey)) ToggleSnap();
         if (Input.GetKeyDown(collapseKey))
-            Debug.Log("[AtomLabRig] 채널7(붕괴) — 예약 슬롯, 아직 미배선.");
+        {
+            _collapseOn = !_collapseOn;
+            if (dummyCollapse != null) dummyCollapse.enabled = _collapseOn;   // off면 StageDeath 거절 → 기존 즉시 소멸(A/B)
+            else Debug.Log("[AtomLabRig] 채널7(붕괴) — 더미에 DirectionalCollapse 미배선.");
+        }
         if (Input.GetKeyDown(resetKey)) ResetDummy();
         if (Input.GetKeyDown(killToggleKey)) ToggleOneShotKill();
     }
@@ -95,7 +110,7 @@ public class AtomLabRig : MonoBehaviour
         DrawChannel(ref y, hitStopKey, "히트스탑", _hitStopOn);
         DrawChannel(ref y, inputFeedbackKey, "입력측 킥/글라이드", _inputFeedbackOn);
         DrawChannel(ref y, snapKey, "콤보 스냅(베스트에포트)", _snapOn);
-        DrawChannel(ref y, collapseKey, "붕괴 — 예약(미배선)", false);
+        DrawChannel(ref y, collapseKey, "붕괴(방향성 — 거합)", _collapseOn);
 
         var infoStyle = new GUIStyle(GUI.skin.label) { fontSize = 16, fontStyle = FontStyle.Bold };
         infoStyle.normal.textColor = Color.gray;

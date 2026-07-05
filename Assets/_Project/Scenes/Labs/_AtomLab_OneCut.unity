@@ -385,6 +385,7 @@ GameObject:
   - component: {fileID: 192426612}
   - component: {fileID: 192426611}
   - component: {fileID: 192426610}
+  - component: {fileID: 192426615}
   m_Layer: 7
   m_Name: AtomLab_Dummy
   m_TagString: Untagged
@@ -522,6 +523,26 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &192426615
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 192426609}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 248cea2a912a02341660734170ae25e3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DirectionalCollapse
+  model: {fileID: 0}
+  collapseDelay: 0.22
+  fallDuration: 0.3
+  fallAngle: 96
+  restDuration: 0.45
+  sinkDuration: 0.35
+  sinkDepth: 1.4
+  pivotRadius: 0.3
 --- !u!1 &212409641
 GameObject:
   m_ObjectHideFlags: 0
@@ -1608,6 +1629,7 @@ MonoBehaviour:
   dummy: {fileID: 192426610}
   katana: {fileID: 1749597489}
   playerAnimator: {fileID: 1604825405}
+  dummyCollapse: {fileID: 192426615}
   snapOffSpeed: 0.6
   sfxKey: 49
   flashKey: 50

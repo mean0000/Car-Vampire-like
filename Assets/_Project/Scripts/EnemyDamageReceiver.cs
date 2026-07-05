@@ -125,6 +125,7 @@ public class EnemyDamageReceiver : MonoBehaviour, IDamageable, ICritReact
 
     int _hp;
     bool _dead;
+    Vector3 _lastHitFrom;    // ★마지막 타격의 가해 원점 — 사망 연출(IDeathStager, 방향성 붕괴)이 붕괴 방향으로 읽는다.
     float _staggeredUntil;   // ★스태거 만료 시각 — ★의도적으로 *스케일* 시간(Time.time): 몹 이동/물리와 같은 도메인이라
                              //   슬로모/히트스탑 중 세계와 함께 늘어지는 게 일관(unscaled면 슬로모 중 적이 먼저 깨어남).
                              //   히트스탑 겹침 드리프트(+15~25%, 항상 관대한 방향)는 인지된 트레이드오프(Stab M-4=Codex P2, 07-04).
@@ -147,7 +148,7 @@ public class EnemyDamageReceiver : MonoBehaviour, IDamageable, ICritReact
 
     static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
     static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
-    const float MaxHitStop = 0.08f;   // ★히트스탑 절대 상한(Stab H-2): killFeelScale 배율이 0.1×4=0.4s 스터터로 새는 것 차단.
+    public const float MaxHitStop = 0.08f;   // ★히트스탑 절대 상한(Stab H-2): killFeelScale 배율이 0.1×4=0.4s 스터터로 새는 것 차단. public=DirectionalCollapse 2박 역전 가드가 참조(Stab M-3).
 
     void Awake()
     {
@@ -180,6 +181,7 @@ public class EnemyDamageReceiver : MonoBehaviour, IDamageable, ICritReact
     public void TakeHit(int damage, Vector3 from, float knockback)
     {
         if (_dead) return;
+        _lastHitFrom = from;   // 사망 연출의 붕괴 방향 소스(치명타가 어디서 왔나)
 
         // ★스태거 커플링(07-04) — *이미* 경직 중이면 배수 적용(억제→처치 가속), 그 후 경직 리프레시.
         int applied = Mathf.Max(0, damage);
@@ -228,8 +230,11 @@ public class EnemyDamageReceiver : MonoBehaviour, IDamageable, ICritReact
         RestoreBase();                  // 플래시/커밋 글로우 원복(사망 연출이 색을 잡아먹지 않게)
         OnDied?.Invoke();               // 드라이버/스포너 정리 훅
         AnyDied?.Invoke(this);          // ★전역 통지 — 처리효율 게이지(실적) 가산
-        // ★사망 연출(디졸브·파쇄)은 스펙터클 비트에서 이 훅에 붙인다. v1은 비활성으로 마무리(시체 잔존 방지).
-        gameObject.SetActive(false);
+        // ★사망 연출 위임(2026-07-05 방향성 붕괴, 채널 7) — IDeathStager가 붙어 있고 수락하면 비활성화를 연출이 소유
+        //   (연출 끝에 스스로 SetActive(false)). 거절(채널 off/미배선)이면 기존 즉시 소멸 폴백(v1 동작 보존).
+        var stager = GetComponent<IDeathStager>();
+        if (stager == null || !stager.StageDeath(_lastHitFrom))
+            gameObject.SetActive(false);
     }
 
     void LateUpdate()
