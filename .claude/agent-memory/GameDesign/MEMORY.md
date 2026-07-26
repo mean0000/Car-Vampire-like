@@ -1,6 +1,7 @@
 # GameDesign Agent Memory Index
 
 ## 제안 / 판정
+- [★카타나 기술 키트 E/R 슬롯 드래프트 (판정 대기)](project_katana_skill_kit_draft.md) — 2026-07-05. ★E/R 슬롯 코드 이미 배선(input.skillDown/ultimateDown→TryBeginInstantAction), WeaponActionSet 에셋만 꽂으면 발동. 데이터=부채꼴(arcHalf180=360°노바)·코드필요=전진이동(AddGlide 재활용=소폭)/관통선/홈잉. 역할삼각=RMB집중관통(거합)/E전진돌파(★카이팅 답=뒤로못가는 변위+밀도보상)/R수평반토막스펙터클. E 3안(A일섬=리드·B선풍참·C인)·R게이지 2안(스타일/킬, 권고=하이브리드). Q1~Q9. docs/02_logs/2026-07-05-katana-skill-kit-draft.md
 - [무기·성장 제안 문서 (판정 대기)](project_weapon_progression_proposal.md) — 2026-06-13~14 무기체계+성장3층. ★★v0.9 드론=엘 분리(엘=서사만/드론=별도 자율무기 7노드 트리·AFK가드4겹)+§17.10 6무기 지배친화=런경제루트(Codex테스트). v0.8 6무기 트리·§16 v2 카드문법. v0.6 두 기둥. Q18~Q42. ★Q20(드론싱크)+Q40(드론컨트롤성립)+Q42(친화=경제루트) 최중요. docs/03_reference/2026-06-13-weapon-progression-proposal.md
 - [★카드-내용 문법 + 6무기 트리](project_card_grammar.md) — §16 v2(2층·G0 연료복권·G3 심장 SoD Exodia·가지별 엔진) → §17 6무기 전개(12엔진) → ★★v0.9 드론=엘 분리(AFK가드4겹·드론=유일 컨트롤)·§17.10 지배친화(Codex 테스트). ★★카타나 §17.1.D 잎 전면교체(06-14): 구 납도/연속베기/격노/무한콤보 폐기→거합{벽력일섬 기동발도·반격베기=방어궁 E 패링}/참격{플리커 블링크자동·검기발사=중거리8~10m면}. 고수↔뉴비 비대칭·lv 공간렌즈+인카운터 분리 박음. 미결=검기 디제틱(비인가출력)·반격베기 방어궁 재정합·저격 분리. 척추 42·≈53~58장. Q28~Q42
 

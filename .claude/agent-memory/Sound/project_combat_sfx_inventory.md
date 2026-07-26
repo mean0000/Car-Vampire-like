@@ -41,6 +41,14 @@ metadata:
 - **swish_A/B**: 순수 합성 밴드패스 노이즈 우쉬(저역1~2%=바디 없음, 바디는 임팩트 몫). A=샤프120ms(고역92%), B=에어리190ms(85%). 실음원 Slash_Classic은 995ms로 너무 김→합성이 우월.
 - **권장 배선**(오케 소유): impactClip=A(기본)/B(무겁게)/C(스냅) 중 유저 귀 택1, swishClip=A(샤프)/B. 노브: impactVolume 0.18 시작(구 0.14보다 hot한 정규화 반영)→안 들리면 0.30/0.45 사다리(Range 캡 0~1이라 0.15 위 허용 — 캐넌 0.03~0.15는 툴팁 관례). impactPitch A=0.95/B=1.0/C=1.0. swishVolume 0.12→0.20. 지터 유지.
 
+## ★대시(회피) 사운드 큐레이션 (2026-07-11) — PlayerAfterimage whoosh/scuff 슬롯
+구조: `dashStyle` = 런타임 J키 토글(Off/Glitch위상/Physical먼지). **whoosh/scuff 각 단일 AudioClip 슬롯을 두 스타일이 공유**(코드 라인 277-279: whoosh는 "스타일 무관"으로 의도적 공유). whooshVolume 0.12·scuffVolume 0.10(글리치 착지 ×0.7)·pitch 지터 ±0.05·2D PlayOneShot. 대시=0.1s·연타(스팸 내성 필요).
+- **★핵심 발견 — 글리치 디지털 갭**: Hack&Slash Sound Library는 *순수 물리 폴리*라 진짜 신스/디지털 whoosh가 **없다**. Glitch(RUINER풍 마젠타 위상붕괴)용 짧은 디지털 whoosh는 라이브러리에 부재 → (a)Whoosh Short Metal(0.157~0.200s, 금속 zing=디지털 최근접 프록시)로 타협 or (b)절차 신스 zap 합성(여기선 디지털 음색이 *의도된 정체성*이라 플레이스홀더 아닌 정당). 디지털 실음원 유일 후보 NVTeleport(0.531s, Feel/NiceVibrations Demo)=위상스텝과 테마 일치하나 **Feel 데모 번들 = 상용 라이선스 불확실(출하 전 확인 필요)** + 0.53s로 대시엔 약간 김. NVLaser/NVPowerOff/NVReload 전부 1.8s+ 부적합.
+- **whoosh 후보(전부 48k/24bit/stereo, Hack&Slash/Audio/Whoosh/)**: Physical용 순수바람=Whoosh Short Light 01~03(0.098~0.107s, 얇음) / Whoosh Short Driven 01~04(0.100~0.164s, 추진력 있는 바람=대시 킥오프 최적) / Whoosh Short Low 01~05(0.100~0.174s, 저역바디=무거운 대시). Glitch용=Whoosh Short Metal 01~04(0.157~0.200s). Whoosh Motion Snappy 01~04(0.228~0.363s)=상한선.
+- **scuff/착지 후보(DirtyGround, 48k/24bit/mono — 플레이어 발소리와 지면 일치=음향 응집)**: Footsteps_DirtyGround_Jump_Land_01~03(0.462~0.604s, 착지 목적설계=scuff 정답) / Jump_Start_01~03(0.412~0.597s, 킥오프 지면긁힘) / Run_01(0.303s, 가장 타이트한 대안). 전용 "슬라이드/드래그" 음원은 팩에 부재(필요시 소싱/합성). 착지클립 0.46s+는 앞쪽 트랜지언트+뒤쪽 정착 테일 → 스팸 시 짧은 02/03 or Run_01 선호.
+- **공유 vs 분리 권고**: 1차는 *공유 유지*(Simplicity/1볼트1가설) — Driven류 중립 whoosh 1개로 양 스타일 커버, 유저 귀 먼저. A/B 정체성 대비 강화 원하면 슬롯 분리(whooshGlitch=Metal/신스, whooshPhysical=Light/Low). ★더 큰 스팸 내성 레버 = whoosh/scuff를 AudioClip[]로 (2~3변주 no-repeat 랜덤, 발소리 시스템 [[player-footsteps-built]] 패턴 재사용) — 스타일분리보다 우선순위 높음.
+- Footsteps-Essentials 전체 = 11지면(DirtyGround/Grass/Gravel/Leaves/Metal/Mud/Rock/Sand/Snow/Tile/Water/Wood) 각 Walk/Run/Jump. DirtyGround만 임포트됨.
+
 ## Vefects 오디오 객관 측정 (2026-07-04, 못 듣는 한계 보완용 실측 특성)
 스파인 선택 근거(피크/온셋/brite=고역2k+ 비율/tail):
 - **Combat Hit_01~09**: 짧음(276~293ms)·샤프 온셋(2~3ms)·타이트 테일(130~210ms)·중역(brite 43~66%). ★임팩트 스파인 최적(드라이).

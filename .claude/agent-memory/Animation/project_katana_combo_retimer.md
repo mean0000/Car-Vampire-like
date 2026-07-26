@@ -1,11 +1,18 @@
 ---
 name: katana-combo-retimer
-description: Re-runnable Editor script that NON-UNIFORMLY retimes humanoid muscle clips by physically resampling all curves + remapping events. ★현행=2026-07-04 3세그 스트라이크 스냅(윈드업1.25/스트라이크2.2/회수1.4·피니셔1.0/lead0.07)으로 Combo1/2/3 전부 재프로파일. 이벤트는 소스 미의존 상수 저작. (구=2026-06-21 2세그 windup1.5).
+description: Re-runnable Editor script that NON-UNIFORMLY retimes humanoid muscle clips by physically resampling all curves + remapping events. ★현행=2026-07-11 per-combo 윈드업(Combo1 첫타 선딜 3.5×압축·2/3 유지 1.25)+3세그 스트라이크 스냅(스트라이크2.2/회수1.4·피니셔1.0/lead0.07). 이벤트는 소스 미의존 상수 저작. (구=2026-07-04 공유 windup1.25 · 2026-06-21 2세그).
 metadata:
   type: project
 ---
 
-# ★★2026-07-04 3세그 스트라이크 스냅 개편 (현행 — 유저 "베는 순간 확 빠르게")
+# ★★2026-07-11 Combo1 첫타 선딜(윈드업) 압축 — per-combo windupSpeed (현행)
+유저 플레이 판정="공격 누르면 즉시 안 나가고 선딜". 진단(오케+Codex 수렴)=입력→애니 경로 지연0(ANY→Combo1 dur0/offset0), 원인은 **클립 윈드업 길이**: Combo1 소스 윈드업 seg[0, strikeStart=0.297s]가 공유 WindupSpeed 1.25로 0.297/1.25=**0.238s(≈14f) 스윙시작** = 탑다운 1타 2배.
+- **수정=WindupSpeed를 per-combo 필드화**(ComboDef.windupSpeed, recoverySpeed와 동형). Combo1=`Combo1WindupSpeed 3.5`(소스 윈드업 0.297s→0.085s≈5f), Combo2/3=`WindupSpeed 1.25` 유지(둘 다 스윙시작 0.125s·0.117s <0.15s라 손 안 댐=콤보 리듬 보존, 태스크 criterion).
+- **결과(디스크 실측)**: C1 OnSwishWhoosh 0.238→**0.0849s**(14f→5.1f)·OnAttackHit 0.269→**0.1167s**(16f→7f)·len 0.691→0.538s. ★히트이후 길이 **불변**(0.4216→0.4217s) — piecewise map이 strike+recovery의 dst 길이는 그대로 두고 앞으로 당길 뿐(="발동즉각·여운길게"). C2/C3 byte-identical 재-bake(git diff=기존 swish 7줄만). 이벤트 4개·humanMotion·loop=F·순서불변·콘솔0.
+- ★노브 유효범위 [2.97, 4.35]서 두 타깃(swish≤0.10·hit 0.10~0.15) 동시충족. 3.5=여유중앙. 레퍼(4f 윈드업)에 더 붙이려면 ~4.2(swish0.071·hit0.102, hit가 0.10 바닥). **윈드업(3.5)>스트라이크(2.2)로 07-04 스냅대비 역전** — 단 플레이어 공격=DMC식 즉응이 예고가독보다 우선(적 텔레그래프 캐넌과 별개), 타깃 달성에 수학상 필수(≤0.10 요구 → W≥2.97>2.2). 손맛=유저 플레이 게이트.
+- ★함정 재확인: 컨트롤러 mtime 불변(07-05)=RetimeAll SaveAssets가 컨트롤러 **안** 건드림(dirty 아니면 flush 스킵). 07-04의 488줄 flush트랩은 그때 in-memory dirty였던 경우. 현 컨트롤러 84줄 diff=07-05 Whirlwind(내 것 아님).
+
+# ★★2026-07-04 3세그 스트라이크 스냅 개편 (윈드업 공유 1.25 시절 — 07-11 per-combo로 세분)
 유저 요구=①전체 속도↑ ②베는 순간 스냅(윈드업 보통·스트라이크 확 빠르게·회수 보통). 브루트 상태-분절 대신 리타임 채택(분절=콤보 분기 구조라 배선 그래프 폭발, 상세 [[project_katana_combo_strike_snap_assessment]]).
 - **3세그/콤보**: Windup[0,hit−lead]×1.25 · **Strike[hit−lead,window]×2.2(★스냅)** · Recovery[window,end]×1.4(C1·2)/1.0(C3 피니셔 무게). lead=0.07s(컨택 직전 휘두름을 스냅 창에 브래킷). 노브 전부 const 단일 진실원.
 - **★이벤트=소스 미의존 상수 저작**(WriteRetimed가 authoredEvents 받아 map remap): C1/C3 소스 FBX 이벤트 0개라 FindEventTime throw + Combo가 이벤트없이 구워지면 소프트락([[project_katana_combo2_event_gap]]). 원본 FBX 노름 상수(ComboDef)에서 3개 저작→항상 정확히 3개 remap. norm=C1 0.367/0.484/0.920·C2 0.200/0.344/0.910·C3 0.206/0.318/0.920.

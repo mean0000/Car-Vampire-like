@@ -49,6 +49,13 @@ metadata:
 - **★Combo1 +0.40m 스텝인 소실**(재-bake 정의상): 원본 FBX엔 스텝인 없음(그건 post-retime MotionT.z 편집이었음). 현 아키텍처(콤보=UpperBody 마스크 Root제외 + OnAnimatorMove _suppressStepIn)선 이미 **dormant/masked**라 관측 변화 0. 콤보를 Root포함 레이어로 되돌릴 때만 phase2 스텝인 재적용 필요.
 - **코드 무변경**: KatanaWeapon/PlayerAnimatorDriver 안 건드림(이벤트=이름 기반, 클립 drop-in).
 
+## ★07-07 swish(휘두름음) 이벤트 추가 — 이제 콤보 클립당 이벤트 4개
+- 코드가 콤보 swish를 상태트리거(BeginCombo/Advance)에서 재생 중 → 전이블렌드+윈드업만큼 소리가 칼날 선행 → 싱크 어긋남. 캐넌 "타이밍=AnimationEvent 소유"대로 클립에 이관. 코드 수신부(PlayerAnimatorDriver.OnSwishWhoosh→SwishWhoosh→KatanaWeapon)는 오케 병렬 추가(내 범위 밖=클립 이벤트만).
+- **3 retimed .anim(guid C1 3291e7ea·C2 fda78cae·C3 702d3829)의 m_Events에 `OnSwishWhoosh`(파라미터 없음·msgOpt1=DontRequireReceiver) 직접 삽입.** time=**윈드업→스트라이크 경계(칼날 가속 시작=sweep-start)** = 각 클립 OnAttackHit − **0.0318s**. 유도: 리타이머 Strike세그가 소스 StrikeLead 0.07s를 StrikeSpeed 2.2×로 압축 → 0.07/2.2=0.03182s (디스크 hit + 상수 2개로만 도출, 소스 norm 반올림 무의존). 값: C1 0.2376(hit0.2694)·C2 0.1253(hit0.1572)·C3 0.1170(hit0.1489). 전부 OnAttackHit보다 앞·기존 3이벤트 무변. Unity AnimationUtility.GetAnimationEvents 4개 확인·콘솔0.
+- ★★재발주의: **KatanaComboRetimer는 이벤트를 소스미의존 상수 3개(Hit/Window/End)로 저작** → 리타이머 재실행 시 **OnSwishWhoosh 소실**. 재실행하면 리타이머에 swish 상수 추가하거나 재삽입 필요.
+- ★MCP 함정: 편집 후 Refresh만으론 부족할 수 있어 `AssetDatabase.ImportAsset(path, ForceUpdate)` 명시(별도 커맨드·System.Reflection 금지). GetAnimationEvents로 엔진측 read-back이 YAML 삽입 검증의 정석(`data:` 트레일링스페이스 유무 무관하게 파서 수용).
+- 미검증(유저 플레이): 0.0318s 리드가 swish SFX 엔벨로프상 "칼과 함께" 느낌 나는지 — SFX 파형 못들음. 늦으면 노브=이벤트 몇ms 앞당김(단 sweep-start보다 더 앞기면 다시 소리선행). SFX 파일 선택·envelope=Sound 도메인.
+
 ## 미검증 (유저 플레이 게이트)
 스냅 실체감("팍" 읽히나)·전체속도 2.2 적정(과한가/모자란가)·피니셔 무게·런타임 이벤트 발화(히트나나·캔슬창 2단가나·종료/busy해제·대시캔슬 이동 안얼어붙나 — 구조·논리 PASS, MCP 플레이 신뢰낮아 런타임은 유저). **Stab+Codex 게이트 오케가 띄움.**
 
