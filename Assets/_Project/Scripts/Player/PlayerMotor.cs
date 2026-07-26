@@ -18,6 +18,19 @@ public class PlayerMotor : MonoBehaviour
     [SerializeField] float acceleration = 50f;
     [Tooltip("입력을 떼거나 꺾을 때 감속도(m/s²). 작을수록 더 미끄러지듯 정착.")]
     [SerializeField] float deceleration = 40f;
+    [Tooltip("★딱 멈춤(2026-07-11 조작감 동기화) — 입력을 *완전히 뗐을 때* 정지까지 걸리는 시간(초). 티어 무관 일정(고속일수록 감속이 세짐) " +
+             "→ 3단 스프린트 24m/s에서 1.8초 활주하던 것 제거. 방향 전환/꺾기엔 안 걸림(deceleration 유지 = 곡선 질주 관성 보존). 0=끔(기존 감속만, A/B 노브).")]
+    [SerializeField, Min(0f)] float stopTime = 0.15f;
+    [Tooltip("★정지 유예(07-11 R4) — 무입력이 이 시간(초) *지속*돼야 딱 멈춤(stopTime) 발동. 키 롤오버(W떼고 D누르는 사이 몇 프레임 무입력)가 " +
+             "급제동을 트리거해 방향 전환마다 미세 브레이크 = '딱딱 꺾임' 방지. 유예 중엔 완만 감속(deceleration)이라 흐름 유지.")]
+    [SerializeField, Min(0f)] float stopGraceTime = 0.08f;
+    [Header("★조향 (2026-07-11 R3 — 8방향 키 입력을 곡선 궤적으로, 하이포니식)")]
+    [Tooltip("★속도 '방향'의 회전 속도(도/초) — 키 입력은 목표 방향일 뿐, 실제 이동 방향은 이 속도로 연속 회전해 궤적이 원호를 그린다. " +
+             "급턴일수록 자연 감속(카브), 180° 반전은 감속→재가속(심고 돌기)이 자동으로 나온다. 0=끔(기존 벡터 감가속 = 각진 꺾임, A/B). " +
+             "클수록 즉각(끔에 수렴) — 720은 걷기에서 원호가 안 보임(R4에서 360으로: 90° 꺾기 0.25초 원호 = 물흐름, 뻑뻑하면 480~540).")]
+    [SerializeField, Min(0f)] float steerTurnRate = 360f;
+    [Tooltip("조향이 걸리는 최소 속도(m/s) — 이 미만(출발 순간·초저속)은 즉시 목표 방향으로 출발(저속 굼뜸 방지).")]
+    [SerializeField, Min(0f)] float steerMinSpeed = 1.5f;
     [Header("달리기 (계단식 버스트 가속)")]
     [Tooltip("★스프린트 단계별 기본 속도(m/s). 단계 사이는 '버스트'로 순간 점프(계단). 예: 9,15,24 — 극적으로 10,40,80도 가능. 첫 칸이 달리기 시작 속도.")]
     [SerializeField] float[] sprintTierSpeeds = { 9f, 15f, 24f };
@@ -26,11 +39,11 @@ public class PlayerMotor : MonoBehaviour
     [Tooltip("단계 내 완만한 크립(m/s per sec) — 버스트 전 살짝 차오름(10→11→12). 0이면 순수 계단.")]
     [SerializeField] float sprintTierCreep = 1.5f;
 
-    [Header("Dash (코드 구동 자유방향 회피)")]
-    [Tooltip("★대시 거리(m) — 직접 조절. 키보드 방향(정지 시 조준)으로 자유 회피, 카디널 스냅 안 함.")]
-    [SerializeField] float dashDistance = 3f;
-    [Tooltip("대시 이동 시간(초) — 짧을수록 빠르고 딱딱하게(순간이동에 가깝게). 속도 = 거리/이값. (무적창은 iframeDuration 별도.)")]
-    [SerializeField] float dashDuration = 0.10f;
+    [Header("Dash (회피 — ★R14: 변위는 Evade 클립 루트모션이 소유, 코드는 창/무적/충전만)")]
+    [Tooltip("★대시 커밋 창(초) — R14 루트모션 전환(2026-07-13): 더 이상 '거리/시간'이 아니라 '커밋 창'이다. " +
+             "이 시간 동안 재대시 금지 + 좌클릭 등 입력 버퍼(윈드업 커밋). 변위 자체는 Evade 클립 루트모션이 만든다(F=3.27m). " +
+             "0.15(≈9프레임)면 짧은 커밋 후 공격/재대시로 착지를 즉시 끊을 수 있다(하드컷 캐넌). 무적창은 iframeDuration 별도.")]
+    [SerializeField] float dashDuration = 0.15f;
     [Tooltip("스택 1개 충전 시간(초).")]
     [SerializeField] float dashCooldown = 1f;
     [Tooltip("저장 가능한 대시 횟수(스택). 시작 시 풀충전.")]
@@ -52,11 +65,14 @@ public class PlayerMotor : MonoBehaviour
 
     const float BodyRadius = 0.5f;   // 벽 가드 스피어캐스트 몸 반경
     const float SkinWidth = 0.05f;   // 벽면 밀착 여유(0이면 다음 프레임 캐스트가 벽 안에서 시작)
+    const float DashRootGrace = 0.05f;   // ★R14 window-L 만료 grace(초) — 드라이버 KeepDashActive ping이 끊긴 뒤 _dashActive가 꺼지기까지. 요청→Dash 상태 진입 갭 흡수용으로 짧게.
 
     Vector3 _velocity;        // XZ 현재 속도 — 가속/감속으로 목표를 추종(질량감)
-    bool _dashAppliedThisFrame;  // 이번 프레임 ApplyRootStep가 위치를 썼나 — 같은 프레임 이중 적용/로코모션 충돌 차단(Stab H-2/Codex M)
-    float _dashTimer;         // >0 = 대시 중(남은 이동 창)
-    float _iframeTimer;       // >0 = 무적 중(누른 순간부터 iframeDuration). 이동창과 별개로 흐른다.
+    bool _dashAppliedThisFrame;  // 이번 프레임 ApplyRootStep가 위치를 이미 썼나 — 한 프레임 이중 적용 차단(Stab H-2/Codex M)
+    bool _dashActive;         // ★R14(2026-07-13) 변위 창(window-L) — 클립 루트모션이 위치를 소유하는 동안 true(Motor는 양보). 드라이버가 Dash 상태 재생 중 매 프레임 KeepDashActive로 갱신, grace로 자동 만료(애니가 창을 소유).
+    float _dashRootGrace;     // ★window-L 워치독 — 드라이버 ping이 갱신, Tick이 감쇠. 진입 갭 + 1프레임 ping 누락 흡수.
+    float _dashTimer;         // ★window-S 커밋 창(>0 = 커밋 중) — 재대시 금지 + 입력 버퍼. 변위 창(_dashActive)과 분리(변위=클립 길이, 커밋=짧게=하드컷 캐넌).
+    float _iframeTimer;       // >0 = 무적 중(누른 순간부터 iframeDuration). 변위창·커밋창과 별개로 흐른다.
     float _dashStartTime = -999f;  // 마지막 대시 시작 시각(unscaledTime) — 퍼펙트 회피 창(대시 시작 프레임) 판정 기준
     Vector3 _dashDir;         // 대시 진행 방향(키보드/조준, 자유방향) — 이동은 코드가 이 방향으로 버스트
     Vector3 _glideDir;        // ★히트 글라이드(맞히면 길게) — 공격 적중 시 무기가 주입하는 짧은 추가 전진 방향
@@ -72,8 +88,12 @@ public class PlayerMotor : MonoBehaviour
     int _sprintTier = -1;     // 현재 스프린트 단계(-1=비스프린트, 0..N-1)
     bool _sprintBurstedThisFrame;  // 이번 프레임 단계 버스트(순간 점프) 발생 — 카메라/VFX 주스가 읽는다
     float _actionMove01;      // ★무빙 평타(07-04) — locked 중 허용 이동 배율(0=완전 잠금). ApplyRootStep의 velocity 소거 여부도 결정.
+    float _noInputTime;       // ★정지 유예(R4) — 무입력 지속 시간. stopGraceTime 넘어야 딱 멈춤 발동(키 롤오버 미세 브레이크 방지)
 
-    public bool IsDashing => _dashTimer > 0f;
+    /// <summary>★대시 변위/비주얼 창(window-L, R14) — 클립 루트모션이 위치를 만드는 동안. 잔상·발소리·facing·상체레이어·OnAnimatorMove 루트피드가 읽는다.</summary>
+    public bool IsDashing => _dashActive;
+    /// <summary>★대시 커밋 창(window-S) — 재대시 금지 + 입력 버퍼(PlayerBrain). 짧게 유지해 공격/재대시가 착지를 즉시 끊는다(하드컷 캐넌).</summary>
+    public bool DashCommitted => _dashTimer > 0f;
     /// <summary>스프린트(달리기) 의도 중인가 — Shift 홀드 + 실제 이동 + 대시/공격 아님.</summary>
     public bool IsSprinting => _sprinting;
     /// <summary>현재 스프린트 단계(0=1단, -1=비스프린트). 애니 속도 매칭·주스 강도에 쓴다.</summary>
@@ -85,6 +105,8 @@ public class PlayerMotor : MonoBehaviour
     /// <summary>대시 방향(facing 프레임·카디널 스냅). x = 우측(+)/좌측(−), y = 전진(+)/후진(−). 어느 Step 클립을 재생할지 결정.</summary>
     public float DashLocalX => _dashLocalX;
     public float DashLocalY => _dashLocalY;
+    /// <summary>★실제 대시 방향(월드, 자유 벡터 — R10 Codex 발견): 시각-궤적 정합용. 드라이버가 대시 커밋 facing에 쓴다.</summary>
+    public Vector3 DashDir => _dashDir;
     /// <summary>대시 무적 구간인가 — 누른 순간부터 iframeDuration 동안(이동창과 별개). HP 컴포넌트가 읽는다.</summary>
     public bool IsInvulnerable => _iframeTimer > 0f && dashInvulnerable;
     /// <summary>대시 무적 옵션 켜짐 여부 — PlayerHealth가 미발화 경고에 읽는다.</summary>
@@ -134,23 +156,35 @@ public class PlayerMotor : MonoBehaviour
         if (_iframeTimer > 0f) _iframeTimer -= Time.unscaledDeltaTime;
         RechargeDash(dt);
 
-        // 대시 진행 중이면 완료까지 우선(회피 관성 보장 — 공격 잠금보다 먼저). 코드 버스트가 위치를 만든다.
-        if (_dashTimer > 0f) { UpdateDash(dt); return; }
+        // ★R14 대시 창 감쇠: 변위 창(window-L) grace 워치독 + 커밋 창(window-S) 타이머.
+        //   변위(위치)는 클립 루트모션(OnAnimatorMove→ApplyRootStep)이 소유하고, 아래 _dashActive 양보 블록이 Motor를 비운다(옛 UpdateDash 코드 버스트 폐기).
+        if (_dashRootGrace > 0f) { _dashRootGrace -= dt; if (_dashRootGrace <= 0f) _dashActive = false; }
+        if (_dashTimer > 0f) _dashTimer -= dt;
 
         Vector3 move = new Vector3(input.move.x, 0f, input.move.y);
         if (move.sqrMagnitude > 1f) move.Normalize();
 
-        // ★회피 최우선(self-cancel 캐넌): 공격 커밋(locked) 중에도 대시는 즉시 발동한다 — locked 게이트보다 먼저 평가.
-        //   busy=Animator 진실이라 캔슬 프레임엔 아직 IsActionPlaying=true → locked가 들어오지만, 대시가 그 잠금을
-        //   무시하고 시작해야 "공격 클립이 끝날 때까지 회피 불가" desync가 풀린다(PlayerBrain이 같은 프레임 Weapon.Cancel).
-        // ★전제: 여기 도달 시 _dashTimer<=0f 보장(위 L105 UpdateDash early-return이 진행 중 대시를 거른다).
-        //   따라서 CanDash(_dashCharges>0 && _dashTimer<=0f)의 _dashTimer 조건은 이미 성립 — 충전만 확인하면 된다.
-        if (_dashCharges > 0 && input.dashDown)
+        // ★회피 최우선(self-cancel 캐넌): 공격 커밋(locked) 중에도 대시는 즉시 발동 — locked 게이트보다 먼저 평가.
+        //   busy=Animator 진실이라 캔슬 프레임엔 아직 IsActionPlaying=true → locked가 들어오지만, 대시가 그 잠금을 무시하고 시작해야
+        //   "공격 클립이 끝날 때까지 회피 불가" desync가 풀린다(PlayerBrain이 같은 프레임 Weapon.Cancel).
+        //   ★재대시 게이트=커밋 창(_dashTimer<=0f): 진행 중 대시의 착지를 즉시 끊고 새 회피로 재진입(하드컷 캐넌). 옛 L162 early-return을 대체.
+        if (_dashCharges > 0 && input.dashDown && _dashTimer <= 0f)
+            StartDash(move, aimDir, locked);   // locked면 캔슬 대시(i-frame 배율 대가). StartDash가 _dashActive=true 부트스트랩.
+
+        // ★R14 변위 양보 — 변위 창(window-L) 동안 위치는 클립 루트모션이 소유하고 Motor는 비운다(옛 locked 양보와 동형).
+        //   _velocity=0이라 출구 슬라이드 없음: 클립 자신의 감속(3→0 m/s)이 '정착'을 만든다. move-cut 없음(이동키로 안 끊김)=R13 트레이드오프 유지.
+        if (_dashActive)
         {
-            // locked(공격 커밋 중) 상태에서의 대시 = 공격을 끊는 캔슬 대시 → i-frame 대가(하데스식). 평시 대시는 풀 무적.
-            StartDash(move, aimDir, locked);
-            if (_dashTimer > 0f) { UpdateDash(dt); return; }   // 이번 프레임 대시 시작 — 고정 방향·고정 속도 버스트
+            _glideTimer = 0f;             // ★불변식(R2 게이트 봉인): 글라이드는 대시를 못 넘는다 — 매 프레임 소거로 유지.
+            _velocity = Vector3.zero;
+            return;
         }
+
+        // ★정지 유예(R4): 무입력 지속 시간 적산 — stopGraceTime을 넘겨야 딱 멈춤(stopTime) 발동.
+        //   키 롤오버(방향 전환 사이 몇 프레임 무입력)가 급제동을 트리거해 꺾임마다 멈칫하는 것 방지.
+        bool noInput = move.sqrMagnitude < 0.01f;
+        _noInputTime = noInput ? _noInputTime + dt : 0f;
+        bool hardStopEngaged = noInput && stopTime > 0f && _noInputTime >= stopGraceTime;
 
         // ★히트 글라이드(맞히면 길게) — 공격 적중 직후의 짧은 추가 전진. locked(공격 커밋) 중에도 적용(그게 목적).
         //   대시는 위에서 이미 early-return(대시가 위치 소유). 벽가드+지면 파이프라인 공유 — 위치 소유는 Motor 단일 유지.
@@ -175,7 +209,12 @@ public class PlayerMotor : MonoBehaviour
                 Vector3 lockedTarget = move * (moveSpeed * _actionMove01);
                 bool lockedSpeedingUp = Vector3.Dot(lockedTarget, _velocity) >= 0f
                                         && lockedTarget.sqrMagnitude >= _velocity.sqrMagnitude;
-                _velocity = Vector3.MoveTowards(_velocity, lockedTarget, (lockedSpeedingUp ? acceleration : deceleration) * dt);
+                // ★딱 멈춤 일관성(Codex P1, 07-11): 무빙 평타 중에도 입력 완전 0이면 stopTime 감속 — 일반 이동과
+                //   동일 정지 계약(특히 저감속 랩[decel 13]에서 공격 중 정지만 미끄러지는 이질감 제거). 유예(R4) 공유.
+                float lockedRate = lockedSpeedingUp ? acceleration
+                    : hardStopEngaged ? Mathf.Max(deceleration, _velocity.magnitude / stopTime)
+                    : deceleration;
+                _velocity = Vector3.MoveTowards(_velocity, lockedTarget, lockedRate * dt);
                 if (_velocity.sqrMagnitude > 0.0001f)
                 {
                     Vector3 anext = transform.position + WallGuardedStep(_velocity * dt);
@@ -208,23 +247,25 @@ public class PlayerMotor : MonoBehaviour
                 if (tier != _sprintTier) { _sprintBurstedThisFrame = _sprintTier >= 0; _sprintTier = tier; }   // 단계 상승=버스트(시작 진입 제외)
             }
             else { spd = moveSpeed; _sprintTier = 0; }   // 배열 비면 폴백
-            // ★스프린트도 걷기와 같은 velocity inertia(MoveTowards) — 속도 벡터가 곡선지며 티어 속도로 이행(달리기 각짐 해소, Codex+나 진단).
-            //   트레이드오프: 티어 '버스트'(순간 점프)가 부드러운 가속 빌드로 바뀜(펀치↓ 부드러움↑). 펀치 원하면 별도 sprintAccel 노브로 분리 가능.
-            //   가속/감속 분리 = 걷기와 동일 정책(역방향=감속) — Stab 게이트: 스프린트가 이 분기를 빠뜨려 역전이 더 빨리 수렴하던 것 수정.
-            Vector3 targetVel = move.normalized * spd;
-            bool sprintSpeedingUp = Vector3.Dot(targetVel, _velocity) >= 0f && targetVel.sqrMagnitude >= _velocity.sqrMagnitude;
-            _velocity = Vector3.MoveTowards(_velocity, targetVel, (sprintSpeedingUp ? acceleration : deceleration) * dt);
+            // ★조향 경유(07-11 R3) — 스프린트 방향 전환이 원호를 그린다(질주 카브 = 모멘텀 슬래셔 코어).
+            //   크기(티어 속도) 가감속은 SteerVelocity 안에서 기존 가속/감속 분리 정책 그대로.
+            _velocity = SteerVelocity(move, spd, dt);
         }
         else
         {
             _sprintHoldTime = 0f; _sprintTier = -1;
-            // 가속/감속 분리: "같은 방향으로 더 빨라질 때"만 가속. 그 외(정지·감속·역방향)는 감속.
-            // dot 검사가 없으면 역방향 입력이 가속으로 잡혀 제동 없이 오버슈트한다.
-            Vector3 targetVel = move * moveSpeed;
-            bool speedingUp = Vector3.Dot(targetVel, _velocity) >= 0f
-                              && targetVel.sqrMagnitude >= _velocity.sqrMagnitude;
-            float rate = speedingUp ? acceleration : deceleration;
-            _velocity = Vector3.MoveTowards(_velocity, targetVel, rate * dt);
+            // ★딱 멈춤: 무입력이 유예(stopGraceTime)를 넘겨 지속될 때만 stopTime 급제동(R4) —
+            //   스프린트에서 손을 떼도 일정 시간 안에 서고, 키 롤오버 틈새는 완만 감속으로 흐름 유지.
+            if (noInput)
+            {
+                float rate = hardStopEngaged ? Mathf.Max(deceleration, _velocity.magnitude / stopTime) : deceleration;
+                _velocity = Vector3.MoveTowards(_velocity, Vector3.zero, rate * dt);
+            }
+            else
+            {
+                // ★조향 경유(07-11 R3) — 걷기 방향 전환도 원호(8방향 키 → 연속 궤적).
+                _velocity = SteerVelocity(move, moveSpeed, dt);
+            }
         }
 
         // 입력을 떼도 감속 꼬리가 남으므로 속도가 살아있는 동안 위치·지면 갱신.
@@ -236,24 +277,32 @@ public class PlayerMotor : MonoBehaviour
         }
     }
 
-    /// <summary>외부(공격 루트모션) 월드 변위를 이동과 동일한 벽가드+지면 파이프라인으로 적용한다.
-    /// 애니가 진실 — 공격 런지 거리는 클립이 소유하고, 코드는 이 변위를 받아 옮길 뿐이다.
-    /// 공격 커밋 중 <see cref="Tick"/>은 locked 조기반환으로 위치를 안 쓰고 양보하므로, 위치 소유는 Motor 단일.
-    /// ★대시 중엔 코드 버스트(<see cref="UpdateDash"/>)가 위치를 소유하므로 양보(루트모션 미사용 — Step 클립은 비주얼만).</summary>
+    /// <summary>공격·대시 클립의 월드 루트모션 변위를 이동과 동일한 벽가드+지면 파이프라인으로 적용한다.
+    /// 애니가 진실 — 런지/회피 거리는 클립이 소유하고, 코드는 이 변위를 받아 옮길 뿐이다(★R14: 대시도 이 경로로 통일).
+    /// 공격 커밋 중 <see cref="Tick"/>은 locked 조기반환으로, 대시 중엔 _dashActive 양보 블록으로 위치를 안 써 소유는 Motor 단일.</summary>
     public void ApplyRootStep(Vector3 worldDelta)
     {
-        // 대시가 이 프레임 위치를 소유하면(진행 중이거나 막 적용) 양보 — 대시=코드 버스트 이동, 루트모션 무시.
-        if (_dashTimer > 0f || _dashAppliedThisFrame) return;
+        if (_dashAppliedThisFrame) return;   // 한 프레임 이중 적용 차단(H-2)
         worldDelta.y = 0f;
         if (worldDelta.sqrMagnitude < 1e-8f) return;
 
         Vector3 next = transform.position + WallGuardedStep(worldDelta);
         next.y = SampleGround(next) + _groundOffset;
         transform.position = next;
-        // 루트모션 구동 중 속도 꼬리 제거(공격 종료 후 미끄러짐 방지) — ★단 무빙 평타 중엔 유지(07-04):
+        _dashAppliedThisFrame = true;   // 이 프레임 루트 변위 적용됨 — 재호출 양보(H-2, 대시=매 프레임 여기가 위치 소유)
+        // 루트모션 구동 중 속도 꼬리 제거(액션 종료 후 미끄러짐 방지) — ★단 무빙 평타 중엔 유지(07-04):
         // 매 프레임 소거하면 Tick의 MoveTowards가 0부터 재가속해 이동이 기어간다(~acceleration×dt로 캡).
         if (_actionMove01 <= 0f) _velocity = Vector3.zero;
     }
+
+    /// <summary>★R14(2026-07-13) — 애니 드라이버가 Dash 클립 재생 중 매 프레임 호출. 변위 창(window-L)을 갱신한다(애니가 창을 소유, 코드는 따라감).
+    /// grace 워치독이라 ping이 끊기면(Dash 상태 종료/캔슬) 자동 만료 → Motor가 로코모션 복귀. 위치는 <see cref="ApplyRootStep"/>의 클립 델타가 소유.</summary>
+    public void KeepDashActive() { _dashActive = true; _dashRootGrace = DashRootGrace; }
+
+    /// <summary>★R14c(2026-07-13) 이동 캔슬 — 드라이버가 회수 구간(변위 완료 후)에서 이동 입력을 감지해 Dash→Locomotion 하드컷을 낼 때
+    /// 같은 프레임에 호출. 변위 창(window-L)을 grace 없이 *즉시* 닫아 다음 프레임 이동이 바로 복귀하게 한다("회피 후 딜레이" 제거).
+    /// grace 자연 만료(~0.05s=3프레임)만 기다리면 "바로 안 움직임"이 잔존하므로 명시적 종료 경로. window-S(_dashTimer)·i-frame과 무관.</summary>
+    public void EndDashRoot() { _dashActive = false; _dashRootGrace = 0f; }
 
     /// <summary>★무빙 평타 상태 즉시 종료(Codex P1, 07-04) — 콤보 종료/캔슬 시 무기가 호출. Update가 캐시한
     /// _actionMove01이 같은 프레임 애니 이벤트(OnComboEnd→ResetCombo) 후의 OnAnimatorMove까지 stale로 남아
@@ -264,8 +313,13 @@ public class PlayerMotor : MonoBehaviour
         _velocity = Vector3.zero;
     }
 
+    /// <summary>★글라이드 즉시 취소 — 사망 등 외부 하드컷이 호출(Codex H, 07-05: 죽은 몸이 E 런지 잔여 구간을
+    /// 계속 미끄러지는 것 차단). 대시 시작의 글라이드 정리와 같은 채널 단일 소유.</summary>
+    public void CancelGlide() => _glideTimer = 0f;
+
     /// <summary>★히트 글라이드 — 공격이 *맞았을 때만* 짧은 추가 전진("빗나가면 짧게, 맞히면 길게" 공간층 배려).
-    /// 루트모션 런지(클립 소유) 위에 얹는 코드 미끄러짐. 적용은 Tick(벽가드+지면 공유) — 위치 소유 Motor 단일.</summary>
+    /// 루트모션 런지(클립 소유) 위에 얹는 코드 미끄러짐. 적용은 Tick(벽가드+지면 공유) — 위치 소유 Motor 단일.
+    /// ★단일 슬롯(마지막 호출이 이김) — E 런지↔히트 글라이드 동시성은 덮어쓰기로 해소(Codex M 수용, 대시가 최우선 클리어).</summary>
     public void AddGlide(Vector3 dir, float distance, float duration)
     {
         dir.y = 0f;
@@ -273,6 +327,39 @@ public class PlayerMotor : MonoBehaviour
         _glideDir = dir.normalized;
         _glideTimer = duration;
         _glideSpeed = distance / duration;
+    }
+
+    /// <summary>★하니스(07-11 R5) — 조향 런타임 토글: 궤적 원호(하데스식) vs 즉각 이동(트윈스틱 조언식) A/B. 판정 후 제거.</summary>
+    public bool SteerEnabled => steerTurnRate > 0f;
+    public void DebugToggleSteer()
+    {
+        if (steerTurnRate > 0f) { _steerRateBackup = steerTurnRate; steerTurnRate = 0f; }
+        else steerTurnRate = _steerRateBackup > 0f ? _steerRateBackup : 360f;
+    }
+    float _steerRateBackup;   // 토글 복원용 — 꺼기 전 값 기억
+
+    /// <summary>★조향(07-11 R3) — 속도의 '방향'은 steerTurnRate로 연속 회전, '크기'는 기존 가속/감속 분리로 가감.
+    /// 8방향 키 입력이 목표 방향일 뿐이라 궤적이 원호를 그린다(하이포니식 곡선 이동 — 유저 판정 "각짐" 대응).
+    /// 급턴은 정렬도(dot)만큼 목표 속도를 깎아 자연 카브 감속, 180° 반전은 정렬 0 → 감속→재가속(심고 돌기)이 창발.
+    /// steerTurnRate 0 또는 저속(steerMinSpeed 미만)은 기존 벡터 감가속 폴백(출발 즉각성 보존, A/B=0).</summary>
+    Vector3 SteerVelocity(Vector3 move, float targetSpeed, float dt)
+    {
+        Vector3 desiredDir = move.normalized;
+        float curSpeed = _velocity.magnitude;
+        if (steerTurnRate > 0f && curSpeed >= Mathf.Max(steerMinSpeed, 0.01f))   // 하한 — steerMinSpeed=0 설정 시 curSpeed=0 진입→아래 나눗셈 NaN 방지
+        {
+            Vector3 curDir = _velocity / curSpeed;
+            Vector3 newDir = Vector3.RotateTowards(curDir, desiredDir, steerTurnRate * Mathf.Deg2Rad * dt, 0f);
+            float align = Mathf.Clamp01(Vector3.Dot(newDir, desiredDir));   // 급턴일수록 목표 속도↓(카브)
+            float goal = targetSpeed * align;
+            float newSpeed = Mathf.MoveTowards(curSpeed, goal, (goal >= curSpeed ? acceleration : deceleration) * dt);
+            return newDir * newSpeed;
+        }
+        // 조향 끔/저속 폴백 — 기존 가속/감속 분리(같은 방향 가속만 acceleration, 그 외 deceleration).
+        Vector3 targetVel = desiredDir * targetSpeed;
+        bool speedingUp = Vector3.Dot(targetVel, _velocity) >= 0f
+                          && targetVel.sqrMagnitude >= _velocity.sqrMagnitude;
+        return Vector3.MoveTowards(_velocity, targetVel, (speedingUp ? acceleration : deceleration) * dt);
     }
 
     void RechargeDash(float dt)
@@ -324,30 +411,9 @@ public class PlayerMotor : MonoBehaviour
         _iframeTimer = iframeDuration * (cancelingAction ? dashCancelIframeScale : 1f);
         _dashStartTime = Time.unscaledTime; // 퍼펙트 회피 창 판정 기준 — 슬로모 timeScale에 안 끌리게 unscaled
         _dashStartedThisFrame = true;       // 드라이버가 이 엣지에서 DashX/DashY(비주얼 클립)를 잠그고 Dash 트리거를 건다
-        _velocity = Vector3.zero;           // ★속도 꼬리 없음 — 대시 끝나면 딱 멈춤(미끄러짐 제거)
-    }
-
-    /// <summary>대시 이동 — 고정 방향(_dashDir)·고정 속도(dashSpeed) 버스트. 벽이면 그 앞까지만 + 즉시 종료.
-    /// 위치는 이 메서드가 소유하고 <see cref="ApplyRootStep"/>는 양보한다(루트모션 미사용).</summary>
-    void UpdateDash(float dt)
-    {
-        _dashTimer -= dt;
-        float speed = dashDistance / Mathf.Max(0.01f, dashDuration);   // 거리 기반 — 짧은 시간 = 빠르고 딱딱
-        float step = speed * dt;
-
-        Vector3 origin = transform.position + Vector3.up * 0.5f;
-        if (Physics.SphereCast(origin, BodyRadius, _dashDir, out RaycastHit hit,
-                step + SkinWidth, obstacleMask, QueryTriggerInteraction.Ignore))
-        {
-            step = Mathf.Max(0f, hit.distance - SkinWidth);
-            _dashTimer = 0f;   // 벽이면 즉시 종료
-        }
-
-        Vector3 next = transform.position + _dashDir * step;
-        next.y = SampleGround(next) + _groundOffset;
-        transform.position = next;
-        _dashAppliedThisFrame = true;   // 이 프레임 위치는 대시가 소유 — ApplyRootStep 양보
-        _velocity = Vector3.zero;       // ★속도 꼬리 0 — 대시 끝에 미끄러지지 않고 딱 멈춤
+        _velocity = Vector3.zero;           // ★속도 꼬리 없음 — 클립 루트모션이 위치를 소유
+        _dashActive = true;                 // ★R14 변위 창(window-L) 부트스트랩 — 이후 드라이버 KeepDashActive ping이 클립 재생 내내 갱신(진입 갭은 grace가 흡수)
+        _dashRootGrace = DashRootGrace;
     }
 
     /// <summary>진행 경로가 막히면 벽 앞까지만 가고 남은 분량은 벽면을 따라 슬라이드(코너 끈적임 방지).

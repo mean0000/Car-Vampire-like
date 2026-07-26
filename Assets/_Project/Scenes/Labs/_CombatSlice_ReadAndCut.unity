@@ -1480,6 +1480,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAim
   aimPlaneHeight: 0
+  cursorPickMask:
+    serializedVersion: 2
+    m_Bits: 128
 --- !u!114 &1450077382
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1495,14 +1498,20 @@ MonoBehaviour:
   moveSpeed: 7
   acceleration: 50
   deceleration: 40
+  stopTime: 0.15
+  stopGraceTime: 0.08
+  steerTurnRate: 360
+  steerMinSpeed: 1.5
   sprintTierSpeeds:
   - 9
   - 15
   - 24
   sprintTierDuration: 1
   sprintTierCreep: 1.5
-  dashDistance: 3
-  dashDuration: 0.1
+  dashDistance: 3.2
+  dashDuration: 0.15
+  dashEasePower: 1
+  dashExitSpeed: 8
   dashCooldown: 1
   maxDashCharges: 2
   dashInvulnerable: 1
@@ -1832,8 +1841,17 @@ MonoBehaviour:
   runSpeedRef: 8.5
   maxSpeed: 12
   moveThreshold: 0.3
-  speedDamp: 0.1
-  dirDamp: 0.08
+  walkAnimSpeed: 4.31
+  runAnimSpeed: 5.82
+  locoRateMax: 2
+  locoRateDamp: 0.05
+  leanMaxAngle: 10
+  leanFullSpeed: 15
+  leanDamp: 0.12
+  speedDamp: 0.035
+  dirDamp: 0.07
+  snap8Way: 1
+  toggleSnap8Key: 103
   faceTurnRate: 600
   comboLayerBlendTime: 0.12
   suppressComboStepIn: 1
@@ -2202,7 +2220,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 256
   chargeSkillAction: {fileID: 11400000, guid: e1e38bd61408f4f42a3582ef2f3d6d21, type: 2}
-  skillAction: {fileID: 0}
+  skillAction: {fileID: 11400000, guid: 8829921b4d798f04c88ce4d17a3e18f7, type: 2}
   ultimateAction: {fileID: 0}
   counterAction: {fileID: 11400000, guid: 6457fa883d7d0cd43af3eda6499e09bd, type: 2}
   dashAttackAction: {fileID: 11400000, guid: 950af1c1bcd8a884a8e433348278b71b, type: 2}

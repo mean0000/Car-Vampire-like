@@ -86,6 +86,29 @@ public class WeaponAnimatorData
     }
 }
 
+/// <summary>★런지(발동 순간 전진) — "확확—딱" 리듬의 '확'(2026-07-05 유저 게임감 방향). 조준 방향으로만 변위
+/// (뒤로 갈 수 없는 파워 버튼 = 카이팅 답). PlayerMotor.AddGlide 재사용 — 등속(거리/시간) 후 급정지라
+/// duration이 짧을수록 대시급 스냅. distance 0 = 전진 없음(반격/차징스킬 등 기존 액션 기본).</summary>
+[System.Serializable]
+public class WeaponLungeData
+{
+    [Tooltip("발동 순간 전진 거리(m). 0=없음. 선풍참 2.5~3 권장.")]
+    [Min(0f)] public float distance = 0f;
+    [Tooltip("전진 시간(초) — 등속 후 급정지. 짧을수록 '확' 스냅(0.08~0.12 권장).")]
+    [Min(0.02f)] public float duration = 0.1f;
+}
+
+/// <summary>★밀도 보상 — 한 방에 N마리 이상 맞히면 쿨다운 일부 환류("호드 속으로 파고들수록 이득" —
+/// 카이팅을 손해로 만드는 물리 인센티브, 2026-07-05 관용/전직 리서치 수렴). refundHits 0 = 끔.</summary>
+[System.Serializable]
+public class WeaponDensityData
+{
+    [Tooltip("환류 발동 최소 적중 수. 0=밀도 보상 없음.")]
+    [Min(0)] public int refundHits = 0;
+    [Tooltip("환류 비율 — 남은 쿨다운에 곱해 깎는 몫(0.3=쿨 30% 감면).")]
+    [Range(0f, 1f)] public float cooldownRefund = 0.3f;
+}
+
 /// <summary>차징(홀드→릴리스 발동) 설정 — RMB 차징스킬 문법. enabled=false면 즉발 액션.</summary>
 [System.Serializable]
 public class WeaponChargeData

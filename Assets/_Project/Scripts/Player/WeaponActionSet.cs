@@ -29,4 +29,8 @@ public class WeaponActionSet : ScriptableObject
     public WeaponSfxData sfx = new WeaponSfxData();
     [Tooltip("차징(홀드→릴리스) — RMB 차징스킬만 enabled. 즉발 액션은 꺼둔다.")]
     public WeaponChargeData charge = new WeaponChargeData();
+    [Tooltip("★발동 순간 전진('확확—딱'의 확) — 선풍참 등 전진형 기술만 distance>0. 조준 방향 전용(카이팅 답).")]
+    public WeaponLungeData lunge = new WeaponLungeData();
+    [Tooltip("★밀도 보상 — N마리+ 적중 시 쿨 환류(호드 파고들기 인센티브). 0=끔.")]
+    public WeaponDensityData density = new WeaponDensityData();
 }

@@ -30,8 +30,9 @@ public static class KatanaComboRetimer
     // ───────────────────────── 속도 노브 (여기만 만지고 메뉴 재실행 — 단일 진실원) ─────────────────────────
     // 1.0 = 원본 속도. >1.0 = 그 구간을 그만큼 빠르게(압축). <1.0 = 느리게.
     // 3세그 프로파일: 윈드업(보통·전체속도 약간 bump) → 스트라이크(★스냅) → 회수(brisk / 피니셔는 무게 보존).
-    const float WindupSpeed           = 1.25f;  // [0, hit-lead] 앵티시페이션 — 읽히되 약간 빠르게(전체 속도↑). 너무 크면 예비동작이 사라져 스냅 대비가 죽음.
-    const float StrikeSpeed           = 2.2f;   // [hit-lead, window] ★베는 순간 스냅. 윈드업 1.25 대비 1.76× 가속 대비 = "팍". 카타나=경량이라 브루트(0.5→1.25)보다 두 베이스 다 높음.
+    const float WindupSpeed           = 1.25f;  // [0, hit-lead] 앵티시페이션 — Combo2/3(콤보 후속타) 윈드업. 이미 스윙시작 <0.15s라 유지(콤보 리듬·캔슬창 흐름 보존). 너무 크면 예비동작이 사라져 스냅 대비가 죽음.
+    const float Combo1WindupSpeed     = 3.5f;   // [0, hit-lead] ★Combo1(첫 타) 전용 — 유저 "누르면 선딜" 제거. 소스 윈드업 0.297s를 0.085s(≈5f)로 압축 → 스윙시작 0.238→0.085s·OnAttackHit 0.269→0.117s. 히트 이후 길이 불변(piecewise map=발동즉각·여운길게). 플레이어 공격=DMC식 즉응이 예고 가독보다 우선(적 텔레그래프 캐넌과 별개). 유효범위 [2.97,4.35]서 두 타깃(swish≤0.10·hit 0.10~0.15) 동시충족.
+    const float StrikeSpeed           = 2.2f;   // [hit-lead, window] ★베는 순간 스냅. 윈드업 1.25 대비 1.76× 가속 대비 = "팍". 카타나=경량이라 브루트(0.5→1.25)보다 두 베이스 다 높음. (07-10 애니식 5.0=스윙 2~3프레임 시험 → 유저 "너무 빠르다" 판정으로 2.2 복귀)
     const float RecoverySpeed         = 1.4f;   // [window, end] 회수 — Combo1·Combo2(brisk 회수 = 후딜 제거 방향).
     const float FinisherRecoverySpeed = 1.0f;   // [window, end] 회수 — Combo3(피니셔): 무게 상대 보존(1/2보다 느긋). <1.0=더 무겁게.
     const float StrikeLead            = 0.07f;  // 스트라이크 시작 = OnAttackHit − 이 값(초). 컨택 직전 휘두름-진입을 스냅 창에 브래킷(컨택을 fast 구간 안에 둠).
@@ -46,6 +47,7 @@ public static class KatanaComboRetimer
         public string fbxPath, outPath, outName;
         public int comboIndex;               // OnAttackHit intParameter(현행 1/2/3 보존 — OnHitFrame은 무시하나 안전)
         public float hitNorm, windowNorm, endNorm;
+        public float windupSpeed;            // [0, hit-lead] 구간 배율(Combo1=압축·2/3=보통) — 첫 타만 선딜 제거
         public float recoverySpeed;
     }
 
@@ -55,16 +57,19 @@ public static class KatanaComboRetimer
             fbxPath = FbxDir + "/Frank_RPG_Katana_S1_Combo01_01.FBX",
             outPath = OutDir + "/S1_Combo01_01_Retimed.anim", outName = "S1_Combo01_01_Retimed",
             comboIndex = 1, hitNorm = 0.3670f, windowNorm = 0.4840f, endNorm = 0.9200f,
+            windupSpeed = Combo1WindupSpeed,   // ★첫 타 선딜 압축
             recoverySpeed = RecoverySpeed },
         new ComboDef {
             fbxPath = FbxDir + "/Frank_RPG_Katana_S1_Combo01_02.FBX",
             outPath = OutDir + "/S1_Combo01_02_Retimed.anim", outName = "S1_Combo01_02_Retimed",
             comboIndex = 2, hitNorm = 0.2000f, windowNorm = 0.3440f, endNorm = 0.9100f,
+            windupSpeed = WindupSpeed,         // 후속타 — 유지(스윙시작 0.125s < 0.15s)
             recoverySpeed = RecoverySpeed },
         new ComboDef {
             fbxPath = FbxDir + "/Frank_RPG_Katana_S1_Combo01_03.FBX",
             outPath = OutDir + "/S1_Combo01_03_Retimed.anim", outName = "S1_Combo01_03_Retimed",
             comboIndex = 3, hitNorm = 0.2060f, windowNorm = 0.3180f, endNorm = 0.9200f,
+            windupSpeed = WindupSpeed,         // 후속타 — 유지(스윙시작 0.117s < 0.15s)
             recoverySpeed = FinisherRecoverySpeed },   // ★피니셔 무게 보존
     };
 
@@ -74,7 +79,7 @@ public static class KatanaComboRetimer
         foreach (var d in Defs()) RetimeOne(d);
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log($"[KatanaComboRetimer] Done. Windup×{WindupSpeed} Strike×{StrikeSpeed} " +
+        Debug.Log($"[KatanaComboRetimer] Done. Windup(Combo1×{Combo1WindupSpeed}/후속×{WindupSpeed}) Strike×{StrikeSpeed} " +
                   $"Recovery×{RecoverySpeed} (finisher×{FinisherRecoverySpeed}) lead {StrikeLead}s. " +
                   "Combo2는 최초 1회 'Repoint Combo2 Motion ...' 메뉴로 상태에 물릴 것.");
     }
@@ -96,7 +101,7 @@ public static class KatanaComboRetimer
 
         var map = BuildPiecewise(new[]
         {
-            new Seg(0f,          strikeStart, WindupSpeed),      // 윈드업(보통)
+            new Seg(0f,          strikeStart, d.windupSpeed),    // 윈드업(Combo1=압축, 2/3=보통)
             new Seg(strikeStart, win,         StrikeSpeed),      // ★스트라이크(스냅)
             new Seg(win,         len,         d.recoverySpeed),  // 회수
         });
@@ -104,6 +109,10 @@ public static class KatanaComboRetimer
         // ★이벤트 저작(소스 미의존) — 원본 abs 시각. WriteRetimed가 map으로 remap해 심는다.
         var events = new[]
         {
+            // ★swish(07-07 이관, Stab H-1 소실 방지) — 윈드업/스트라이크 경계 = 칼날 가속 시작.
+            //   소스 시간 strikeStart → 리맵 후 = 윈드업 끝(strikeStart/windupSpeed) = hit_dst − StrikeLead/StrikeSpeed.
+            //   Combo1은 windupSpeed 압축으로 이 값이 0.238→0.085s로 함께 당겨진다(히트와 상대간격 불변).
+            MakeEvent(strikeStart, "OnSwishWhoosh", 0),
             MakeEvent(hit, "OnAttackHit",   d.comboIndex),  // 컨택 — 스트라이크 구간 내
             MakeEvent(win, "OnComboWindow", 0),             // 캔슬창 시작 — 스트라이크/회수 경계
             MakeEvent(end, "OnComboEnd",    0),             // 종료 — 회수 구간 내

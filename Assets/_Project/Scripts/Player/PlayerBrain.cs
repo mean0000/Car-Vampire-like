@@ -37,12 +37,23 @@ public class PlayerBrain : MonoBehaviour
         _weapon?.Initialize(transform, _animator);
         // ★패링 성공 → 무기 반격 창 오픈(카타나=Skill02 카운터). 창 안에 좌클릭하면 반격 발동.
         if (_health != null && _weapon != null) _health.Parried += _weapon.ArmCounter;
+        // ★사망 하드컷(Codex H, 07-05) — 죽는 순간 진행 액션·글라이드(E 런지 2.8m 잔여 등)를 즉시 끊는다.
+        //   없으면 시체가 런지 잔여 구간을 계속 미끄러진다(히트 글라이드 0.25m 시절 잠복 → 런지로 11배 가시화).
+        if (_health != null) _health.Died += OnPlayerDied;
     }
 
     void OnDestroy()
     {
         _weapon?.Cleanup();
         if (_health != null && _weapon != null) _health.Parried -= _weapon.ArmCounter;
+        if (_health != null) _health.Died -= OnPlayerDied;
+    }
+
+    /// <summary>사망 순간 정리 — 무기 하드컷(진행 액션/차징 취소) + 글라이드 취소. 위치/애니의 사후 처리는 게임오버 흐름 소유.</summary>
+    void OnPlayerDied()
+    {
+        _weapon?.Cancel();
+        _motor.CancelGlide();
     }
 
     void Update()
@@ -65,7 +76,9 @@ public class PlayerBrain : MonoBehaviour
         // ★대시 커밋 보호 + 입력 버퍼: 대시 진행 중 좌클릭은 버리지 말고 기억 → 대시 끝나는 즉시 재주입.
         //   대시는 커밋(공격이 못 끊음)이지만 입력은 보존해 "눌렀는데 안 나감"을 없앤다 = 회피→공격 흐름의 핵심.
         //   만료 타이머 없음: 대시는 짧고(끝나면 즉시 재주입), 재대시 시 폐기되므로 영구 잔존 불가(슬로모 중 만료 엣지도 제거 — Codex L).
-        if (_motor.IsDashing)
+        // ★R14(2026-07-13): 버퍼/커밋 창은 짧은 커밋 창(DashCommitted=window-S 0.15s)에 결속 — IsDashing이 클립 전체(window-L ~0.7s)로
+        //   길어졌으므로 여기서 그걸 쓰면 착지 내내 공격이 버퍼돼 하드컷(즉시 인터럽트)이 죽는다. 커밋 창 종료 후엔 버퍼된 공격이 착지를 끊는다.
+        if (_motor.DashCommitted)
         {
             if (input.primaryDown) _bufferedAttack = true;   // ★대시 중 좌클릭 = 대시 베기 예약(대시 끝에 발동)
             input.primaryDown = false;             // 대시 중엔 콤보 시작 보류(대시 끝나고 대시 베기로 주입)
@@ -85,7 +98,7 @@ public class PlayerBrain : MonoBehaviour
         _motor.Tick(input, _aim.Direction, busy,   // 3) 이동·대시 — 공격 커밋 중(busy)이면 Motor 입력이동 양보
                     _weapon != null ? _weapon.ActionMoveMult : 0f);   //    ★무빙 평타(07-04): 무기가 허용한 배율만큼은 걷기 유지(콤보만, 무기 소유 OCP)
         _animator?.SetAttacking(busy);             //    공격 중엔 루트모션이 위치를 주도(OnAnimatorMove)
-        _animator?.Tick();                         // 4) 상태 → 애니 파라미터 반영
+        _animator?.Tick(input.move);               // 4) 상태 → 애니 파라미터 반영 (★R10 의도 채널 — 발 방향은 입력 의도를 즉시 따름)
         _footsteps?.Tick();                        // 5) 발소리 — 확정된 위치(이동·루트모션) 이후 거리 적산
     }
 

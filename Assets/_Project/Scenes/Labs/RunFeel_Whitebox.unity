@@ -3326,7 +3326,7 @@ Transform:
   m_GameObject: {fileID: 764900013}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.12, y: 0, z: 0}
   m_LocalScale: {x: 8, y: 1, z: 8}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -6278,6 +6278,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAim
   aimPlaneHeight: 0
+  cursorPickMask:
+    serializedVersion: 2
+    m_Bits: 128
 --- !u!114 &1450077382
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6291,16 +6294,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMotor
   moveSpeed: 4.31
-  acceleration: 16
-  deceleration: 13
+  acceleration: 50
+  deceleration: 40
+  stopTime: 0.15
+  stopGraceTime: 0.08
+  steerTurnRate: 360
+  steerMinSpeed: 1.5
   sprintTierSpeeds:
   - 9
   - 15
   - 24
   sprintTierDuration: 1
   sprintTierCreep: 1.5
-  dashDistance: 3
-  dashDuration: 0.1
+  dashDuration: 0.15
   dashCooldown: 1
   maxDashCharges: 2
   dashInvulnerable: 1
@@ -6825,6 +6831,67 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1546480685}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &1559456857
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1559456859}
+  - component: {fileID: 1559456858}
+  m_Layer: 0
+  m_Name: SpeedLanguageDirector
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1559456858
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1559456857}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cddcc0fd4fefce94282ae82254cc2235, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpeedLanguageDirector
+  multikillCount: 3
+  multikillWindow: 0.12
+  eliteHpThreshold: 8
+  debugEveryNthElite: 7
+  skin: 1
+  snapshotOnMultikill: 1
+  snapshotOnElite: 1
+  eliteCinematicWeight: 0.55
+  eliteCinematicHold: 0.4
+  eliteFovPunch: 5
+  eliteHitStop: 0.08
+  ticketLifetime: 0.9
+  slideTime: 0.09
+  maxTickets: 6
+  ticketColor: {r: 0.24, g: 0.96, b: 1, a: 1}
+  eliteTicketColor: {r: 1, g: 0.83, b: 0.3, a: 1}
+  streakWindow: 1.6
+--- !u!4 &1559456859
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1559456857}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1590056840
 GameObject:
   m_ObjectHideFlags: 0
@@ -7043,9 +7110,33 @@ MonoBehaviour:
   ghostShader: {fileID: 0}
   interval: 0.012
   lifetime: 0.28
+  trailDuringDash: 0
+  startSilhouetteCount: 1
+  startSilhouetteLifetime: 0.45
   ghostColor: {r: 0.3, g: 1.4, b: 1.7, a: 1}
   startAlpha: 0.7
   enableStreaks: 1
+  dashStyle: 0
+  cycleStyleKey: 106
+  dashCamKick: 0.22
+  dashFovPunch: 1.5
+  glitchPopColor: {r: 1.8, g: 0.25, b: 1.6, a: 0.9}
+  reassembleColor: {r: 0.3, g: 1.4, b: 1.7, a: 0.9}
+  glitchShardCount: 24
+  iframeGhosting: 0
+  chromaSplit: 0.14
+  chromaLifetime: 0.18
+  dustCount: 12
+  landSquash: 0.92
+  landSquashTime: 0.12
+  kickoffStretch: 1.1
+  kickoffStretchTime: 0.1
+  slideDustRate: 30
+  slideDustMinSpeed: 1.5
+  whooshClip: {fileID: 8300000, guid: 16d38ec9b6a214093bedbdcc889f5608, type: 3}
+  whooshVolume: 0.1
+  scuffClip: {fileID: 8300000, guid: 942019cf9ecd5854ebeb343b12b7f779, type: 3}
+  scuffVolume: 0.09
 --- !u!114 &1604825404
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7059,13 +7150,36 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAnimatorDriver
   moveSource: {fileID: 0}
-  walkSpeedRef: 5
-  runSpeedRef: 8.5
+  walkSpeedRef: 4.31
+  runSpeedRef: 5.82
   maxSpeed: 12
   moveThreshold: 0.3
-  speedDamp: 0.1
-  dirDamp: 0.08
+  walkAnimSpeed: 4.31
+  runAnimSpeed: 5.82
+  locoRateMax: 2
+  locoRateDamp: 0.05
+  leanMaxAngle: 14
+  leanFullSpeed: 8
+  leanDamp: 0.12
+  speedDamp: 0.035
+  dirDamp: 0.07
+  snap8Way: 1
+  toggleSnap8Key: 103
+  toggleSteerKey: 104
+  dashFaceMotion: 1
   faceTurnRate: 600
+  turnShuffleThreshold: 55
+  turnRateRef: 200
+  turnShuffleMax: 0.55
+  turnShuffleDamp: 0.09
+  turnShuffleInvert: 0
+  dashLaunchRate: 1.5
+  dashFlightRate: 0.9
+  dashRecoverRate: 1.1
+  dashLaunchEnd: 0.15
+  dashFlightEnd: 0.42
+  dashRateDamp: 0.04
+  dashMoveCancelPoint: 0.77
   comboLayerBlendTime: 0.12
   suppressComboStepIn: 1
   facingMode: 2
@@ -7628,7 +7742,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 256
   chargeSkillAction: {fileID: 11400000, guid: e1e38bd61408f4f42a3582ef2f3d6d21, type: 2}
-  skillAction: {fileID: 0}
+  skillAction: {fileID: 11400000, guid: 8829921b4d798f04c88ce4d17a3e18f7, type: 2}
   ultimateAction: {fileID: 0}
   counterAction: {fileID: 11400000, guid: 6457fa883d7d0cd43af3eda6499e09bd, type: 2}
   dashAttackAction: {fileID: 11400000, guid: 950af1c1bcd8a884a8e433348278b71b, type: 2}
@@ -7644,10 +7758,11 @@ MonoBehaviour:
   comboKick: 0.12
   finisherKick: 0.28
   meleeSfxEnabled: 1
-  swishClip: {fileID: 8300000, guid: 1aa4c21b174363345ac76e3276e18fa0, type: 3}
+  swishClip: {fileID: 8300000, guid: 6c6db144c651af949b0b9c1121c82a2a, type: 3}
   swishVolume: 0.1
   swishPitch: 1
   swishPitchJitter: 0.05
+  swishOnAnimEvent: 1
   impactClip: {fileID: 8300000, guid: 0fc17236f67ee6b4b93e09eee791ee4e, type: 3}
   impactVolume: 0.14
   impactPitch: 0.95
@@ -8820,3 +8935,4 @@ SceneRoots:
   - {fileID: 1905082057}
   - {fileID: 1302367005}
   - {fileID: 1458383534}
+  - {fileID: 1559456859}

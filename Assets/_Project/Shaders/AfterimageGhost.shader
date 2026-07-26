@@ -1,15 +1,15 @@
 Shader "ZombieCrush/AfterimageGhost"
 {
-    // 대시 잔상 고스트 — 베이크된 스킨드 메시 스냅샷용. ★바디를 시안으로 가득 채우고(_BodyFloor 높게),
-    // 프레넬 림은 밝은 액센트로 더한다. 알파 블렌드라 촘촘히 겹쳐도 시안 유지(가산 흰색 번짐 없음).
-    // 알파는 _Alpha(MaterialPropertyBlock)로 고스트별 페이드.
+    // 대시 잔상 고스트 — 베이크된 스킨드 메시 스냅샷용. ★R14(07-13 유저): 바디 필 제거,
+    // 테두리(프레넬 림)만 — _BodyFloor 0, 림은 파워 올려 조이고 부스트로 가독 확보.
+    // 알파 블렌드라 촘촘히 겹쳐도 시안 유지(가산 흰색 번짐 없음). 알파는 _Alpha로 고스트별 페이드.
     Properties
     {
         _BaseColor ("Color", Color) = (0.2, 0.9, 1, 1)
         _Alpha ("Alpha", Range(0,1)) = 1
-        _FresnelPower ("Fresnel Power", Float) = 2.5
-        _RimBoost ("Rim Boost", Float) = 0.5
-        _BodyFloor ("Body Floor", Range(0,1)) = 0.85
+        _FresnelPower ("Fresnel Power", Float) = 4
+        _RimBoost ("Rim Boost", Float) = 2
+        _BodyFloor ("Body Floor", Range(0,1)) = 0
     }
     SubShader
     {
@@ -50,7 +50,7 @@ Shader "ZombieCrush/AfterimageGhost"
                 float3 n = normalize(IN.normalWS);
                 float3 v = normalize(IN.viewDirWS);
                 float fres = pow(1.0 - saturate(dot(n, v)), _FresnelPower);
-                float fill = saturate(_BodyFloor + fres * _RimBoost);   // 바디 가득 + 림 액센트
+                float fill = saturate(_BodyFloor + fres * _RimBoost);   // 림만(_BodyFloor 0) — 필 복구는 노브로
                 float a = fill * _Alpha;
                 return half4(_BaseColor.rgb, a);   // rgb=HDR 시안(블룸), a=필 — 알파 블렌드로 솔리드 색 유지
             }

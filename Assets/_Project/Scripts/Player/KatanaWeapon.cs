@@ -138,6 +138,9 @@ public class KatanaWeapon : WeaponBehaviour
     [SerializeField, Range(0.5f, 2f)] float swishPitch = 1f;
     [Tooltip("swish 피치 랜덤 폭(±) — 연속 스윙 동일음 피로 완화. 0이면 고정.")]
     [SerializeField, Range(0f, 0.5f)] float swishPitchJitter = 0.05f;
+    [Tooltip("★swish 타이밍 소유(07-07) — 켜면 클립 OnSwishWhoosh 이벤트(칼날 스윕과 동기)가 소리를 내고, " +
+             "끄면 구 방식(스윙 시작 코드 발화 — 이벤트 없는 클립 폴백/롤백 노브). A/B 비교용.")]
+    [SerializeField] bool swishOnAnimEvent = true;
     [Tooltip("임팩트 thud/cut 클립 — 적중 순간만 재생(헛스윙 무음). 비우면 무음. 임시=Vefects Impact_01.")]
     [SerializeField] AudioClip impactClip;
     [Tooltip("impact 볼륨 — ★캐넌 첫 볼륨 0.03~0.15. '한 방' 강조라 swish보다 약간 크게.")]
@@ -199,6 +202,7 @@ public class KatanaWeapon : WeaponBehaviour
     readonly List<Vector3> _critCenters = new List<Vector3>(8);   // 이번 스윙의 크리티컬 지점(루프 후 전파)
     bool _lastSwingCrit;   // 직전 DoHit에서 크리티컬이 났나(손맛 킥 강도 선택용)
     int _lastSwingKills;   // 직전 DoHit 처치 수(멀티킬 프리즈/킥 승급용)
+    int _lastSwingDirectHits;   // ★직전 DoHit *직접* 명중 수(전파 제외 — Stab M-1) — 밀도 환류가 읽는다("내가 그은 선의 성과"만, 멀티킬 카운트와 동일 원칙)
 
     /// <summary>★칼 액션 활성(콤보·반격·스킬·대시베기) — SwarmChaser 스윙 가드(전방 접촉 무효, 07-04 배려)가 읽는다.
     /// ★콤보만이 아니라 모든 칼 액션 포함(Stab M-5) — "공격=방어" 기대와 체감 괴리 방지. (차징은 기존과 동일하게 제외.)</summary>
@@ -233,18 +237,22 @@ public class KatanaWeapon : WeaponBehaviour
         _clashFxResolved = false;
         _motor = null;            // 동일 사유 — Motor 캐시도 무효화
         _motorResolved = false;
+        _afterimage = null;       // 동일 사유 — 잔상 캐시도 무효화(이전 Owner 계층의 stale 참조 방지)
+        _afterimageResolved = false;
 
         // 재진입 가드(Stab H-2): 재초기화 시 콤보 이벤트 이전 구독 먼저 해제(base는 AttackHit 가드 내장).
         if (AnimatorDriver != null)
         {
             AnimatorDriver.ComboWindow -= OnComboWindow;
             AnimatorDriver.ComboEnd -= OnComboEnd;
+            AnimatorDriver.SwishWhoosh -= OnSwishWhoosh;
         }
         base.Initialize(owner, animator);   // AttackHit += OnHitFrame (재진입 가드 내장)
         if (animator != null)
         {
             animator.ComboWindow += OnComboWindow;
             animator.ComboEnd += OnComboEnd;
+            animator.SwishWhoosh += OnSwishWhoosh;
         }
         BuildActionRuntimes();   // ★슬롯 SO → 런타임 구축 + 트리거 해시 캐시(재초기화 시 재구축 — 쿨다운 리셋은 Owner 스왑 한정이라 허용)
     }
@@ -274,6 +282,10 @@ public class KatanaWeapon : WeaponBehaviour
         set.animator.Resolve();
         if (set.animator.TriggerHash == 0)
             Debug.LogError($"[KatanaWeapon] {slotName} 슬롯 '{set.actionId}' — animator.triggerName이 비어 있어 진입 불가. SO를 확인하라.", this);
+        // ★파라미터 실존 검증(Stab H-1, 07-05) — 이름 오타/컨트롤러 드리프트면 SetTrigger가 무음 무시되는데
+        //   쿨다운은 소진(스킬 통째 무음 소각). 빈 이름 가드와 대칭으로 즉시 에러 노출.
+        else if (AnimatorDriver != null && !AnimatorDriver.HasTrigger(set.animator.TriggerHash))
+            Debug.LogError($"[KatanaWeapon] {slotName} 슬롯 '{set.actionId}' — 트리거 '{set.animator.triggerName}'가 Animator 컨트롤러에 없음(무음 쿨 소각 지뢰). 컨트롤러/이름 확인.", this);
         if (set.charge.enabled && set.animator.ChargeTriggerHash == 0)
             Debug.LogError($"[KatanaWeapon] {slotName} 슬롯 '{set.actionId}' — charge.enabled인데 chargeTriggerName이 비어 있음(차징 진입 불가).", this);
         return new ActionRuntime(set);
@@ -285,6 +297,7 @@ public class KatanaWeapon : WeaponBehaviour
         {
             AnimatorDriver.ComboWindow -= OnComboWindow;
             AnimatorDriver.ComboEnd -= OnComboEnd;
+            AnimatorDriver.SwishWhoosh -= OnSwishWhoosh;
         }
         base.Cleanup();
     }
@@ -443,7 +456,7 @@ public class KatanaWeapon : WeaponBehaviour
         _lastAdvanceTime = -1f;
         AnimatorDriver?.SetCombo(1);
         BeginAction();   // 레일: 진입 유예 켬 → Animator가 Combo1(Action) 들 때까지 busy 유지
-        PlayMeleeSwish();   // ★스윙 시작 = swish(휘두름). 헛스윙도 남(적중 불문). 강타 impact는 FireHitFeedback(connected).
+        if (!swishOnAnimEvent) PlayMeleeSwish();   // ★구 방식 폴백 — 정석은 클립 OnSwishWhoosh(칼날 스윕 동기, 07-07). 헛스윙도 남. 강타 impact는 FireHitFeedback(connected).
     }
 
     void Advance()
@@ -456,7 +469,7 @@ public class KatanaWeapon : WeaponBehaviour
         _lastAdvanceTime = Time.time;
         AnimatorDriver?.SetCombo(_step);
         BeginAction();   // 레일: 다음 단 전이 갭 유예(이미 Action 상태라 안전망 성격)
-        PlayMeleeSwish();   // ★다음 단 스윙 시작 = swish(각 단마다 휘두름음).
+        if (!swishOnAnimEvent) PlayMeleeSwish();   // ★구 방식 폴백 — 정석은 각 단 클립의 OnSwishWhoosh(07-07).
     }
 
     /// <summary>★액션 슬롯 공통 발동 — 구 BeginCounter/BeginSkill/BeginDashAttack의 일반화(동작 보존).
@@ -475,6 +488,15 @@ public class KatanaWeapon : WeaponBehaviour
         rt.watchdogTimer = rt.Watchdog;   // 안전 워치독 가동(OnComboEnd 누락 대비)
         AnimatorDriver?.TriggerAction(rt.set.animator.TriggerHash);
         BeginAction();   // 레일: 진입 유예 켬 → Animator가 해당 상태(Action 태그) 들 때까지 busy 유지
+        // ★런지("확확—딱"의 확, 07-05) — 발동 순간 조준 방향으로만 순간 전진(뒤로 못 가는 파워 버튼 = 카이팅 답).
+        //   AddGlide=등속 후 급정지(위치 소유 Motor 단일). 클립 전진 루트모션과 이중이동 금지 — 전진은 코드가 소유(in-place 클립 전제).
+        if (rt.set.lunge.distance > 0f)
+        {
+            Motor()?.AddGlide(_aimDir, rt.set.lunge.distance, rt.set.lunge.duration);
+            // ★런지 잔상(07-07 속도 증거 레이어) — 대시와 동일 문법(고스트+속도선)을 스킬 런지에도.
+            //   히트 글라이드(짧은 전진)는 제외 — 여기(발동 런지)만. 컴포넌트 없는 랩 씬은 null 무동작.
+            Afterimage()?.EmitBurst(rt.set.lunge.duration);
+        }
     }
 
     /// <summary>★패링 반격 — 카운터 창 안 좌클릭 시 counterAction 발동(창 소비 후 공통 경로).</summary>
@@ -592,6 +614,12 @@ public class KatanaWeapon : WeaponBehaviour
     void OnComboWindow()   // 캔슬 윈도우 시작 — 다음 단 입력 받기 시작(각 좌클릭이 각 단)
     {
         if (_step >= 1) _windowOpen = true;
+    }
+
+    void OnSwishWhoosh()   // ★스윙 가속 시작(클립 이벤트, 07-07) — swish를 칼날 스윕에 정렬. 토글 off면 구 방식(코드 발화)이 이미 냈으므로 무음.
+    {
+        // ★Codex M-2: 콤보 진행 중일 때만 — 대시/이동 캔슬(_step=0) 후 블렌드아웃 클립이 늦게 쏘는 이벤트(고스트 swish) 차단. OnComboWindow와 동형 가드.
+        if (swishOnAnimEvent && _step >= 1) PlayMeleeSwish();
     }
 
     void OnComboEnd()      // 현재 단/액션 클립 끝 — 다음 단으로 안 넘어갔으면 종료(idle 복귀)
@@ -714,6 +742,11 @@ public class KatanaWeapon : WeaponBehaviour
                                h.damage > 0 ? h.damage : 1,
                                h.knockback);                                 // 넉백 0은 유효(무넉백) — 가드 강제 안 함
         if (connected) FireHitFeedback(finisherKick, true, true);
+        // ★밀도 보상(07-05 리서치 수렴) — 한 방에 N마리+ *직접* 적중 시 남은 쿨 일부 환류. 호드 *속으로* 파고들 때
+        //   최대 이득 = 카이팅을 손해로 만든다. 전파 인원 제외(Stab M-1 — 멀티킬 "직접 벤 것만" 원칙과 동일).
+        var den = rt.set.density;
+        if (den.refundHits > 0 && _lastSwingDirectHits >= den.refundHits && rt.cooldownTimer > 0f)
+            rt.cooldownTimer *= (1f - Mathf.Clamp01(den.cooldownRefund));   // 클램프 = YAML 수기 편집 방어(Stab L-2)
         WeaponVfxSpawner.Spawn(rt.set.vfx, Owner, weaponAnchor, _aimDir);   // 스윙 비주얼(적중 불문, prefab 비면 무동작)
         PlayActionSfx(rt.set.sfx);                                          // 스윙 사운드(적중 불문, clip 비면 무음)
         rt.hitSeq++;   // ★'벨 때' 신호 — 차징스킬은 ChargePhantomEmitter가 이 증가를 폴링해 슬래시 VFX 1발 발동(윈드업 아닌 실제 베기에).
@@ -828,6 +861,8 @@ public class KatanaWeapon : WeaponBehaviour
             if (wasAlive && edr.IsDead) _lastSwingKills++;
         }
 
+        _lastSwingDirectHits = _hitThisSwing.Count;   // ★전파 *전* 스냅샷 = 직접 명중만(Stab M-1 — 곁다리 전파로 밀도 환류 터지는 결합 차단)
+
         // ★크리티컬 전파 — 루프 종료 후(_hitThisSwing 완성·_overlap 자유) 별 버퍼로. 크리티컬마다 주변 호드를 가르는 복도.
         if (_critCenters.Count > 0)
         {
@@ -868,6 +903,20 @@ public class KatanaWeapon : WeaponBehaviour
                 _motor = Owner.GetComponent<PlayerMotor>() ?? Owner.GetComponentInParent<PlayerMotor>();
         }
         return _motor;
+    }
+
+    PlayerAfterimage _afterimage;   // 런지 잔상 캐시(Motor와 동형 — Initialize에서 무효화)
+    bool _afterimageResolved;
+    /// <summary>런지 잔상 대상(PlayerAfterimage, 비주얼 자식에 있음) — 지연 1회 해석 후 캐시. 없으면 null(잔상 무동작).</summary>
+    PlayerAfterimage Afterimage()
+    {
+        if (!_afterimageResolved)
+        {
+            _afterimageResolved = true;
+            if (Owner != null)
+                _afterimage = Owner.GetComponentInChildren<PlayerAfterimage>(true);
+        }
+        return _afterimage;
     }
 
     void Propagate(Vector3 center, float kb)

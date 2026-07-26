@@ -100,6 +100,10 @@ public class EnemyDamageReceiver : MonoBehaviour, IDamageable, ICritReact
 
     public bool IsDead => _dead;
     public int Hp => _hp;
+    /// <summary>최대 HP(스포너 주입 반영) — SpeedLanguageDirector가 엘리트(고HP) 판별에 읽는다.</summary>
+    public int MaxHp => maxHp;
+    /// <summary>마지막 타격의 가해 원점 — 처리 스냅샷이 베기 방향(피해자−원점)을 읽는다(IDeathStager와 동일 소스).</summary>
+    public Vector3 LastHitFrom => _lastHitFrom;
     /// <summary>이 개체의 커밋이 읽기 슬로모 발동 가치가 있나 — ReadSlowmoTrigger가 필터로 읽는다.</summary>
     public bool HighValueCommit => highValueCommit;
     /// <summary>★스태거(피격 경직) 중인가 — 드라이버(SwarmChaser)가 추격/접촉딜 정지에, TakeHit이 데미지 배수에 읽는다.</summary>
